@@ -29,7 +29,6 @@ public class ExampleSimulationNConnected {
 			effector.setMirrors(mirrors, t);
 			mirrors -= 2;
 		}
-		effector.setStrategy(new NConnectedTopology(), 400);
 		for(int t = 500; t < 600; t += 20) {
 			effector.setMirrors(mirrors, t);
 			mirrors += 4;
