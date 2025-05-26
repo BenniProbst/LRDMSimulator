@@ -1,0 +1,45 @@
+name: SonarCloud
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+
+      - name: Build with Maven (skip GUI tests)
+        run: mvn clean verify -DskipTests=true
+        working-directory: LRDMSimulator
+
+      - name: Run SonarCloud Analysis
+        env:
+          SONAR_SECRET: ${{ secrets.SONAR_SECRET }}
+        run: mvn sonar:sonar \
+          -Dsonar.projectKey=BenniProbst_LRDMSimulator \
+          -Dsonar.organization=benniprobst \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.login=${{ secrets.SONAR_SECRET }}
+        working-directory: LRDMSimulator
