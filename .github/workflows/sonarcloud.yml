@@ -1,40 +1,32 @@
-name: SonarCloud
+name: SonarCloud Branch-specific CI
 
 on:
   push:
     branches:
       - main
+      - dev
+      - 'feature/**'
   pull_request:
-    types: [opened, synchronize, reopened]
-
-permissions:
-  contents: read
-  pull-requests: read
+    branches:
+      - main
+      - dev
 
 jobs:
-  sonarcloud:
-    runs-on: ubuntu-latest
-
+  sonar-main:
+    name: SonarCloud Full (main)
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Cache SonarCloud packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.sonar/cache
-          key: ${{ runner.os }}-sonar
-
-      - name: Build with Maven (skip GUI tests)
-        run: mvn clean verify -DskipTests=true
+      - name: Build (Full)
+        run: mvn clean verify -DskipTests=false
         working-directory: LRDMSimulator
-
-      - name: Run SonarCloud Analysis
+      - name: Analyze (Full)
         env:
           SONAR_SECRET: ${{ secrets.SONAR_SECRET }}
         run: mvn sonar:sonar \
@@ -42,4 +34,50 @@ jobs:
           -Dsonar.organization=benniprobst \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.login=${{ secrets.SONAR_SECRET }}
+        working-directory: LRDMSimulator
+
+  sonar-dev:
+    name: SonarCloud Dev (no GUI)
+    if: github.ref == 'refs/heads/dev'
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Build (No GUI Tests)
+        run: mvn clean verify -DskipTests=true
+        working-directory: LRDMSimulator
+      - name: Analyze (Partial)
+        env:
+          SONAR_SECRET: ${{ secrets.SONAR_SECRET }}
+        run: mvn sonar:sonar \
+          -Dsonar.projectKey=BenniProbst_LRDMSimulator \
+          -Dsonar.organization=benniprobst \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.login=${{ secrets.SONAR_SECRET }}
+        working-directory: LRDMSimulator
+
+  sonar-feature:
+    name: SonarCloud Feature Branch (fast)
+    if: startsWith(github.ref, 'refs/heads/feature/')
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Lightweight Scan (no build)
+        env:
+          SONAR_SECRET: ${{ secrets.SONAR_SECRET }}
+        run: mvn sonar:sonar \
+          -Dsonar.projectKey=BenniProbst_LRDMSimulator \
+          -Dsonar.organization=benniprobst \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.login=${{ secrets.SONAR_SECRET }} \
+          -DskipTests=true
         working-directory: LRDMSimulator
