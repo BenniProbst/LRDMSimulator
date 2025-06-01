@@ -42,16 +42,27 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-      - name: Verify working directory
+      - name: Verify project structure
         run: |
+          echo === Project Structure Debug ===
           echo Current directory: %CD%
-          echo Working directory will be: ${{ env.WORKING_DIRECTORY }}
-          if exist pom.xml (
-            echo Maven project found in current directory
-          ) else (
-            echo No Maven project found in current directory
-            dir
-          )
+          dir /b
+          echo.
+          echo === Source files ===
+          if exist src dir src /s /b *.java
+          echo.
+          echo === Test files ===
+          if exist tests dir tests /s /b *.java
+          echo.
+          echo === Target directory ===
+          if exist target dir target
+          echo.
+          echo === Coverage files ===
+          if exist target\site\jacoco dir target\site\jacoco
+        shell: cmd
+      - name: Rebuild for SonarCloud
+        run: mvn clean compile test-compile -Pcoverage
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         shell: cmd
       - name: SonarCloud Analysis
         env:
@@ -63,7 +74,15 @@ jobs:
             -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} ^
             -Dsonar.host.url=${{ env.SONAR_HOST_URL }} ^
             -Dsonar.token=${{ secrets.SONAR_SECRET }} ^
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+            -Dsonar.sources=src ^
+            -Dsonar.tests=tests ^
+            -Dsonar.java.source=17 ^
+            -Dsonar.java.target=17 ^
+            -Dsonar.java.binaries=target/classes ^
+            -Dsonar.java.test.binaries=target/test-classes ^
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml ^
+            -Dsonar.junit.reportPaths=target/surefire-reports ^
+            -Dsonar.verbose=true
         working-directory: ${{ env.WORKING_DIRECTORY }}
         shell: cmd
 
@@ -87,16 +106,21 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
-      - name: Verify working directory
+      - name: Verify project structure
         run: |
+          echo === Project Structure Debug ===
           echo Current directory: %CD%
-          echo Working directory will be: ${{ env.WORKING_DIRECTORY }}
-          if exist pom.xml (
-            echo Maven project found in current directory
-          ) else (
-            echo No Maven project found in current directory
-            dir
-          )
+          dir /b
+          echo.
+          echo === Source files ===
+          if exist src dir src /s /b *.java
+          echo.
+          echo === Test files ===
+          if exist tests dir tests /s /b *.java
+        shell: cmd
+      - name: Build for SonarCloud
+        run: mvn clean compile test-compile
+        working-directory: ${{ env.WORKING_DIRECTORY }}
         shell: cmd
       - name: SonarCloud Analysis
         env:
@@ -108,7 +132,14 @@ jobs:
             -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} ^
             -Dsonar.host.url=${{ env.SONAR_HOST_URL }} ^
             -Dsonar.token=${{ secrets.SONAR_SECRET }} ^
-            -DskipTests=true
+            -Dsonar.sources=src ^
+            -Dsonar.tests=tests ^
+            -Dsonar.java.source=17 ^
+            -Dsonar.java.target=17 ^
+            -Dsonar.java.binaries=target/classes ^
+            -Dsonar.java.test.binaries=target/test-classes ^
+            -DskipTests=true ^
+            -Dsonar.verbose=true
         working-directory: ${{ env.WORKING_DIRECTORY }}
         shell: cmd
 
@@ -140,16 +171,17 @@ jobs:
             .m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
-      - name: Verify working directory
+      - name: Verify project structure
         run: |
+          echo === Project Structure Debug ===
           echo Current directory: %CD%
-          echo Working directory will be: ${{ env.WORKING_DIRECTORY }}
-          if exist pom.xml (
-            echo Maven project found in current directory
-          ) else (
-            echo No Maven project found in current directory
-            dir
-          )
+          dir /b
+          echo.
+          echo === Source files ===
+          if exist src dir src /s /b *.java
+          echo.
+          echo === Test files ===
+          if exist tests dir tests /s /b *.java
         shell: cmd
       - name: Build and test for PR
         run: mvn clean verify -Pcoverage
@@ -165,10 +197,18 @@ jobs:
             -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} ^
             -Dsonar.host.url=${{ env.SONAR_HOST_URL }} ^
             -Dsonar.token=${{ secrets.SONAR_SECRET }} ^
+            -Dsonar.sources=src ^
+            -Dsonar.tests=tests ^
+            -Dsonar.java.source=17 ^
+            -Dsonar.java.target=17 ^
+            -Dsonar.java.binaries=target/classes ^
+            -Dsonar.java.test.binaries=target/test-classes ^
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml ^
+            -Dsonar.junit.reportPaths=target/surefire-reports ^
             -Dsonar.pullrequest.key=${{ github.event.number }} ^
             -Dsonar.pullrequest.branch=${{ github.head_ref }} ^
             -Dsonar.pullrequest.base=${{ github.base_ref }} ^
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+            -Dsonar.verbose=true
         working-directory: ${{ env.WORKING_DIRECTORY }}
         shell: cmd
 
