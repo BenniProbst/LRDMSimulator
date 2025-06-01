@@ -22,10 +22,16 @@ jobs:
     if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success'
     runs-on: self-hosted
     steps:
+      - name: Fix Git permissions
+        run: |
+          git config --global --add safe.directory ${{ github.workspace }}
+          git config --global core.autocrlf false
+        shell: pwsh
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
@@ -36,55 +42,93 @@ jobs:
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
+      - name: Verify working directory
+        run: |
+          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "Working directory will be: ${{ env.WORKING_DIRECTORY }}"
+          if (Test-Path "${{ env.WORKING_DIRECTORY }}") {
+            Write-Host "Working directory exists"
+            Get-ChildItem "${{ env.WORKING_DIRECTORY }}" | Select-Object Name
+          } else {
+            Write-Host "Working directory does not exist"
+            Get-ChildItem . | Select-Object Name
+          }
+        shell: pwsh
       - name: SonarCloud Analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
         run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_SECRET }} \
+          mvn sonar:sonar `
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} `
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} `
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} `
+            -Dsonar.token=${{ secrets.SONAR_SECRET }} `
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
         working-directory: ${{ env.WORKING_DIRECTORY }}
+        shell: pwsh
 
   sonar-branches:
     name: SonarCloud Branch Analysis
     if: (github.event.workflow_run.head_branch == 'dev' || startsWith(github.event.workflow_run.head_branch, 'feature/')) && github.event.workflow_run.conclusion == 'success'
     runs-on: self-hosted
     steps:
+      - name: Fix Git permissions
+        run: |
+          git config --global --add safe.directory ${{ github.workspace }}
+          git config --global core.autocrlf false
+        shell: pwsh
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
+      - name: Verify working directory
+        run: |
+          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "Working directory will be: ${{ env.WORKING_DIRECTORY }}"
+          if (Test-Path "${{ env.WORKING_DIRECTORY }}") {
+            Write-Host "Working directory exists"
+            Get-ChildItem "${{ env.WORKING_DIRECTORY }}" | Select-Object Name
+          } else {
+            Write-Host "Working directory does not exist"
+            Get-ChildItem . | Select-Object Name
+          }
+        shell: pwsh
       - name: SonarCloud Analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
         run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_SECRET }} \
+          mvn sonar:sonar `
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} `
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} `
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} `
+            -Dsonar.token=${{ secrets.SONAR_SECRET }} `
             -DskipTests=true
         working-directory: ${{ env.WORKING_DIRECTORY }}
+        shell: pwsh
 
   sonar-pr:
     name: SonarCloud PR Analysis
     if: github.event_name == 'pull_request'
     runs-on: self-hosted
     steps:
+      - name: Fix Git permissions
+        run: |
+          git config --global --add safe.directory ${{ github.workspace }}
+          git config --global core.autocrlf false
+        shell: pwsh
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -98,49 +142,76 @@ jobs:
             ${{ env.WORKING_DIRECTORY }}/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
+      - name: Verify working directory
+        run: |
+          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "Working directory will be: ${{ env.WORKING_DIRECTORY }}"
+          if (Test-Path "${{ env.WORKING_DIRECTORY }}") {
+            Write-Host "Working directory exists"
+            Get-ChildItem "${{ env.WORKING_DIRECTORY }}" | Select-Object Name
+          } else {
+            Write-Host "Working directory does not exist"
+            Get-ChildItem . | Select-Object Name
+          }
+        shell: pwsh
       - name: Build and test for PR
         run: mvn clean verify -Pcoverage
         working-directory: ${{ env.WORKING_DIRECTORY }}
+        shell: pwsh
       - name: SonarCloud PR Analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
         run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} \
-            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} \
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_SECRET }} \
-            -Dsonar.pullrequest.key=${{ github.event.number }} \
-            -Dsonar.pullrequest.branch=${{ github.head_ref }} \
-            -Dsonar.pullrequest.base=${{ github.base_ref }} \
+          mvn sonar:sonar `
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} `
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} `
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} `
+            -Dsonar.token=${{ secrets.SONAR_SECRET }} `
+            -Dsonar.pullrequest.key=${{ github.event.number }} `
+            -Dsonar.pullrequest.branch=${{ github.head_ref }} `
+            -Dsonar.pullrequest.base=${{ github.base_ref }} `
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
         working-directory: ${{ env.WORKING_DIRECTORY }}
+        shell: pwsh
 
   attestation:
-    name: Attest Analysis Results
+    name: Attest SonarCloud Analysis Results
     if: always() && (needs.sonar-main.result == 'success' || needs.sonar-branches.result == 'success' || needs.sonar-pr.result == 'success')
     runs-on: self-hosted
     needs: [sonar-main, sonar-branches, sonar-pr]
+    env:
+      ARTIFACTS_DIR: ./sonar-artifacts
+      REPORT_FILE: ./sonar-artifacts/analysis-report.txt
     steps:
-      - name: Checkout repository
+      - name: Configure Git Environment
+        run: |
+          git config --global --add safe.directory ${{ github.workspace }}
+          git config --global core.autocrlf false
+        shell: pwsh
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Create analysis artifacts
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Prepare Artifacts Directory
+        run: New-Item -ItemType Directory -Force -Path "${{ env.ARTIFACTS_DIR }}"
+        shell: pwsh
+      - name: Generate Analysis Report
         run: |
-          mkdir -p ./sonar-artifacts
-          {
-            echo "SonarCloud Analysis Report"
-            echo "=========================="
-            echo "Project: ${{ env.SONAR_PROJECT_KEY }}"
-            echo "Analysis Date: $(date -Iseconds)"
-            echo "SonarCloud URL: ${{ env.SONAR_HOST_URL }}"
-            echo "Organization: ${{ env.SONAR_ORGANIZATION }}"
-            echo "Workflow: ${{ github.workflow }}"
-            echo "Run ID: ${{ github.run_id }}"
-          } > ./sonar-artifacts/analysis-report.txt
-      - name: Generate build provenance attestation
+          $reportContent = @"
+          SonarCloud Analysis Report
+          ==========================
+          Project: ${{ env.SONAR_PROJECT_KEY }}
+          Analysis Date: $(Get-Date -Format "yyyy-MM-ddTHH:mm:ssK")
+          SonarCloud URL: ${{ env.SONAR_HOST_URL }}
+          Organization: ${{ env.SONAR_ORGANIZATION }}
+          Workflow: ${{ github.workflow }}
+          Run ID: ${{ github.run_id }}
+          "@
+          $reportContent | Out-File -FilePath "${{ env.REPORT_FILE }}" -Encoding UTF8
+        shell: pwsh
+      - name: Attest Build Provenance
         uses: actions/attest-build-provenance@v1
         with:
-          subject-path: './sonar-artifacts/*'
+          subject-path: '${{ env.ARTIFACTS_DIR }}/*'
