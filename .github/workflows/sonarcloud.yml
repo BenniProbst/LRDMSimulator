@@ -1,9 +1,7 @@
 name: SonarCloud Analysis Pipeline
 
 on:
-  workflow_run:
-    workflows: ["Maven Build Pipeline"]
-    types: [completed]
+  push:
     branches: [main, dev, 'feature/**']
   pull_request:
     branches: [main, dev]
@@ -19,30 +17,48 @@ env:
 jobs:
   sonar-main:
     name: SonarCloud Main Analysis
-    if: github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.conclusion == 'success'
     runs-on: self-hosted
     steps:
+      - name: Check if should run
+        id: should_run
+        run: |
+          if "%GITHUB_REF%" == "refs/heads/main" if "%GITHUB_EVENT_NAME%" == "push" (
+            echo run=true >> %GITHUB_OUTPUT%
+            echo This job will run for main branch push
+          ) else (
+            echo run=false >> %GITHUB_OUTPUT%
+            echo This job will be skipped - not main branch push
+          )
+        shell: cmd
       - name: Fix Git permissions
+        if: steps.should_run.outputs.run == 'true'
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
         shell: cmd
       - name: Checkout repository
+        if: steps.should_run.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: main-build-artifacts
-          path: target/
       - name: Set up JDK
+        if: steps.should_run.outputs.run == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
+      - name: Cache Maven dependencies
+        if: steps.should_run.outputs.run == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            .m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
       - name: Verify project structure
+        if: steps.should_run.outputs.run == 'true'
         run: |
           echo === Project Structure Debug ===
           echo Current directory: %CD%
@@ -53,18 +69,14 @@ jobs:
           echo.
           echo === Test files ===
           if exist tests dir tests /s /b *.java
-          echo.
-          echo === Target directory ===
-          if exist target dir target
-          echo.
-          echo === Coverage files ===
-          if exist target\site\jacoco dir target\site\jacoco
         shell: cmd
-      - name: Rebuild for SonarCloud
-        run: mvn clean compile test-compile -Pcoverage
+      - name: Build with coverage for SonarCloud
+        if: steps.should_run.outputs.run == 'true'
+        run: mvn clean verify -Pcoverage
         working-directory: ${{ env.WORKING_DIRECTORY }}
         shell: cmd
       - name: SonarCloud Analysis
+        if: steps.should_run.outputs.run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
@@ -88,25 +100,51 @@ jobs:
 
   sonar-branches:
     name: SonarCloud Branch Analysis
-    if: (github.event.workflow_run.head_branch == 'dev' || startsWith(github.event.workflow_run.head_branch, 'feature/')) && github.event.workflow_run.conclusion == 'success'
     runs-on: self-hosted
     steps:
+      - name: Check if should run
+        id: should_run
+        run: |
+          if "%GITHUB_REF%" == "refs/heads/dev" if "%GITHUB_EVENT_NAME%" == "push" (
+            echo run=true >> %GITHUB_OUTPUT%
+            echo This job will run for dev branch push
+          ) else if "%GITHUB_REF:~0,20%" == "refs/heads/feature/" if "%GITHUB_EVENT_NAME%" == "push" (
+            echo run=true >> %GITHUB_OUTPUT%
+            echo This job will run for feature branch push
+          ) else (
+            echo run=false >> %GITHUB_OUTPUT%
+            echo This job will be skipped - not dev or feature branch push
+          )
+        shell: cmd
       - name: Fix Git permissions
+        if: steps.should_run.outputs.run == 'true'
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
         shell: cmd
       - name: Checkout repository
+        if: steps.should_run.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up JDK
+        if: steps.should_run.outputs.run == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
+      - name: Cache Maven dependencies
+        if: steps.should_run.outputs.run == 'true'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            .m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
       - name: Verify project structure
+        if: steps.should_run.outputs.run == 'true'
         run: |
           echo === Project Structure Debug ===
           echo Current directory: %CD%
@@ -119,10 +157,12 @@ jobs:
           if exist tests dir tests /s /b *.java
         shell: cmd
       - name: Build for SonarCloud
+        if: steps.should_run.outputs.run == 'true'
         run: mvn clean compile test-compile
         working-directory: ${{ env.WORKING_DIRECTORY }}
         shell: cmd
       - name: SonarCloud Analysis
+        if: steps.should_run.outputs.run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
@@ -138,6 +178,7 @@ jobs:
             -Dsonar.java.target=17 ^
             -Dsonar.java.binaries=target/classes ^
             -Dsonar.java.test.binaries=target/test-classes ^
+            -Dsonar.branch.name=${{ github.ref_name }} ^
             -DskipTests=true ^
             -Dsonar.verbose=true
         working-directory: ${{ env.WORKING_DIRECTORY }}
@@ -145,25 +186,39 @@ jobs:
 
   sonar-pr:
     name: SonarCloud PR Analysis
-    if: github.event_name == 'pull_request'
     runs-on: self-hosted
     steps:
+      - name: Check if should run
+        id: should_run
+        run: |
+          if "%GITHUB_EVENT_NAME%" == "pull_request" (
+            echo run=true >> %GITHUB_OUTPUT%
+            echo This job will run for pull request
+          ) else (
+            echo run=false >> %GITHUB_OUTPUT%
+            echo This job will be skipped - not a pull request
+          )
+        shell: cmd
       - name: Fix Git permissions
+        if: steps.should_run.outputs.run == 'true'
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
         shell: cmd
       - name: Checkout repository
+        if: steps.should_run.outputs.run == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up JDK
+        if: steps.should_run.outputs.run == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
           java-version: ${{ env.JAVA_VERSION }}
       - name: Cache Maven dependencies
+        if: steps.should_run.outputs.run == 'true'
         uses: actions/cache@v4
         with:
           path: |
@@ -172,6 +227,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
       - name: Verify project structure
+        if: steps.should_run.outputs.run == 'true'
         run: |
           echo === Project Structure Debug ===
           echo Current directory: %CD%
@@ -184,10 +240,12 @@ jobs:
           if exist tests dir tests /s /b *.java
         shell: cmd
       - name: Build and test for PR
+        if: steps.should_run.outputs.run == 'true'
         run: mvn clean verify -Pcoverage
         working-directory: ${{ env.WORKING_DIRECTORY }}
         shell: cmd
       - name: SonarCloud PR Analysis
+        if: steps.should_run.outputs.run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
@@ -214,9 +272,9 @@ jobs:
 
   attestation:
     name: Attest SonarCloud Analysis Results
-    if: always() && (needs.sonar-main.result == 'success' || needs.sonar-branches.result == 'success' || needs.sonar-pr.result == 'success')
     runs-on: self-hosted
     needs: [sonar-main, sonar-branches, sonar-pr]
+    if: always()
     env:
       ARTIFACTS_DIR: ./sonar-artifacts
       REPORT_FILE: ./sonar-artifacts/analysis-report.txt
@@ -244,8 +302,14 @@ jobs:
           echo Organization: ${{ env.SONAR_ORGANIZATION }} >> "${{ env.REPORT_FILE }}"
           echo Workflow: ${{ github.workflow }} >> "${{ env.REPORT_FILE }}"
           echo Run ID: ${{ github.run_id }} >> "${{ env.REPORT_FILE }}"
+          echo. >> "${{ env.REPORT_FILE }}"
+          echo Job Results: >> "${{ env.REPORT_FILE }}"
+          echo - Main Analysis: ${{ needs.sonar-main.result }} >> "${{ env.REPORT_FILE }}"
+          echo - Branch Analysis: ${{ needs.sonar-branches.result }} >> "${{ env.REPORT_FILE }}"
+          echo - PR Analysis: ${{ needs.sonar-pr.result }} >> "${{ env.REPORT_FILE }}"
         shell: cmd
       - name: Attest Build Provenance
+        if: needs.sonar-main.result == 'success' || needs.sonar-branches.result == 'success' || needs.sonar-pr.result == 'success'
         uses: actions/attest-build-provenance@v1
         with:
           subject-path: '${{ env.ARTIFACTS_DIR }}/*'
