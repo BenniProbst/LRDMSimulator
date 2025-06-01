@@ -1,31 +1,128 @@
-# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
-
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-name: Java CI with Maven
+name: Maven Build Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main, dev, 'feature/**']
   pull_request:
-    branches: [ "main" ]
+    branches: [main, dev]
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+  MAVEN_OPTS: '-Dmaven.repo.local=.m2/repository'
+  WORKING_DIRECTORY: 'LRDMSimulator'
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  build-main:
+    name: Build Main Branch
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up JDK 17
-      uses: actions/setup-java@v3
-      with:
-        java-version: '17'
-        distribution: 'temurin'
-        cache: maven
-    - name: Build with Maven
-      run: mvn -B verify --file pom.xml
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ${{ env.WORKING_DIRECTORY }}/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+      - name: Build with coverage
+        run: mvn clean verify -Pcoverage
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: main-build-artifacts
+          path: ${{ env.WORKING_DIRECTORY }}/target/
+
+  build-dev:
+    name: Build Dev Branch
+    if: github.ref == 'refs/heads/dev'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ${{ env.WORKING_DIRECTORY }}/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+      - name: Build without tests
+        run: mvn clean compile test-compile -DskipTests=true
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+  build-feature:
+    name: Build Feature Branch
+    if: startsWith(github.ref, 'refs/heads/feature/')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ${{ env.WORKING_DIRECTORY }}/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+      - name: Lightweight build
+        run: mvn clean compile -DskipTests=true
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+  build-pr:
+    name: Build Pull Request
+    if: github.event_name == 'pull_request'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ${{ env.WORKING_DIRECTORY }}/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+      - name: Build and test PR
+        run: mvn clean verify -Pcoverage
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+      - name: Upload PR artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-build-artifacts
+          path: ${{ env.WORKING_DIRECTORY }}/target/
