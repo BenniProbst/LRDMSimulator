@@ -1,83 +1,145 @@
-name: SonarCloud Branch-specific CI
+name: SonarCloud Analysis Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - dev
-      - 'feature/**'
+    branches: [main, dev, 'feature/**']
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [main, dev]
+
+env:
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+  MAVEN_OPTS: '-Dmaven.repo.local=.m2/repository'
+  SONAR_PROJECT_KEY: 'BenniProbst_LRDMSimulator'
+  SONAR_ORGANIZATION: 'benniprobst'
+  SONAR_HOST_URL: 'https://sonarcloud.io'
+  WORKING_DIRECTORY: 'LRDMSimulator'
 
 jobs:
-  sonar-main:
-    name: SonarCloud Full (main)
-    if: github.ref == 'refs/heads/main'
+  sonar-analysis:
+    name: SonarCloud Analysis
     runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-      - name: Build (Full)
-        run: mvn clean verify -DskipTests=false
-        working-directory: LRDMSimulator
-      - name: Analyze (Full)
-        env:
-          SONAR_SECRET: ${{ secrets.SONAR_SECRET }}
-        run: mvn sonar:sonar \
-          -Dsonar.projectKey=BenniProbst_LRDMSimulator \
-          -Dsonar.organization=benniprobst \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.login=${{ secrets.SONAR_SECRET }}
-        working-directory: LRDMSimulator
+    strategy:
+      matrix:
+        include:
+          - branch: main
+            condition: github.ref == 'refs/heads/main'
+            build_profile: 'coverage'
+            maven_goals: 'clean verify'
+            description: 'Full analysis with coverage'
+            skip_tests: false
+          - branch: dev
+            condition: github.ref == 'refs/heads/dev'
+            build_profile: 'default'
+            maven_goals: 'clean compile test-compile'
+            description: 'Dev analysis without GUI tests'
+            skip_tests: true
+          - branch: feature
+            condition: startsWith(github.ref, 'refs/heads/feature/')
+            build_profile: 'default'
+            maven_goals: 'clean compile'
+            description: 'Lightweight feature analysis'
+            skip_tests: true
 
-  sonar-dev:
-    name: SonarCloud Dev (no GUI)
-    if: github.ref == 'refs/heads/dev'
-    runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK
-        uses: actions/setup-java@v4
+      - name: Checkout repository
+        if: matrix.condition
+        uses: actions/checkout@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-      - name: Build (No GUI Tests)
-        run: mvn clean verify -DskipTests=true
-        working-directory: LRDMSimulator
-      - name: Analyze (Partial)
-        env:
-          SONAR_SECRET: ${{ secrets.SONAR_SECRET }}
-        run: mvn sonar:sonar \
-          -Dsonar.projectKey=BenniProbst_LRDMSimulator \
-          -Dsonar.organization=benniprobst \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.login=${{ secrets.SONAR_SECRET }}
-        working-directory: LRDMSimulator
+          fetch-depth: 0
 
-  sonar-feature:
-    name: SonarCloud Feature Branch (fast)
-    if: startsWith(github.ref, 'refs/heads/feature/')
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up JDK
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        if: matrix.condition
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-      - name: Lightweight Scan (no build)
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Maven dependencies
+        if: matrix.condition
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ${{ env.WORKING_DIRECTORY }}/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build project (${{ matrix.description }})
+        if: matrix.condition && matrix.branch != 'feature'
+        run: |
+          if [ "${{ matrix.build_profile }}" = "coverage" ]; then
+            mvn ${{ matrix.maven_goals }} -Pcoverage
+          else
+            mvn ${{ matrix.maven_goals }} ${{ matrix.skip_tests && '-DskipTests=true' || '' }}
+          fi
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: SonarCloud Scan (${{ matrix.branch }})
+        if: matrix.condition
         env:
-          SONAR_SECRET: ${{ secrets.SONAR_SECRET }}
-        run: mvn sonar:sonar \
-          -Dsonar.projectKey=BenniProbst_LRDMSimulator \
-          -Dsonar.organization=benniprobst \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.login=${{ secrets.SONAR_SECRET }} \
-          -DskipTests=true
-        working-directory: LRDMSimulator
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
+        run: |
+          SONAR_ARGS="-Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} \
+                      -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} \
+                      -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
+                      -Dsonar.token=${{ secrets.SONAR_SECRET }}"
+          
+          if [ "${{ matrix.skip_tests }}" = "true" ]; then
+            SONAR_ARGS="$SONAR_ARGS -DskipTests=true"
+          fi
+          
+          if [ "${{ matrix.build_profile }}" = "coverage" ]; then
+            SONAR_ARGS="$SONAR_ARGS -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml"
+          fi
+          
+          mvn sonar:sonar $SONAR_ARGS
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+  sonar-pr:
+    name: SonarCloud PR Analysis
+    if: github.event_name == 'pull_request'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository
+            ${{ env.WORKING_DIRECTORY }}/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build and test for PR
+        run: mvn clean verify -Pcoverage
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+
+      - name: SonarCloud PR Analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
+        run: |
+          mvn sonar:sonar \
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_SECRET }} \
+            -Dsonar.pullrequest.key=${{ github.event.number }} \
+            -Dsonar.pullrequest.branch=${{ github.head_ref }} \
+            -Dsonar.pullrequest.base=${{ github.base_ref }} \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
+        working-directory: ${{ env.WORKING_DIRECTORY }}
