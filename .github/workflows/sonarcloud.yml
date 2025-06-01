@@ -14,7 +14,7 @@ env:
   SONAR_PROJECT_KEY: 'BenniProbst_LRDMSimulator'
   SONAR_ORGANIZATION: 'benniprobst'
   SONAR_HOST_URL: 'https://sonarcloud.io'
-  WORKING_DIRECTORY: 'LRDMSimulator'
+  WORKING_DIRECTORY: '.'
 
 jobs:
   sonar-main:
@@ -26,7 +26,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
-        shell: pwsh
+        shell: cmd
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -36,7 +36,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: main-build-artifacts
-          path: ${{ env.WORKING_DIRECTORY }}/target/
+          path: target/
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -44,29 +44,28 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
       - name: Verify working directory
         run: |
-          Write-Host "Current directory: $(Get-Location)"
-          Write-Host "Working directory will be: ${{ env.WORKING_DIRECTORY }}"
-          if (Test-Path "${{ env.WORKING_DIRECTORY }}") {
-            Write-Host "Working directory exists"
-            Get-ChildItem "${{ env.WORKING_DIRECTORY }}" | Select-Object Name
-          } else {
-            Write-Host "Working directory does not exist"
-            Get-ChildItem . | Select-Object Name
-          }
-        shell: pwsh
+          echo Current directory: %CD%
+          echo Working directory will be: ${{ env.WORKING_DIRECTORY }}
+          if exist pom.xml (
+            echo Maven project found in current directory
+          ) else (
+            echo No Maven project found in current directory
+            dir
+          )
+        shell: cmd
       - name: SonarCloud Analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
         run: |
-          mvn sonar:sonar `
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} `
-            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} `
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} `
-            -Dsonar.token=${{ secrets.SONAR_SECRET }} `
+          mvn sonar:sonar ^
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} ^
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} ^
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} ^
+            -Dsonar.token=${{ secrets.SONAR_SECRET }} ^
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
         working-directory: ${{ env.WORKING_DIRECTORY }}
-        shell: pwsh
+        shell: cmd
 
   sonar-branches:
     name: SonarCloud Branch Analysis
@@ -77,7 +76,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
-        shell: pwsh
+        shell: cmd
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -90,29 +89,28 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
       - name: Verify working directory
         run: |
-          Write-Host "Current directory: $(Get-Location)"
-          Write-Host "Working directory will be: ${{ env.WORKING_DIRECTORY }}"
-          if (Test-Path "${{ env.WORKING_DIRECTORY }}") {
-            Write-Host "Working directory exists"
-            Get-ChildItem "${{ env.WORKING_DIRECTORY }}" | Select-Object Name
-          } else {
-            Write-Host "Working directory does not exist"
-            Get-ChildItem . | Select-Object Name
-          }
-        shell: pwsh
+          echo Current directory: %CD%
+          echo Working directory will be: ${{ env.WORKING_DIRECTORY }}
+          if exist pom.xml (
+            echo Maven project found in current directory
+          ) else (
+            echo No Maven project found in current directory
+            dir
+          )
+        shell: cmd
       - name: SonarCloud Analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
         run: |
-          mvn sonar:sonar `
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} `
-            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} `
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} `
-            -Dsonar.token=${{ secrets.SONAR_SECRET }} `
+          mvn sonar:sonar ^
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} ^
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} ^
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} ^
+            -Dsonar.token=${{ secrets.SONAR_SECRET }} ^
             -DskipTests=true
         working-directory: ${{ env.WORKING_DIRECTORY }}
-        shell: pwsh
+        shell: cmd
 
   sonar-pr:
     name: SonarCloud PR Analysis
@@ -123,7 +121,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
-        shell: pwsh
+        shell: cmd
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -139,41 +137,40 @@ jobs:
         with:
           path: |
             ~/.m2/repository
-            ${{ env.WORKING_DIRECTORY }}/.m2/repository
+            .m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
       - name: Verify working directory
         run: |
-          Write-Host "Current directory: $(Get-Location)"
-          Write-Host "Working directory will be: ${{ env.WORKING_DIRECTORY }}"
-          if (Test-Path "${{ env.WORKING_DIRECTORY }}") {
-            Write-Host "Working directory exists"
-            Get-ChildItem "${{ env.WORKING_DIRECTORY }}" | Select-Object Name
-          } else {
-            Write-Host "Working directory does not exist"
-            Get-ChildItem . | Select-Object Name
-          }
-        shell: pwsh
+          echo Current directory: %CD%
+          echo Working directory will be: ${{ env.WORKING_DIRECTORY }}
+          if exist pom.xml (
+            echo Maven project found in current directory
+          ) else (
+            echo No Maven project found in current directory
+            dir
+          )
+        shell: cmd
       - name: Build and test for PR
         run: mvn clean verify -Pcoverage
         working-directory: ${{ env.WORKING_DIRECTORY }}
-        shell: pwsh
+        shell: cmd
       - name: SonarCloud PR Analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
         run: |
-          mvn sonar:sonar `
-            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} `
-            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} `
-            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} `
-            -Dsonar.token=${{ secrets.SONAR_SECRET }} `
-            -Dsonar.pullrequest.key=${{ github.event.number }} `
-            -Dsonar.pullrequest.branch=${{ github.head_ref }} `
-            -Dsonar.pullrequest.base=${{ github.base_ref }} `
+          mvn sonar:sonar ^
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} ^
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} ^
+            -Dsonar.host.url=${{ env.SONAR_HOST_URL }} ^
+            -Dsonar.token=${{ secrets.SONAR_SECRET }} ^
+            -Dsonar.pullrequest.key=${{ github.event.number }} ^
+            -Dsonar.pullrequest.branch=${{ github.head_ref }} ^
+            -Dsonar.pullrequest.base=${{ github.base_ref }} ^
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
         working-directory: ${{ env.WORKING_DIRECTORY }}
-        shell: pwsh
+        shell: cmd
 
   attestation:
     name: Attest SonarCloud Analysis Results
@@ -188,29 +185,26 @@ jobs:
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
-        shell: pwsh
+        shell: cmd
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Prepare Artifacts Directory
-        run: New-Item -ItemType Directory -Force -Path "${{ env.ARTIFACTS_DIR }}"
-        shell: pwsh
+        run: if not exist "${{ env.ARTIFACTS_DIR }}" mkdir "${{ env.ARTIFACTS_DIR }}"
+        shell: cmd
       - name: Generate Analysis Report
         run: |
-          $reportContent = @"
-          SonarCloud Analysis Report
-          ==========================
-          Project: ${{ env.SONAR_PROJECT_KEY }}
-          Analysis Date: $(Get-Date -Format "yyyy-MM-ddTHH:mm:ssK")
-          SonarCloud URL: ${{ env.SONAR_HOST_URL }}
-          Organization: ${{ env.SONAR_ORGANIZATION }}
-          Workflow: ${{ github.workflow }}
-          Run ID: ${{ github.run_id }}
-          "@
-          $reportContent | Out-File -FilePath "${{ env.REPORT_FILE }}" -Encoding UTF8
-        shell: pwsh
+          echo SonarCloud Analysis Report > "${{ env.REPORT_FILE }}"
+          echo ========================== >> "${{ env.REPORT_FILE }}"
+          echo Project: ${{ env.SONAR_PROJECT_KEY }} >> "${{ env.REPORT_FILE }}"
+          echo Analysis Date: %DATE% %TIME% >> "${{ env.REPORT_FILE }}"
+          echo SonarCloud URL: ${{ env.SONAR_HOST_URL }} >> "${{ env.REPORT_FILE }}"
+          echo Organization: ${{ env.SONAR_ORGANIZATION }} >> "${{ env.REPORT_FILE }}"
+          echo Workflow: ${{ github.workflow }} >> "${{ env.REPORT_FILE }}"
+          echo Run ID: ${{ github.run_id }} >> "${{ env.REPORT_FILE }}"
+        shell: cmd
       - name: Attest Build Provenance
         uses: actions/attest-build-provenance@v1
         with:

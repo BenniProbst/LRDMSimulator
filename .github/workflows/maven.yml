@@ -27,31 +27,38 @@ jobs:
       - name: Detect project structure
         id: detect
         run: |
-          if (Test-Path "pom.xml") {
-            echo "working-directory=." >> $env:GITHUB_OUTPUT
-            Write-Host "Maven project found in root directory"
-          } elseif (Test-Path "LRDMSimulator/pom.xml") {
-            echo "working-directory=LRDMSimulator" >> $env:GITHUB_OUTPUT
-            Write-Host "Maven project found in LRDMSimulator subdirectory"
-          } else {
-            Write-Error "No Maven project found"
-            exit 1
-          }
-        shell: pwsh
+          if exist "pom.xml" (
+            echo working-directory=. >> %GITHUB_OUTPUT%
+            echo Maven project found in root directory
+          ) else if exist "LRDMSimulator\pom.xml" (
+            echo working-directory=LRDMSimulator >> %GITHUB_OUTPUT%
+            echo Maven project found in LRDMSimulator subdirectory
+          ) else (
+            echo No Maven project found
+            exit /b 1
+          )
+        shell: cmd
       - name: Extract Java version from POM
         id: extract-java
         run: |
-          $pomPath = if (Test-Path "pom.xml") { "pom.xml" } else { "LRDMSimulator/pom.xml" }
-          $pomContent = Get-Content $pomPath -Raw
-          if ($pomContent -match '<maven\.compiler\.source>(\d+)</maven\.compiler\.source>') {
-            $javaVersion = $Matches[1]
-            echo "java-version=$javaVersion" >> $env:GITHUB_OUTPUT
-            Write-Host "Extracted Java version: $javaVersion from POM"
-          } else {
-            echo "java-version=${{ env.JAVA_VERSION }}" >> $env:GITHUB_OUTPUT
-            Write-Host "Using default Java version: ${{ env.JAVA_VERSION }}"
-          }
-        shell: pwsh
+          if exist "pom.xml" (
+            set POM_PATH=pom.xml
+          ) else (
+            set POM_PATH=LRDMSimulator\pom.xml
+          )
+          findstr "maven.compiler.source" %POM_PATH% > temp_version.txt
+          for /f "tokens=2 delims=<>" %%i in (temp_version.txt) do (
+            echo java-version=%%i >> %GITHUB_OUTPUT%
+            echo Extracted Java version: %%i from POM
+            goto :found
+          )
+          :found
+          if exist temp_version.txt del temp_version.txt
+          if not defined JAVA_VERSION (
+            echo java-version=${{ env.JAVA_VERSION }} >> %GITHUB_OUTPUT%
+            echo Using default Java version: ${{ env.JAVA_VERSION }}
+          )
+        shell: cmd
 
   build-main:
     name: Build Main Branch
@@ -63,7 +70,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
-        shell: pwsh
+        shell: cmd
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -85,6 +92,7 @@ jobs:
       - name: Build with coverage
         run: mvn clean verify -Pcoverage
         working-directory: ${{ needs.setup.outputs.working-directory }}
+        shell: cmd
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -101,7 +109,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
-        shell: pwsh
+        shell: cmd
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -123,6 +131,7 @@ jobs:
       - name: Build without tests
         run: mvn clean compile test-compile -DskipTests=true
         working-directory: ${{ needs.setup.outputs.working-directory }}
+        shell: cmd
 
   build-feature:
     name: Build Feature Branch
@@ -134,7 +143,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
-        shell: pwsh
+        shell: cmd
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -156,6 +165,7 @@ jobs:
       - name: Lightweight build
         run: mvn clean compile -DskipTests=true
         working-directory: ${{ needs.setup.outputs.working-directory }}
+        shell: cmd
 
   build-pr:
     name: Build Pull Request
@@ -167,7 +177,7 @@ jobs:
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
-        shell: pwsh
+        shell: cmd
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -189,6 +199,7 @@ jobs:
       - name: Build and test PR
         run: mvn clean verify -Pcoverage
         working-directory: ${{ needs.setup.outputs.working-directory }}
+        shell: cmd
       - name: Upload PR artifacts
         uses: actions/upload-artifact@v4
         with:
