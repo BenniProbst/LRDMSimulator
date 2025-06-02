@@ -12,13 +12,16 @@ env:
   MAVEN_OPTS: '-Dmaven.repo.local=.m2/repository'
 
 jobs:
-  setup:
-    name: Determine Project Structure
+  build:
+    name: Build and Test
     runs-on: self-hosted
-    outputs:
-      working-directory: ${{ steps.detect.outputs.working-directory }}
-      java-version: ${{ steps.extract-java.outputs.java-version }}
     steps:
+      - name: Fix Git permissions
+        run: |
+          git config --global --add safe.directory ${{ github.workspace }}
+          git config --global core.autocrlf false
+        shell: cmd
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -29,10 +32,10 @@ jobs:
         id: detect
         run: |
           if exist "pom.xml" (
-            echo working-directory=. >> %GITHUB_OUTPUT%
+            echo WORKING_DIR=. >> %GITHUB_ENV%
             echo Maven project found in root directory
           ) else if exist "LRDMSimulator\pom.xml" (
-            echo working-directory=LRDMSimulator >> %GITHUB_OUTPUT%
+            echo WORKING_DIR=LRDMSimulator >> %GITHUB_ENV%
             echo Maven project found in LRDMSimulator subdirectory
           ) else (
             echo No Maven project found
@@ -40,232 +43,52 @@ jobs:
           )
         shell: cmd
 
-      - name: Extract Java version from POM
-        id: extract-java
-        run: |
-          if exist "pom.xml" (
-            set POM_PATH=pom.xml
-          ) else (
-            set POM_PATH=LRDMSimulator\pom.xml
-          )
-          
-          REM Extract the actual version number from maven.compiler.source
-          for /f "tokens=1,2 delims=<>" %%i in ('findstr "maven.compiler.source" %POM_PATH%') do (
-            if "%%i"=="" (
-              set EXTRACTED_VERSION=%%j
-              goto :version_found
-            )
-          )
-          
-          :version_found
-          if defined EXTRACTED_VERSION (
-            echo java-version=%EXTRACTED_VERSION% >> %GITHUB_OUTPUT%
-            echo Extracted Java version: %EXTRACTED_VERSION% from POM
-          ) else (
-            echo java-version=%JAVA_VERSION% >> %GITHUB_OUTPUT%
-            echo Using default Java version: %JAVA_VERSION%
-          )
-        shell: cmd
-        env:
-          JAVA_VERSION: ${{ env.JAVA_VERSION }}
-
-  build-main:
-    name: Build Main Branch
-    if: github.ref == 'refs/heads/main'
-    runs-on: self-hosted
-    needs: setup
-    steps:
-      - name: Fix Git permissions
-        run: |
-          git config --global --add safe.directory ${{ github.workspace }}
-          git config --global core.autocrlf false
-        shell: cmd
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ needs.setup.outputs.java-version }}
+          java-version: ${{ env.JAVA_VERSION }}
 
       - name: Cache Maven dependencies
         uses: actions/cache@v4
         with:
           path: |
             %USERPROFILE%\.m2\repository
-            ${{ needs.setup.outputs.working-directory }}\.m2\repository
+            ${{ env.WORKING_DIR }}\.m2\repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
-      - name: Build with coverage
-        run: mvn clean verify -Pcoverage
-        working-directory: ${{ needs.setup.outputs.working-directory }}
+      - name: Build and test with coverage
+        run: mvn clean verify -Pcoverage -Djava.awt.headless=true
+        working-directory: ${{ env.WORKING_DIR }}
         shell: cmd
+        env:
+          JAVA_OPTS: "-Djava.awt.headless=true"
+
+      - name: Check test results
+        run: |
+          echo === Build Information ===
+          echo Branch/PR: ${{ github.ref }}
+          echo Event: ${{ github.event_name }}
+          echo === Test Reports ===
+          if exist "${{ env.WORKING_DIR }}\target\surefire-reports" (
+            dir "${{ env.WORKING_DIR }}\target\surefire-reports" /b
+            echo.
+            echo === Test Summary ===
+            findstr /c:"Tests run:" "${{ env.WORKING_DIR }}\target\surefire-reports\*.txt" 2>nul || echo No test summary found
+          ) else (
+            echo No test reports found!
+          )
+        shell: cmd
+        if: always()
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: main-build-artifacts
-          path: ${{ needs.setup.outputs.working-directory }}/target/
-        if: always()
-
-  build-dev:
-    name: Build Dev Branch
-    if: github.ref == 'refs/heads/dev'
-    runs-on: self-hosted
-    needs: setup
-    steps:
-      - name: Fix Git permissions
-        run: |
-          git config --global --add safe.directory ${{ github.workspace }}
-          git config --global core.autocrlf false
-        shell: cmd
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ needs.setup.outputs.java-version }}
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
+          name: build-artifacts-${{ github.run_id }}
           path: |
-            %USERPROFILE%\.m2\repository
-            ${{ needs.setup.outputs.working-directory }}\.m2\repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      # GEÄNDERT: Vollständiger Build mit Tests für Dev Branch
-      - name: Build and test dev branch
-        run: mvn clean verify -Pcoverage
-        working-directory: ${{ needs.setup.outputs.working-directory }}
-        shell: cmd
-
-      - name: Upload dev artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dev-build-artifacts
-          path: ${{ needs.setup.outputs.working-directory }}/target/
-        if: always()
-
-  build-feature:
-    name: Build Feature Branch
-    if: startsWith(github.ref, 'refs/heads/feature/')
-    runs-on: self-hosted
-    needs: setup
-    steps:
-      - name: Fix Git permissions
-        run: |
-          git config --global --add safe.directory ${{ github.workspace }}
-          git config --global core.autocrlf false
-        shell: cmd
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ needs.setup.outputs.java-version }}
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            %USERPROFILE%\.m2\repository
-            ${{ needs.setup.outputs.working-directory }}\.m2\repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      # GEÄNDERT: Vollständiger Build mit Tests für Feature Branches
-      - name: Build and test feature branch
-        run: mvn clean verify -Pcoverage
-        working-directory: ${{ needs.setup.outputs.working-directory }}
-        shell: cmd
-
-      - name: Upload feature artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: feature-build-artifacts
-          path: ${{ needs.setup.outputs.working-directory }}/target/
-        if: always()
-
-  build-pr:
-    name: Build Pull Request
-    if: github.event_name == 'pull_request'
-    runs-on: self-hosted
-    needs: setup
-    steps:
-      - name: Fix Git permissions
-        run: |
-          git config --global --add safe.directory ${{ github.workspace }}
-          git config --global core.autocrlf false
-        shell: cmd
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ needs.setup.outputs.java-version }}
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            %USERPROFILE%\.m2\repository
-            ${{ needs.setup.outputs.working-directory }}\.m2\repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: Build and test PR
-        run: mvn clean verify -Pcoverage
-        working-directory: ${{ needs.setup.outputs.working-directory }}
-        shell: cmd
-
-      - name: Debug - Check test results
-        run: |
-          echo === Test Classes Found ===
-          if exist "${{ needs.setup.outputs.working-directory }}\tests\org\lrdm" (
-            dir "${{ needs.setup.outputs.working-directory }}\tests\org\lrdm\*.java" /b
-          )
-          echo === Test Reports ===
-          if exist "${{ needs.setup.outputs.working-directory }}\target\surefire-reports" (
-            dir "${{ needs.setup.outputs.working-directory }}\target\surefire-reports" /b
-          ) else (
-            echo No test reports found!
-          )
-          echo === Target Directory ===
-          if exist "${{ needs.setup.outputs.working-directory }}\target" (
-            dir "${{ needs.setup.outputs.working-directory }}\target" /b
-          )
-        shell: cmd
-
-      - name: Upload PR artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr-build-artifacts
-          path: ${{ needs.setup.outputs.working-directory }}/target/
+            ${{ env.WORKING_DIR }}/target/
+            ${{ env.WORKING_DIR }}/target/surefire-reports/
+            ${{ env.WORKING_DIR }}/target/site/jacoco/
           if-no-files-found: warn
         if: always()
