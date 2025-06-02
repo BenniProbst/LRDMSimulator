@@ -20,6 +20,8 @@ jobs:
     outputs:
       working-directory: ${{ steps.detect.outputs.working-directory }}
       java-version: ${{ steps.extract-java.outputs.java-version }}
+      sources-path: ${{ steps.detect.outputs.sources-path }}
+      tests-path: ${{ steps.detect.outputs.tests-path }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -32,9 +34,13 @@ jobs:
         run: |
           if exist "pom.xml" (
             echo working-directory=. >> %GITHUB_OUTPUT%
+            echo sources-path=src >> %GITHUB_OUTPUT%
+            echo tests-path=tests >> %GITHUB_OUTPUT%
             echo Maven project found in root directory
           ) else if exist "LRDMSimulator\pom.xml" (
             echo working-directory=LRDMSimulator >> %GITHUB_OUTPUT%
+            echo sources-path=LRDMSimulator/src >> %GITHUB_OUTPUT%
+            echo tests-path=LRDMSimulator/tests >> %GITHUB_OUTPUT%
             echo Maven project found in LRDMSimulator subdirectory
           ) else (
             echo No Maven project found
@@ -109,18 +115,31 @@ jobs:
         working-directory: ${{ needs.setup-sonar.outputs.working-directory }}
         shell: cmd
 
-      - name: Debug - Check coverage reports
+      - name: Debug - Check source and test paths
         run: |
+          echo === Project Structure ===
+          echo Working Directory: ${{ needs.setup-sonar.outputs.working-directory }}
+          echo Sources Path: ${{ needs.setup-sonar.outputs.sources-path }}
+          echo Tests Path: ${{ needs.setup-sonar.outputs.tests-path }}
+          echo === Source Directory ===
+          if exist "${{ needs.setup-sonar.outputs.sources-path }}" (
+            echo Source directory exists
+            dir "${{ needs.setup-sonar.outputs.sources-path }}" /s /b | findstr "\.java$"
+          ) else (
+            echo Source directory does not exist!
+          )
+          echo === Test Directory ===
+          if exist "${{ needs.setup-sonar.outputs.tests-path }}" (
+            echo Test directory exists
+            dir "${{ needs.setup-sonar.outputs.tests-path }}" /s /b | findstr "\.java$"
+          ) else (
+            echo Test directory does not exist!
+          )
+          echo === Coverage Reports ===
           if exist "${{ needs.setup-sonar.outputs.working-directory }}\target\site\jacoco\jacoco.xml" (
             echo JaCoCo XML report found
           ) else (
             echo JaCoCo XML report NOT found
-          )
-          if exist "${{ needs.setup-sonar.outputs.working-directory }}\target\surefire-reports" (
-            echo Surefire reports found
-            dir "${{ needs.setup-sonar.outputs.working-directory }}\target\surefire-reports" /b
-          ) else (
-            echo Surefire reports NOT found
           )
         shell: cmd
 
@@ -134,8 +153,8 @@ jobs:
             -Dsonar.organization=%SONAR_ORGANIZATION% ^
             -Dsonar.host.url=%SONAR_HOST_URL% ^
             -Dsonar.token=%SONAR_TOKEN% ^
-            -Dsonar.sources=src ^
-            -Dsonar.tests=tests ^
+            -Dsonar.sources=${{ needs.setup-sonar.outputs.sources-path }} ^
+            -Dsonar.tests=${{ needs.setup-sonar.outputs.tests-path }} ^
             -Dsonar.java.source=17 ^
             -Dsonar.java.target=17 ^
             -Dsonar.java.binaries=target/classes ^
@@ -199,8 +218,8 @@ jobs:
             -Dsonar.organization=%SONAR_ORGANIZATION% ^
             -Dsonar.host.url=%SONAR_HOST_URL% ^
             -Dsonar.token=%SONAR_TOKEN% ^
-            -Dsonar.sources=src ^
-            -Dsonar.tests=tests ^
+            -Dsonar.sources=${{ needs.setup-sonar.outputs.sources-path }} ^
+            -Dsonar.tests=${{ needs.setup-sonar.outputs.tests-path }} ^
             -Dsonar.java.source=17 ^
             -Dsonar.java.target=17 ^
             -Dsonar.java.binaries=target/classes ^

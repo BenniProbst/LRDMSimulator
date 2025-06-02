@@ -147,7 +147,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
-      # GEÄNDERT: Tests werden jetzt auch für Dev Branch ausgeführt
+      # GEÄNDERT: Vollständiger Build mit Tests für Dev Branch
       - name: Build and test dev branch
         run: mvn clean verify -Pcoverage
         working-directory: ${{ needs.setup.outputs.working-directory }}
@@ -193,7 +193,7 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
-      # GEÄNDERT: Auch für Feature Branches werden Tests ausgeführt
+      # GEÄNDERT: Vollständiger Build mit Tests für Feature Branches
       - name: Build and test feature branch
         run: mvn clean verify -Pcoverage
         working-directory: ${{ needs.setup.outputs.working-directory }}
@@ -244,21 +244,21 @@ jobs:
         working-directory: ${{ needs.setup.outputs.working-directory }}
         shell: cmd
 
-      - name: Debug - Check build results
+      - name: Debug - Check test results
         run: |
-          echo === Working Directory ===
-          echo ${{ needs.setup.outputs.working-directory }}
-          echo === Target Directory Contents ===
-          if exist "${{ needs.setup.outputs.working-directory }}\target" (
-            dir "${{ needs.setup.outputs.working-directory }}\target" /b
-          ) else (
-            echo Target directory does not exist!
+          echo === Test Classes Found ===
+          if exist "${{ needs.setup.outputs.working-directory }}\tests\org\lrdm" (
+            dir "${{ needs.setup.outputs.working-directory }}\tests\org\lrdm\*.java" /b
           )
           echo === Test Reports ===
           if exist "${{ needs.setup.outputs.working-directory }}\target\surefire-reports" (
             dir "${{ needs.setup.outputs.working-directory }}\target\surefire-reports" /b
           ) else (
             echo No test reports found!
+          )
+          echo === Target Directory ===
+          if exist "${{ needs.setup.outputs.working-directory }}\target" (
+            dir "${{ needs.setup.outputs.working-directory }}\target" /b
           )
         shell: cmd
 
