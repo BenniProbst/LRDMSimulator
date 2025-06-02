@@ -115,28 +115,35 @@ jobs:
         working-directory: ${{ needs.setup-sonar.outputs.working-directory }}
         shell: cmd
 
+      - name: Set environment variables for SonarCloud
+        run: |
+          echo SONAR_SOURCES=${{ needs.setup-sonar.outputs.sources-path }} >> %GITHUB_ENV%
+          echo SONAR_TESTS=${{ needs.setup-sonar.outputs.tests-path }} >> %GITHUB_ENV%
+          echo SONAR_WORKING_DIR=${{ needs.setup-sonar.outputs.working-directory }} >> %GITHUB_ENV%
+        shell: cmd
+
       - name: Debug - Check source and test paths
         run: |
           echo === Project Structure ===
-          echo Working Directory: ${{ needs.setup-sonar.outputs.working-directory }}
-          echo Sources Path: ${{ needs.setup-sonar.outputs.sources-path }}
-          echo Tests Path: ${{ needs.setup-sonar.outputs.tests-path }}
+          echo Working Directory: %SONAR_WORKING_DIR%
+          echo Sources Path: %SONAR_SOURCES%
+          echo Tests Path: %SONAR_TESTS%
           echo === Source Directory ===
-          if exist "${{ needs.setup-sonar.outputs.sources-path }}" (
+          if exist "%SONAR_SOURCES%" (
             echo Source directory exists
-            dir "${{ needs.setup-sonar.outputs.sources-path }}" /s /b | findstr "\.java$"
+            dir "%SONAR_SOURCES%" /s /b | findstr "\.java$"
           ) else (
             echo Source directory does not exist!
           )
           echo === Test Directory ===
-          if exist "${{ needs.setup-sonar.outputs.tests-path }}" (
+          if exist "%SONAR_TESTS%" (
             echo Test directory exists
-            dir "${{ needs.setup-sonar.outputs.tests-path }}" /s /b | findstr "\.java$"
+            dir "%SONAR_TESTS%" /s /b | findstr "\.java$"
           ) else (
             echo Test directory does not exist!
           )
           echo === Coverage Reports ===
-          if exist "${{ needs.setup-sonar.outputs.working-directory }}\target\site\jacoco\jacoco.xml" (
+          if exist "%SONAR_WORKING_DIR%\target\site\jacoco\jacoco.xml" (
             echo JaCoCo XML report found
           ) else (
             echo JaCoCo XML report NOT found
@@ -153,8 +160,8 @@ jobs:
             -Dsonar.organization=%SONAR_ORGANIZATION% ^
             -Dsonar.host.url=%SONAR_HOST_URL% ^
             -Dsonar.token=%SONAR_TOKEN% ^
-            -Dsonar.sources=${{ needs.setup-sonar.outputs.sources-path }} ^
-            -Dsonar.tests=${{ needs.setup-sonar.outputs.tests-path }} ^
+            -Dsonar.sources=%SONAR_SOURCES% ^
+            -Dsonar.tests=%SONAR_TESTS% ^
             -Dsonar.java.source=17 ^
             -Dsonar.java.target=17 ^
             -Dsonar.java.binaries=target/classes ^
@@ -208,6 +215,13 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
+      - name: Set environment variables for SonarCloud
+        run: |
+          echo SONAR_SOURCES=${{ needs.setup-sonar.outputs.sources-path }} >> %GITHUB_ENV%
+          echo SONAR_TESTS=${{ needs.setup-sonar.outputs.tests-path }} >> %GITHUB_ENV%
+          echo SONAR_WORKING_DIR=${{ needs.setup-sonar.outputs.working-directory }} >> %GITHUB_ENV%
+        shell: cmd
+
       - name: Build with coverage and run SonarCloud analysis
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -218,8 +232,8 @@ jobs:
             -Dsonar.organization=%SONAR_ORGANIZATION% ^
             -Dsonar.host.url=%SONAR_HOST_URL% ^
             -Dsonar.token=%SONAR_TOKEN% ^
-            -Dsonar.sources=${{ needs.setup-sonar.outputs.sources-path }} ^
-            -Dsonar.tests=${{ needs.setup-sonar.outputs.tests-path }} ^
+            -Dsonar.sources=%SONAR_SOURCES% ^
+            -Dsonar.tests=%SONAR_TESTS% ^
             -Dsonar.java.source=17 ^
             -Dsonar.java.target=17 ^
             -Dsonar.java.binaries=target/classes ^
