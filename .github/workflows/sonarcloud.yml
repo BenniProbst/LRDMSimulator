@@ -1,19 +1,21 @@
-name: Maven Build Pipeline
+name: SonarCloud PR Analysis
 
 on:
   push:
-    branches: [main, dev, 'feature/**']
+    branches: [main]
   pull_request:
-    branches: [main, dev]
+    branches: [main]
 
 env:
   JAVA_VERSION: '17'
   JAVA_DISTRIBUTION: 'temurin'
-  MAVEN_OPTS: '-Dmaven.repo.local=.m2/repository'
+  SONAR_PROJECT_KEY: 'BenniProbst_LRDMSimulator'
+  SONAR_ORGANIZATION: 'benniprobst'
+  SONAR_HOST_URL: 'https://sonarcloud.io'
 
 jobs:
-  setup:
-    name: Determine Project Structure
+  setup-sonar:
+    name: Setup SonarCloud Analysis
     runs-on: self-hosted
     outputs:
       working-directory: ${{ steps.detect.outputs.working-directory }}
@@ -48,32 +50,25 @@ jobs:
           ) else (
             set POM_PATH=LRDMSimulator\pom.xml
           )
-          
-          REM Extract the actual version number from maven.compiler.source
-          for /f "tokens=1,2 delims=<>" %%i in ('findstr "maven.compiler.source" %POM_PATH%') do (
-            if "%%i"=="" (
-              set EXTRACTED_VERSION=%%j
-              goto :version_found
-            )
+          findstr "maven.compiler.source" %POM_PATH% > temp_version.txt
+          for /f "tokens=2 delims=<>" %%i in (temp_version.txt) do (
+            echo java-version=%%i >> %GITHUB_OUTPUT%
+            echo Extracted Java version: %%i from POM
+            goto :found
           )
-          
-          :version_found
-          if defined EXTRACTED_VERSION (
-            echo java-version=%EXTRACTED_VERSION% >> %GITHUB_OUTPUT%
-            echo Extracted Java version: %EXTRACTED_VERSION% from POM
-          ) else (
+          :found
+          if exist temp_version.txt del temp_version.txt
+          if not defined JAVA_VERSION (
             echo java-version=%JAVA_VERSION% >> %GITHUB_OUTPUT%
             echo Using default Java version: %JAVA_VERSION%
           )
         shell: cmd
-        env:
-          JAVA_VERSION: ${{ env.JAVA_VERSION }}
 
-  build-main:
-    name: Build Main Branch
-    if: github.ref == 'refs/heads/main'
+  sonarcloud-pr:
+    name: SonarCloud PR Analysis
+    if: github.event_name == 'pull_request'
     runs-on: self-hosted
-    needs: setup
+    needs: setup-sonar
     steps:
       - name: Fix Git permissions
         run: |
@@ -91,157 +86,127 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ needs.setup.outputs.java-version }}
+          java-version: ${{ needs.setup-sonar.outputs.java-version }}
 
       - name: Cache Maven dependencies
         uses: actions/cache@v4
         with:
           path: |
             %USERPROFILE%\.m2\repository
-            ${{ needs.setup.outputs.working-directory }}\.m2\repository
+            ${{ needs.setup-sonar.outputs.working-directory }}\.m2\repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: %USERPROFILE%\.sonar\cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
 
       - name: Build with coverage
         run: mvn clean verify -Pcoverage
-        working-directory: ${{ needs.setup.outputs.working-directory }}
+        working-directory: ${{ needs.setup-sonar.outputs.working-directory }}
         shell: cmd
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: main-build-artifacts
-          path: ${{ needs.setup.outputs.working-directory }}/target/
-        if: always()
-
-  build-dev:
-    name: Build Dev Branch
-    if: github.ref == 'refs/heads/dev'
-    runs-on: self-hosted
-    needs: setup
-    steps:
-      - name: Fix Git permissions
+      - name: Debug - Check coverage reports
         run: |
-          git config --global --add safe.directory ${{ github.workspace }}
-          git config --global core.autocrlf false
-        shell: cmd
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ needs.setup.outputs.java-version }}
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            %USERPROFILE%\.m2\repository
-            ${{ needs.setup.outputs.working-directory }}\.m2\repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: Build without tests
-        run: mvn clean compile test-compile -DskipTests=true
-        working-directory: ${{ needs.setup.outputs.working-directory }}
-        shell: cmd
-
-  build-feature:
-    name: Build Feature Branch
-    if: startsWith(github.ref, 'refs/heads/feature/')
-    runs-on: self-hosted
-    needs: setup
-    steps:
-      - name: Fix Git permissions
-        run: |
-          git config --global --add safe.directory ${{ github.workspace }}
-          git config --global core.autocrlf false
-        shell: cmd
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ needs.setup.outputs.java-version }}
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            %USERPROFILE%\.m2\repository
-            ${{ needs.setup.outputs.working-directory }}\.m2\repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: Lightweight build
-        run: mvn clean compile -DskipTests=true
-        working-directory: ${{ needs.setup.outputs.working-directory }}
-        shell: cmd
-
-  build-pr:
-    name: Build Pull Request
-    if: github.event_name == 'pull_request'
-    runs-on: self-hosted
-    needs: setup
-    steps:
-      - name: Fix Git permissions
-        run: |
-          git config --global --add safe.directory ${{ github.workspace }}
-          git config --global core.autocrlf false
-        shell: cmd
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: ${{ env.JAVA_DISTRIBUTION }}
-          java-version: ${{ needs.setup.outputs.java-version }}
-
-      - name: Cache Maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            %USERPROFILE%\.m2\repository
-            ${{ needs.setup.outputs.working-directory }}\.m2\repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-maven-
-
-      - name: Build and test PR
-        run: mvn clean verify -Pcoverage
-        working-directory: ${{ needs.setup.outputs.working-directory }}
-        shell: cmd
-
-      - name: Debug - List target directory contents
-        run: |
-          if exist "${{ needs.setup.outputs.working-directory }}\target" (
-            echo Target directory exists:
-            dir "${{ needs.setup.outputs.working-directory }}\target" /b
+          if exist "${{ needs.setup-sonar.outputs.working-directory }}\target\site\jacoco\jacoco.xml" (
+            echo JaCoCo XML report found
           ) else (
-            echo Target directory does not exist!
+            echo JaCoCo XML report NOT found
+          )
+          if exist "${{ needs.setup-sonar.outputs.working-directory }}\target\surefire-reports" (
+            echo Surefire reports found
+            dir "${{ needs.setup-sonar.outputs.working-directory }}\target\surefire-reports" /b
+          ) else (
+            echo Surefire reports NOT found
           )
         shell: cmd
 
-      - name: Upload PR artifacts
-        uses: actions/upload-artifact@v4
+      - name: Run SonarCloud analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
+        run: |
+          mvn sonar:sonar ^
+            -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
+            -Dsonar.organization=%SONAR_ORGANIZATION% ^
+            -Dsonar.host.url=%SONAR_HOST_URL% ^
+            -Dsonar.token=%SONAR_TOKEN% ^
+            -Dsonar.sources=src ^
+            -Dsonar.tests=tests ^
+            -Dsonar.java.source=17 ^
+            -Dsonar.java.target=17 ^
+            -Dsonar.java.binaries=target/classes ^
+            -Dsonar.java.test.binaries=target/test-classes ^
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml ^
+            -Dsonar.junit.reportPaths=target/surefire-reports ^
+            -Dsonar.pullrequest.key=${{ github.event.number }} ^
+            -Dsonar.pullrequest.branch=${{ github.head_ref }} ^
+            -Dsonar.pullrequest.base=${{ github.base_ref }} ^
+            -Dsonar.verbose=true
+        working-directory: ${{ needs.setup-sonar.outputs.working-directory }}
+        shell: cmd
+
+  sonarcloud-main:
+    name: SonarCloud Main Analysis
+    if: github.ref == 'refs/heads/main'
+    runs-on: self-hosted
+    needs: setup-sonar
+    steps:
+      - name: Fix Git permissions
+        run: |
+          git config --global --add safe.directory ${{ github.workspace }}
+          git config --global core.autocrlf false
+        shell: cmd
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          name: pr-build-artifacts
-          path: ${{ needs.setup.outputs.working-directory }}/target/
-          if-no-files-found: warn
-        if: always()
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ needs.setup-sonar.outputs.java-version }}
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            %USERPROFILE%\.m2\repository
+            ${{ needs.setup-sonar.outputs.working-directory }}\.m2\repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v4
+        with:
+          path: %USERPROFILE%\.sonar\cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Build with coverage and run SonarCloud analysis
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
+        run: |
+          mvn clean verify -Pcoverage org.sonarsource.scanner.maven:sonar-maven-plugin:sonar ^
+            -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
+            -Dsonar.organization=%SONAR_ORGANIZATION% ^
+            -Dsonar.host.url=%SONAR_HOST_URL% ^
+            -Dsonar.token=%SONAR_TOKEN% ^
+            -Dsonar.sources=src ^
+            -Dsonar.tests=tests ^
+            -Dsonar.java.source=17 ^
+            -Dsonar.java.target=17 ^
+            -Dsonar.java.binaries=target/classes ^
+            -Dsonar.java.test.binaries=target/test-classes ^
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml ^
+            -Dsonar.junit.reportPaths=target/surefire-reports ^
+            -Dsonar.verbose=true
+        working-directory: ${{ needs.setup-sonar.outputs.working-directory }}
+        shell: cmd
