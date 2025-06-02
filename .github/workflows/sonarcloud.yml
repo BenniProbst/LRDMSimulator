@@ -1,3 +1,4 @@
+
 name: SonarCloud PR Analysis
 
 on:
@@ -154,26 +155,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
-        run: |
-          mvn sonar:sonar ^
-            -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
-            -Dsonar.organization=%SONAR_ORGANIZATION% ^
-            -Dsonar.host.url=%SONAR_HOST_URL% ^
-            -Dsonar.token=%SONAR_TOKEN% ^
-            -Dsonar.sources=%SONAR_SOURCES% ^
-            -Dsonar.tests=%SONAR_TESTS% ^
-            -Dsonar.java.source=17 ^
-            -Dsonar.java.target=17 ^
-            -Dsonar.java.binaries=target/classes ^
-            -Dsonar.java.test.binaries=target/test-classes ^
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml ^
-            -Dsonar.junit.reportPaths=target/surefire-reports ^
-            -Dsonar.pullrequest.key=${{ github.event.number }} ^
-            -Dsonar.pullrequest.branch=${{ github.head_ref }} ^
-            -Dsonar.pullrequest.base=${{ github.base_ref }} ^
-            -Dsonar.verbose=true
-        working-directory: ${{ needs.setup-sonar.outputs.working-directory }}
         shell: cmd
+        working-directory: ${{ needs.setup-sonar.outputs.working-directory }}
+        run: |
+          mvn sonar:sonar -Dsonar.projectKey=%SONAR_PROJECT_KEY% -Dsonar.organization=%SONAR_ORGANIZATION% -Dsonar.host.url=%SONAR_HOST_URL% -Dsonar.token=%SONAR_TOKEN% -Dsonar.sources=%SONAR_SOURCES% -Dsonar.tests=%SONAR_TESTS% -Dsonar.java.source=17 -Dsonar.java.target=17 -Dsonar.java.binaries=target/classes -Dsonar.java.test.binaries=target/test-classes -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml -Dsonar.junit.reportPaths=target/surefire-reports -Dsonar.pullrequest.key=${{ github.event.number }} -Dsonar.pullrequest.branch=${{ github.head_ref }} -Dsonar.pullrequest.base=${{ github.base_ref }} -Dsonar.verbose=true
 
   sonarcloud-main:
     name: SonarCloud Main Analysis
@@ -226,20 +211,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
-        run: |
-          mvn clean verify -Pcoverage org.sonarsource.scanner.maven:sonar-maven-plugin:sonar ^
-            -Dsonar.projectKey=%SONAR_PROJECT_KEY% ^
-            -Dsonar.organization=%SONAR_ORGANIZATION% ^
-            -Dsonar.host.url=%SONAR_HOST_URL% ^
-            -Dsonar.token=%SONAR_TOKEN% ^
-            -Dsonar.sources=%SONAR_SOURCES% ^
-            -Dsonar.tests=%SONAR_TESTS% ^
-            -Dsonar.java.source=17 ^
-            -Dsonar.java.target=17 ^
-            -Dsonar.java.binaries=target/classes ^
-            -Dsonar.java.test.binaries=target/test-classes ^
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml ^
-            -Dsonar.junit.reportPaths=target/surefire-reports ^
-            -Dsonar.verbose=true
-        working-directory: ${{ needs.setup-sonar.outputs.working-directory }}
         shell: cmd
+        working-directory: ${{ needs.setup-sonar.outputs.working-directory }}
+        run: |
+          mvn clean verify -Pcoverage org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=%SONAR_PROJECT_KEY% -Dsonar.organization=%SONAR_ORGANIZATION% -Dsonar.host.url=%SONAR_HOST_URL% -Dsonar.token=%SONAR_TOKEN% -Dsonar.sources=%SONAR_SOURCES% -Dsonar.tests=%SONAR_TESTS% -Dsonar.java.source=17 -Dsonar.java.target=17 -Dsonar.java.binaries=target/classes -Dsonar.java.test.binaries=target/test-classes -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml -Dsonar.junit.reportPaths=target/surefire-reports -Dsonar.verbose=true
