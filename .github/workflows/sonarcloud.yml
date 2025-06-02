@@ -22,10 +22,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Fix Git permissions
+        shell: cmd
         run: |
           git config --global --add safe.directory ${{ github.workspace }}
           git config --global core.autocrlf false
-        shell: cmd
 
       - name: Set up JDK
         uses: actions/setup-java@v4
@@ -48,10 +48,11 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Build and test with coverage
-        run: mvn clean verify -Pcoverage
         shell: cmd
+        run: mvn clean verify -Pcoverage
 
       - name: Debug - Check build artifacts
+        shell: cmd
         run: |
           echo === Build artifacts ===
           if exist "target\classes" (
@@ -65,13 +66,13 @@ jobs:
           ) else (
             echo Coverage report missing
           )
-        shell: cmd
 
       - name: Run SonarCloud analysis for Pull Request
         if: github.event_name == 'pull_request'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
+        shell: cmd
         run: |
           mvn sonar:sonar ^
             -Dsonar.projectKey=BenniProbst_LRDMSimulator ^
@@ -84,13 +85,13 @@ jobs:
             -Dsonar.pullrequest.key=${{ github.event.number }} ^
             -Dsonar.pullrequest.branch=${{ github.head_ref }} ^
             -Dsonar.pullrequest.base=${{ github.base_ref }}
-        shell: cmd
 
       - name: Run SonarCloud analysis for Main Branch
         if: github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_SECRET }}
+        shell: cmd
         run: |
           mvn sonar:sonar ^
             -Dsonar.projectKey=BenniProbst_LRDMSimulator ^
@@ -100,4 +101,3 @@ jobs:
             -Dsonar.tests=tests ^
             -Dsonar.java.binaries=target/classes ^
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
-        shell: cmd
