@@ -43,6 +43,22 @@ jobs:
           )
         shell: cmd
 
+      - name: Runner Information
+        run: |
+          echo === Runner Information ===
+          echo OS: Windows
+          echo Architecture: X64
+          echo Workspace: %GITHUB_WORKSPACE%
+          echo.
+          echo === Java ^& Maven ===
+          java -version 2>nul || echo Java not found
+          mvn --version 2>nul || echo Maven not found
+          echo.
+          echo === Working Directory ===
+          cd
+          dir
+        shell: cmd
+
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
