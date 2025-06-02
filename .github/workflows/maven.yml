@@ -112,6 +112,7 @@ jobs:
         with:
           name: main-build-artifacts
           path: ${{ needs.setup.outputs.working-directory }}/target/
+        if: always()
 
   build-dev:
     name: Build Dev Branch
@@ -146,10 +147,18 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
-      - name: Build without tests
-        run: mvn clean compile test-compile -DskipTests=true
+      # GEÄNDERT: Tests werden jetzt auch für Dev Branch ausgeführt
+      - name: Build and test dev branch
+        run: mvn clean verify -Pcoverage
         working-directory: ${{ needs.setup.outputs.working-directory }}
         shell: cmd
+
+      - name: Upload dev artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-build-artifacts
+          path: ${{ needs.setup.outputs.working-directory }}/target/
+        if: always()
 
   build-feature:
     name: Build Feature Branch
@@ -184,10 +193,18 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-maven-
 
-      - name: Lightweight build
-        run: mvn clean compile -DskipTests=true
+      # GEÄNDERT: Auch für Feature Branches werden Tests ausgeführt
+      - name: Build and test feature branch
+        run: mvn clean verify -Pcoverage
         working-directory: ${{ needs.setup.outputs.working-directory }}
         shell: cmd
+
+      - name: Upload feature artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-build-artifacts
+          path: ${{ needs.setup.outputs.working-directory }}/target/
+        if: always()
 
   build-pr:
     name: Build Pull Request
@@ -227,8 +244,28 @@ jobs:
         working-directory: ${{ needs.setup.outputs.working-directory }}
         shell: cmd
 
+      - name: Debug - Check build results
+        run: |
+          echo === Working Directory ===
+          echo ${{ needs.setup.outputs.working-directory }}
+          echo === Target Directory Contents ===
+          if exist "${{ needs.setup.outputs.working-directory }}\target" (
+            dir "${{ needs.setup.outputs.working-directory }}\target" /b
+          ) else (
+            echo Target directory does not exist!
+          )
+          echo === Test Reports ===
+          if exist "${{ needs.setup.outputs.working-directory }}\target\surefire-reports" (
+            dir "${{ needs.setup.outputs.working-directory }}\target\surefire-reports" /b
+          ) else (
+            echo No test reports found!
+          )
+        shell: cmd
+
       - name: Upload PR artifacts
         uses: actions/upload-artifact@v4
         with:
           name: pr-build-artifacts
           path: ${{ needs.setup.outputs.working-directory }}/target/
+          if-no-files-found: warn
+        if: always()
