@@ -1,0 +1,23 @@
+name: Debug Runner
+
+on:
+  workflow_dispatch:  # Manuell auslösbar
+
+jobs:
+  debug:
+    runs-on: self-hosted
+    steps:
+      - name: Runner Diagnostics
+        run: |
+          echo "=== Runner Information ==="
+          echo "OS: ${{ runner.os }}"
+          echo "Architecture: ${{ runner.arch }}"
+          echo "Workspace: ${{ github.workspace }}"
+          echo ""
+          echo "=== Java & Maven ==="
+          java -version || echo "Java not found"
+          mvn --version || echo "Maven not found"
+          echo ""
+          echo "=== Working Directory ==="
+          pwd
+          ls -la

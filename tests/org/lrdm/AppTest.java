@@ -9,10 +9,12 @@ import org.lrdm.probes.Probe;
 import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.FullyConnectedTopology;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.lrdm.topologies.NConnectedTopology;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,6 +32,12 @@ class AppTest {
     int link_activation_time_min;
     int link_activation_time_max;
 
+    @BeforeEach
+    void setHeadlessMode() {
+        // Sicherstellen, dass Headless-Modus für alle Tests gesetzt ist
+        System.setProperty("java.awt.headless", "true");
+    }
+
     public void initSimulator() throws IOException {
         initSimulator(config);
     }
@@ -43,22 +51,35 @@ class AppTest {
         link_activation_time_min = Integer.parseInt(props.get("link_activation_time_min").toString());
         link_activation_time_max = Integer.parseInt(props.get("link_activation_time_max").toString());
         sim = new TimedRDMSim(config);
-        sim.setHeadless(false);
+        sim.setHeadless(true); // GEÄNDERT: Headless-Modus für Tests
     }
 
     @Test
     void testMissingConfig() {
-        assertDoesNotThrow(() -> new TimedRDMSim("does-not-exist.conf"));
+        assertDoesNotThrow(() -> {
+            TimedRDMSim testSim = new TimedRDMSim("does-not-exist.conf");
+            testSim.setHeadless(true);
+        });
     }
 
     @Test
     void testUnreadableConfig() throws IOException {
         try (RandomAccessFile f = new RandomAccessFile(config,"rw")) {
             FileChannel channel = f.getChannel();
-            channel.lock();
-            assertDoesNotThrow(() -> new TimedRDMSim(config));
+            FileLock lock = channel.lock();
+            try {
+                assertDoesNotThrow(() -> {
+                    TimedRDMSim testSim = new TimedRDMSim(config);
+                    testSim.setHeadless(true);
+                });
+            } finally {
+                if (lock != null && lock.isValid()) {
+                    lock.release();
+                }
+            }
         }
     }
+
 
     @Test
     void testHeadlessNoDebug() throws IOException {
@@ -80,12 +101,18 @@ class AppTest {
         initSimulator();
         assertThrows(RuntimeException.class, () -> sim.run());
     }
+
     @Test
     void testExampleSimulator() {
+        // Headless-Modus für ExampleSimulation setzen
+        System.setProperty("java.awt.headless", "true");
         assertDoesNotThrow(()-> ExampleSimulation.main(new String[]{}));
     }
+
     @Test
     void testSzenarioZero() {
+        // Headless-Modus für ExampleOptimizer setzen
+        System.setProperty("java.awt.headless", "true");
         assertDoesNotThrow(()-> ExampleOptimizer.main(new String[]{}));
     }
 
@@ -116,16 +143,14 @@ class AppTest {
     void testDeltaEffects() throws IOException {
         initSimulator();
         sim.initialize(new NConnectedTopology());
-        MirrorProbe mp = null;
-        for(Probe p : sim.getProbes()) {
-            if(p instanceof  MirrorProbe) {
-                mp = (MirrorProbe) p;
-            }
-        }
+        MirrorProbe mp = getMirrorProbe();
+        assertNotNull(mp, "MirrorProbe should not be null");
+
         for(int t = 1; t < sim.getSimTime(); t++) {
-            System.out.println("timestep: "+t+" mirrors: "+mp.getNumMirrors());
+            int currentMirrorCount = mp.getNumMirrors();
+            System.out.println("timestep: "+t+" mirrors: "+currentMirrorCount);
             sim.runStep(t);
-            Action a = sim.getEffector().setMirrors(mp.getNumMirrors()+1, t+1);
+            Action a = sim.getEffector().setMirrors(currentMirrorCount+1, t+1);
             int ttw = a.getEffect().getDeltaTimeToWrite();
             int bw = a.getEffect().getDeltaBandwidth(sim.getProps());
             double al = a.getEffect().getDeltaActiveLinks();
@@ -163,7 +188,7 @@ class AppTest {
         assertDoesNotThrow(() -> sim.run());
     }
 
-
+    @Test
     void testMirrorStartupTime() throws IOException {
         MirrorProbe mp = initTimeTest();
         Map<Integer,Integer> startupTimes = getTimeToStateForMirrorFromSimulation(mp, Mirror.State.UP);
@@ -174,6 +199,7 @@ class AppTest {
         }
     }
 
+    @Test
     void testMirrorReadyTime() throws IOException {
         MirrorProbe mp = initTimeTest();
         Map<Integer, Integer> readyTimes = getTimeToStateForMirrorFromSimulation(mp, Mirror.State.READY);
@@ -184,6 +210,7 @@ class AppTest {
         }
     }
 
+    @Test
     void testLinkActiveTime() throws IOException {
         initTimeTest();
         LinkProbe lp = getLinkProbe();
@@ -203,6 +230,7 @@ class AppTest {
             assertEquals(expected, activeTimes.get(l.getID()));
         }
     }
+
     @Test
     void testTopologyChange() throws IOException {
         initSimulator();
@@ -252,5 +280,4 @@ class AppTest {
         }
         return lp;
     }
-
 }
