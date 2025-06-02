@@ -7,85 +7,60 @@
     <name>Latency-aware RDMSim</name>
     <description>Latency-aware Remote Data Mirroring Simulator</description>
 
-	<properties>
-		<!-- Java Configuration -->
-		<java.version>17</java.version>
-		<maven.compiler.source>${java.version}</maven.compiler.source>
-		<maven.compiler.target>${java.version}</maven.compiler.target>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<encoding.utf8>UTF-8</encoding.utf8>
+    <properties>
+        <!-- Java Configuration -->
+        <java.version>17</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <encoding.utf8>UTF-8</encoding.utf8>
 
-		<!-- Application Configuration -->
-		<main.class>org.lrdm.examples.ExampleOptimizer</main.class>
+        <!-- Application Configuration -->
+        <main.class>org.lrdm.examples.ExampleOptimizer</main.class>
 
-		<!-- Library Versions -->
-		<graphstream.version>1.3</graphstream.version>
-		<xchart.version>3.8.4</xchart.version>
-		<junit.version>5.9.1</junit.version>
-		<commons-math3.version>3.6.1</commons-math3.version>
+        <!-- Library Versions -->
+        <graphstream.version>2.0</graphstream.version>
+        <xchart.version>3.8.4</xchart.version>
+        <junit.version>5.9.1</junit.version>
+        <commons-math3.version>3.6.1</commons-math3.version>
 
-		<!-- Maven Plugin Versions -->
-		<maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-		<maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
-		<maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
-		<maven-assembly-plugin.version>3.4.2</maven-assembly-plugin.version>
-		<jacoco.version>0.8.11</jacoco.version>
-	</properties>
+        <!-- Maven Plugin Versions -->
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>3.0.0</maven-surefire-plugin.version>
+        <maven-javadoc-plugin.version>3.5.0</maven-javadoc-plugin.version>
+        <maven-assembly-plugin.version>3.4.2</maven-assembly-plugin.version>
+        <jacoco.version>0.8.11</jacoco.version>
+    </properties>
 
-	<dependencyManagement>
-		<dependencies>
-			<dependency>
-				<groupId>org.graphstream</groupId>
-				<artifactId>gs-core</artifactId>
-				<version>${graphstream.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.graphstream</groupId>
-				<artifactId>gs-ui-swing</artifactId>
-				<version>${graphstream.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.knowm.xchart</groupId>
-				<artifactId>xchart</artifactId>
-				<version>${xchart.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.junit.jupiter</groupId>
-				<artifactId>junit-jupiter</artifactId>
-				<version>${junit.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.commons</groupId>
-				<artifactId>commons-math3</artifactId>
-				<version>${commons-math3.version}</version>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
-
-	<dependencies>
-		<dependency>
-			<groupId>org.graphstream</groupId>
-			<artifactId>gs-core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.graphstream</groupId>
-			<artifactId>gs-ui-swing</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.knowm.xchart</groupId>
-			<artifactId>xchart</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-math3</artifactId>
-		</dependency>
-		<!-- Test Dependencies -->
-		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<scope>test</scope>
-		</dependency>
-	</dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.graphstream</groupId>
+                <artifactId>gs-core</artifactId>
+                <version>${graphstream.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.graphstream</groupId>
+                <artifactId>gs-ui-swing</artifactId>
+                <version>${graphstream.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.knowm.xchart</groupId>
+                <artifactId>xchart</artifactId>
+                <version>${xchart.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-math3</artifactId>
+                <version>${commons-math3.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <pluginManagement>
