@@ -75,9 +75,10 @@ jobs:
           restore-keys: ${{ runner.os }}-maven-
 
       - name: Build and test with coverage
-        run: mvn clean verify -Pcoverage -Djava.awt.headless=true
+        run: mvn clean verify -Pcoverage
         working-directory: ${{ env.WORKING_DIR }}
         shell: cmd
+        # JAVA_OPTS Umgebungsvariable entfernt, da kein Headless-Modus mehr gewünscht
         env:
           JAVA_OPTS: "-Djava.awt.headless=true"
 

@@ -274,17 +274,54 @@ public class GraphVisualization implements VisualizationStrategy {
     }
 
     private String loadGraphCSS() {
-        try(InputStream in = getClass().getResourceAsStream("/graph.css");
-            BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
-            StringBuilder ret = new StringBuilder();
-            String line;
-            while ((line = br.readLine()) != null) {
-                ret.append(line);
+        try(InputStream in = getClass().getResourceAsStream("/graph.css")) {
+            if(in == null) {
+                Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "CSS file graph.css not found in classpath. Using default styles.");
+                return getDefaultCSS();
             }
-            return ret.toString();
+            try(BufferedReader br = new BufferedReader(new InputStreamReader(in))) {
+                StringBuilder ret = new StringBuilder();
+                String line;
+                while ((line = br.readLine()) != null) {
+                    ret.append(line);
+                }
+                return ret.toString();
+            }
         } catch (IOException e) {
             Logger.getLogger(this.getClass().getName()).log(Level.WARNING, "Could not read css file for visualization.");
         }
-        return "";
+        return getDefaultCSS();
     }
+
+private String getDefaultCSS() {
+    return """
+        node {
+            shape: box;
+        }
+        
+        node.hasdata {
+            fill-color: #ee5cdd;
+        }
+        
+        node.running {
+            fill-color: #7F7;
+        }
+        
+        node.starting {
+            fill-color: #FF7;
+        }
+        
+        node.stopping {
+            fill-color: #F77;
+        }
+        
+        edge.active {
+            fill-color: #2F2;
+        }
+        
+        edge.inactive {
+            fill-color: #FF2;
+        }
+        """;
+}
 }
