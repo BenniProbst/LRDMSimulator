@@ -12,6 +12,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
 
     private final int EXTERN_STAR_BUILD_DISTANCE = 2;
     private final int RING_BRIDGE_STEP = 2;
+    private final int RING_BRIDGE_OFFSET = 1;
     private final int RING_BRIDGE_MIRROR_NUM_HEIGHT = 2;
     private final int BRIDGE_TO_EXTERN_STAR_DISTANCE = 1;
     private final double EXTERN_STAR_RATIO = 0.3;
@@ -32,22 +33,60 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         return new AttributeUtils.Tuple<>(numMirrorsOnRings,numMirrorsOnExternStars);
     }
 
+    private int getRingStealingIndex(ArrayList<Integer> outsideToInsideMirrorCountOnRing) {
+        for(int i = outsideToInsideMirrorCountOnRing.size()-1; i >= 0; i--) {
+            if(outsideToInsideMirrorCountOnRing.get(i) > 0) return i;
+        }
+        return 0;
+    }
+
+    private int getSumMirrorsLeft(ArrayList<Integer> outsideToInsideMirrorCountOnRing) {
+        int sum = 0;
+        for(int i = 0; i < outsideToInsideMirrorCountOnRing.size(); i++) {
+            sum += outsideToInsideMirrorCountOnRing.get(i);
+        }
+        return sum;
+    }
+
     private AttributeUtils.Tuple<ArrayList<Integer>,List<List<Integer>>> getSafeRingMirrorDistribution(int numMirrorsToRings) {
         //calculate bridges between rings if there are any
         int safeRingCount = (int)Math.floor(numMirrorsToRings / (double)MINIMAL_RING_MIRROR_COUNT);
         if(safeRingCount == 0) safeRingCount = 1;
 
         ArrayList<Integer> outsideToInsideMirrorCountOnRing = new ArrayList<>(Collections.nCopies(safeRingCount, 0));
-        List<List<Integer>> bridgedBetweenRings = new ArrayList<>();
+        List<List<Integer>> bridgedBetweenRings = new LinkedList<>();
         //fill most inner ring last and don't fill it fully
         for(int i = 0; i < outsideToInsideMirrorCountOnRing.size(); i++) {
-            bridgedBetweenRings.add(new LinkedList<Integer>());
-            for(int j = 0; j < RING_BRIDGE_STEP; j++) {//Limit is the sum of ring elements
-
-            }
             int setToRing = Math.min((int)Math.ceil((double)numMirrorsToRings/safeRingCount),numMirrorsToRings);
             outsideToInsideMirrorCountOnRing.set(i, setToRing);
             numMirrorsToRings -= setToRing;
+        }
+        for(int i = 0; i < outsideToInsideMirrorCountOnRing.size(); i++) {
+            int realGenerateOffset = RING_BRIDGE_OFFSET%outsideToInsideMirrorCountOnRing.get(i);
+            for(int j = 0; j < outsideToInsideMirrorCountOnRing.get(i); j++) {
+                if(bridgedBetweenRings.size()-1 <= j){
+                    bridgedBetweenRings.add(new LinkedList<>());
+                }
+                //step over each ring to plan bridge by Ring bridge step
+                if((j-realGenerateOffset)%RING_BRIDGE_STEP == 0) {
+                    //steal mirrors from the innermost ring that stores greater zero mirrors
+                    //in case the innermost ring mirror count is zero,steal from the next innermost ring
+                    //check stealing ring on every movement
+                    int numStealMirrors = RING_BRIDGE_MIRROR_NUM_HEIGHT;
+                    int absoluteStolenMirrors = 0;
+                    while(numStealMirrors > 0 && getSumMirrorsLeft(outsideToInsideMirrorCountOnRing) > 0) {
+                        int indexStealFromRing = getRingStealingIndex(outsideToInsideMirrorCountOnRing);
+                        int stealAbleMirrorsFromOutermostRing = outsideToInsideMirrorCountOnRing.get(indexStealFromRing);
+                        int stolenMirrors = Math.min(stealAbleMirrorsFromOutermostRing,RING_BRIDGE_MIRROR_NUM_HEIGHT);
+                        numStealMirrors -= stolenMirrors;
+                        absoluteStolenMirrors += stolenMirrors;
+                        outsideToInsideMirrorCountOnRing.set(indexStealFromRing, stealAbleMirrorsFromOutermostRing-stolenMirrors);
+                    }
+                    if(absoluteStolenMirrors >= 0) {
+                        bridgedBetweenRings.get(j).add(absoluteStolenMirrors);
+                    }
+                }
+            }
         }
         //fill bridging and steal mirrors from the inside out to the outside, only bridge in between if opposite Ring is available
 
