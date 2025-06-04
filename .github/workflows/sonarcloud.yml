@@ -32,7 +32,7 @@ jobs:
 
       - name: Build with Maven (skip GUI tests)
         run: mvn clean verify -DskipTests=true
-        working-directory: LRDMSimulator
+        working-directory: /
 
       - name: Run SonarCloud Analysis
         env:
@@ -42,4 +42,4 @@ jobs:
           -Dsonar.organization=benniprobst \
           -Dsonar.host.url=https://sonarcloud.io \
           -Dsonar.login=${{ secrets.SONAR_SECRET }}
-        working-directory: LRDMSimulator
+        working-directory: /
