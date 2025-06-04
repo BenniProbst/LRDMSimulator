@@ -68,6 +68,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
                     bridgedBetweenRings.add(new LinkedList<>());
                 }
                 //step over each ring to plan bridge by Ring bridge step
+                //fill bridging and steal mirrors from the inside out to the outside, only bridge in between if opposite Ring is available
                 if((j-realGenerateOffset)%RING_BRIDGE_STEP == 0) {
                     //steal mirrors from the innermost ring that stores greater zero mirrors
                     //in case the innermost ring mirror count is zero,steal from the next innermost ring
@@ -88,9 +89,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
                 }
             }
         }
-        //fill bridging and steal mirrors from the inside out to the outside, only bridge in between if opposite Ring is available
-
-
+        //return description of mirror rings and bridges between them
         return new AttributeUtils.Tuple<>(outsideToInsideMirrorCountOnRing,bridgedBetweenRings);
     }
 
@@ -99,9 +98,11 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         //first fulfill templating the bridge to extern star distance, bridge before the extern tree starts
         int a = (int)Math.floor(numMirrorsOnExternStars / (double)MINIMAL_RING_MIRROR_COUNT);
 
+        //TODO: first fill the distance to the tree root
         for(int i = 0; i < mirrorCountOnExternStars.size(); i++) {
             int setToRing = Math.min((int)Math.ceil((double)numMirrorsOnExternStars/mirrorCountOnExternStars.size()),numMirrorsOnExternStars);
-            mirrorCountOnExternStars.set(i, setToRing);
+            //set value to SnowflakeStarTreeNode
+            mirrorCountOnExternStars.set(i, new SnowflakeStarTreeNode(setToRing));
             numMirrorsOnExternStars -= setToRing;
         }
         return mirrorCountOnExternStars;
