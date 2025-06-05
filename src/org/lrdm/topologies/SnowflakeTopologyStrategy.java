@@ -99,11 +99,13 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         return new AttributeUtils.Tuple<>(outsideToInsideMirrorCountOnRing,bridgedBetweenRings);
     }
 
-    private SnowflakeStarTreeNode getDeepestNode(SnowflakeStarTreeNode node) {
+    private SnowflakeStarTreeNode getDeepestNode(SnowflakeStarTreeNode node,int maxDepth) {
         if(node == null || node.getChildren().isEmpty()) return null;
         SnowflakeStarTreeNode currentDeepestMirror = node.getChildren().get(0);
         while(!currentDeepestMirror.getChildren().isEmpty()){
+            if(maxDepth==0)break;
             currentDeepestMirror = currentDeepestMirror.getChildren().get(0);
+            maxDepth--;
         }
         return currentDeepestMirror;
     }
@@ -126,7 +128,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
                 mirrorCountOnExternStars.set(addIndexToMirror, new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
             }
             else{
-                getDeepestNode(mirrorCountOnExternStars.get(addIndexToMirror)).addChild(new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
+                getDeepestNode(mirrorCountOnExternStars.get(addIndexToMirror),EXTERN_STAR_MAX_TREE_DEPTH).addChild(new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
             }
         }
         //second fill a depth-limited tree on each star at the end of the bridges
@@ -139,7 +141,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
 
             SnowflakeTreeBuilder builder = new SnowflakeTreeBuilder();
             SnowflakeStarTreeNode subTree = builder.buildTree(dynamicUseOfTreeMirrorsInt, EXTERN_STAR_MAX_TREE_DEPTH);
-            getDeepestNode(mirrorCountOnExternStars.get(i)).addChild(subTree);
+            getDeepestNode(mirrorCountOnExternStars.get(i),EXTERN_STAR_MAX_TREE_DEPTH).addChild(subTree);
         }
         //third fill the rest with mirrors circular to the B-trees on the stars
         for(int i = 0; i < mirrorsToBeCircularFilled; i++) {
@@ -149,7 +151,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
             }
             else{
                 SnowflakeTreeBuilder builder = new SnowflakeTreeBuilder();
-                builder.addNodesToExistingTreeBalanced(getDeepestNode(mirrorCountOnExternStars.get(addIndexToMirror)),1, EXTERN_STAR_MAX_TREE_DEPTH);
+                builder.addNodesToExistingTreeBalanced(getDeepestNode(mirrorCountOnExternStars.get(addIndexToMirror),EXTERN_STAR_MAX_TREE_DEPTH),1, EXTERN_STAR_MAX_TREE_DEPTH);
             }
         }
 
