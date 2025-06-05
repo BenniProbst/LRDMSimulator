@@ -142,7 +142,16 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
             getDeepestNode(mirrorCountOnExternStars.get(i)).addChild(subTree);
         }
         //third fill the rest with mirrors circular to the B-trees on the stars
-
+        for(int i = 0; i < mirrorsToBeCircularFilled; i++) {
+            int addIndexToMirror = i%numMirrorsOnFirstRing;
+            if(mirrorCountOnExternStars.get(addIndexToMirror) == null) {
+                mirrorCountOnExternStars.set(addIndexToMirror, new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
+            }
+            else{
+                SnowflakeTreeBuilder builder = new SnowflakeTreeBuilder();
+                builder.addNodesToExistingTreeBalanced(getDeepestNode(mirrorCountOnExternStars.get(addIndexToMirror)),1, EXTERN_STAR_MAX_TREE_DEPTH);
+            }
+        }
 
         return mirrorCountOnExternStars;
     }
