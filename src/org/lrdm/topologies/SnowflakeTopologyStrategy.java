@@ -4,8 +4,7 @@ import org.graphstream.ui.swing.util.AttributeUtils;
 import org.lrdm.Link;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
-import org.lrdm.util.IDGenerator;
-import org.lrdm.util.SnowflakeStarTreeNode;
+import org.lrdm.util.*;
 
 import java.util.*;
 
@@ -100,6 +99,15 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         return new AttributeUtils.Tuple<>(outsideToInsideMirrorCountOnRing,bridgedBetweenRings);
     }
 
+    private SnowflakeStarTreeNode getDeepestNode(SnowflakeStarTreeNode node) {
+        if(node == null || node.getChildren().isEmpty()) return null;
+        SnowflakeStarTreeNode currentDeepestMirror = node.getChildren().get(0);
+        while(!currentDeepestMirror.getChildren().isEmpty()){
+            currentDeepestMirror = currentDeepestMirror.getChildren().get(0);
+        }
+        return currentDeepestMirror;
+    }
+
     private ArrayList<SnowflakeStarTreeNode> getSafeExternStarDistribution(int numMirrorsOnExternStars, int numMirrorsOnFirstRing) {
         //TODO: Argument exceptions
         ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars = new ArrayList<>(Collections.nCopies(numMirrorsOnFirstRing, null));
@@ -118,12 +126,21 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
                 mirrorCountOnExternStars.set(addIndexToMirror, new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
             }
             else{
-                int parentDepth = mirrorCountOnExternStars.get(addIndexToMirror).getDepth();//TODO: get first deepest connection
-                mirrorCountOnExternStars.get(addIndexToMirror).addChild(new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH-parentDepth));
+                getDeepestNode(mirrorCountOnExternStars.get(addIndexToMirror)).addChild(new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
             }
         }
         //second fill a depth-limited tree on each star at the end of the bridges
+        int mirrorsToTreeOnStarCopy = mirrorsToTreeOnStar;
+        for(int i = 0; i < mirrorCountOnExternStars.size(); i++) {
+            //TODO: find out how to set the number of tree mirrors to use dynamically
+            double dynamicUseOfTreeMirrors = Math.round((double)mirrorsToTreeOnStarCopy/(numMirrorsOnFirstRing-i));
+            int dynamicUseOfTreeMirrorsInt = (int)dynamicUseOfTreeMirrors;
+            mirrorsToTreeOnStarCopy -= dynamicUseOfTreeMirrorsInt;
 
+            SnowflakeTreeBuilder builder = new SnowflakeTreeBuilder();
+            SnowflakeStarTreeNode subTree = builder.buildTree(dynamicUseOfTreeMirrorsInt, EXTERN_STAR_MAX_TREE_DEPTH);
+            getDeepestNode(mirrorCountOnExternStars.get(i)).addChild(subTree);
+        }
         //third fill the rest with mirrors circular to the B-trees on the stars
 
 
