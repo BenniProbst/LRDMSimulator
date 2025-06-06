@@ -2,6 +2,7 @@ package org.lrdm.topologies;
 
 import org.graphstream.ui.swing.util.AttributeUtils;
 import org.lrdm.Link;
+import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
 import org.lrdm.util.*;
@@ -158,9 +159,18 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         return mirrorCountOnExternStars;
     }
 
+    private void connectRingAndBridges(Network n, Properties props, Mirror start, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
+
+    }
+
+    private void connectStars(Network n, Properties props, Mirror start, Set<Link> ret, ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars) {
+
+    }
+
     @Override
     public Set<Link> initNetwork(Network n, Properties props) {
         Set<Link> ret = new HashSet<>();
+        if(n.getMirrors().isEmpty()) return ret;
         //calculate Mirror distribution
 
         int numMirrors = n.getMirrors().size();
@@ -172,6 +182,11 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         List<List<Integer>> bridgesBetweenRings = outsideToInsideMirrorCountOnRing.y;
         //distribute mirrors from outside to inside ring
         ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars = getSafeExternStarDistribution(numMirrorsDistribution.y,mirrorRingsCount.get(0));
+
+        //build rings and bridges from datastructures description
+        connectRingAndBridges(n,props,n.getMirrors().get(0),ret,mirrorRingsCount,bridgesBetweenRings);
+        //build stars on the outermost ring from datastructures description
+        connectStars(n,props,n.getMirrors().get(0),ret,mirrorCountOnExternStars);
 
         return ret;
     }
