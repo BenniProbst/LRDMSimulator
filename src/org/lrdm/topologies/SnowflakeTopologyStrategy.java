@@ -16,6 +16,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
     private final int RING_BRIDGE_OFFSET = 1;
     private final int RING_BRIDGE_MIRROR_NUM_HEIGHT = 2;
     private final int MAX_RING_LAYERS = 2;
+    private final int MINIMAL_RING_MIRROR_COUNT = 3;
 
     //star variables
     private final int EXTERN_STAR_MAX_TREE_DEPTH = 2;
@@ -25,7 +26,6 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
     //ratios
     private final double INTERN_ALL_RINGS_MIRRORS_RATIO = 1.0-EXTERN_STAR_RATIO;
     private final double EACH_INNER_RING_MIRRORS_RATIO = INTERN_ALL_RINGS_MIRRORS_RATIO / MAX_RING_LAYERS;
-    private final int MINIMAL_RING_MIRROR_COUNT = 3;
 
     private AttributeUtils.Tuple<Integer, Integer> snowflakeDistribution(int numMirrors) {
         int numMirrorsOnRings = (int)Math.floor(numMirrors * EACH_INNER_RING_MIRRORS_RATIO);
@@ -135,7 +135,6 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         //second fill a depth-limited tree on each star at the end of the bridges
         int mirrorsToTreeOnStarCopy = mirrorsToTreeOnStar;
         for(int i = 0; i < mirrorCountOnExternStars.size(); i++) {
-            //TODO: find out how to set the number of tree mirrors to use dynamically
             double dynamicUseOfTreeMirrors = Math.round((double)mirrorsToTreeOnStarCopy/(numMirrorsOnFirstRing-i));
             int dynamicUseOfTreeMirrorsInt = (int)dynamicUseOfTreeMirrors;
             mirrorsToTreeOnStarCopy -= dynamicUseOfTreeMirrorsInt;
@@ -159,11 +158,60 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         return mirrorCountOnExternStars;
     }
 
-    private void connectRingAndBridges(Network n, Properties props, Mirror start, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
+    ArrayList<Mirror> getNewBridgeEndCacheAndBuildBridge(Set<Link> ret, ArrayList<Mirror> bridgedMirrorsCache,Iterator<Mirror> source_mirror,List<List<Integer>> bridgesBetweenRings,int ringIndex,int ringOffset){
+        //TODO: Build a bridge and overwrite the slot of ring index with the end Mirror of bridge construction
+        if(bridgesBetweenRings.get(ringIndex).size() < ringOffset) return bridgedMirrorsCache;
+        ArrayList<Mirror> newBridgeEnds = bridgedMirrorsCache;
+        int bridgeCount = bridgesBetweenRings.get(ringIndex).get(ringOffset);
 
+        if(source_mirror.hasNext() && bridgeCount > 0) {
+            Mirror bridgeStart = source_mirror.next();
+            Mirror bridgeEnd = null;
+            for(int i = 0; i < bridgeCount && source_mirror.hasNext(); i++) {
+                //Mirrors auf Bridge aufbauen und den letzten Mirror in der Registrierung setzen, Links zurückschreiben
+            }
+            if(bridgedMirrorsCache.get(ringIndex) == null) {
+                bridgedMirrorsCache.set(ringIndex, bridgeEnd);
+            }
+        }
+
+        return newBridgeEnds;
     }
 
-    private void connectStars(Network n, Properties props, Mirror start, Set<Link> ret, ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars) {
+    private Set<Mirror> connectRingAndBridgesAndReturnStarPorts(Network n, Properties props, Mirror start, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
+        //connect rings
+        //TODO: connect rings one by one and build bridges after each ring that are only connected while building the next ring
+        Set<Mirror> starPorts = new HashSet<>();
+        ArrayList<Mirror> bridgedMirrorsCache = new ArrayList<>(Collections.nCopies(mirrorRingsCount.size(), null));
+
+        var source_mirror = n.getMirrors().iterator();
+
+        for(int i = 0; i < mirrorRingsCount.size(); i++) {
+            int ringCount = mirrorRingsCount.get(i);
+            for(int j = 0; j < ringCount; j++) {
+                if((j-RING_BRIDGE_OFFSET)%RING_BRIDGE_STEP_ON_RING == 0){
+                    //Build bridge and register end mirrors
+                    bridgedMirrorsCache = getNewBridgeEndCacheAndBuildBridge(ret,bridgedMirrorsCache,source_mirror,bridgesBetweenRings,i,j);
+                }
+                //Build on ring
+                Mirror targetMirror = n.getMirrors().get(i*ringCount+j);
+                Link l = new Link(IDGenerator.getInstance().getNextID(), start, targetMirror, 0, props);
+                start.addLink(l);
+                targetMirror.addLink(l);
+                ret.add(l);
+                if(j%RING_BRIDGE_STEP_ON_RING == 0){
+                    //register starPorts if they appear
+                    starPorts.add(source_mirror.next());
+                }
+                else{
+                    source_mirror.next();
+                }
+            }
+        }
+        return starPorts;
+    }
+
+    private void connectStars(Network n, Properties props, Set<Link> ret, ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars, Set<Mirror> starPorts) {
 
     }
 
@@ -184,9 +232,9 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars = getSafeExternStarDistribution(numMirrorsDistribution.y,mirrorRingsCount.get(0));
 
         //build rings and bridges from datastructures description
-        connectRingAndBridges(n,props,n.getMirrors().get(0),ret,mirrorRingsCount,bridgesBetweenRings);
+        Set<Mirror> starPorts = connectRingAndBridgesAndReturnStarPorts(n,props,n.getMirrors().get(0),ret,mirrorRingsCount,bridgesBetweenRings);
         //build stars on the outermost ring from datastructures description
-        connectStars(n,props,n.getMirrors().get(0),ret,mirrorCountOnExternStars);
+        connectStars(n,props,ret,mirrorCountOnExternStars, starPorts);
 
         return ret;
     }
