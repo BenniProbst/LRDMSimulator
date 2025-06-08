@@ -10,6 +10,7 @@ import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.FullyConnectedTopology;
 import org.junit.jupiter.api.Test;
 import org.lrdm.topologies.NConnectedTopology;
+import org.lrdm.topologies.SnowflakeTopologyStrategy;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
@@ -211,6 +212,7 @@ class AppTest {
         sim.getEffector().setStrategy(new FullyConnectedTopology(), 20);
         sim.getEffector().setStrategy(new BalancedTreeTopologyStrategy(),30);
         sim.getEffector().setStrategy(new FullyConnectedTopology(),40);
+        sim.getEffector().setStrategy(new SnowflakeTopologyStrategy(),50);
         assertDoesNotThrow(() -> sim.run());
     }
 
