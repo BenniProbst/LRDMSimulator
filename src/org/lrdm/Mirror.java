@@ -121,6 +121,10 @@ public class Mirror {
 		return links.stream().filter(l -> l.getSource().equals(Mirror.this)).collect(Collectors.toSet());
 	}
 
+	public Set<Link> getJointMirrorLinks(Mirror target){
+		return links.stream().filter(l -> l.getSource().equals(target) || l.getTarget().equals(target)).collect(Collectors.toSet());
+	}
+
 	public DataPackage getData() {
 		return data;
 	}

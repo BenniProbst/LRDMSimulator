@@ -158,8 +158,40 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         return mirrorCountOnExternStars;
     }
 
-    private void finalizeBridges(Network n, Properties props, LinkedList<AttributeUtils.Tuple<Mirror,Mirror>> bridgeHeads, Iterator<Mirror> source_mirror) {
+    private void finalizeBridges(Properties props, Set<Link> ret, LinkedList<AttributeUtils.Tuple<Mirror,Mirror>> bridgeHeads, Iterator<Mirror> source_mirror) {
+        for(AttributeUtils.Tuple<Mirror,Mirror> bridgeHead : bridgeHeads) {
+            int fill_count = 1;
+            Link bothLinked = bridgeHead.x.getJointMirrorLinks(bridgeHead.y).iterator().next();
+            Mirror outerRingMirror = bridgeHead.x;
+            Mirror innerRingMirror = bridgeHead.y;
+            Mirror newInterMirror;
 
+            while(source_mirror.hasNext() && fill_count < RING_BRIDGE_MIRROR_NUM_HEIGHT) {
+                newInterMirror = source_mirror.next();
+                //disconnect and deleteLink from the innerRingMirror and registry and connect a new one to the newInterMirror
+                outerRingMirror.removeLink(bothLinked);
+                innerRingMirror.removeLink(bothLinked);
+                ret.remove(bothLinked);
+
+                bothLinked = new Link(IDGenerator.getInstance().getNextID(), outerRingMirror, newInterMirror, 0, props);
+                outerRingMirror.addLink(bothLinked);
+                newInterMirror.addLink(bothLinked);
+                ret.add(bothLinked);
+
+                Link newLinked = new Link(IDGenerator.getInstance().getNextID(), newInterMirror, innerRingMirror, 0, props);
+                newInterMirror.addLink(newLinked);
+                innerRingMirror.addLink(newLinked);
+                ret.add(newLinked);
+                //create a new Link between the newInterMirror and the innerRingMirror
+
+                //make the newInterMirror the new innerRingMirror to repeat the process in case of longer bridges
+                innerRingMirror = newInterMirror;
+                fill_count++;
+            }
+            if(!source_mirror.hasNext()) {
+                break;
+            }
+        }
     }
 
     private Set<Mirror> connectRingAndBridgesAndReturnStarPorts(Network n, Properties props, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
@@ -180,7 +212,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
 
             //iterate for each mirror on the ring
             for(int j = 0; j < ringCount; j++) {
-                int j_offset = (j+i*RING_BRIDGE_STEP_ON_RING)%mirrorRingsCount.get(0);
+                int j_offset = (j+i*RING_BRIDGE_OFFSET)%mirrorRingsCount.get(0);
                 //Build ring itself by connecting mirrors, load next available mirror from pool
                 Mirror sourceMirror;
 
@@ -246,7 +278,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         }
 
         //Bridge head may be longer, so fill more mirrors in between source and target mirrors of bridge heads
-        finalizeBridges(n, props, bridgeHeads, source_mirror);
+        finalizeBridges(props, ret, bridgeHeads, source_mirror);
 
         return starPorts;
     }
