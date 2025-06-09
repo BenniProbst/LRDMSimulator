@@ -194,14 +194,13 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         }
     }
 
-    private Set<Mirror> connectRingAndBridgesAndReturnStarPorts(Network n, Properties props, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
+    private AttributeUtils.Tuple<Set<Mirror>,Iterator<Mirror>> connectRingAndBridgesAndReturnStarPorts(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
         //connect rings
         //TODO: set exceptions
         Set<Mirror> starPorts = new HashSet<>();
         LinkedList<AttributeUtils.Tuple<Mirror,Mirror>> bridgeHeads = new LinkedList<>();
         ArrayList<Mirror> nextRingMirrorsCache = new ArrayList<>(Collections.nCopies(mirrorRingsCount.get(0), null));
 
-        Iterator<Mirror> source_mirror = n.getMirrors().iterator();
         Mirror lastMirror = null;
 
         //for each of the snowflake inner rings
@@ -280,10 +279,10 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         //Bridge head may be longer, so fill more mirrors in between source and target mirrors of bridge heads
         finalizeBridges(props, ret, bridgeHeads, source_mirror);
 
-        return starPorts;
+        return new AttributeUtils.Tuple<>(starPorts,source_mirror);
     }
 
-    private void connectStars(Network n, Properties props, Set<Link> ret, ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars, Set<Mirror> starPorts) {
+    private void connectStars(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars, Set<Mirror> starPorts) {
         //build a new bridge at each star port
 
         //build a balanced tree
@@ -307,9 +306,10 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars = getSafeExternStarDistribution(numMirrorsDistribution.y,mirrorRingsCount.get(0));
 
         //build rings and bridges from datastructures description (construction layer)
-        Set<Mirror> starPorts = connectRingAndBridgesAndReturnStarPorts(n,props,ret,mirrorRingsCount,bridgesBetweenRings);
+        Iterator<Mirror> source_mirror = n.getMirrors().iterator();
+        AttributeUtils.Tuple<Set<Mirror>,Iterator<Mirror>> ringData = connectRingAndBridgesAndReturnStarPorts(source_mirror,props,ret,mirrorRingsCount,bridgesBetweenRings);
         //build stars on the outermost ring from datastructures description (construction layer)
-        connectStars(n,props,ret,mirrorCountOnExternStars, starPorts);
+        connectStars(ringData.y,props,ret,mirrorCountOnExternStars, ringData.x);
 
         return ret;
     }
