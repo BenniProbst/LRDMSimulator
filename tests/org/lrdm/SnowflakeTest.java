@@ -2,8 +2,6 @@ package org.lrdm;
 
 import org.junit.jupiter.api.Test;
 import org.lrdm.effectors.Action;
-import org.lrdm.examples.ExampleOptimizer;
-import org.lrdm.examples.ExampleSimulation;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
@@ -13,14 +11,10 @@ import org.lrdm.topologies.NConnectedTopology;
 import org.lrdm.topologies.SnowflakeTopologyStrategy;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.channels.FileChannel;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.lrdm.TestUtils.loadProperties;
-import static org.lrdm.TestUtils.props;
+import static org.lrdm.TestProperties.loadProperties;
+import static org.lrdm.TestProperties.props;
 
 class SnowflakeTest {
     private TimedRDMSim sim;
@@ -57,8 +51,8 @@ class SnowflakeTest {
     @Test
     void testMirrorChange() throws IOException {
         initSimulator();
-        sim.initialize(new BalancedTreeTopologyStrategy());
-        sim.getEffector().setMirrors(20, 10);
+        sim.initialize(new SnowflakeTopologyStrategy());
+        sim.getEffector().setMirrors(140, 10);
         MirrorProbe mp = null;
         for(Probe p : sim.getProbes()) {
             if(p instanceof  MirrorProbe) {

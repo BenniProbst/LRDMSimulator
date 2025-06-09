@@ -10,15 +10,14 @@ import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.FullyConnectedTopology;
 import org.junit.jupiter.api.Test;
 import org.lrdm.topologies.NConnectedTopology;
-import org.lrdm.topologies.SnowflakeTopologyStrategy;
 
 import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.lrdm.TestUtils.loadProperties;
-import static org.lrdm.TestUtils.props;
+import static org.lrdm.TestProperties.loadProperties;
+import static org.lrdm.TestProperties.props;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AppTest {

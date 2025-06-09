@@ -3,8 +3,8 @@ package org.lrdm;
 import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
-import static org.lrdm.TestUtils.loadProperties;
-import static org.lrdm.TestUtils.props;
+import static org.lrdm.TestProperties.loadProperties;
+import static org.lrdm.TestProperties.props;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MirrorTest {
