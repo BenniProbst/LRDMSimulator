@@ -306,11 +306,49 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
     }
 
     private void buildBalancedMirrorTree(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, ArrayList<SnowflakeStarTreeNode> treeTemplate, LinkedList<AttributeUtils.Tuple<Mirror,Mirror>> bridgeHeads) {
-
-        for(SnowflakeStarTreeNode tree : treeTemplate) {
-
+    
+    Iterator<AttributeUtils.Tuple<Mirror,Mirror>> bridgeHeadIterator = bridgeHeads.iterator();
+    
+    for(SnowflakeStarTreeNode tree : treeTemplate) {
+        if(tree == null || !bridgeHeadIterator.hasNext()) continue;
+        
+        // Stack für DFS-Traversierung erstellen
+        Stack<AttributeUtils.Tuple<SnowflakeStarTreeNode, Mirror>> dfsStack = new Stack<>();
+        
+        // Bridge-Heads holen für aktuellen Stern
+        AttributeUtils.Tuple<Mirror,Mirror> currentBridgeHead = bridgeHeadIterator.next();
+        Mirror starRootMirror = currentBridgeHead.y; // Bridge-Target wird zur Wurzel des Sterns
+        
+        // Root-Node mit entsprechendem Mirror auf Stack legen
+        dfsStack.push(new AttributeUtils.Tuple<>(tree, starRootMirror));
+        
+        // DFS-Traversierung mit Stack
+        while(!dfsStack.isEmpty() && source_mirror.hasNext()) {
+            // Aktuellen Zustand vom Stack nehmen
+            AttributeUtils.Tuple<SnowflakeStarTreeNode, Mirror> current = dfsStack.pop();
+            SnowflakeStarTreeNode currentNode = current.x;
+            Mirror currentMirror = current.y;
+            
+            // Für alle Kinder des aktuellen Knotens
+            for(SnowflakeStarTreeNode child : currentNode.getChildren()) {
+                if(!source_mirror.hasNext()) break;
+                
+                // Neuen Mirror für das Kind holen
+                Mirror childMirror = source_mirror.next();
+                
+                // Link zwischen Parent und Child erstellen
+                Link childLink = new Link(IDGenerator.getInstance().getNextID(), 
+                                        currentMirror, childMirror, 0, props);
+                currentMirror.addLink(childLink);
+                childMirror.addLink(childLink);
+                ret.add(childLink);
+                
+                // Kind-Zustand auf Stack legen (für weitere Traversierung)
+                dfsStack.push(new AttributeUtils.Tuple<>(child, childMirror));
+            }
         }
     }
+}
 
     private void connectStars(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, LinkedList<Mirror> starPorts, ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars) {
         //build a new bridge at each star port, reuse bridge build function in case the bridge ist longer than 1 link
