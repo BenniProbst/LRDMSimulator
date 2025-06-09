@@ -162,7 +162,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
 
     }
 
-    private Set<Mirror> connectRingAndBridgesAndReturnStarPorts(Network n, Properties props, Mirror start, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
+    private Set<Mirror> connectRingAndBridgesAndReturnStarPorts(Network n, Properties props, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
         //connect rings
         //TODO: set exceptions
         Set<Mirror> starPorts = new HashSet<>();
@@ -170,33 +170,50 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         ArrayList<Mirror> nextRingMirrorsCache = new ArrayList<>(Collections.nCopies(mirrorRingsCount.get(0), null));
 
         Iterator<Mirror> source_mirror = n.getMirrors().iterator();
-        Mirror lastMirror = start;
+        Mirror lastMirror = null;
 
         //for each of the snowflake inner rings
         for(int i = 0; i < mirrorRingsCount.size(); i++) {
             int ringCount = mirrorRingsCount.get(i);
 
+            Mirror firstMirror = null;
+
             //iterate for each mirror on the ring
             for(int j = 0; j < ringCount; j++) {
-                int j_offset = (j+i*RING_BRIDGE_OFFSET)%mirrorRingsCount.get(0);
+                int j_offset = (j+i*RING_BRIDGE_STEP_ON_RING)%mirrorRingsCount.get(0);
                 //Build ring itself by connecting mirrors, load next available mirror from pool
                 Mirror sourceMirror;
-                //TODO: this if else is wrong to be corrected to either take bridge head from last ring or generate new singe mirror to be connected
-                if(nextRingMirrorsCache.get(j_offset) == null) {
-                    if(source_mirror.hasNext()) {
-                        sourceMirror = source_mirror.next();
-                    } else {
-                        throw new RuntimeException("No more mirrors available");
-                    }
+
+                if(source_mirror.hasNext()) {
+                    sourceMirror = source_mirror.next();
+                } else {
+                    throw new RuntimeException("No more mirrors available");
                 }
-                else{
-                    sourceMirror = nextRingMirrorsCache.get(j_offset);
-                    nextRingMirrorsCache.set(j_offset, null);
+
+                if(j == 0) {
+                    firstMirror = sourceMirror;
                 }
-                Link l = new Link(IDGenerator.getInstance().getNextID(), lastMirror, sourceMirror, 0, props);
-                lastMirror.addLink(l);
-                sourceMirror.addLink(l);
-                ret.add(l);
+
+                //basic connection of bridges in between rings, notify bridge heads for multiple mirror extension
+                if(nextRingMirrorsCache.get(j_offset) != null) {
+                    Link l = new Link(IDGenerator.getInstance().getNextID(), nextRingMirrorsCache.get(j_offset), sourceMirror, 0, props);
+                    nextRingMirrorsCache.get(j_offset).addLink(l);
+                    sourceMirror.addLink(l);
+                    ret.add(l);
+                    bridgeHeads.add(new AttributeUtils.Tuple<>(nextRingMirrorsCache.get(j_offset),sourceMirror));
+                }
+
+                //store Mirror of last outer ring
+                nextRingMirrorsCache.set(j_offset, sourceMirror);
+
+                //link last mirror in case its not the first mirror of the ring
+                if(lastMirror != null) {
+                    Link l = new Link(IDGenerator.getInstance().getNextID(), lastMirror, sourceMirror, 0, props);
+                    lastMirror.addLink(l);
+                    sourceMirror.addLink(l);
+                    ret.add(l);
+                }
+
                 //build bridges with a circular offset with the same stepping of starports, using the last mirror
                 //edge case:
                 //The bridge must be built at offset zero
@@ -214,10 +231,21 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
                     //register starPorts if they appear
                     starPorts.add(sourceMirror);
                 }
+
+                //close ring on last mirror of collection
+                if(j == ringCount-1 && ringCount > 2 && firstMirror != null){
+                    Link l = new Link(IDGenerator.getInstance().getNextID(), firstMirror, sourceMirror, 0, props);
+                    firstMirror.addLink(l);
+                    sourceMirror.addLink(l);
+                    ret.add(l);
+                }
                 lastMirror = sourceMirror;
             }
+
+            lastMirror = null;
         }
 
+        //Bridge head may be longer, so fill more mirrors in between source and target mirrors of bridge heads
         finalizeBridges(n, props, bridgeHeads, source_mirror);
 
         return starPorts;
@@ -247,7 +275,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy{
         ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars = getSafeExternStarDistribution(numMirrorsDistribution.y,mirrorRingsCount.get(0));
 
         //build rings and bridges from datastructures description (construction layer)
-        Set<Mirror> starPorts = connectRingAndBridgesAndReturnStarPorts(n,props,n.getMirrors().iterator().next(),ret,mirrorRingsCount,bridgesBetweenRings);
+        Set<Mirror> starPorts = connectRingAndBridgesAndReturnStarPorts(n,props,ret,mirrorRingsCount,bridgesBetweenRings);
         //build stars on the outermost ring from datastructures description (construction layer)
         connectStars(n,props,ret,mirrorCountOnExternStars, starPorts);
 
