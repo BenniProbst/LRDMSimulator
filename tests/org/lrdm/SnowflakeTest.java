@@ -1,5 +1,6 @@
 package org.lrdm;
 
+import org.junit.jupiter.api.Test;
 import org.lrdm.effectors.Action;
 import org.lrdm.examples.ExampleOptimizer;
 import org.lrdm.examples.ExampleSimulation;
@@ -8,22 +9,22 @@ import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
 import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.FullyConnectedTopology;
-import org.junit.jupiter.api.Test;
 import org.lrdm.topologies.NConnectedTopology;
 import org.lrdm.topologies.SnowflakeTopologyStrategy;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.lrdm.TestUtils.loadProperties;
 import static org.lrdm.TestUtils.props;
-import static org.junit.jupiter.api.Assertions.*;
 
-class AppTest {
+class SnowflakeTest {
     private TimedRDMSim sim;
-    private static final String config = "resources/sim-test-1.conf";
+    private static final String config = "resources/sim-test-snowflake.conf";
     int startup_time_min;
     int startup_time_max;
     int ready_time_min;
@@ -47,47 +48,10 @@ class AppTest {
         sim.setHeadless(false);
     }
 
-    @Test
-    void testMissingConfig() {
-        assertDoesNotThrow(() -> new TimedRDMSim("does-not-exist.conf"));
-    }
-
-    @Test
-    void testUnreadableConfig() throws IOException {
-        try (RandomAccessFile f = new RandomAccessFile(config,"rw")) {
-            FileChannel channel = f.getChannel();
-            channel.lock();
-            assertDoesNotThrow(() -> new TimedRDMSim(config));
-        }
-    }
-
-    @Test
-    void testHeadlessNoDebug() throws IOException {
-        initSimulator("resources/sim-test-short.conf");
-        sim.setHeadless(true);
-        sim.initialize(null);
-        assertDoesNotThrow(() -> sim.run());
-    }
-
-    @Test
-    void testWrongUsageOfRunStep() throws IOException {
-        initSimulator();
-        sim.initialize(null);
-        assertDoesNotThrow(() -> sim.runStep(5));
-    }
-
     @Test()
     void testInitializeHasToBeCalled() throws IOException {
         initSimulator();
         assertThrows(RuntimeException.class, () -> sim.run());
-    }
-    @Test
-    void testExampleSimulator() {
-        assertDoesNotThrow(()-> ExampleSimulation.main(new String[]{}));
-    }
-    @Test
-    void testSzenarioZero() {
-        assertDoesNotThrow(()-> ExampleOptimizer.main(new String[]{}));
     }
 
     @Test
@@ -164,47 +128,6 @@ class AppTest {
         assert(lp != null);
         assertDoesNotThrow(() -> sim.run());
     }
-
-
-    void testMirrorStartupTime() throws IOException {
-        MirrorProbe mp = initTimeTest();
-        Map<Integer,Integer> startupTimes = getTimeToStateForMirrorFromSimulation(mp, Mirror.State.UP);
-        double avg = getAvg(startupTimes);
-        assertTrue(avg > startup_time_min && avg < startup_time_max);
-        for(Mirror m : mp.getMirrors()) {
-            assertEquals(m.getStartupTime(), startupTimes.get(m.getID()));
-        }
-    }
-
-    void testMirrorReadyTime() throws IOException {
-        MirrorProbe mp = initTimeTest();
-        Map<Integer, Integer> readyTimes = getTimeToStateForMirrorFromSimulation(mp, Mirror.State.READY);
-        double avg = getAvg(readyTimes);
-        assertTrue(avg > ready_time_min+startup_time_min && avg < ready_time_max+startup_time_max);
-        for(Mirror m : mp.getMirrors()) {
-            assertEquals(m.getReadyTime()+m.getStartupTime(), readyTimes.get(m.getID()));
-        }
-    }
-
-    void testLinkActiveTime() throws IOException {
-        initTimeTest();
-        LinkProbe lp = getLinkProbe();
-        Map<Integer,Integer> activeTimes = new HashMap<>();
-        for(int i = 1; i < sim.getSimTime(); i++) {
-            for(Link l : lp.getLinks()) {
-                if(l.getState().equals(Link.State.ACTIVE) && activeTimes.get(l.getID()) == null) {
-                    activeTimes.put(l.getID(), i);
-                }
-            }
-            sim.runStep(i);
-        }
-        double avg = getAvg(activeTimes);
-        assertTrue(avg > startup_time_min+link_activation_time_min && avg < startup_time_max+link_activation_time_max);
-        for(Link l : lp.getLinks()) {
-            int expected = l.getActivationTime() + Math.max(l.getSource().getStartupTime(), l.getTarget().getStartupTime());
-            assertEquals(expected, activeTimes.get(l.getID()));
-        }
-    }
     @Test
     void testTopologyChange() throws IOException {
         initSimulator();
@@ -213,33 +136,10 @@ class AppTest {
         sim.getEffector().setStrategy(new FullyConnectedTopology(), 20);
         sim.getEffector().setStrategy(new BalancedTreeTopologyStrategy(),30);
         sim.getEffector().setStrategy(new FullyConnectedTopology(),40);
+        sim.getEffector().setStrategy(new SnowflakeTopologyStrategy(),50);
         assertDoesNotThrow(() -> sim.run());
     }
 
-    private MirrorProbe initTimeTest() throws IOException {
-        initSimulator();
-        sim.initialize(new BalancedTreeTopologyStrategy());
-        MirrorProbe mp = getMirrorProbe();
-        assertNotNull(mp);
-        return mp;
-    }
-    private Map<Integer, Integer> getTimeToStateForMirrorFromSimulation(MirrorProbe mp, Mirror.State state) {
-        Map<Integer,Integer> stateTimes = new HashMap<>();
-        for(int i = 1; i < sim.getSimTime(); i++) {
-            for(Mirror m : mp.getMirrors()) {
-                if(m.getState().equals(state) && stateTimes.get(m.getID()) == null) {
-                    stateTimes.put(m.getID(), i);
-                }
-            }
-            sim.runStep(i);
-        }
-        return stateTimes;
-    }
-    private static double getAvg(Map<Integer, Integer> times) {
-        int total = 0;
-        for(int t : times.values()) total += t;
-        return (double)total / times.size();
-    }
     private MirrorProbe getMirrorProbe() {
         MirrorProbe mp = null;
         for(Probe p : sim.getProbes()) {

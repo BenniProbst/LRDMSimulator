@@ -5,6 +5,7 @@ import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
+import org.lrdm.effectors.MirrorChange;
 import org.lrdm.util.IDGenerator;
 import org.lrdm.util.SnowflakeStarTreeNode;
 import org.lrdm.util.SnowflakeTreeBuilder;
@@ -386,16 +387,124 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
 
     @Override
     public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
+        //TODO: add new mirrors to stars only, develop dynamic Mirror and link building strategy
+        List<Mirror> mirrorsToAdd = createMirrors(newMirrors, simTime, props);
+        n.getMirrors().addAll(mirrorsToAdd);
+        restartNetwork(n, props, simTime);
+    }
 
+    private int countRingAndBridgeLinks(ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
+        int linkCount = 0;
+
+        // Für jeden Ring
+        for(int i = 0; i < mirrorRingsCount.size(); i++) {
+            int ringCount = mirrorRingsCount.get(i);
+
+            // Ring-interne Links (Ringschluss)
+            if(ringCount > 2) {
+                linkCount += ringCount; // Jeder Mirror mit dem nächsten + letzter mit erstem
+            } else if(ringCount == 2) {
+                linkCount += 1; // Nur eine Verbindung zwischen zwei Mirrors
+            }
+
+            // Brücken zwischen Ringen
+            for(int j = 0; j < bridgesBetweenRings.size() && j < ringCount; j++) {
+                int j_offset = (j + i * RING_BRIDGE_OFFSET) % mirrorRingsCount.get(0);
+                if(j_offset < bridgesBetweenRings.size() && !bridgesBetweenRings.get(j_offset).isEmpty()) {
+                    // Basis-Link zwischen Ringen
+                    if(i > 0) { // Nicht für den äußersten Ring
+                        linkCount += 1;
+                    }
+
+                    // Zusätzliche Bridge-Links
+                    if(bridgesBetweenRings.get(j_offset).size() > i && bridgesBetweenRings.get(j_offset).get(i) > 0) {
+                        linkCount += bridgesBetweenRings.get(j_offset).get(i) * RING_BRIDGE_MIRROR_NUM_HEIGHT;
+                    }
+                }
+            }
+        }
+
+        return linkCount;
+    }
+
+    private int countStarLinks(ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars) {
+        int linkCount = 0;
+
+        for(SnowflakeStarTreeNode tree : mirrorCountOnExternStars) {
+            if(tree != null) {
+                // Brücken-Links zum Stern
+                linkCount += BRIDGE_TO_EXTERN_STAR_DISTANCE;
+
+                // Stern-interne Links (DFS-Traversierung zählen)
+                linkCount += countTreeLinks(tree);
+            }
+        }
+
+        return linkCount;
+    }
+
+    private int countTreeLinks(SnowflakeStarTreeNode node) {
+        if(node == null) return 0;
+
+        int linkCount = 0;
+
+        // DFS-Stack für Zählung
+        Stack<SnowflakeStarTreeNode> dfsStack = new Stack<>();
+        dfsStack.push(node);
+
+        while(!dfsStack.isEmpty()) {
+            SnowflakeStarTreeNode current = dfsStack.pop();
+
+            // Für jedes Kind einen Link zählen
+            for(SnowflakeStarTreeNode child : current.getChildren()) {
+                linkCount += 1; // Link zwischen Parent und Child
+                dfsStack.push(child); // Kind für weitere Traversierung
+            }
+        }
+
+        return linkCount;
+    }
+
+    private int linkCount(int numMirrors){
+        // Gleiche Verteilungslogik wie in initNetwork
+        AttributeUtils.Tuple<Integer, Integer> numMirrorsDistribution = snowflakeDistribution(numMirrors);
+        AttributeUtils.Tuple<ArrayList<Integer>,List<List<Integer>>> outsideToInsideMirrorCountOnRing = getSafeRingMirrorDistribution(numMirrorsDistribution.x);
+        ArrayList<Integer> mirrorRingsCount = outsideToInsideMirrorCountOnRing.x;
+        List<List<Integer>> bridgesBetweenRings = outsideToInsideMirrorCountOnRing.y;
+
+        int numMirrorsToStarBridges = (mirrorRingsCount.get(0) / RING_BRIDGE_STEP_ON_RING) * RING_BRIDGE_MIRROR_NUM_HEIGHT;
+        ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars = getSafeExternStarDistribution(Math.max(0,numMirrorsDistribution.y-numMirrorsToStarBridges),mirrorRingsCount.get(0));
+
+        // Zähle Links anstatt sie zu erstellen
+        int totalLinks = 0;
+
+        // Links für Ringe und Brücken zwischen Ringen
+        totalLinks += countRingAndBridgeLinks(mirrorRingsCount, bridgesBetweenRings);
+
+        // Links für Sterne (Brücken zu Sternen + Stern-interne Links)
+        totalLinks += countStarLinks(mirrorCountOnExternStars);
+
+        return totalLinks;
     }
 
     @Override
     public int getNumTargetLinks(Network n) {
-        return 0;
+        if(n.getMirrors().isEmpty()) return 0;
+    
+        int numMirrors = n.getMirrors().size();
+    
+        return linkCount(numMirrors);
     }
 
     @Override
     public int getPredictedNumTargetLinks(Action a) {
-        return 0;
+        int m = a.getNetwork().getNumMirrors();
+
+        if(a instanceof MirrorChange mc) {
+            m += mc.getNewMirrors();
+        }
+        // Bei TargetLinkChange bleibt die Topologie-Struktur gleich
+
+        return linkCount(m);
     }
 }
