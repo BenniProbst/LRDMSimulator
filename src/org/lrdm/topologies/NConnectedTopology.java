@@ -6,6 +6,7 @@ import org.lrdm.Network;
 import org.lrdm.effectors.Action;
 import org.lrdm.effectors.MirrorChange;
 import org.lrdm.effectors.TargetLinkChange;
+import org.lrdm.topologies.base.*;
 import org.lrdm.util.IDGenerator;
 
 import java.util.*;
@@ -15,7 +16,7 @@ import java.util.*;
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
-public class NConnectedTopology extends TopologyStrategy {
+public class NConnectedTopology extends TopologyStrategy, BuildAsSubstructure{
     /**Returns the next mirror from the network except for the mirror passed as self.
      * In addition, already connected mirrors are excluded.
      *

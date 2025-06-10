@@ -5,6 +5,7 @@ import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
 import org.lrdm.effectors.MirrorChange;
+import org.lrdm.topologies.base.*;
 import org.lrdm.util.IDGenerator;
 
 import java.util.*;
@@ -15,7 +16,7 @@ import java.util.*;
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
-public class BalancedTreeTopologyStrategy extends TopologyStrategy {
+public class BalancedTreeTopologyStrategy extends TopologyStrategy, BuildAsSubstructure {
 
     /**Initializes the network already having the amount of mirrors as specified in the properties and
      * connects these mirrors forming a balanced tree.

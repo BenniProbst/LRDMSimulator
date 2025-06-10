@@ -5,6 +5,7 @@ import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
 import org.lrdm.effectors.MirrorChange;
+import org.lrdm.topologies.base.*;
 import org.lrdm.util.IDGenerator;
 
 import java.util.*;
@@ -14,7 +15,7 @@ import java.util.*;
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
-public class FullyConnectedTopology extends TopologyStrategy {
+public class FullyConnectedTopology extends TopologyStrategy, BuildAsSubstructure{
     /**Initializes the network by connecting all mirrors to one another.
      *
      * @param n the {@link Network}

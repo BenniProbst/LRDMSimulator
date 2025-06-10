@@ -1,7 +1,7 @@
 package org.lrdm.effectors;
 
 import org.lrdm.Network;
-import org.lrdm.topologies.TopologyStrategy;
+import org.lrdm.topologies.base.TopologyStrategy;
 
 /**An adaptation action representing the change of the topology.
  *

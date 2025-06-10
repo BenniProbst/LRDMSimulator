@@ -6,6 +6,7 @@ import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
 import org.lrdm.effectors.MirrorChange;
+import org.lrdm.topologies.base.TopologyStrategy;
 import org.lrdm.util.IDGenerator;
 import org.lrdm.util.TreeNode;
 import org.lrdm.util.TreeBuilder;
@@ -239,10 +240,10 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         }
     }
 
-    private AttributeUtils.Tuple<Iterator<Mirror>, LinkedList<Mirror>> connectRingAndBridgesAndReturnStarPorts(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
+    private AttributeUtils.Tuple<Iterator<Mirror>, LinkedList<Mirror>> connectRingAndBridgesAndReturnSubtopologyPorts(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, ArrayList<Integer> mirrorRingsCount, List<List<Integer>> bridgesBetweenRings) {
         //connect rings
         //TODO: set exceptions
-        LinkedList<Mirror> starPorts = new LinkedList<>();
+        LinkedList<Mirror> subtopologyPorts = new LinkedList<>();
         LinkedList<AttributeUtils.Tuple<Mirror, Mirror>> bridgeHeads = new LinkedList<>();
         ArrayList<Mirror> nextRingMirrorsCache = new ArrayList<>(Collections.nCopies(mirrorRingsCount.get(0), null));
 
@@ -290,7 +291,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
                     ret.add(l);
                 }
 
-                //build bridges with a circular offset with the same stepping of starports, using the last mirror
+                //build bridges with a circular offset with the same stepping of subtopology ports, using the last mirror
                 //edge case:
                 //The bridge must be built at offset zero
                 //if the chosen offset is higher than the ring count
@@ -302,10 +303,10 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
                     bridgeHeads.add(new AttributeUtils.Tuple<>(sourceMirror, bridgeHead));
                     nextRingMirrorsCache.set(j_offset, bridgeHead);
                 }
-                //build starports with a stepping using last mirror
+                //build subtopology ports with a stepping using last mirror
                 if (j_offset % RING_BRIDGE_STEP_ON_RING == 0) {
-                    //register starPorts if they appear
-                    starPorts.add(sourceMirror);
+                    //register subtopology ports if they appear
+                    subtopologyPorts.add(sourceMirror);
                 }
 
                 //close ring on last mirror of collection
@@ -324,22 +325,22 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         //Bridge head may be longer, so fill more mirrors in between source and target mirrors of bridge heads
         finalizeBridges(props, ret, bridgeHeads, source_mirror, RING_BRIDGE_MIRROR_NUM_HEIGHT);
 
-        return new AttributeUtils.Tuple<>(source_mirror, starPorts);
+        return new AttributeUtils.Tuple<>(source_mirror, subtopologyPorts);
     }
 
-    private LinkedList<AttributeUtils.Tuple<Mirror, Mirror>> connectStarBridge(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, LinkedList<Mirror> starPorts) {
-        Iterator<Mirror> starPortIterator = starPorts.iterator();
+    private LinkedList<AttributeUtils.Tuple<Mirror, Mirror>> connectStarBridge(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, LinkedList<Mirror> subtopologyPorts) {
+        Iterator<Mirror> subtopologyPortIterator = subtopologyPorts.iterator();
         LinkedList<AttributeUtils.Tuple<Mirror, Mirror>> bridgeHeads = new LinkedList<>();
-        while (starPortIterator.hasNext()) {
-            Mirror starPort = starPortIterator.next();
+        while (subtopologyPortIterator.hasNext()) {
+            Mirror subtopologyPort = subtopologyPortIterator.next();
 
             if (BRIDGE_TO_EXTERN_STAR_DISTANCE > 0 && source_mirror.hasNext()) {
                 Mirror bridgeTarget = source_mirror.next();
-                Link l = new Link(IDGenerator.getInstance().getNextID(), starPort, bridgeTarget, 0, props);
-                starPort.addLink(l);
+                Link l = new Link(IDGenerator.getInstance().getNextID(), subtopologyPort, bridgeTarget, 0, props);
+                subtopologyPort.addLink(l);
                 bridgeTarget.addLink(l);
                 ret.add(l);
-                bridgeHeads.add(new AttributeUtils.Tuple<>(starPort, bridgeTarget));
+                bridgeHeads.add(new AttributeUtils.Tuple<>(subtopologyPort, bridgeTarget));
             } else {
                 break;
             }
@@ -394,16 +395,16 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         }
     }
 
-    private void connectStars(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, LinkedList<Mirror> starPorts, ArrayList<TreeNode> mirrorCountOnExternStars) {
-        //build a new bridge at each star port, reuse bridge build function in case the bridge ist longer than 1 link
-        LinkedList<AttributeUtils.Tuple<Mirror, Mirror>> bridgeHeads = connectStarBridge(source_mirror, props, ret, starPorts);
+    private void connectStars(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, LinkedList<Mirror> subtopologyPorts, ArrayList<TreeNode> mirrorCountOnExternStars) {
+        //build a new bridge at each subtopology port, reuse bridge build function in case the bridge ist longer than 1 link
+        LinkedList<AttributeUtils.Tuple<Mirror, Mirror>> bridgeHeads = connectStarBridge(source_mirror, props, ret, subtopologyPorts);
         //build a balanced tree from a template
         buildBalancedMirrorTree(source_mirror, props, ret, mirrorCountOnExternStars, bridgeHeads);
     }
 
     @Override
     public Set<Link> initNetwork(Network n, Properties props) {
-        //TODO: split Ring topology, BalancedDepthTree topology and refactor to Object ports that are initiated on
+        //TODO: split Ring topology, BalancedDepthTree topology and refactor to subtopology ports that are initiated on
         //TODO: outside Ring topology of snowflake to connect also other objects than just balanced trees like rings and stars
         Set<Link> ret = new HashSet<>();
         if (n.getMirrors().isEmpty()) return ret;
@@ -422,11 +423,11 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
 
         //build rings and bridges from datastructures description (construction layer)
         Iterator<Mirror> source_mirror = n.getMirrors().iterator();
-        AttributeUtils.Tuple<Iterator<Mirror>, LinkedList<Mirror>> ringData = connectRingAndBridgesAndReturnStarPorts(source_mirror, props, ret, mirrorRingsCount, bridgesBetweenRings);
+        AttributeUtils.Tuple<Iterator<Mirror>, LinkedList<Mirror>> ringData = connectRingAndBridgesAndReturnSubtopologyPorts(source_mirror, props, ret, mirrorRingsCount, bridgesBetweenRings);
         Iterator<Mirror> sourceMirrorTmpIterator = ringData.x;
-        LinkedList<Mirror> starPorts = ringData.y;
+        LinkedList<Mirror> subtopologyPorts = ringData.y;
         //build stars on the outermost ring from datastructures description (construction layer)
-        connectStars(sourceMirrorTmpIterator, props, ret, starPorts, mirrorCountOnExternStars);
+        connectStars(sourceMirrorTmpIterator, props, ret, subtopologyPorts, mirrorCountOnExternStars);
 
         return ret;
     }
@@ -552,5 +553,18 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         // Bei TargetLinkChange bleibt die Topologie-Struktur gleich
 
         return linkCount(m);
+    }
+
+    /**Removes the requested amount of mirrors from the network. The mirrors with the largest ID will be removed.
+     *
+     * @param n the {@link Network}
+     * @param removeMirrors number of mirrors to be removed
+     * @param props {@link Properties} of the simulation
+     * @param simTime current simulation time
+     */
+    @Override
+    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+        //keep a balance between removing from substructures
+
     }
 }

@@ -7,7 +7,6 @@ import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
 import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.FullyConnectedTopology;
-import org.lrdm.topologies.NConnectedTopology;
 import org.lrdm.topologies.SnowflakeTopologyStrategy;
 
 import java.io.IOException;
@@ -52,7 +51,7 @@ class SnowflakeTest {
     void testMirrorChange() throws IOException {
         initSimulator();
         sim.initialize(new SnowflakeTopologyStrategy());
-        sim.getEffector().setMirrors(140, 10);
+        sim.getEffector().setMirrors(160, 10);
         MirrorProbe mp = null;
         for(Probe p : sim.getProbes()) {
             if(p instanceof  MirrorProbe) {
@@ -74,7 +73,7 @@ class SnowflakeTest {
     @Test
     void testDeltaEffects() throws IOException {
         initSimulator();
-        sim.initialize(new NConnectedTopology());
+        sim.initialize(new SnowflakeTopologyStrategy());
         MirrorProbe mp = null;
         for(Probe p : sim.getProbes()) {
             if(p instanceof  MirrorProbe) {
@@ -102,7 +101,7 @@ class SnowflakeTest {
     @Test
     void testMirrorReduction() throws IOException {
         initSimulator();
-        sim.initialize(new BalancedTreeTopologyStrategy());
+        sim.initialize(new SnowflakeTopologyStrategy());
         sim.getEffector().setMirrors(2, 10);
         MirrorProbe mp = getMirrorProbe();
         assert(mp != null);
@@ -116,7 +115,7 @@ class SnowflakeTest {
     @Test
     void testTargetLinkChange() throws IOException {
         initSimulator();
-        sim.initialize(new BalancedTreeTopologyStrategy());
+        sim.initialize(new SnowflakeTopologyStrategy());
         sim.getEffector().setTargetLinksPerMirror(5, 10);
         LinkProbe lp = getLinkProbe();
         assert(lp != null);
