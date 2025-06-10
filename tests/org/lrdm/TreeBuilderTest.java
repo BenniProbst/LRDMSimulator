@@ -3,8 +3,8 @@ package org.lrdm;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.lrdm.util.SnowflakeStarTreeNode;
-import org.lrdm.util.SnowflakeTreeBuilder;
+import org.lrdm.util.TreeNode;
+import org.lrdm.util.TreeBuilder;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -12,13 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @DisplayName("SnowflakeTreeBuilder Tests")
-class SnowflakeTreeBuilderTest {
+class TreeBuilderTest {
 
-    private SnowflakeTreeBuilder builder;
+    private TreeBuilder builder;
 
     @BeforeEach
     void setUp() {
-        builder = new SnowflakeTreeBuilder();
+        builder = new TreeBuilder();
     }
 
     @Test
@@ -31,7 +31,7 @@ class SnowflakeTreeBuilderTest {
     @Test
     @DisplayName("buildTree mit einem Knoten")
     void testBuildTreeSingleNode() {
-        SnowflakeStarTreeNode root = builder.buildTree(1, 3);
+        TreeNode root = builder.buildTree(1, 3);
         
         assertNotNull(root);
         assertEquals(1, root.getId());
@@ -43,7 +43,7 @@ class SnowflakeTreeBuilderTest {
     @Test
     @DisplayName("buildTree mit mehreren Knoten und begrenzter Tiefe")
     void testBuildTreeMultipleNodes() {
-        SnowflakeStarTreeNode root = builder.buildTree(5, 2);
+        TreeNode root = builder.buildTree(5, 2);
         
         assertNotNull(root);
         assertEquals(1, root.getId());
@@ -61,7 +61,7 @@ class SnowflakeTreeBuilderTest {
     @Test
     @DisplayName("buildTree respektiert maximale Tiefe")
     void testBuildTreeMaxDepthRespected() {
-        SnowflakeStarTreeNode root = builder.buildTree(10, 1);
+        TreeNode root = builder.buildTree(10, 1);
         
         // Bei maxDepth = 1 sollten alle Knoten auf Level 0 oder 1 sein
         int maxDepth = findMaxDepth(root);
@@ -69,7 +69,7 @@ class SnowflakeTreeBuilderTest {
         
         // Root sollte Kinder haben, aber Kinder sollten Blätter sein
         if (!root.isLeaf()) {
-            for (SnowflakeStarTreeNode child : root.getChildren()) {
+            for (TreeNode child : root.getChildren()) {
                 assertTrue(child.isLeaf());
             }
         }
@@ -78,7 +78,7 @@ class SnowflakeTreeBuilderTest {
     @Test
     @DisplayName("traverseDepthFirst funktioniert korrekt")
     void testTraverseDepthFirst() {
-        SnowflakeStarTreeNode root = builder.buildTree(5, 3);
+        TreeNode root = builder.buildTree(5, 3);
         List<Integer> result = new ArrayList<>();
         
         builder.traverseDepthFirst(root, result);
@@ -103,7 +103,7 @@ class SnowflakeTreeBuilderTest {
     @Test
     @DisplayName("addNodesToExistingTree Edge Cases")
     void testAddNodesToExistingTreeEdgeCases() {
-        SnowflakeStarTreeNode root = new SnowflakeStarTreeNode(1, 0);
+        TreeNode root = new TreeNode(1, 0);
         
         // Null root
         assertEquals(0, builder.addNodesToExistingTree(null, 5, 3));
@@ -118,7 +118,7 @@ class SnowflakeTreeBuilderTest {
     @Test
     @DisplayName("addNodesToExistingTree fügt Knoten korrekt hinzu")
     void testAddNodesToExistingTree() {
-        SnowflakeStarTreeNode root = new SnowflakeStarTreeNode(1, 0);
+        TreeNode root = new TreeNode(1, 0);
         
         int addedNodes = builder.addNodesToExistingTree(root, 3, 2);
         
@@ -137,8 +137,8 @@ class SnowflakeTreeBuilderTest {
     @DisplayName("addNodesToExistingTreeBalanced verteilt Knoten ausgewogen")
     void testAddNodesToExistingTreeBalanced() {
         // Erstelle einen bestehenden Baum
-        SnowflakeStarTreeNode root = new SnowflakeStarTreeNode(1, 0);
-        SnowflakeStarTreeNode child1 = new SnowflakeStarTreeNode(2, 1);
+        TreeNode root = new TreeNode(1, 0);
+        TreeNode child1 = new TreeNode(2, 1);
         root.addChild(child1);
         
         int addedNodes = builder.addNodesToExistingTreeBalanced(root, 4, 3);
@@ -156,7 +156,7 @@ class SnowflakeTreeBuilderTest {
     @Test
     @DisplayName("addNodesToExistingTreeBalanced respektiert maxDepth")
     void testAddNodesToExistingTreeBalancedMaxDepth() {
-        SnowflakeStarTreeNode root = new SnowflakeStarTreeNode(1, 0);
+        TreeNode root = new TreeNode(1, 0);
         
         // Versuche viele Knoten mit sehr geringer Tiefe hinzuzufügen
         int addedNodes = builder.addNodesToExistingTreeBalanced(root, 10, 1);
@@ -173,7 +173,7 @@ class SnowflakeTreeBuilderTest {
     @DisplayName("Komplexer Baum mit verschiedenen Operationen")
     void testComplexTreeOperations() {
         // Baue initial einen Baum
-        SnowflakeStarTreeNode root = builder.buildTree(7, 3);
+        TreeNode root = builder.buildTree(7, 3);
         
         // Zähle ursprüngliche Knoten
         int originalNodes = countNodes(root);
@@ -196,21 +196,21 @@ class SnowflakeTreeBuilderTest {
     }
 
     // Hilfsmethoden für Tests
-    private int countNodes(SnowflakeStarTreeNode node) {
+    private int countNodes(TreeNode node) {
         if (node == null) return 0;
         
         int count = 1; // Current node
-        for (SnowflakeStarTreeNode child : node.getChildren()) {
+        for (TreeNode child : node.getChildren()) {
             count += countNodes(child);
         }
         return count;
     }
 
-    private int findMaxDepth(SnowflakeStarTreeNode node) {
+    private int findMaxDepth(TreeNode node) {
         if (node == null) return -1;
         
         int maxDepth = node.getDepth();
-        for (SnowflakeStarTreeNode child : node.getChildren()) {
+        for (TreeNode child : node.getChildren()) {
             maxDepth = Math.max(maxDepth, findMaxDepth(child));
         }
         return maxDepth;

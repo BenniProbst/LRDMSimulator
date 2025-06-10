@@ -3,25 +3,25 @@ package org.lrdm.util;
 import java.util.*;
 
 // Node-Klasse für den Baum
-public class SnowflakeStarTreeNode {
+public class TreeNode {
     private int id;
-    private List<SnowflakeStarTreeNode> children;
-    private SnowflakeStarTreeNode parent;
+    private List<TreeNode> children;
+    private TreeNode parent;
     private int depth;
 
-    public SnowflakeStarTreeNode(int id, int depth) {
+    public TreeNode(int id, int depth) {
         this.id = id;
         this.depth = depth;
         this.children = new ArrayList<>();
         this.parent = null;
     }
 
-    public void addChild(SnowflakeStarTreeNode child) {
+    public void addChild(TreeNode child) {
         children.add(child);
         child.parent = this;
     }
 
-    public List<SnowflakeStarTreeNode> getChildren() {
+    public List<TreeNode> getChildren() {
         return children;
     }
 
@@ -33,7 +33,7 @@ public class SnowflakeStarTreeNode {
         return depth;
     }
 
-    public SnowflakeStarTreeNode getParent() {
+    public TreeNode getParent() {
         return parent;
     }
 

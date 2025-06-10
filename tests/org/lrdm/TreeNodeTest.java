@@ -3,21 +3,18 @@ package org.lrdm;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.lrdm.util.SnowflakeStarTreeNode;
+import org.lrdm.util.TreeNode;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @DisplayName("SnowflakeStarTreeNode Tests")
-class SnowflakeStarTreeNodeTest {
+class TreeNodeTest {
 
-    private SnowflakeStarTreeNode rootNode;
+    private TreeNode rootNode;
 
     @BeforeEach
     void setUp() {
-        rootNode = new SnowflakeStarTreeNode(1, 0);
+        rootNode = new TreeNode(1, 0);
     }
 
     @Test
@@ -33,7 +30,7 @@ class SnowflakeStarTreeNodeTest {
     @Test
     @DisplayName("addChild sollte Kind korrekt hinzufügen und Parent setzen")
     void testAddChild() {
-        SnowflakeStarTreeNode child = new SnowflakeStarTreeNode(2, 1);
+        TreeNode child = new TreeNode(2, 1);
         
         rootNode.addChild(child);
         
@@ -47,9 +44,9 @@ class SnowflakeStarTreeNodeTest {
     @Test
     @DisplayName("Mehrere Kinder hinzufügen")
     void testAddMultipleChildren() {
-        SnowflakeStarTreeNode child1 = new SnowflakeStarTreeNode(2, 1);
-        SnowflakeStarTreeNode child2 = new SnowflakeStarTreeNode(3, 1);
-        SnowflakeStarTreeNode child3 = new SnowflakeStarTreeNode(4, 1);
+        TreeNode child1 = new TreeNode(2, 1);
+        TreeNode child2 = new TreeNode(3, 1);
+        TreeNode child3 = new TreeNode(4, 1);
         
         rootNode.addChild(child1);
         rootNode.addChild(child2);
@@ -70,7 +67,7 @@ class SnowflakeStarTreeNodeTest {
     void testIsLeaf() {
         assertTrue(rootNode.isLeaf());
         
-        SnowflakeStarTreeNode child = new SnowflakeStarTreeNode(2, 1);
+        TreeNode child = new TreeNode(2, 1);
         rootNode.addChild(child);
         
         assertFalse(rootNode.isLeaf());
@@ -84,11 +81,11 @@ class SnowflakeStarTreeNodeTest {
         //                          -> Child2 -> Grandchild2
         //                                    -> Grandchild3
         
-        SnowflakeStarTreeNode child1 = new SnowflakeStarTreeNode(2, 1);
-        SnowflakeStarTreeNode child2 = new SnowflakeStarTreeNode(3, 1);
-        SnowflakeStarTreeNode grandchild1 = new SnowflakeStarTreeNode(4, 2);
-        SnowflakeStarTreeNode grandchild2 = new SnowflakeStarTreeNode(5, 2);
-        SnowflakeStarTreeNode grandchild3 = new SnowflakeStarTreeNode(6, 2);
+        TreeNode child1 = new TreeNode(2, 1);
+        TreeNode child2 = new TreeNode(3, 1);
+        TreeNode grandchild1 = new TreeNode(4, 2);
+        TreeNode grandchild2 = new TreeNode(5, 2);
+        TreeNode grandchild3 = new TreeNode(6, 2);
         
         rootNode.addChild(child1);
         rootNode.addChild(child2);

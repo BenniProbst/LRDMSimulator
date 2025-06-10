@@ -7,8 +7,11 @@ import org.lrdm.Network;
 import org.lrdm.effectors.Action;
 import org.lrdm.effectors.MirrorChange;
 import org.lrdm.util.IDGenerator;
-import org.lrdm.util.SnowflakeStarTreeNode;
-import org.lrdm.util.SnowflakeTreeBuilder;
+import org.lrdm.util.TreeNode;
+import org.lrdm.util.TreeBuilder;
+
+import org.lrdm.topologies.exceptions.*;
+import org.lrdm.topologies.validators.SnowflakeTopologyValidator;
 
 import java.util.*;
 
@@ -30,7 +33,41 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
     private final double INTERN_ALL_RINGS_MIRRORS_RATIO = 1.0 - EXTERN_STAR_RATIO;
     private final double EACH_INNER_RING_MIRRORS_RATIO = INTERN_ALL_RINGS_MIRRORS_RATIO / MAX_RING_LAYERS;
 
+    /**
+     * Validiert alle Konstanten bei der Initialisierung
+     */
+    private void validateAllParameters() {
+        try {
+            SnowflakeTopologyValidator.validateRingParameters(
+                    RING_BRIDGE_STEP_ON_RING,
+                    RING_BRIDGE_OFFSET,
+                    RING_BRIDGE_MIRROR_NUM_HEIGHT,
+                    MAX_RING_LAYERS,
+                    MINIMAL_RING_MIRROR_COUNT
+            );
+
+            SnowflakeTopologyValidator.validateStarParameters(
+                    EXTERN_STAR_MAX_TREE_DEPTH,
+                    BRIDGE_TO_EXTERN_STAR_DISTANCE,
+                    EXTERN_STAR_RATIO
+            );
+        } catch (SnowflakeTopologyException e) {
+            throw new IllegalStateException("Ungültige Snowflake-Topologie-Konfiguration: " + e.getMessage(), e);
+        }
+    }
+
+    // Konstruktor oder Initialisierungsblock für Validierung
+    public SnowflakeTopologyStrategy() {
+        validateAllParameters();
+    }
+
+
     private AttributeUtils.Tuple<Integer, Integer> snowflakeDistribution(int numMirrors) {
+        // Validierung der gegebenen Mirrors am Anfang der Methode
+        if (numMirrors <= 0) {
+            throw new InvalidMirrorDistributionException(numMirrors, 0, 0, "Gesamtanzahl der Mirrors muss positiv sein");
+        }
+
         int numMirrorsOnRings = (int) Math.floor(numMirrors * EACH_INNER_RING_MIRRORS_RATIO);
         int numMirrorsOnExternStars = (int) Math.floor(numMirrors * EXTERN_STAR_RATIO);
         //in case of not satisfying mirror count, add a star node
@@ -39,6 +76,13 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
             //exeption to set up an extra Mirror on the external stars in case of odd numbers
             numMirrorsOnExternStars += numMirrors - allMirrorsCounted;
         }
+
+        // Validiere das Ergebnis
+        SnowflakeTopologyValidator.validateMirrorDistribution(
+                numMirrors, numMirrorsOnRings, numMirrorsOnExternStars,
+                MINIMAL_RING_MIRROR_COUNT, MAX_RING_LAYERS
+        );
+
         return new AttributeUtils.Tuple<>(numMirrorsOnRings, numMirrorsOnExternStars);
     }
 
@@ -103,9 +147,9 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         return new AttributeUtils.Tuple<>(outsideToInsideMirrorCountOnRing, bridgedBetweenRings);
     }
 
-    private SnowflakeStarTreeNode getDeepestNode(SnowflakeStarTreeNode node, int maxDepth) {
+    private TreeNode getDeepestNode(TreeNode node, int maxDepth) {
         if (node == null || node.getChildren().isEmpty()) return null;
-        SnowflakeStarTreeNode currentDeepestMirror = node.getChildren().get(0);
+        TreeNode currentDeepestMirror = node.getChildren().get(0);
         while (!currentDeepestMirror.getChildren().isEmpty()) {
             if (maxDepth == 0) break;
             currentDeepestMirror = currentDeepestMirror.getChildren().get(0);
@@ -114,9 +158,9 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         return currentDeepestMirror;
     }
 
-    private ArrayList<SnowflakeStarTreeNode> getSafeExternStarDistribution(int numMirrorsOnExternStars, int numMirrorsOnFirstRing) {
+    private ArrayList<TreeNode> getSafeExternStarDistribution(int numMirrorsOnExternStars, int numMirrorsOnFirstRing) {
         //TODO: Argument exceptions
-        ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars = new ArrayList<>(Collections.nCopies(numMirrorsOnFirstRing, null));
+        ArrayList<TreeNode> mirrorCountOnExternStars = new ArrayList<>(Collections.nCopies(numMirrorsOnFirstRing, null));
         int mirrorsForEachStar = (int) Math.floor((double) numMirrorsOnExternStars / numMirrorsOnFirstRing);
         int mirrorsLeftAfterBridgedToRoot = Math.max(0, numMirrorsOnExternStars - numMirrorsOnFirstRing * BRIDGE_TO_EXTERN_STAR_DISTANCE);
         int mirrorsToBridges = numMirrorsOnExternStars - mirrorsLeftAfterBridgedToRoot;
@@ -129,9 +173,9 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
             int addIndexToMirror = i % numMirrorsOnFirstRing;
 
             if (mirrorCountOnExternStars.get(addIndexToMirror) == null) {
-                mirrorCountOnExternStars.set(addIndexToMirror, new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
+                mirrorCountOnExternStars.set(addIndexToMirror, new TreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
             } else {
-                getDeepestNode(mirrorCountOnExternStars.get(addIndexToMirror), EXTERN_STAR_MAX_TREE_DEPTH).addChild(new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
+                getDeepestNode(mirrorCountOnExternStars.get(addIndexToMirror), EXTERN_STAR_MAX_TREE_DEPTH).addChild(new TreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
             }
         }
         //second fill a depth-limited tree on each star at the end of the bridges
@@ -141,17 +185,17 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
             int dynamicUseOfTreeMirrorsInt = (int) dynamicUseOfTreeMirrors;
             mirrorsToTreeOnStarCopy -= dynamicUseOfTreeMirrorsInt;
 
-            SnowflakeTreeBuilder builder = new SnowflakeTreeBuilder();
-            SnowflakeStarTreeNode subTree = builder.buildTree(dynamicUseOfTreeMirrorsInt, EXTERN_STAR_MAX_TREE_DEPTH);
+            TreeBuilder builder = new TreeBuilder();
+            TreeNode subTree = builder.buildTree(dynamicUseOfTreeMirrorsInt, EXTERN_STAR_MAX_TREE_DEPTH);
             getDeepestNode(mirrorCountOnExternStars.get(i), EXTERN_STAR_MAX_TREE_DEPTH).addChild(subTree);
         }
         //third fill the rest with mirrors circular to the B-trees on the stars
         for (int i = 0; i < mirrorsToBeCircularFilled; i++) {
             int addIndexToMirror = i % numMirrorsOnFirstRing;
             if (mirrorCountOnExternStars.get(addIndexToMirror) == null) {
-                mirrorCountOnExternStars.set(addIndexToMirror, new SnowflakeStarTreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
+                mirrorCountOnExternStars.set(addIndexToMirror, new TreeNode(IDGenerator.getInstance().getNextID(), EXTERN_STAR_MAX_TREE_DEPTH));
             } else {
-                SnowflakeTreeBuilder builder = new SnowflakeTreeBuilder();
+                TreeBuilder builder = new TreeBuilder();
                 builder.addNodesToExistingTreeBalanced(getDeepestNode(mirrorCountOnExternStars.get(addIndexToMirror), EXTERN_STAR_MAX_TREE_DEPTH), 1, EXTERN_STAR_MAX_TREE_DEPTH);
             }
         }
@@ -305,15 +349,15 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         return bridgeHeads;
     }
 
-    private void buildBalancedMirrorTree(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, ArrayList<SnowflakeStarTreeNode> treeTemplate, LinkedList<AttributeUtils.Tuple<Mirror, Mirror>> bridgeHeads) {
+    private void buildBalancedMirrorTree(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, ArrayList<TreeNode> treeTemplate, LinkedList<AttributeUtils.Tuple<Mirror, Mirror>> bridgeHeads) {
 
         Iterator<AttributeUtils.Tuple<Mirror, Mirror>> bridgeHeadIterator = bridgeHeads.iterator();
 
-        for (SnowflakeStarTreeNode tree : treeTemplate) {
+        for (TreeNode tree : treeTemplate) {
             if (tree == null || !bridgeHeadIterator.hasNext()) continue;
 
             // Stack für DFS-Traversierung erstellen
-            Stack<AttributeUtils.Tuple<SnowflakeStarTreeNode, Mirror>> dfsStack = new Stack<>();
+            Stack<AttributeUtils.Tuple<TreeNode, Mirror>> dfsStack = new Stack<>();
 
             // Bridge-Heads holen für aktuellen Stern
             AttributeUtils.Tuple<Mirror, Mirror> currentBridgeHead = bridgeHeadIterator.next();
@@ -325,12 +369,12 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
             // DFS-Traversierung mit Stack
             while (!dfsStack.isEmpty() && source_mirror.hasNext()) {
                 // Aktuellen Zustand vom Stack nehmen
-                AttributeUtils.Tuple<SnowflakeStarTreeNode, Mirror> current = dfsStack.pop();
-                SnowflakeStarTreeNode currentNode = current.x;
+                AttributeUtils.Tuple<TreeNode, Mirror> current = dfsStack.pop();
+                TreeNode currentNode = current.x;
                 Mirror currentMirror = current.y;
 
                 // Für alle Kinder des aktuellen Knotens
-                for (SnowflakeStarTreeNode child : currentNode.getChildren()) {
+                for (TreeNode child : currentNode.getChildren()) {
                     if (!source_mirror.hasNext()) break;
 
                     // Neuen Mirror für das Kind holen
@@ -350,7 +394,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         }
     }
 
-    private void connectStars(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, LinkedList<Mirror> starPorts, ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars) {
+    private void connectStars(Iterator<Mirror> source_mirror, Properties props, Set<Link> ret, LinkedList<Mirror> starPorts, ArrayList<TreeNode> mirrorCountOnExternStars) {
         //build a new bridge at each star port, reuse bridge build function in case the bridge ist longer than 1 link
         LinkedList<AttributeUtils.Tuple<Mirror, Mirror>> bridgeHeads = connectStarBridge(source_mirror, props, ret, starPorts);
         //build a balanced tree from a template
@@ -359,6 +403,8 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
 
     @Override
     public Set<Link> initNetwork(Network n, Properties props) {
+        //TODO: split Ring topology, BalancedDepthTree topology and refactor to Object ports that are initiated on
+        //TODO: outside Ring topology of snowflake to connect also other objects than just balanced trees like rings and stars
         Set<Link> ret = new HashSet<>();
         if (n.getMirrors().isEmpty()) return ret;
         //calculate Mirror distribution
@@ -372,7 +418,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         List<List<Integer>> bridgesBetweenRings = outsideToInsideMirrorCountOnRing.y;
         //distribute mirrors from outside to inside ring (numerical abstraction layer)
         int numMirrorsToStarBridges = (mirrorRingsCount.get(0) / RING_BRIDGE_STEP_ON_RING) * RING_BRIDGE_MIRROR_NUM_HEIGHT;
-        ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars = getSafeExternStarDistribution(Math.min(0, numMirrorsDistribution.y - numMirrorsToStarBridges), mirrorRingsCount.get(0));
+        ArrayList<TreeNode> mirrorCountOnExternStars = getSafeExternStarDistribution(Math.min(0, numMirrorsDistribution.y - numMirrorsToStarBridges), mirrorRingsCount.get(0));
 
         //build rings and bridges from datastructures description (construction layer)
         Iterator<Mirror> source_mirror = n.getMirrors().iterator();
@@ -427,10 +473,10 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         return linkCount;
     }
 
-    private int countStarLinks(ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars) {
+    private int countStarLinks(ArrayList<TreeNode> mirrorCountOnExternStars) {
         int linkCount = 0;
 
-        for(SnowflakeStarTreeNode tree : mirrorCountOnExternStars) {
+        for(TreeNode tree : mirrorCountOnExternStars) {
             if(tree != null) {
                 // Brücken-Links zum Stern
                 linkCount += BRIDGE_TO_EXTERN_STAR_DISTANCE;
@@ -443,20 +489,20 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         return linkCount;
     }
 
-    private int countTreeLinks(SnowflakeStarTreeNode node) {
+    private int countTreeLinks(TreeNode node) {
         if(node == null) return 0;
 
         int linkCount = 0;
 
         // DFS-Stack für Zählung
-        Stack<SnowflakeStarTreeNode> dfsStack = new Stack<>();
+        Stack<TreeNode> dfsStack = new Stack<>();
         dfsStack.push(node);
 
         while(!dfsStack.isEmpty()) {
-            SnowflakeStarTreeNode current = dfsStack.pop();
+            TreeNode current = dfsStack.pop();
 
             // Für jedes Kind einen Link zählen
-            for(SnowflakeStarTreeNode child : current.getChildren()) {
+            for(TreeNode child : current.getChildren()) {
                 linkCount += 1; // Link zwischen Parent und Child
                 dfsStack.push(child); // Kind für weitere Traversierung
             }
@@ -473,7 +519,7 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
         List<List<Integer>> bridgesBetweenRings = outsideToInsideMirrorCountOnRing.y;
 
         int numMirrorsToStarBridges = (mirrorRingsCount.get(0) / RING_BRIDGE_STEP_ON_RING) * RING_BRIDGE_MIRROR_NUM_HEIGHT;
-        ArrayList<SnowflakeStarTreeNode> mirrorCountOnExternStars = getSafeExternStarDistribution(Math.max(0,numMirrorsDistribution.y-numMirrorsToStarBridges),mirrorRingsCount.get(0));
+        ArrayList<TreeNode> mirrorCountOnExternStars = getSafeExternStarDistribution(Math.max(0,numMirrorsDistribution.y-numMirrorsToStarBridges),mirrorRingsCount.get(0));
 
         // Zähle Links anstatt sie zu erstellen
         int totalLinks = 0;
