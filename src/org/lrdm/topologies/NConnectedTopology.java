@@ -16,7 +16,7 @@ import java.util.*;
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
-public class NConnectedTopology extends TopologyStrategy, BuildAsSubstructure{
+public class NConnectedTopology extends BuildAsSubstructure{
     /**Returns the next mirror from the network except for the mirror passed as self.
      * In addition, already connected mirrors are excluded.
      *
@@ -130,5 +130,68 @@ public class NConnectedTopology extends TopologyStrategy, BuildAsSubstructure{
             lpm += tlc.getNewLinksPerMirror();
         }
         if(m > 2*lpm) return m * lpm; else return (m*(m-1))/2;
+    }
+
+    /**
+     * @param n
+     * @param root
+     * @param mirrorsToConnect
+     * @param props
+     * @return
+     */
+    @Override
+    public Set<Link> initNetworkSub(Network n, Mirror root, List<Mirror> mirrorsToConnect, Properties props) {
+        return Set.of();
+    }
+
+    /**
+     * @param n
+     * @param root
+     * @param props
+     * @param simTime
+     */
+    @Override
+    public void restartNetworkSub(Network n, Mirror root, Properties props, int simTime) {
+
+    }
+
+    /**
+     * @param n
+     * @param newMirrors
+     * @param props
+     * @param simTime
+     */
+    @Override
+    public void handleAddNewMirrorsSub(Network n, int newMirrors, Properties props, int simTime) {
+
+    }
+
+    /**
+     * @param n
+     * @param removeMirrors
+     * @param props
+     * @param simTime
+     */
+    @Override
+    public void handleRemoveMirrorsSub(Network n, int removeMirrors, Properties props, int simTime) {
+
+    }
+
+    /**
+     * @param n
+     * @return
+     */
+    @Override
+    public int getNumTargetLinksSub(Network n) {
+        return 0;
+    }
+
+    /**
+     * @param a
+     * @return
+     */
+    @Override
+    public int getPredictedNumTargetLinksSub(Action a) {
+        return 0;
     }
 }

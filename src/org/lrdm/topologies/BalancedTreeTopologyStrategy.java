@@ -1,5 +1,6 @@
 package org.lrdm.topologies;
 
+import org.graphstream.ui.swing.util.AttributeUtils;
 import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
@@ -16,51 +17,7 @@ import java.util.*;
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
-public class BalancedTreeTopologyStrategy extends TopologyStrategy, BuildAsSubstructure {
-
-    /**Initializes the network already having the amount of mirrors as specified in the properties and
-     * connects these mirrors forming a balanced tree.
-     *
-     * @param n ({@link Network}) the network to initialize
-     * @param props ({@link Properties}) the properties of the simulation
-     * @return the set of {@link Link}s created (the Network passed as parameter is changed accordingly)
-     */
-    @Override
-    public Set<Link> initNetwork(Network n, Properties props) {
-        List<Mirror> mirrors = new ArrayList<>(n.getMirrors());
-        Mirror root = mirrors.get(0);
-        mirrors.remove(root);
-
-        return new HashSet<>(createTree(n, root, mirrors, props));
-    }
-
-    /**Creates the links for a tree structure starting with the root node for all mirrors to be connected.
-     *
-     * @param n {@link Network} the network
-     * @param root {@link Mirror} the root mirror
-     * @param mirrorsToConnect {@link List} of {@link Mirror}s to be put into the tree structure
-     * @param props {@link Properties} of the simulation
-     * @return {@link Set} of links of the tree structure
-     */
-    private Set<Link> createTree(Network n, Mirror root, List<Mirror> mirrorsToConnect, Properties props) {
-        Set<Link> ret = new HashSet<>();
-
-        List<Mirror> remainingMirrors = new ArrayList<>(mirrorsToConnect);
-        int numMirrorsLeft = remainingMirrors.size();
-        int numChilds = n.getNumTargetLinksPerMirror();
-
-        if(remainingMirrors.size() > numChilds) {
-            //create children and subdivide remaining mirrors among them
-            createAndLinkChildren(n, root, props, numChilds, remainingMirrors, ret, numMirrorsLeft);
-        } else {
-            //end recursion, just link the children
-            for(int i = 0; i < numMirrorsLeft; i++) {
-                connect(root, remainingMirrors, ret, props);
-            }
-        }
-
-        return ret;
-    }
+public class BalancedTreeTopologyStrategy extends BuildAsSubstructure {
 
     /**Creates a new subtree structure starting with the root mirror.
      *
@@ -72,10 +29,10 @@ public class BalancedTreeTopologyStrategy extends TopologyStrategy, BuildAsSubst
      * @param ret {@link Set} of {@link Link}s created
      * @param numMirrorsLeft number of mirrors still to be put into the tree
      */
-    private void createAndLinkChildren(Network n, Mirror root, Properties props, int numChilds, List<Mirror> remainingMirrors, Set<Link> ret, int numMirrorsLeft) {
+    private void createAndLinkChildren(Network n, Mirror root, Properties props, int numChilds, List<Mirror> remainingMirrors, int simTime, Set<Link> ret, int numMirrorsLeft) {
         List<Mirror> children = new ArrayList<>();
         for(int i = 0; i < numChilds; i++) {
-            Mirror m = connect(root, remainingMirrors, ret, props);
+            Mirror m = connect(root, remainingMirrors, ret, simTime, props);
             if(m != null)
                 children.add(m);
         }
@@ -89,7 +46,7 @@ public class BalancedTreeTopologyStrategy extends TopologyStrategy, BuildAsSubst
             if(upper > remainingMirrors.size()) continue;
             List<Mirror> currentPartition = remainingMirrors.subList(lower,upper);
             if(m != null && !remainingMirrors.isEmpty()) {
-                ret.addAll(createTree(n, m, currentPartition, props));
+                ret.addAll(createTree(n, m, currentPartition, simTime, props));
             }
             i++;
         }
@@ -104,15 +61,70 @@ public class BalancedTreeTopologyStrategy extends TopologyStrategy, BuildAsSubst
      * @param props {@link Properties} of the simulation
      * @return the child {@link Mirror} which was connected to the root
      */
-    private Mirror connect(Mirror root, List<Mirror> mirrors, Set<Link> links, Properties props) {
+    private Mirror connect(Mirror root, List<Mirror> mirrors, Set<Link> links, int simTime, Properties props) {
+        super.addPortObjectMirror(root);
         if(mirrors.isEmpty()) return null;
         Mirror child = mirrors.get(0);
         mirrors.remove(child);
-        Link l = new Link(IDGenerator.getInstance().getNextID(), root, child, 0, props);
+        super.addPortObjectMirror(child);
+        Link l = new Link(IDGenerator.getInstance().getNextID(), root, child, simTime, props);
         root.addLink(l);
         child.addLink(l);
         links.add(l);
         return child;
+    }
+
+    /**Creates the links for a tree structure starting with the root node for all mirrors to be connected.
+     *
+     * @param n {@link Network} the network
+     * @param root {@link Mirror} the root mirror
+     * @param mirrorsToConnect {@link List} of {@link Mirror}s to be put into the tree structure
+     * @param props {@link Properties} of the simulation
+     * @return {@link Set} of links of the tree structure
+     */
+    private Set<Link> createTree(Network n, Mirror root, List<Mirror> mirrorsToConnect, int simTime, Properties props) {
+        Set<Link> ret = new HashSet<>();
+
+        List<Mirror> remainingMirrors = new ArrayList<>(mirrorsToConnect);
+        int numMirrorsLeft = remainingMirrors.size();
+        int numChilds = n.getNumTargetLinksPerMirror();
+
+        if(remainingMirrors.size() > numChilds) {
+            //create children and subdivide remaining mirrors among them
+            createAndLinkChildren(n, root, props, numChilds, remainingMirrors, simTime, ret, numMirrorsLeft);
+        } else {
+            //end recursion, just link the children
+            for(int i = 0; i < numMirrorsLeft; i++) {
+                connect(root, remainingMirrors, ret, simTime, props);
+            }
+        }
+
+        return ret;
+    }
+
+    /**
+     * @param n
+     * @param root
+     * @param mirrorsToConnect
+     * @param props
+     * @return
+     */
+    @Override
+    public Set<Link> initNetworkSub(Network n, Mirror root, List<Mirror> mirrorsToConnect, int simTime, Properties props) {
+        return new HashSet<>(createTree(n, root, mirrorsToConnect, simTime, props));
+    }
+    /**Initializes the network already having the amount of mirrors as specified in the properties and
+     * connects these mirrors forming a balanced tree.
+     *
+     * @param n ({@link Network}) the network to initialize
+     * @param props ({@link Properties}) the properties of the simulation
+     * @return the set of {@link Link}s created (the Network passed as parameter is changed accordingly)
+     */
+    @Override
+    public Set<Link> initNetwork(Network n, Properties props) {
+        Mirror root = n.getMirrors().get(0);
+        List<Mirror> mirrors = new ArrayList<>(n.getMirrors());
+        return initNetworkSub(n, root, mirrors,0, props);
     }
 
     /**Recreates all links between the mirrors of the network to adhere to the balanced tree topology.
@@ -124,14 +136,8 @@ public class BalancedTreeTopologyStrategy extends TopologyStrategy, BuildAsSubst
      */
     @Override
     public void restartNetwork(Network n, Properties props, int simTime) {
-        super.restartNetwork(n, props, simTime);
-        //create the tree structure
-        if(n.getMirrors().isEmpty()) return;
-        Mirror root = n.getMirrorsSortedById().get(0);
-        List<Mirror> mirrors = new ArrayList<>(n.getMirrorsSortedById());
-        mirrors.remove(root);
-        Set<Link> links = createTree(n, root, mirrors, props);
-        n.getLinks().addAll(links);
+        Mirror root = getPortObjectMirrors().iterator().next();
+        restartNetworkSub(n, root, props, simTime);
     }
 
     /**Creates the respective number of mirrors to be added and links them according to the balanced tree topology.
@@ -195,29 +201,6 @@ public class BalancedTreeTopologyStrategy extends TopologyStrategy, BuildAsSubst
         int m = a.getNetwork().getNumMirrors();
         if(a instanceof MirrorChange mc) m += mc.getNewMirrors();
         return m - 1;
-    }
-
-    /**
-     * @param n
-     * @param root
-     * @param mirrorsToConnect
-     * @param props
-     * @return
-     */
-    @Override
-    public Set<Link> initNetworkSub(Network n, Mirror root, List<Mirror> mirrorsToConnect, Properties props) {
-        return Set.of();
-    }
-
-    /**
-     * @param n
-     * @param root
-     * @param props
-     * @param simTime
-     */
-    @Override
-    public void restartNetworkSub(Network n, Mirror root, Properties props, int simTime) {
-
     }
 
     /**
