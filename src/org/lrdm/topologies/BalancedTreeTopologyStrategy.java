@@ -137,7 +137,7 @@ public class BalancedTreeTopologyStrategy extends BuildAsSubstructure {
     @Override
     public void restartNetwork(Network n, Properties props, int simTime) {
         Mirror root = getPortObjectMirrors().iterator().next();
-        restartNetworkSub(n, root, props, simTime);
+        super.restartNetworkSub(n, root, props, simTime);
     }
 
     /**Creates the respective number of mirrors to be added and links them according to the balanced tree topology.
@@ -153,6 +153,7 @@ public class BalancedTreeTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
+        //TODO: redo this function to find the root and structure to be able to add balanced new mirrors
         List<Mirror> mirrorsToAdd = createMirrors(newMirrors, simTime, props);
         //add links by filling up existing nodes with less than the max amount of links per node
         List<Link> linksToAdd = new ArrayList<>();
@@ -178,6 +179,7 @@ public class BalancedTreeTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+        //TODO: find largest branch and delete mirrors for largest branch each single
         //just remove the last n mirrors
         List<Mirror> mirrors = n.getMirrorsSortedById();
         for(int i = 0; i < removeMirrors; i++) {

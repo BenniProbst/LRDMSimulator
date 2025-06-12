@@ -40,7 +40,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure{
      */
     private boolean connected(Mirror m1, Mirror m2) {
         return m1.getLinks().stream().filter(l -> (l.getSource().equals(m1) && l.getTarget().equals(m2)) || (l.getSource().equals(m2) && l.getTarget().equals(m1))).count() == 1;
-
     }
 
     /**Closes all current links and creates new links between all mirrors.

@@ -39,18 +39,24 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     public abstract Set<Link> initNetworkSub(Network n, Mirror root, List<Mirror> mirrorsToConnect, int simTime, Properties props);
     public void restartNetworkSub(Network n, Mirror root, Properties props, int simTime) {
-        AttributeUtils.Tuple<Set<Mirror>,Set<Link>> gatheredSubstructures = gatherSubstructures();
+        //restart all substructures except for the edge mirrors and their links to the outside world
+        AttributeUtils.Tuple<Set<Mirror>,Set<Link>> gatheredSubstructures = gatherAllSubstructures();
         Set<Mirror> mirrors = gatheredSubstructures.x;
+        Set<Mirror> edgeMirrors = getEdgeMirrors();
         Set<Link> links = gatheredSubstructures.y;
 
         //remove links from
         for(Link l : links) {
             if(mirrors.contains(l.getSource()) && mirrors.contains(l.getTarget())) {
-                n.getLinks().remove(l);
+                Optional<Link> op_link = n.getLinks().stream().filter(ll -> ll.equals(l)).findFirst();
+                op_link.ifPresent(Link::shutdown);
             }
         }
 
         for(Mirror m : mirrors) {
+            if(!edgeMirrors.contains(m)){
+                m.shutdown(simTime);
+            }
             m.getLinks().removeIf(l -> mirrors.contains(l.getSource()) && mirrors.contains(l.getTarget()));
         }
 
@@ -72,12 +78,12 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         return removed;
     }
 
-    public AttributeUtils.Tuple<Set<Mirror>,Set<Link>> gatherSubstructures(){
+    public AttributeUtils.Tuple<Set<Mirror>,Set<Link>> gatherAllSubstructures(){
         Set<Link> links = new HashSet<>();
         Set<Mirror> mirrors = new HashSet<>();
 
         for(BuildAsSubstructure b : mirrorToConnectedMirrors.values()) {
-            AttributeUtils.Tuple<Set<Mirror>,Set<Link>> t = b.gatherSubstructures();
+            AttributeUtils.Tuple<Set<Mirror>,Set<Link>> t = b.gatherAllSubstructures();
             mirrors.addAll(t.x);
             links.addAll(t.y);
         }
@@ -90,6 +96,19 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         }
 
         return new AttributeUtils.Tuple<>(mirrors,links);
+    }
+
+    public Set<Mirror> getEdgeMirrors(){
+        Set<Mirror> edgeMirrors = new HashSet<>();
+        AttributeUtils.Tuple<Set<Mirror>,Set<Link>> gatheredSubstructures = gatherAllSubstructures();
+        Set<Mirror> mirrors = gatheredSubstructures.x;
+
+        for(Mirror m : mirrors) {
+            if(m.getLinks().stream().anyMatch(l -> !mirrors.contains(l.getSource()) || !mirrors.contains(l.getTarget()))) {
+                edgeMirrors.add(m);
+            }
+        }
+        return edgeMirrors;
     }
 
 }
