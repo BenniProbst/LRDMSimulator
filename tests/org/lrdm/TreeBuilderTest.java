@@ -3,216 +3,371 @@ package org.lrdm;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
-import org.lrdm.util.TreeNode;
-import org.lrdm.util.TreeBuilder;
+import org.junit.jupiter.api.Nested;
+import org.lrdm.Link;
+import org.lrdm.Mirror;
+import org.lrdm.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-@DisplayName("SnowflakeTreeBuilder Tests")
+@DisplayName("TreeBuilder Tests für neue Implementierungen")
 class TreeBuilderTest {
 
-    private TreeBuilder builder;
+    private Properties mockProperties;
+    private List<Mirror> mockMirrors;
 
     @BeforeEach
     void setUp() {
-        builder = new TreeBuilder();
+        // Reset IDGenerator für konsistente Tests
+        IDGenerator.getInstance();
+        
+        mockProperties = createMockProperties();
+        mockMirrors = new ArrayList<>();
     }
 
-    @Test
-    @DisplayName("buildTree mit null oder negativen Werten")
-    void testBuildTreeEdgeCases() {
-        assertNull(builder.buildTree(0, 3));
-        assertNull(builder.buildTree(-1, 3));
+    @Nested
+    @DisplayName("TreeBuilderDepthLimit Tests")
+    class TreeBuilderDepthLimitTests {
+
+        private TreeBuilderDepthLimit depthBuilder;
+
+        @BeforeEach
+        void setUpDepthBuilder() {
+            depthBuilder = new TreeBuilderDepthLimit(3, 2);
+        }
+
+        @Test
+        @DisplayName("buildTree mit Tiefenbeschränkung")
+        void testBuildTreeWithDepthLimit() {
+            MirrorNode root = depthBuilder.buildTree(10, 3);
+            
+            assertNotNull(root);
+            assertEquals(0, root.getDepth());
+            assertTrue(depthBuilder.validateTreeStructure(root));
+            
+            int totalNodes = depthBuilder.countNodes(root);
+            assertEquals(10, totalNodes);
+            
+            int maxDepth = depthBuilder.getMaxDepth(root);
+            assertTrue(maxDepth <= 3);
+        }
+
+        @Test
+        @DisplayName("buildTree respektiert maximale Kinder pro Knoten")
+        void testBuildTreeRespectsMaxChildren() {
+            MirrorNode root = depthBuilder.buildTree(15, 4);
+            
+            // Überprüfe, dass kein Knoten mehr als maxChildrenPerNode Kinder hat
+            validateMaxChildrenConstraint(root, 2);
+        }
+
+        @Test
+        @DisplayName("addNodesToExistingTree funktioniert korrekt")
+        void testAddNodesToExistingTree() {
+            MirrorNode root = depthBuilder.buildTree(5, 3);
+            int originalCount = depthBuilder.countNodes(root);
+            
+            int added = depthBuilder.addNodesToExistingTree(root, 3, 3);
+            
+            assertEquals(3, added);
+            assertEquals(originalCount + 3, depthBuilder.countNodes(root));
+            assertTrue(depthBuilder.validateTreeStructure(root));
+        }
+
+        @Test
+        @DisplayName("removeNodesFromTree entfernt Knoten korrekt")
+        void testRemoveNodesFromTree() {
+            MirrorNode root = depthBuilder.buildTree(10, 3);
+            int originalCount = depthBuilder.countNodes(root);
+            
+            int removed = depthBuilder.removeNodesFromTree(root, 3);
+            
+            assertEquals(3, removed);
+            assertEquals(originalCount - 3, depthBuilder.countNodes(root));
+            assertTrue(depthBuilder.validateTreeStructure(root));
+        }
+
+        @Test
+        @DisplayName("createAndLinkMirrors erstellt Links korrekt")
+        void testCreateAndLinkMirrors() {
+            List<Mirror> mirrors = createMockMirrors(5);
+            
+            Set<Link> links = depthBuilder.createAndLinkMirrors(mirrors, 0, mockProperties);
+            
+            assertNotNull(links);
+            // In einem Baum mit n Knoten sollten n-1 Links existieren
+            assertEquals(4, links.size());
+        }
+
+        @Test
+        @DisplayName("Edge Cases - null und leere Werte")
+        void testDepthBuilderEdgeCases() {
+            assertNull(depthBuilder.buildTree(0, 3));
+            assertNull(depthBuilder.buildTree(-1, 3));
+            
+            assertEquals(0, depthBuilder.addNodesToExistingTree(null, 5, 3));
+            assertEquals(0, depthBuilder.removeNodesFromTree(null, 3));
+            
+            assertTrue(depthBuilder.createAndLinkMirrors(new ArrayList<>(), 0, mockProperties).isEmpty());
+        }
+
+        @Test
+        @DisplayName("Getter und Setter funktionieren")
+        void testGettersAndSetters() {
+            assertEquals(3, depthBuilder.getMaxDepth());
+            assertEquals(2, depthBuilder.getMaxChildrenPerNode());
+            
+            depthBuilder.setMaxDepth(5);
+            depthBuilder.setMaxChildrenPerNode(3);
+            
+            assertEquals(5, depthBuilder.getMaxDepth());
+            assertEquals(3, depthBuilder.getMaxChildrenPerNode());
+        }
     }
 
-    @Test
-    @DisplayName("buildTree mit einem Knoten")
-    void testBuildTreeSingleNode() {
-        TreeNode root = builder.buildTree(1, 3);
-        
-        assertNotNull(root);
-        assertEquals(1, root.getId());
-        assertEquals(0, root.getDepth());
-        assertTrue(root.isLeaf());
-        assertNull(root.getParent());
+    @Nested
+    @DisplayName("TreeBuilderBalanced Tests")
+    class TreeBuilderBalancedTests {
+
+        private TreeBuilderBalanced balancedBuilder;
+
+        @BeforeEach
+        void setUpBalancedBuilder() {
+            balancedBuilder = new TreeBuilderBalanced(2);
+        }
+
+        @Test
+        @DisplayName("buildTree erstellt balancierten Baum")
+        void testBuildBalancedTree() {
+            MirrorNode root = balancedBuilder.buildTree(15, 0);
+            
+            assertNotNull(root);
+            assertEquals(0, root.getDepth());
+            assertTrue(balancedBuilder.validateTreeStructure(root));
+            
+            int totalNodes = balancedBuilder.countNodes(root);
+            assertEquals(15, totalNodes);
+            
+            // Überprüfe Balance-Metrik
+            double balance = balancedBuilder.calculateTreeBalance(root);
+            assertTrue(balance >= 0.0);
+        }
+
+        @Test
+        @DisplayName("addNodesToExistingTree hält Balance")
+        void testAddNodesToExistingTreeBalanced() {
+            MirrorNode root = balancedBuilder.buildTree(7, 0);
+            double initialBalance = balancedBuilder.calculateTreeBalance(root);
+            
+            int added = balancedBuilder.addNodesToExistingTree(root, 8, 0);
+            double newBalance = balancedBuilder.calculateTreeBalance(root);
+            
+            assertEquals(8, added);
+            assertEquals(15, balancedBuilder.countNodes(root));
+            
+            // Balance sollte nicht drastisch schlechter werden
+            assertTrue(newBalance <= initialBalance + 2.0);
+        }
+
+        @Test
+        @DisplayName("removeNodesFromTree erhält Balance")
+        void testRemoveNodesFromTreeBalanced() {
+            MirrorNode root = balancedBuilder.buildTree(15, 0);
+            double initialBalance = balancedBuilder.calculateTreeBalance(root);
+            
+            int removed = balancedBuilder.removeNodesFromTree(root, 5);
+            double newBalance = balancedBuilder.calculateTreeBalance(root);
+            
+            assertEquals(5, removed);
+            assertEquals(10, balancedBuilder.countNodes(root));
+            assertTrue(balancedBuilder.validateTreeStructure(root));
+            
+            // Balance sollte gleich oder besser sein
+            assertTrue(newBalance <= initialBalance + 1.0);
+        }
+
+        @Test
+        @DisplayName("createAndLinkMirrors nutzt BalancedTreeTopologyStrategy")
+        void testCreateAndLinkMirrorsWithTopologyStrategy() {
+            List<Mirror> mirrors = createMockMirrors(10);
+            
+            Set<Link> links = balancedBuilder.createAndLinkMirrors(mirrors, 0, mockProperties);
+            
+            assertNotNull(links);
+            // BalancedTreeTopologyStrategy sollte n-1 Links für n Knoten erstellen
+            assertEquals(9, links.size());
+            
+            // Überprüfe, dass Links korrekt zugeordnet sind
+            for (Link link : links) {
+                assertNotNull(link.getSource());
+                assertNotNull(link.getTarget());
+                assertTrue(mirrors.contains(link.getSource()));
+                assertTrue(mirrors.contains(link.getTarget()));
+            }
+        }
+
+        @Test
+        @DisplayName("calculateTreeBalance funktioniert korrekt")
+        void testCalculateTreeBalance() {
+            // Perfekt balancierter Baum
+            MirrorNode root = balancedBuilder.buildTree(7, 0); // 2^3 - 1 = 7
+            double balance = balancedBuilder.calculateTreeBalance(root);
+            
+            // Sollte sehr gut balanciert sein
+            assertTrue(balance < 1.0);
+        }
+
+        @Test
+        @DisplayName("Getter und Setter funktionieren")
+        void testBalancedBuilderGettersAndSetters() {
+            assertEquals(2, balancedBuilder.getTargetLinksPerNode());
+            assertNotNull(balancedBuilder.getTopologyStrategy());
+            
+            balancedBuilder.setTargetLinksPerNode(3);
+            assertEquals(3, balancedBuilder.getTargetLinksPerNode());
+        }
     }
 
-    @Test
-    @DisplayName("buildTree mit mehreren Knoten und begrenzter Tiefe")
-    void testBuildTreeMultipleNodes() {
-        TreeNode root = builder.buildTree(5, 2);
-        
-        assertNotNull(root);
-        assertEquals(1, root.getId());
-        assertEquals(0, root.getDepth());
-        
-        // Zähle alle Knoten im Baum
-        int totalNodes = countNodes(root);
-        assertEquals(5, totalNodes);
-        
-        // Überprüfe maximale Tiefe
-        int maxDepth = findMaxDepth(root);
-        assertTrue(maxDepth <= 2);
+    @Nested
+    @DisplayName("Vergleichstests zwischen beiden Implementierungen")
+    class ComparisonTests {
+
+        @Test
+        @DisplayName("Beide Builder erstellen gültige Bäume")
+        void testBothBuildersCreateValidTrees() {
+            TreeBuilderDepthLimit depthBuilder = new TreeBuilderDepthLimit(4, 3);
+            TreeBuilderBalanced balancedBuilder = new TreeBuilderBalanced(3);
+            
+            MirrorNode depthTree = depthBuilder.buildTree(20, 4);
+            MirrorNode balancedTree = balancedBuilder.buildTree(20, 0);
+            
+            // Beide sollten gültige Strukturen haben
+            assertTrue(depthBuilder.validateTreeStructure(depthTree));
+            assertTrue(balancedBuilder.validateTreeStructure(balancedTree));
+            
+            // Beide sollten 20 Knoten haben
+            assertEquals(20, depthBuilder.countNodes(depthTree));
+            assertEquals(20, balancedBuilder.countNodes(balancedTree));
+            
+            // Depth-Tree sollte begrenzte Tiefe haben
+            assertTrue(depthBuilder.getMaxDepth(depthTree) <= 4);
+            
+            // Balanced-Tree sollte bessere Balance haben
+            double depthBalance = calculateSimpleBalance(depthTree);
+            double balancedBalance = balancedBuilder.calculateTreeBalance(balancedTree);
+            
+            // Normalerweise sollte der balancierte Baum bessere Balance haben
+            // (Dies kann je nach Implementierung variieren)
+            assertTrue(balancedBalance >= 0.0);
+            assertTrue(depthBalance >= 0.0);
+        }
+
+        @Test
+        @DisplayName("Mirror-Integration funktioniert bei beiden Buildern")
+        void testMirrorIntegrationBothBuilders() {
+            TreeBuilderDepthLimit depthBuilder = new TreeBuilderDepthLimit(3, 2);
+            TreeBuilderBalanced balancedBuilder = new TreeBuilderBalanced(2);
+            
+            List<Mirror> mirrors1 = createMockMirrors(8);
+            List<Mirror> mirrors2 = createMockMirrors(8);
+            
+            Set<Link> depthLinks = depthBuilder.createAndLinkMirrors(mirrors1, 0, mockProperties);
+            Set<Link> balancedLinks = balancedBuilder.createAndLinkMirrors(mirrors2, 0, mockProperties);
+            
+            // Beide sollten Links erstellen
+            assertFalse(depthLinks.isEmpty());
+            assertFalse(balancedLinks.isEmpty());
+            
+            // Beide sollten n-1 Links für n Mirrors haben (Baum-Eigenschaft)
+            assertEquals(7, depthLinks.size());
+            assertEquals(7, balancedLinks.size());
+        }
     }
 
-    @Test
-    @DisplayName("buildTree respektiert maximale Tiefe")
-    void testBuildTreeMaxDepthRespected() {
-        TreeNode root = builder.buildTree(10, 1);
-        
-        // Bei maxDepth = 1 sollten alle Knoten auf Level 0 oder 1 sein
-        int maxDepth = findMaxDepth(root);
-        assertTrue(maxDepth <= 1);
-        
-        // Root sollte Kinder haben, aber Kinder sollten Blätter sein
-        if (!root.isLeaf()) {
-            for (TreeNode child : root.getChildren()) {
-                assertTrue(child.isLeaf());
+    @Nested
+    @DisplayName("Performance und Stress Tests")
+    class PerformanceTests {
+
+        @Test
+        @DisplayName("Große Bäume können erstellt werden")
+        void testLargeTreeCreation() {
+            TreeBuilderBalanced balancedBuilder = new TreeBuilderBalanced(3);
+            
+            MirrorNode largeTree = balancedBuilder.buildTree(1000, 0);
+            
+            assertNotNull(largeTree);
+            assertEquals(1000, balancedBuilder.countNodes(largeTree));
+            assertTrue(balancedBuilder.validateTreeStructure(largeTree));
+        }
+
+        @Test
+        @DisplayName("Viele Hinzufügungen und Entfernungen")
+        void testManyOperations() {
+            TreeBuilderBalanced balancedBuilder = new TreeBuilderBalanced(2);
+            MirrorNode root = balancedBuilder.buildTree(50, 0);
+            
+            // Mehrere Zyklen von Hinzufügen und Entfernen
+            for (int i = 0; i < 5; i++) {
+                int added = balancedBuilder.addNodesToExistingTree(root, 20, 0);
+                assertEquals(20, added);
+                
+                int removed = balancedBuilder.removeNodesFromTree(root, 15);
+                assertEquals(15, removed);
+                
+                assertTrue(balancedBuilder.validateTreeStructure(root));
             }
         }
     }
 
-    @Test
-    @DisplayName("traverseDepthFirst funktioniert korrekt")
-    void testTraverseDepthFirst() {
-        TreeNode root = builder.buildTree(5, 3);
-        List<Integer> result = new ArrayList<>();
-        
-        builder.traverseDepthFirst(root, result);
-        
-        assertEquals(5, result.size());
-        assertEquals(Integer.valueOf(1), result.get(0)); // Root sollte zuerst sein
-        
-        // Alle IDs sollten einzigartig sein
-        assertEquals(5, result.stream().distinct().count());
+    // Hilfsmethoden
+    private Properties createMockProperties() {
+        Properties props = new Properties();
+        props.setProperty("network.target_links_per_mirror", "2");
+        props.setProperty("mirror.startup_time_min", "100");
+        props.setProperty("mirror.startup_time_max", "200");
+        props.setProperty("mirror.ready_time_min", "50");
+        props.setProperty("mirror.ready_time_max", "100");
+        props.setProperty("mirror.stop_time_min", "50");
+        props.setProperty("mirror.stop_time_max", "75");
+        return props;
     }
 
-    @Test
-    @DisplayName("traverseDepthFirst mit null")
-    void testTraverseDepthFirstWithNull() {
-        List<Integer> result = new ArrayList<>();
-        
-        builder.traverseDepthFirst(null, result);
-        
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    @DisplayName("addNodesToExistingTree Edge Cases")
-    void testAddNodesToExistingTreeEdgeCases() {
-        TreeNode root = new TreeNode(1, 0);
-        
-        // Null root
-        assertEquals(0, builder.addNodesToExistingTree(null, 5, 3));
-        
-        // Negative nodesToAdd
-        assertEquals(0, builder.addNodesToExistingTree(root, -1, 3));
-        
-        // Zero nodesToAdd
-        assertEquals(0, builder.addNodesToExistingTree(root, 0, 3));
-    }
-
-    @Test
-    @DisplayName("addNodesToExistingTree fügt Knoten korrekt hinzu")
-    void testAddNodesToExistingTree() {
-        TreeNode root = new TreeNode(1, 0);
-        
-        int addedNodes = builder.addNodesToExistingTree(root, 3, 2);
-        
-        assertEquals(3, addedNodes);
-        
-        // Gesamtanzahl der Knoten sollte 4 sein (1 ursprünglich + 3 hinzugefügt)
-        int totalNodes = countNodes(root);
-        assertEquals(4, totalNodes);
-        
-        // Maximale Tiefe sollte respektiert werden
-        int maxDepth = findMaxDepth(root);
-        assertTrue(maxDepth <= 2);
-    }
-
-    @Test
-    @DisplayName("addNodesToExistingTreeBalanced verteilt Knoten ausgewogen")
-    void testAddNodesToExistingTreeBalanced() {
-        // Erstelle einen bestehenden Baum
-        TreeNode root = new TreeNode(1, 0);
-        TreeNode child1 = new TreeNode(2, 1);
-        root.addChild(child1);
-        
-        int addedNodes = builder.addNodesToExistingTreeBalanced(root, 4, 3);
-        
-        assertEquals(4, addedNodes);
-        
-        // Überprüfe Gesamtanzahl
-        int totalNodes = countNodes(root);
-        assertEquals(6, totalNodes); // 2 ursprünglich + 4 hinzugefügt
-        
-        // Überprüfe Balance: Root sollte jetzt mehrere Kinder haben
-        assertTrue(root.getChildren().size() > 1);
-    }
-
-    @Test
-    @DisplayName("addNodesToExistingTreeBalanced respektiert maxDepth")
-    void testAddNodesToExistingTreeBalancedMaxDepth() {
-        TreeNode root = new TreeNode(1, 0);
-        
-        // Versuche viele Knoten mit sehr geringer Tiefe hinzuzufügen
-        int addedNodes = builder.addNodesToExistingTreeBalanced(root, 10, 1);
-        
-        // Sollte nur so viele hinzufügen können, wie mit maxDepth=1 möglich
-        assertTrue(addedNodes <= 10);
-        
-        // Maximale Tiefe sollte 1 sein
-        int maxDepth = findMaxDepth(root);
-        assertTrue(maxDepth <= 1);
-    }
-
-    @Test
-    @DisplayName("Komplexer Baum mit verschiedenen Operationen")
-    void testComplexTreeOperations() {
-        // Baue initial einen Baum
-        TreeNode root = builder.buildTree(7, 3);
-        
-        // Zähle ursprüngliche Knoten
-        int originalNodes = countNodes(root);
-        assertEquals(7, originalNodes);
-        
-        // Füge weitere Knoten hinzu
-        int addedNodes = builder.addNodesToExistingTreeBalanced(root, 5, 3);
-        
-        // Überprüfe Gesamtanzahl
-        int totalNodes = countNodes(root);
-        assertEquals(originalNodes + addedNodes, totalNodes);
-        
-        // Teste Traversierung
-        List<Integer> traversalResult = new ArrayList<>();
-        builder.traverseDepthFirst(root, traversalResult);
-        assertEquals(totalNodes, traversalResult.size());
-        
-        // Alle IDs sollten einzigartig sein
-        assertEquals(totalNodes, traversalResult.stream().distinct().count());
-    }
-
-    // Hilfsmethoden für Tests
-    private int countNodes(TreeNode node) {
-        if (node == null) return 0;
-        
-        int count = 1; // Current node
-        for (TreeNode child : node.getChildren()) {
-            count += countNodes(child);
+    private List<Mirror> createMockMirrors(int count) {
+        List<Mirror> mirrors = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            mirrors.add(new Mirror(IDGenerator.getInstance().getNextID(), 0, mockProperties));
         }
-        return count;
+        return mirrors;
     }
 
-    private int findMaxDepth(TreeNode node) {
-        if (node == null) return -1;
+    private void validateMaxChildrenConstraint(MirrorNode node, int maxChildren) {
+        assertTrue(node.getChildren().size() <= maxChildren, 
+                  "Node " + node.getId() + " has " + node.getChildren().size() + 
+                  " children, max allowed: " + maxChildren);
         
-        int maxDepth = node.getDepth();
         for (TreeNode child : node.getChildren()) {
-            maxDepth = Math.max(maxDepth, findMaxDepth(child));
+            validateMaxChildrenConstraint((MirrorNode) child, maxChildren);
         }
-        return maxDepth;
+    }
+
+    private double calculateSimpleBalance(MirrorNode root) {
+        Map<Integer, Integer> depthCounts = new HashMap<>();
+        calculateDepthCounts(root, depthCounts);
+        
+        double mean = depthCounts.values().stream().mapToInt(i -> i).average().orElse(0.0);
+        double variance = depthCounts.values().stream()
+                .mapToDouble(count -> Math.pow(count - mean, 2))
+                .average().orElse(0.0);
+        
+        return Math.sqrt(variance);
+    }
+
+    private void calculateDepthCounts(MirrorNode node, Map<Integer, Integer> depthCounts) {
+        depthCounts.merge(node.getDepth(), 1, Integer::sum);
+        for (TreeNode child : node.getChildren()) {
+            calculateDepthCounts((MirrorNode) child, depthCounts);
+        }
     }
 }

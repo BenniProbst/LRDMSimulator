@@ -156,6 +156,7 @@ public class BalancedTreeTopologyStrategy extends BuildAsSubstructure {
         //TODO: redo this function to find the root and structure to be able to add balanced new mirrors
         List<Mirror> mirrorsToAdd = createMirrors(newMirrors, simTime, props);
         //add links by filling up existing nodes with less than the max amount of links per node
+        //TODO: fix design fault: no analysis of tree to keep structure extendable
         List<Link> linksToAdd = new ArrayList<>();
         List<Mirror> mirrorsToLink = new ArrayList<>(mirrorsToAdd);
         for(Mirror m : n.getMirrorsSortedById()) {
