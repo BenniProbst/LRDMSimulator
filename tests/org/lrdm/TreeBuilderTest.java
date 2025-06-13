@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.lrdm.TestProperties.loadProperties;
+import static org.lrdm.TestProperties.props;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("TreeBuilder Tests für neue Implementierungen")
@@ -33,7 +34,12 @@ class TreeBuilderTest {
     public void initSimulator(String config) throws IOException {
         loadProperties(config);
         sim = new TimedRDMSim(config);
-        // sim.setHeadless(true); // Entfernt für GUI-Simulation
+        sim.setHeadless(true);
+    }
+
+    private Network createMockNetwork() throws IOException {
+        loadProperties(config);
+        return new Network(new BalancedTreeTopologyStrategy(), 5, 2, 1000, props);
     }
 
     @Nested
@@ -113,10 +119,8 @@ class TreeBuilderTest {
             assertNotNull(mirrorProbe);
             List<Mirror> mirrors = mirrorProbe.getMirrors();
 
-            Network network = sim.getNetwork();
-            Properties props = network.getProps();
-
-            Set<Link> links = depthBuilder.createAndLinkMirrors(network, mirrors, 0, props);
+            Network mockNetwork = createMockNetwork();
+            Set<Link> links = depthBuilder.createAndLinkMirrors(mockNetwork, mirrors, 0, props);
 
             assertNotNull(links);
             // In einem Baum mit n Knoten sollten n-1 Links existieren
@@ -132,11 +136,8 @@ class TreeBuilderTest {
             assertEquals(0, depthBuilder.addNodesToExistingTree(null, 5, 3));
             assertEquals(0, depthBuilder.removeNodesFromTree(null, 3));
 
-            initSimulator();
-            Network network = sim.getNetwork();
-            Properties props = createMockProperties();
-
-            assertTrue(depthBuilder.createAndLinkMirrors(network, new ArrayList<>(), 0, props).isEmpty());
+            Network mockNetwork = createMockNetwork();
+            assertTrue(depthBuilder.createAndLinkMirrors(mockNetwork, new ArrayList<>(), 0, props).isEmpty());
         }
 
         @Test
@@ -229,10 +230,8 @@ class TreeBuilderTest {
             assertNotNull(mirrorProbe);
             List<Mirror> mirrors = mirrorProbe.getMirrors();
 
-            Network network = sim.getNetwork();
-            Properties props = network.getProps();
-
-            Set<Link> links = balancedBuilder.createAndLinkMirrors(network, mirrors, 0, props);
+            Network mockNetwork = createMockNetwork();
+            Set<Link> links = balancedBuilder.createAndLinkMirrors(mockNetwork, mirrors, 0, props);
 
             assertNotNull(links);
             // BalancedTreeTopologyStrategy sollte n-1 Links für n Knoten erstellen
@@ -388,11 +387,9 @@ class TreeBuilderTest {
             assertNotNull(mirrorProbe);
             List<Mirror> mirrors = mirrorProbe.getMirrors();
 
-            Network network = sim.getNetwork();
-            Properties props = createMockProperties();
-
-            Set<Link> depthLinks = depthBuilder.createAndLinkMirrors(network, mirrors, 0, props);
-            Set<Link> balancedLinks = balancedBuilder.createAndLinkMirrors(network, mirrors, 5, props);
+            Network mockNetwork = createMockNetwork();
+            Set<Link> depthLinks = depthBuilder.createAndLinkMirrors(mockNetwork, mirrors, 0, props);
+            Set<Link> balancedLinks = balancedBuilder.createAndLinkMirrors(mockNetwork, mirrors, 5, props);
 
             // Beide sollten Links erstellen
             assertFalse(depthLinks.isEmpty());
@@ -442,17 +439,5 @@ class TreeBuilderTest {
         for (TreeNode child : node.getChildren()) {
             calculateDepthCounts((MirrorNode) child, depthCounts);
         }
-    }
-
-    private Properties createMockProperties() {
-        Properties props = new Properties();
-        props.setProperty("network.target_links_per_mirror", "2");
-        props.setProperty("mirror.startup_time_min", "100");
-        props.setProperty("mirror.startup_time_max", "200");
-        props.setProperty("mirror.ready_time_min", "50");
-        props.setProperty("mirror.ready_time_max", "100");
-        props.setProperty("mirror.stop_time_min", "50");
-        props.setProperty("mirror.stop_time_max", "75");
-        return props;
     }
 }
