@@ -1,15 +1,11 @@
-
 package org.lrdm.util;
-
-import org.lrdm.Link;
-import org.lrdm.Mirror;
-import org.lrdm.Network;
 
 import java.util.*;
 
 /**
  * TreeBuilder-Implementation mit Tiefenbeschränkung (Depth-First-Ansatz).
  * Bevorzugt das Wachstum in die Tiefe vor der Breite.
+ * Zustandslos - keine gespeicherten Tiefenwerte.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
@@ -38,68 +34,82 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
 
         int effectiveMaxDepth = Math.min(this.maxDepth, maxDepth > 0 ? maxDepth : this.maxDepth);
 
-        MirrorNode root = new MirrorNode(getNextId(), 0);
+        MirrorNode root = createMirrorNode();
         if (totalNodes == 1) return root;
 
-        buildDepthFirst(root, 1, totalNodes, effectiveMaxDepth);
+        buildDepthFirstIterative(root, totalNodes - 1, effectiveMaxDepth);
         return root;
     }
 
     /**
-     * Rekursiver Depth-First-Aufbau des Baums.
-     *
-     * @param currentNode Aktueller Knoten
-     * @param nodeCounter Bereits erstellte Knoten
-     * @param totalNodes Gesamtanzahl zu erstellender Knoten
-     * @param effectiveMaxDepth Effektive maximale Tiefe
-     * @return Anzahl der erstellten Knoten
+     * Stack-basierter Depth-First-Aufbau des Baums.
      */
-    private int buildDepthFirst(MirrorNode currentNode, int nodeCounter, int totalNodes, int effectiveMaxDepth) {
-        if (nodeCounter >= totalNodes || currentNode.getDepth() >= effectiveMaxDepth) {
-            return nodeCounter;
+    private void buildDepthFirstIterative(MirrorNode root, int remainingNodes, int effectiveMaxDepth) {
+        if (remainingNodes <= 0) return;
+
+        Stack<NodeInfo> stack = new Stack<>();
+        stack.push(new NodeInfo(root, remainingNodes));
+
+        while (!stack.isEmpty() && remainingNodes > 0) {
+            NodeInfo info = stack.pop();
+            MirrorNode currentNode = info.node;
+            int nodesToDistribute = info.remainingNodes;
+            int currentDepth = calculateDepth(currentNode);
+
+            if (currentDepth >= effectiveMaxDepth || nodesToDistribute <= 0) {
+                continue;
+            }
+
+            int maxChildren = calculateMaxChildren(currentDepth, nodesToDistribute, effectiveMaxDepth);
+            maxChildren = Math.min(maxChildren, maxChildrenPerNode);
+            maxChildren = Math.min(maxChildren, nodesToDistribute);
+
+            // Erstelle Kinder
+            List<MirrorNode> children = new ArrayList<>();
+            for (int i = 0; i < maxChildren; i++) {
+                MirrorNode child = createMirrorNode();
+                currentNode.addChild(child);
+                children.add(child);
+                remainingNodes--;
+            }
+
+            // Verteile verbleibende Knoten auf die Kinder
+            int nodesPerChild = (nodesToDistribute - maxChildren) / Math.max(1, maxChildren);
+            int extraNodes = (nodesToDistribute - maxChildren) % Math.max(1, maxChildren);
+
+            for (int i = 0; i < children.size(); i++) {
+                int childNodes = nodesPerChild + (i < extraNodes ? 1 : 0);
+                if (childNodes > 0) {
+                    stack.push(new NodeInfo(children.get(i), childNodes));
+                }
+            }
         }
+    }
 
-        int remainingNodes = totalNodes - nodeCounter;
-        int maxChildren = calculateMaxChildren(currentNode.getDepth(), remainingNodes, effectiveMaxDepth);
-        maxChildren = Math.min(maxChildren, maxChildrenPerNode);
+    /**
+     * Hilfklasse für Stack-Verwaltung.
+     */
+    private static class NodeInfo {
+        final MirrorNode node;
+        final int remainingNodes;
 
-        // Erstelle Kinder
-        List<MirrorNode> children = new ArrayList<>();
-        for (int i = 0; i < maxChildren && nodeCounter < totalNodes; i++) {
-            MirrorNode child = new MirrorNode(getNextId(), currentNode.getDepth() + 1);
-            currentNode.addChild(child);
-            children.add(child);
-            nodeCounter++;
+        NodeInfo(MirrorNode node, int remainingNodes) {
+            this.node = node;
+            this.remainingNodes = remainingNodes;
         }
-
-        // Rekursiv in die Tiefe gehen
-        for (MirrorNode child : children) {
-            nodeCounter = buildDepthFirst(child, nodeCounter, totalNodes, effectiveMaxDepth);
-            if (nodeCounter >= totalNodes) break;
-        }
-
-        return nodeCounter;
     }
 
     /**
      * Berechnet die maximale Anzahl von Kindern für einen Knoten.
-     *
-     * @param currentDepth Aktuelle Tiefe
-     * @param remainingNodes Verbleibende Knoten
-     * @param effectiveMaxDepth Effektive maximale Tiefe
-     * @return Maximale Anzahl Kinder
      */
     private int calculateMaxChildren(int currentDepth, int remainingNodes, int effectiveMaxDepth) {
         if (currentDepth >= effectiveMaxDepth - 1) {
-            // Auf der vorletzten Ebene: alle verbleibenden Knoten als Kinder
             return remainingNodes;
         }
 
-        // Berechne optimale Verteilung basierend auf verbleibender Tiefe
         int remainingDepth = effectiveMaxDepth - currentDepth - 1;
         if (remainingDepth <= 0) return 0;
 
-        // Versuche eine gleichmäßige Verteilung
         int optimalChildren = (int) Math.ceil(Math.pow(remainingNodes, 1.0 / remainingDepth));
         return Math.min(optimalChildren, maxChildrenPerNode);
     }
@@ -109,17 +119,11 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
         if (existingRoot == null || nodesToAdd <= 0) return 0;
 
         int effectiveMaxDepth = Math.min(this.maxDepth, maxDepth > 0 ? maxDepth : this.maxDepth);
-
         return addNodesDepthFirst(existingRoot, nodesToAdd, effectiveMaxDepth);
     }
 
     /**
-     * Fügt Knoten zum bestehenden Baum hinzu (Depth-First).
-     *
-     * @param root Root-Knoten
-     * @param nodesToAdd Anzahl hinzuzufügender Knoten
-     * @param effectiveMaxDepth Effektive maximale Tiefe
-     * @return Anzahl tatsächlich hinzugefügter Knoten
+     * Fügt Knoten zum bestehenden Baum hinzu (Stack-basiert).
      */
     private int addNodesDepthFirst(MirrorNode root, int nodesToAdd, int effectiveMaxDepth) {
         if (nodesToAdd <= 0) return 0;
@@ -130,12 +134,13 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
         for (MirrorNode candidate : candidates) {
             if (added >= nodesToAdd) break;
 
-            if (candidate.getDepth() < effectiveMaxDepth && candidate.getChildren().size() < maxChildrenPerNode) {
-                MirrorNode newChild = new MirrorNode(getNextId(), candidate.getDepth() + 1);
+            int candidateDepth = calculateDepth(candidate);
+            if (candidateDepth < effectiveMaxDepth && candidate.getChildren().size() < maxChildrenPerNode) {
+                MirrorNode newChild = createMirrorNode();
                 candidate.addChild(newChild);
                 added++;
 
-                // Rekursiv weitere Knoten zu diesem Kind hinzufügen
+                // Nutze Stack für weitere Einfügungen unter diesem Kind
                 if (added < nodesToAdd) {
                     added += addNodesDepthFirst(newChild, nodesToAdd - added, effectiveMaxDepth);
                 }
@@ -146,19 +151,32 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
     }
 
     /**
-     * Findet Einfügepunkte für neue Knoten (Depth-First-Reihenfolge).
-     *
-     * @param root Root-Knoten
-     * @param effectiveMaxDepth Effektive maximale Tiefe
-     * @return Liste der Einfügepunkte
+     * Findet Einfügepunkte für neue Knoten (Stack-basiert).
      */
     private List<MirrorNode> findDepthFirstInsertionPoints(MirrorNode root, int effectiveMaxDepth) {
         List<MirrorNode> candidates = new ArrayList<>();
-        findDepthFirstCandidatesRecursive(root, candidates, effectiveMaxDepth);
+
+        Stack<MirrorNode> stack = new Stack<>();
+        stack.push(root);
+
+        while (!stack.isEmpty()) {
+            MirrorNode node = stack.pop();
+            int nodeDepth = calculateDepth(node);
+
+            if (nodeDepth < effectiveMaxDepth && node.getChildren().size() < maxChildrenPerNode) {
+                candidates.add(node);
+            }
+
+            for (TreeNode child : node.getChildren()) {
+                stack.push((MirrorNode) child);
+            }
+        }
 
         // Sortiere nach Tiefe (tiefere zuerst) und dann nach Anzahl Kinder
         candidates.sort((a, b) -> {
-            int depthDiff = Integer.compare(b.getDepth(), a.getDepth()); // Tiefere zuerst
+            int depthA = calculateDepth(a);
+            int depthB = calculateDepth(b);
+            int depthDiff = Integer.compare(depthB, depthA); // Tiefere zuerst
             if (depthDiff != 0) return depthDiff;
             return Integer.compare(a.getChildren().size(), b.getChildren().size()); // Weniger Kinder zuerst
         });
@@ -166,43 +184,19 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
         return candidates;
     }
 
-    /**
-     * Rekursive Suche nach Einfügekandidaten.
-     */
-    private void findDepthFirstCandidatesRecursive(MirrorNode node, List<MirrorNode> candidates, int effectiveMaxDepth) {
-        if (node.getDepth() < effectiveMaxDepth && node.getChildren().size() < maxChildrenPerNode) {
-            candidates.add(node);
-        }
-
-        for (TreeNode child : node.getChildren()) {
-            findDepthFirstCandidatesRecursive((MirrorNode) child, candidates, effectiveMaxDepth);
-        }
-    }
-
-    /**
-     * Getter für maximale Tiefe.
-     */
+    // Getter und Setter
     public int getMaxDepth() {
         return maxDepth;
     }
 
-    /**
-     * Setter für maximale Tiefe.
-     */
     public void setMaxDepth(int maxDepth) {
         this.maxDepth = maxDepth;
     }
 
-    /**
-     * Getter für maximale Kinder pro Knoten.
-     */
     public int getMaxChildrenPerNode() {
         return maxChildrenPerNode;
     }
 
-    /**
-     * Setter für maximale Kinder pro Knoten.
-     */
     public void setMaxChildrenPerNode(int maxChildrenPerNode) {
         this.maxChildrenPerNode = maxChildrenPerNode;
     }
