@@ -15,13 +15,13 @@ import java.util.*;
 public class MirrorNode extends TreeNode {
     private Mirror mirror;
     private Set<Link> links;
-    private List<MirrorNode> mirrorNodes; // Alle verbundenen Mirror-Knoten
+    private List<MirrorNode> mirrorNodeChildren; // Alle verbundenen Mirror-Knoten
     private int pendingLinks; // Geplante aber noch nicht erstellte Links
     
     public MirrorNode(int id, int depth) {
         super(id, depth);
         this.links = new HashSet<>();
-        this.mirrorNodes = new ArrayList<>();
+        this.mirrorNodeChildren = new ArrayList<>();
         this.pendingLinks = 0;
     }
     
@@ -58,7 +58,7 @@ public class MirrorNode extends TreeNode {
      * @return Anzahl der Mirror-Knoten
      */
     public int getNumMirrors() {
-        return mirrorNodes.size();
+        return mirrorNodeChildren.size();
     }
     
     /**
@@ -67,7 +67,7 @@ public class MirrorNode extends TreeNode {
      * @return Liste der Mirror-Knoten
      */
     public List<MirrorNode> getAllMirrors() {
-        return new ArrayList<>(mirrorNodes);
+        return new ArrayList<>(mirrorNodeChildren);
     }
     
     /**
@@ -117,8 +117,8 @@ public class MirrorNode extends TreeNode {
         // Aktualisiere Mirror-Knoten
         for (Mirror m : mirrors) {
             MirrorNode node = findOrCreateMirrorNode(m);
-            if (!mirrorNodes.contains(node)) {
-                mirrorNodes.add(node);
+            if (!mirrorNodeChildren.contains(node)) {
+                mirrorNodeChildren.add(node);
             }
         }
         
@@ -140,7 +140,7 @@ public class MirrorNode extends TreeNode {
      * Findet oder erstellt einen MirrorNode für ein gegebenes Mirror.
      */
     private MirrorNode findOrCreateMirrorNode(Mirror mirror) {
-        for (MirrorNode node : mirrorNodes) {
+        for (MirrorNode node : mirrorNodeChildren) {
             if (node.getMirror() != null && node.getMirror().getID() == mirror.getID()) {
                 return node;
             }
@@ -159,7 +159,7 @@ public class MirrorNode extends TreeNode {
             return this;
         }
         
-        for (MirrorNode node : mirrorNodes) {
+        for (MirrorNode node : mirrorNodeChildren) {
             if (node.getMirror() != null && node.getMirror().getID() == mirror.getID()) {
                 return node;
             }
@@ -216,8 +216,8 @@ public class MirrorNode extends TreeNode {
      * @param mirrorNode Der hinzuzufügende MirrorNode
      */
     public void addMirrorNode(MirrorNode mirrorNode) {
-        if (!mirrorNodes.contains(mirrorNode)) {
-            mirrorNodes.add(mirrorNode);
+        if (!mirrorNodeChildren.contains(mirrorNode)) {
+            mirrorNodeChildren.add(mirrorNode);
         }
     }
     
@@ -227,7 +227,7 @@ public class MirrorNode extends TreeNode {
      * @param mirrorNode Der zu entfernende MirrorNode
      */
     public void removeMirrorNode(MirrorNode mirrorNode) {
-        mirrorNodes.remove(mirrorNode);
+        mirrorNodeChildren.remove(mirrorNode);
     }
     
     /**

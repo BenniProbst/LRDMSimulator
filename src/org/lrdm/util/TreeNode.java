@@ -9,10 +9,10 @@ import java.util.List;
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
 public class TreeNode {
-    private int id;
+    private final int id;
     private List<TreeNode> children;
     private TreeNode parent;
-    private int depth;
+    private final int depth;
 
     public TreeNode(int id, int depth) {
         this.id = id;

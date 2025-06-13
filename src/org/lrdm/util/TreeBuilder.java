@@ -1,12 +1,11 @@
+
 package org.lrdm.util;
 
 import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Abstrakte Basisklasse für TreeBuilder-Implementierungen.
@@ -47,17 +46,173 @@ public abstract class TreeBuilder {
      * @param nodesToRemove Anzahl der zu entfernenden Knoten
      * @return Anzahl der tatsächlich entfernten Knoten
      */
-    public abstract int removeNodesFromTree(MirrorNode root, int nodesToRemove);
+    public int removeNodesFromTree(MirrorNode root, int nodesToRemove) {
+        if (root == null || nodesToRemove <= 0) return 0;
+
+        List<MirrorNode> leaves = findLeaves(root);
+        int removed = 0;
+
+        for (MirrorNode leaf : leaves) {
+            if (removed >= nodesToRemove) break;
+            if (leaf != root) { // Root nicht entfernen
+                MirrorNode parent = (MirrorNode) leaf.getParent();
+                if (parent != null) {
+                    parent.getChildren().remove(leaf);
+                    parent.removeMirrorNode(leaf);
+                    removed++;
+                }
+            }
+        }
+
+        return removed;
+    }
 
     /**
      * Erstellt Mirror-Verbindungen basierend auf der Tree-Struktur.
+     * Gemeinsame Implementierung für alle TreeBuilder-Subklassen.
      *
+     * @param n Network-Objekt für Kontext
      * @param mirrors Liste der zu verbindenden Mirrors
      * @param simTime Aktuelle Simulationszeit
      * @param props Simulationseigenschaften
      * @return Set der erstellten Links
      */
-    public abstract Set<Link> createAndLinkMirrors(Network n, List<Mirror> mirrors, int simTime, Properties props);
+    public final Set<Link> createAndLinkMirrors(Network n, List<Mirror> mirrors, int simTime, Properties props) {
+        if (mirrors.isEmpty()) return new HashSet<>();
+
+        // Erstelle eine MirrorNode-Struktur basierend auf der spezifischen Strategie
+        MirrorNode root = createTreeStructureWithMirrors(mirrors.size(), getEffectiveMaxDepth(), mirrors);
+
+        if (root == null) return new HashSet<>();
+
+        // Erstelle Links basierend auf der Tree-Struktur
+        return createLinksFromTreeStructure(root, simTime, props);
+    }
+
+    /**
+     * Gibt die effektive maximale Tiefe für diese TreeBuilder-Implementierung zurück.
+     * Wird von Subklassen überschrieben.
+     *
+     * @return Maximale Tiefe (0 für unbegrenzt)
+     */
+    protected abstract int getEffectiveMaxDepth();
+
+    /**
+     * Generische Implementierung der Tree-Link-Erstellung.
+     *
+     * @param root MirrorNode-Root mit zugeordneten Mirrors
+     * @param simTime Simulationszeit
+     * @param props Eigenschaften
+     * @return Set der erstellten Links
+     */
+    protected final Set<Link> createLinksFromTreeStructure(MirrorNode root, int simTime, Properties props) {
+        Set<Link> links = new HashSet<>();
+        if (root == null) return links;
+
+        createLinksRecursive(root, links, simTime, props);
+        return links;
+    }
+
+    /**
+     * Rekursive Hilfsmethode zur Link-Erstellung.
+     * Jeder Parent wird mit seinen direkten Kindern verlinkt.
+     */
+    private void createLinksRecursive(MirrorNode node, Set<Link> links, int simTime, Properties props) {
+        if (node.getMirror() == null) return;
+
+        for (TreeNode child : node.getChildren()) {
+            MirrorNode mirrorChild = (MirrorNode) child;
+            if (mirrorChild.getMirror() != null) {
+                // Erstelle Link zwischen Parent und Kind
+                Link link = new Link(
+                        idGenerator.getNextID(),
+                        node.getMirror(),
+                        mirrorChild.getMirror(),
+                        simTime,
+                        props
+                );
+                links.add(link);
+
+                // Füge Link zu beiden Mirrors hinzu für Konsistenz
+                node.getMirror().addLink(link);
+                mirrorChild.getMirror().addLink(link);
+
+                // Aktualisiere auch die MirrorNode-internen Strukturen
+                node.addLink(link);
+                mirrorChild.addLink(link);
+            }
+            // Rekursiv für alle Kinder
+            createLinksRecursive(mirrorChild, links, simTime, props);
+        }
+    }
+
+    /**
+     * Hilfsmethode: Erstellt eine MirrorNode-Struktur und ordnet Mirrors zu.
+     *
+     * @param totalNodes Anzahl der Knoten
+     * @param maxDepth Maximale Tiefe
+     * @param mirrors Liste der Mirrors
+     * @return Root-MirrorNode mit zugeordneten Mirrors
+     */
+    protected final MirrorNode createTreeStructureWithMirrors(int totalNodes, int maxDepth, List<Mirror> mirrors) {
+        if (mirrors.isEmpty()) return null;
+
+        // Erstelle Tree-Struktur
+        MirrorNode root = buildTree(totalNodes, maxDepth);
+        if (root == null) return null;
+
+        // Ordne Mirrors zu
+        assignMirrorsToNodes(root, mirrors, 0);
+
+        return root;
+    }
+
+    /**
+     * Ordnet Mirrors den MirrorNodes in Breadth-First-Reihenfolge zu.
+     */
+    protected final int assignMirrorsToNodes(MirrorNode node, List<Mirror> mirrors, int currentIndex) {
+        if (currentIndex < mirrors.size()) {
+            node.setMirror(mirrors.get(currentIndex));
+            currentIndex++;
+        }
+
+        for (TreeNode child : node.getChildren()) {
+            currentIndex = assignMirrorsToNodes((MirrorNode) child, mirrors, currentIndex);
+            if (currentIndex >= mirrors.size()) break;
+        }
+
+        return currentIndex;
+    }
+
+    /**
+     * Findet alle Blätter des Baums.
+     * Gemeinsame Implementierung, die von Subklassen überschrieben werden kann.
+     *
+     * @param root Root-Knoten
+     * @return Liste der Blätter, sortiert nach Tiefe (tiefste zuerst)
+     */
+    protected List<MirrorNode> findLeaves(MirrorNode root) {
+        List<MirrorNode> leaves = new ArrayList<>();
+        findLeavesRecursive(root, leaves);
+
+        // Sortiere nach Tiefe (tiefste zuerst) für besseres Entfernen
+        leaves.sort((a, b) -> Integer.compare(b.getDepth(), a.getDepth()));
+
+        return leaves;
+    }
+
+    /**
+     * Rekursive Suche nach Blättern.
+     */
+    protected final void findLeavesRecursive(MirrorNode node, List<MirrorNode> leaves) {
+        if (node.isLeaf()) {
+            leaves.add(node);
+        } else {
+            for (TreeNode child : node.getChildren()) {
+                findLeavesRecursive((MirrorNode) child, leaves);
+            }
+        }
+    }
 
     /**
      * Konvertiert eine TreeNode-Struktur in MirrorNodes mit Mirror-Zuordnungen.
@@ -66,7 +221,7 @@ public abstract class TreeBuilder {
      * @param mirrors Liste der zu zuordnenden Mirrors
      * @return Root des MirrorNode-Baums
      */
-    public MirrorNode convertToMirrorNodes(TreeNode treeRoot, List<Mirror> mirrors) {
+    public final MirrorNode convertToMirrorNodes(TreeNode treeRoot, List<Mirror> mirrors) {
         if (mirrors.isEmpty()) return null;
 
         MirrorNode mirrorRoot = new MirrorNode(treeRoot.getId(), treeRoot.getDepth());
@@ -96,7 +251,7 @@ public abstract class TreeBuilder {
      * @param node Ausgangsknoten
      * @param prefix Präfix für die Ausgabe
      */
-    public void printTree(MirrorNode node, String prefix) {
+    public final void printTree(MirrorNode node, String prefix) {
         if (node == null) return;
 
         System.out.println(prefix + "├── Node " + node.getId() +
@@ -123,7 +278,7 @@ public abstract class TreeBuilder {
      * @param root Root-Knoten
      * @return Anzahl der Knoten
      */
-    public int countNodes(MirrorNode root) {
+    public final int countNodes(MirrorNode root) {
         if (root == null) return 0;
 
         int count = 1;
@@ -139,7 +294,7 @@ public abstract class TreeBuilder {
      * @param root Root-Knoten
      * @return Maximale Tiefe
      */
-    public int getMaxDepth(MirrorNode root) {
+    public final int getMaxDepth(MirrorNode root) {
         if (root == null) return 0;
 
         int maxChildDepth = 0;
@@ -154,7 +309,7 @@ public abstract class TreeBuilder {
      *
      * @return Nächste ID
      */
-    protected int getNextId() {
+    protected final int getNextId() {
         return idGenerator.getNextID();
     }
 
@@ -164,7 +319,7 @@ public abstract class TreeBuilder {
      * @param root Root-Knoten
      * @return true wenn der Baum konsistent ist
      */
-    public boolean validateTreeStructure(MirrorNode root) {
+    public final boolean validateTreeStructure(MirrorNode root) {
         if (root == null) return true;
 
         // Überprüfe Parent-Child-Beziehungen
