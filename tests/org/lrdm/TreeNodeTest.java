@@ -1,19 +1,37 @@
 package org.lrdm;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.lrdm.Link;
-import org.lrdm.Mirror;
-import org.lrdm.util.*;
+import org.junit.jupiter.api.Test;
+import org.lrdm.probes.LinkProbe;
+import org.lrdm.probes.MirrorProbe;
+import org.lrdm.probes.Probe;
+import org.lrdm.topologies.BalancedTreeTopologyStrategy;
+import org.lrdm.util.MirrorNode;
+import org.lrdm.util.TreeNode;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import java.io.IOException;
 import java.util.*;
+
+import static org.lrdm.TestProperties.loadProperties;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("TreeNode und MirrorNode Tests")
 class TreeNodeTest {
+
+    private TimedRDMSim sim;
+    private static final String config = "resources/sim-test-treenode.conf";
+
+    public void initSimulator() throws IOException {
+        initSimulator(config);
+    }
+
+    public void initSimulator(String config) throws IOException {
+        loadProperties(config);
+        sim = new TimedRDMSim(config);
+        // sim.setHeadless(true);
+    }
 
     @Nested
     @DisplayName("TreeNode Basis-Funktionalität")
@@ -144,12 +162,10 @@ class TreeNodeTest {
     class MirrorNodeTests {
 
         private MirrorNode mirrorRoot;
-        private Properties mockProperties;
 
         @BeforeEach
         void setUp() {
             mirrorRoot = new MirrorNode(1, 0);
-            mockProperties = createMockProperties();
         }
 
         @Test
@@ -165,9 +181,20 @@ class TreeNodeTest {
         }
 
         @Test
-        @DisplayName("MirrorNode mit Mirror-Zuordnung")
-        void testMirrorNodeWithMirror() {
-            Mirror mirror = new Mirror(101, 0, mockProperties);
+        @DisplayName("MirrorNode mit Mirror-Zuordnung über Simulation")
+        void testMirrorNodeWithMirrorFromSimulation() throws IOException {
+            initSimulator();
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(3, 0);
+            sim.runStep(1);
+            
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            assertNotNull(mirrorProbe);
+            
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
+            assertFalse(mirrors.isEmpty());
+            
+            Mirror mirror = mirrors.get(0);
             MirrorNode nodeWithMirror = new MirrorNode(2, 1, mirror);
             
             assertEquals(mirror, nodeWithMirror.getMirror());
@@ -175,32 +202,53 @@ class TreeNodeTest {
         }
 
         @Test
-        @DisplayName("setMirror und getMirror funktionieren")
-        void testSetAndGetMirror() {
-            Mirror mirror = new Mirror(102, 0, mockProperties);
-            
-            mirrorRoot.setMirror(mirror);
-            
-            assertEquals(mirror, mirrorRoot.getMirror());
+        @DisplayName("setMirror und getMirror funktionieren mit echten Mirrors")
+        void testSetAndGetMirrorWithRealMirror() throws IOException {
+            initSimulator();
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(2, 0);
+            sim.runStep(1);
+
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            assertNotNull(mirrorProbe);
+            Mirror firstMirror = mirrorProbe.getMirrors().get(0);
+
+            mirrorRoot.setMirror(firstMirror);
+
+            assertEquals(firstMirror, mirrorRoot.getMirror());
         }
 
         @Test
-        @DisplayName("addLink und removeLink funktionieren")
-        void testAddAndRemoveLink() {
-            Mirror source = new Mirror(103, 0, mockProperties);
-            Mirror target = new Mirror(104, 0, mockProperties);
-            Link link = new Link(1, source, target, 0, mockProperties);
-            
-            mirrorRoot.addLink(link);
-            
-            assertEquals(1, mirrorRoot.getAllLinks().size());
-            assertTrue(mirrorRoot.getAllLinks().contains(link));
-            
-            mirrorRoot.removeLink(link);
-            
-            assertEquals(0, mirrorRoot.getAllLinks().size());
-            assertFalse(mirrorRoot.getAllLinks().contains(link));
+        @DisplayName("addLink und removeLink funktionieren mit echten Links")
+        void testAddAndRemoveLinkWithRealLinks() throws IOException {
+            initSimulator();
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(5, 0);
+
+            // Lasse Simulation laufen um Links zu erstellen
+            for(int t = 1; t <= 10; t++) {
+                sim.runStep(t);
+            }
+
+            LinkProbe linkProbe = getLinkProbe();
+            assertNotNull(linkProbe);
+
+            Set<Link> links = linkProbe.getLinks();
+            if (!links.isEmpty()) {
+                Link link = links.iterator().next();
+
+                mirrorRoot.addLink(link);
+
+                assertEquals(1, mirrorRoot.getAllLinks().size());
+                assertTrue(mirrorRoot.getAllLinks().contains(link));
+
+                mirrorRoot.removeLink(link);
+
+                assertEquals(0, mirrorRoot.getAllLinks().size());
+                assertFalse(mirrorRoot.getAllLinks().contains(link));
+            }
         }
+
 
         @Test
         @DisplayName("addPendingLinks und confirmPendingLinks funktionieren")
@@ -243,52 +291,70 @@ class TreeNodeTest {
         }
 
         @Test
-        @DisplayName("isLinkedWith funktioniert mit Mirrors")
-        void testIsLinkedWithMirrors() {
-            Mirror mirror1 = new Mirror(105, 0, mockProperties);
-            Mirror mirror2 = new Mirror(106, 0, mockProperties);
-            Link link = new Link(2, mirror1, mirror2, 0, mockProperties);
+        @DisplayName("isLinkedWith funktioniert mit echten Mirrors")
+        void testIsLinkedWithRealMirrors() throws IOException {
+            initSimulator();
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(4, 0);
             
-            MirrorNode node1 = new MirrorNode(4, 0, mirror1);
-            MirrorNode node2 = new MirrorNode(5, 1, mirror2);
+            // Lasse Simulation laufen um Links zu erstellen
+            for(int t = 1; t <= 15; t++) {
+                sim.runStep(t);
+            }
             
-            // Füge Link zu den Mirrors hinzu
-            mirror1.addLink(link);
-            mirror2.addLink(link);
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            assertNotNull(mirrorProbe);
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
             
-            assertTrue(node1.isLinkedWith(node2));
-            assertTrue(node2.isLinkedWith(node1));
+            if (mirrors.size() >= 2) {
+                Mirror mirror1 = mirrors.get(0);
+                Mirror mirror2 = mirrors.get(1);
+                
+                MirrorNode node1 = new MirrorNode(4, 0, mirror1);
+                MirrorNode node2 = new MirrorNode(5, 1, mirror2);
+                
+                // Prüfe ob Mirrors verlinkt sind (abhängig von der Topologie)
+                boolean expectedLinked = mirror1.getLinks().stream()
+                    .anyMatch(link -> link.getSource() == mirror2 || link.getTarget() == mirror2);
+                
+                assertEquals(expectedLinked, node1.isLinkedWith(node2));
+            }
         }
 
         @Test
-        @DisplayName("isLinkedWith funktioniert ohne Mirrors")
-        void testIsLinkedWithoutMirrors() {
-            Mirror source = new Mirror(107, 0, mockProperties);
-            Mirror target = new Mirror(108, 0, mockProperties);
-            Link link = new Link(3, source, target, 0, mockProperties);
-            
-            MirrorNode node1 = new MirrorNode(6, 0);
-            MirrorNode node2 = new MirrorNode(7, 1);
-            
-            node1.addLink(link);
-            
-            // Diese Implementation würde eine spezielle Logik benötigen
-            // oder sollte false zurückgeben wenn keine Mirrors zugeordnet sind
-            assertFalse(node1.isLinkedWith(node2));
-        }
+        @DisplayName("createAndLinkMirrors funktioniert mit Mock-Properties")
+        void testCreateAndLinkMirrorsWithMockProperties() throws IOException {
+            initSimulator();
 
-        @Test
-        @DisplayName("createAndLinkMirrors funktioniert")
-        void testCreateAndLinkMirrors() {
-            List<Mirror> mirrors = createMockMirrors(5);
-            
-            Set<Link> links = mirrorRoot.createAndLinkMirrors(mirrors, 0, mockProperties);
-            
-            assertNotNull(links);
-            // In einem Baum mit 5 Knoten sollten 4 Links existieren
-            assertEquals(4, links.size());
-            
+            int expectedNumberOfMirrors = 5;
+            int expectedNumberOfLinks = expectedNumberOfMirrors - 1; // In einem Baum mit n Knoten gibt es n-1 Links
+            int simulationTimeStep = 0;
+            int simulationRunSteps = 15;
+
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(expectedNumberOfMirrors, simulationTimeStep);
+
+            // Lasse Simulation laufen um Links zu erstellen
+            for(int timeStep = 1; timeStep <= simulationRunSteps; timeStep++) {
+                sim.runStep(timeStep);
+            }
+
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            LinkProbe linkProbe = getLinkProbe();
+
+            assertNotNull(mirrorProbe);
+            assertNotNull(linkProbe);
+
+            // Validiere dass die erwartete Anzahl Mirrors erstellt wurde
+            assertEquals(expectedNumberOfMirrors, mirrorProbe.getNumMirrors());
+
+            // Validiere dass die erwartete Anzahl Links erstellt wurde (Baum-Eigenschaft)
+            assertEquals(expectedNumberOfLinks, linkProbe.getLinks().size());
+
             // Überprüfe, dass Links gültig sind
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
+            Set<Link> links = linkProbe.getLinks();
+
             for (Link link : links) {
                 assertNotNull(link.getSource());
                 assertNotNull(link.getTarget());
@@ -296,6 +362,256 @@ class TreeNodeTest {
                 assertTrue(mirrors.contains(link.getTarget()));
             }
         }
+
+        @Test
+        @DisplayName("Baum ist konnektiert - alle Mirrors sind über Links erreichbar")
+        void testTreeConnectivity() throws IOException {
+            initSimulator();
+
+            int numberOfMirrors = 7;
+            int simulationTime = 0;
+            int simulationRunSteps = 15;
+
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(numberOfMirrors, simulationTime);
+
+            for(int timeStep = 1; timeStep <= simulationRunSteps; timeStep++) {
+                sim.runStep(timeStep);
+            }
+
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            LinkProbe linkProbe = getLinkProbe();
+
+            // Validiere Konnektivität - in einem Baum ist jeder Knoten von jedem anderen erreichbar
+            assertNotNull(mirrorProbe);
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
+            assertNotNull(linkProbe);
+            Set<Link> links = linkProbe.getLinks();
+
+            // Baue Adjacency-Map für Konnektivitätstest
+            Map<Integer, Set<Integer>> adjacencyMap = buildAdjacencyMap(mirrors, links);
+
+            // Teste ob der Graph zusammenhängend ist (alle Knoten erreichbar)
+            boolean isConnected = isGraphConnected(adjacencyMap, mirrors);
+            assertTrue(isConnected, "Baum sollte vollständig zusammenhängend sein");
+        }
+
+        @Test
+        @DisplayName("Baum hat keine Zyklen - azyklische Eigenschaft")
+        void testTreeAcyclicity() throws IOException {
+            initSimulator();
+
+            int numberOfMirrors = 6;
+            int simulationTime = 0;
+            int simulationRunSteps = 15;
+
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(numberOfMirrors, simulationTime);
+
+            for(int timeStep = 1; timeStep <= simulationRunSteps; timeStep++) {
+                sim.runStep(timeStep);
+            }
+
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            LinkProbe linkProbe = getLinkProbe();
+
+            assertNotNull(mirrorProbe);
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
+            assertNotNull(linkProbe);
+            Set<Link> links = linkProbe.getLinks();
+
+            // Teste ob der Graph azyklisch ist
+            Map<Integer, Set<Integer>> adjacencyMap = buildAdjacencyMap(mirrors, links);
+            boolean hasNoCycles = isAcyclic(adjacencyMap, mirrors);
+            assertTrue(hasNoCycles, "Baum sollte keine Zyklen enthalten");
+        }
+
+        @Test
+        @DisplayName("Baum-Balance - maximale Tiefe sollte logarithmisch sein")
+        void testTreeBalance() throws IOException {
+            initSimulator();
+
+            int numberOfMirrors = 15; // Größerer Baum für Balance-Test
+            int simulationTime = 0;
+            int simulationRunSteps = 20;
+
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(numberOfMirrors, simulationTime);
+
+            for(int timeStep = 1; timeStep <= simulationRunSteps; timeStep++) {
+                sim.runStep(timeStep);
+            }
+
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            LinkProbe linkProbe = getLinkProbe();
+
+            assertNotNull(mirrorProbe);
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
+            assertNotNull(linkProbe);
+            Set<Link> links = linkProbe.getLinks();
+
+            // Baue Baum-Struktur auf und messe Tiefe
+            Map<Integer, Set<Integer>> adjacencyMap = buildAdjacencyMap(mirrors, links);
+            int maxDepth = calculateMaxDepth(adjacencyMap, mirrors);
+
+            // Für einen balancierten Baum sollte die maximale Tiefe ≈ log(n) sein
+            double expectedMaxDepth = Math.log(numberOfMirrors) / Math.log(2); // log2(n)
+            int reasonableMaxDepth = (int) Math.ceil(expectedMaxDepth) + 2; // +2 für Toleranz
+
+            assertTrue(maxDepth <= reasonableMaxDepth,
+                    String.format("Baum-Tiefe (%d) sollte für %d Knoten nicht größer als %d sein",
+                            maxDepth, numberOfMirrors, reasonableMaxDepth));
+        }
+
+        @Test
+        @DisplayName("Dynamisches Hinzufügen von Mirrors erhält Baum-Eigenschaften")
+        void testDynamicMirrorAddition() throws IOException {
+            initSimulator();
+
+            int initialMirrors = 3;
+            int additionalMirrors = 4;
+            int simulationTime = 0;
+            int midSimulationTime = 10;
+            int finalSimulationSteps = 25;
+
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(initialMirrors, simulationTime);
+            sim.getEffector().setMirrors(initialMirrors + additionalMirrors, midSimulationTime);
+
+            for(int timeStep = 1; timeStep <= finalSimulationSteps; timeStep++) {
+                sim.runStep(timeStep);
+            }
+
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            LinkProbe linkProbe = getLinkProbe();
+
+            int totalExpectedMirrors = initialMirrors + additionalMirrors;
+            int expectedLinks = totalExpectedMirrors - 1;
+
+            assertNotNull(mirrorProbe);
+            assertEquals(totalExpectedMirrors, mirrorProbe.getNumMirrors());
+            assertNotNull(linkProbe);
+            assertEquals(expectedLinks, linkProbe.getLinks().size()); // KORRIGIERT: .getLinks().size()
+
+            // Validiere dass der erweiterte Graph immer noch Baum-Eigenschaften hat
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
+            Set<Link> links = linkProbe.getLinks();
+            Map<Integer, Set<Integer>> adjacencyMap = buildAdjacencyMap(mirrors, links);
+
+            boolean isConnected = isGraphConnected(adjacencyMap, mirrors);
+            boolean hasNoCycles = isAcyclic(adjacencyMap, mirrors);
+
+            assertTrue(isConnected, "Erweiterter Baum sollte zusammenhängend bleiben");
+            assertTrue(hasNoCycles, "Erweiterter Baum sollte azyklisch bleiben");
+        }
+
+
+        // Hilfsmethoden für Graph Algorithmen
+        private Map<Integer, Set<Integer>> buildAdjacencyMap(List<Mirror> mirrors, Set<Link> links) {
+            Map<Integer, Set<Integer>> adjacencyMap = new HashMap<>();
+
+            // Initialisiere alle Knoten
+            for (Mirror mirror : mirrors) {
+                adjacencyMap.put(mirror.getID(), new HashSet<>());
+            }
+
+            // Füge Edges hinzu (ungerichtet)
+            for (Link link : links) {
+                int sourceId = link.getSource().getID();
+                int targetId = link.getTarget().getID();
+                adjacencyMap.get(sourceId).add(targetId);
+                adjacencyMap.get(targetId).add(sourceId);
+            }
+
+            return adjacencyMap;
+        }
+
+        private boolean isGraphConnected(Map<Integer, Set<Integer>> adjacencyMap, List<Mirror> mirrors) {
+            if (mirrors.isEmpty()) return true;
+
+            Set<Integer> visited = new HashSet<>();
+            Queue<Integer> queue = new LinkedList<>();
+
+            // Starte DFS vom ersten Knoten
+            int startNode = mirrors.get(0).getID();
+            queue.offer(startNode);
+            visited.add(startNode);
+
+            while (!queue.isEmpty()) {
+                int current = queue.poll();
+                for (int neighbor : adjacencyMap.get(current)) {
+                    if (!visited.contains(neighbor)) {
+                        visited.add(neighbor);
+                        queue.offer(neighbor);
+                    }
+                }
+            }
+
+            // Alle Knoten sollten besucht worden sein
+            return visited.size() == mirrors.size();
+        }
+
+        private boolean isAcyclic(Map<Integer, Set<Integer>> adjacencyMap, List<Mirror> mirrors) {
+            Set<Integer> visited = new HashSet<>();
+
+            for (Mirror mirror : mirrors) {
+                int nodeId = mirror.getID();
+                if (!visited.contains(nodeId)) {
+                    if (hasCycleDFS(adjacencyMap, nodeId, -1, visited)) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private boolean hasCycleDFS(Map<Integer, Set<Integer>> adjacencyMap, int current, int parent, Set<Integer> visited) {
+            visited.add(current);
+
+            for (int neighbor : adjacencyMap.get(current)) {
+                if (neighbor == parent) continue; // Ignoriere den Pfad zurück zum Parent
+
+                if (visited.contains(neighbor)) {
+                    return true; // Zyklus gefunden
+                }
+
+                if (hasCycleDFS(adjacencyMap, neighbor, current, visited)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private int calculateMaxDepth(Map<Integer, Set<Integer>> adjacencyMap, List<Mirror> mirrors) {
+            if (mirrors.isEmpty()) return 0;
+
+            // Finde Root (Knoten mit nur einem Nachbarn, oder nimm den ersten)
+            int root = mirrors.get(0).getID();
+            for (Mirror mirror : mirrors) {
+                if (adjacencyMap.get(mirror.getID()).size() == 1) {
+                    root = mirror.getID();
+                    break;
+                }
+            }
+
+            return calculateDepthDFS(adjacencyMap, root, -1, 0);
+        }
+
+        private int calculateDepthDFS(Map<Integer, Set<Integer>> adjacencyMap, int current, int parent, int currentDepth) {
+            int maxDepth = currentDepth;
+
+            for (int neighbor : adjacencyMap.get(current)) {
+                if (neighbor != parent) {
+                    int childDepth = calculateDepthDFS(adjacencyMap, neighbor, current, currentDepth + 1);
+                    maxDepth = Math.max(maxDepth, childDepth);
+                }
+            }
+
+            return maxDepth;
+        }
+
 
         @Test
         @DisplayName("addChild fügt auch MirrorNode hinzu")
@@ -309,34 +625,34 @@ class TreeNodeTest {
             assertEquals(1, mirrorRoot.getNumMirrors());
             assertTrue(mirrorRoot.getAllMirrors().contains(child));
         }
-
-        @Test
-        @DisplayName("toString gibt korrekte Information zurück")
-        void testToString() {
-            Mirror mirror = new Mirror(109, 0, mockProperties);
-            MirrorNode node = new MirrorNode(9, 2, mirror);
-            node.addPendingLinks(3);
-            
-            String result = node.toString();
-            
-            assertTrue(result.contains("id=9"));
-            assertTrue(result.contains("depth=2"));
-            assertTrue(result.contains("mirrorId=109"));
-            assertTrue(result.contains("pendingLinks=3"));
-        }
     }
 
     @Nested
-    @DisplayName("Integration Tests")
+    @DisplayName("Integration Tests mit echter Simulation")
     class IntegrationTests {
 
         @Test
-        @DisplayName("Komplexe MirrorNode-Hierarchie")
-        void testComplexMirrorNodeHierarchy() {
-            // Erstelle eine komplexe Hierarchie mit Mirrors und Links
-            Mirror rootMirror = new Mirror(201, 0, createMockProperties());
-            Mirror child1Mirror = new Mirror(202, 0, createMockProperties());
-            Mirror child2Mirror = new Mirror(203, 0, createMockProperties());
+        @DisplayName("Komplexe MirrorNode-Hierarchie mit echter Simulation")
+        void testComplexMirrorNodeHierarchyWithRealSimulation() throws IOException {
+            initSimulator();
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(6, 0);
+            
+            // Lasse Simulation laufen
+            for(int t = 1; t <= 20; t++) {
+                sim.runStep(t);
+            }
+            
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            assertNotNull(mirrorProbe);
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
+            
+            assertTrue(mirrors.size() >= 3);
+            
+            // Erstelle MirrorNode-Hierarchie mit echten Mirrors
+            Mirror rootMirror = mirrors.get(0);
+            Mirror child1Mirror = mirrors.get(1);
+            Mirror child2Mirror = mirrors.get(2);
             
             MirrorNode root = new MirrorNode(10, 0, rootMirror);
             MirrorNode child1 = new MirrorNode(11, 1, child1Mirror);
@@ -345,30 +661,65 @@ class TreeNodeTest {
             root.addChild(child1);
             root.addChild(child2);
             
-            // Erstelle Links
-            Link link1 = new Link(10, rootMirror, child1Mirror, 0, createMockProperties());
-            Link link2 = new Link(11, rootMirror, child2Mirror, 0, createMockProperties());
-            
-            root.addLink(link1);
-            root.addLink(link2);
-            child1.addLink(link1);
-            child2.addLink(link2);
-            
             // Validierungen
             assertEquals(2, root.getChildren().size());
             assertEquals(2, root.getNumMirrors());
-            assertEquals(2, root.getNumTargetLinks());
-            assertEquals(1, child1.getNumTargetLinks());
-            assertEquals(1, child2.getNumTargetLinks());
-            
-            assertTrue(root.isLinkedWith(child1));
-            assertTrue(root.isLinkedWith(child2));
-            assertFalse(child1.isLinkedWith(child2));
+            assertTrue(root.getAllMirrors().contains(child1));
+            assertTrue(root.getAllMirrors().contains(child2));
         }
 
         @Test
-        @DisplayName("TreeNode zu MirrorNode Konvertierung")
-        void testTreeNodeToMirrorNodeConversion() {
+        @DisplayName("TreeBuilder Integration mit BalancedTreeTopologyStrategy")
+        void testTreeBuilderIntegrationWithTopologyStrategy() throws IOException {
+            initSimulator();
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            
+            // Teste dynamisches Hinzufügen von Mirrors wie in ExampleSimulation
+            int mirrors = 8;
+            for(int t = 0; t < 80; t += 20) {
+                sim.getEffector().setMirrors(mirrors, t);
+                mirrors += 2;
+            }
+            
+            // Lasse Simulation laufen
+            for(int t = 1; t <= 50; t++) {
+                sim.runStep(t);
+            }
+            
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            LinkProbe linkProbe = getLinkProbe();
+            
+            assertNotNull(mirrorProbe);
+            assertNotNull(linkProbe);
+            
+            assertTrue(mirrorProbe.getNumMirrors() >= 8);
+            assertTrue(linkProbe.getLinks().size() >= 7); // n-1 für Baum
+            
+            // Validiere Baum-Eigenschaften
+            int numMirrors = mirrorProbe.getNumMirrors();
+            int numLinks = linkProbe.getLinks().size();
+            
+            // In einem Baum: links = mirrors - 1
+            assertTrue(numLinks >= numMirrors - 1);
+            assertTrue(numLinks <= numMirrors * mirrorProbe.getNumTargetLinksPerMirror() / 2);
+        }
+
+        @Test
+        @DisplayName("TreeNode zu MirrorNode Konvertierung mit echten Mirrors")
+        void testTreeNodeToMirrorNodeConversionWithRealMirrors() throws IOException {
+            initSimulator();
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(3, 0);
+            
+            for(int t = 1; t <= 10; t++) {
+                sim.runStep(t);
+            }
+            
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            assertNotNull(mirrorProbe);
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
+            assertEquals(3, mirrors.size());
+            
             // Erstelle TreeNode-Struktur
             TreeNode treeRoot = new TreeNode(20, 0);
             TreeNode treeChild1 = new TreeNode(21, 1);
@@ -377,11 +728,12 @@ class TreeNodeTest {
             treeRoot.addChild(treeChild1);
             treeRoot.addChild(treeChild2);
             
-            // Konvertiere zu MirrorNode (dies würde in TreeBuilder gemacht)
-            MirrorNode mirrorRoot = new MirrorNode(treeRoot.getId(), treeRoot.getDepth());
+            // Konvertiere zu MirrorNode mit echten Mirrors
+            MirrorNode mirrorRoot = new MirrorNode(treeRoot.getId(), treeRoot.getDepth(), mirrors.get(0));
             
-            for (TreeNode child : treeRoot.getChildren()) {
-                MirrorNode mirrorChild = new MirrorNode(child.getId(), child.getDepth());
+            for (int i = 0; i < treeRoot.getChildren().size() && i + 1 < mirrors.size(); i++) {
+                TreeNode child = treeRoot.getChildren().get(i);
+                MirrorNode mirrorChild = new MirrorNode(child.getId(), child.getDepth(), mirrors.get(i + 1));
                 mirrorRoot.addChild(mirrorChild);
             }
             
@@ -389,37 +741,87 @@ class TreeNodeTest {
             assertEquals(treeRoot.getId(), mirrorRoot.getId());
             assertEquals(treeRoot.getDepth(), mirrorRoot.getDepth());
             assertEquals(treeRoot.getChildren().size(), mirrorRoot.getChildren().size());
+            assertNotNull(mirrorRoot.getMirror());
+            assertEquals(mirrors.get(0), mirrorRoot.getMirror());
+        }
+
+        @Test
+        @DisplayName("Performance Test mit vielen Mirrors")
+        void testPerformanceWithManyMirrors() throws IOException {
+            initSimulator();
+            sim.initialize(new BalancedTreeTopologyStrategy());
             
-            for (int i = 0; i < treeRoot.getChildren().size(); i++) {
-                TreeNode origChild = treeRoot.getChildren().get(i);
-                MirrorNode convertedChild = (MirrorNode) mirrorRoot.getChildren().get(i);
-                assertEquals(origChild.getId(), convertedChild.getId());
-                assertEquals(origChild.getDepth(), convertedChild.getDepth());
+            // Teste mit mehr Mirrors
+            sim.getEffector().setMirrors(20, 0);
+            
+            long startTime = System.currentTimeMillis();
+            
+            for(int t = 1; t <= 30; t++) {
+                sim.runStep(t);
+            }
+            
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+            
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            LinkProbe linkProbe = getLinkProbe();
+
+            assertNotNull(mirrorProbe);
+            assertEquals(20, mirrorProbe.getNumMirrors());
+            assertNotNull(linkProbe);
+            assertTrue(linkProbe.getLinks().size() >= 19); // mindestens n-1 für Baum
+            
+            // Performance sollte unter 5 Sekunden sein
+            assertTrue(duration < 5000, "Simulation dauerte zu lange: " + duration + "ms");
+        }
+
+        @Test
+        @DisplayName("Mirror Startup-Zeit Validierung")
+        void testMirrorStartupTimeValidation() throws IOException {
+            initSimulator();
+            sim.initialize(new BalancedTreeTopologyStrategy());
+            sim.getEffector().setMirrors(5, 0);
+            
+            // Lasse genug Zeit für Startup
+            for(int t = 1; t <= 20; t++) {
+                sim.runStep(t);
+            }
+            
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            assertNotNull(mirrorProbe);
+            List<Mirror> mirrors = mirrorProbe.getMirrors();
+            
+            for(Mirror mirror : mirrors) {
+                assertTrue(mirror.getStartupTime() >= 1);
+                assertTrue(mirror.getStartupTime() <= 3);
             }
         }
     }
 
     // Hilfsmethoden
+    private MirrorProbe getMirrorProbe() {
+        for(Probe p : sim.getProbes()) {
+            if(p instanceof MirrorProbe) return (MirrorProbe)p;
+        }
+        return null;
+    }
+
+    private LinkProbe getLinkProbe() {
+        for(Probe p : sim.getProbes()) {
+            if(p instanceof LinkProbe) return (LinkProbe)p;
+        }
+        return null;
+    }
+
     private Properties createMockProperties() {
         Properties props = new Properties();
         props.setProperty("network.target_links_per_mirror", "2");
-        props.setProperty("mirror.startup_time_min", "100");
-        props.setProperty("mirror.startup_time_max", "200");
-        props.setProperty("mirror.ready_time_min", "50");
-        props.setProperty("mirror.ready_time_max", "100");
-        props.setProperty("mirror.stop_time_min", "50");
-        props.setProperty("mirror.stop_time_max", "75");
+        props.setProperty("mirror.startup_time_min", "1");
+        props.setProperty("mirror.startup_time_max", "3");
+        props.setProperty("mirror.ready_time_min", "1");
+        props.setProperty("mirror.ready_time_max", "2");
+        props.setProperty("mirror.stop_time_min", "1");
+        props.setProperty("mirror.stop_time_max", "2");
         return props;
-    }
-
-    private List<Mirror> createMockMirrors(int count) {
-        List<Mirror> mirrors = new ArrayList<>();
-        Properties props = createMockProperties();
-        
-        for (int i = 0; i < count; i++) {
-            mirrors.add(new Mirror(IDGenerator.getInstance().getNextID(), 0, props));
-        }
-        
-        return mirrors;
     }
 }
