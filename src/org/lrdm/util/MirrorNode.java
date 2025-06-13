@@ -1,3 +1,4 @@
+
 package org.lrdm.util;
 
 import org.lrdm.Link;
@@ -6,11 +7,12 @@ import org.lrdm.Mirror;
 import java.util.*;
 
 /**
- * Repräsentiert einen Knoten in einem Baum, der einem Mirror zugeordnet werden kann.
+ * Repräsentiert einen Knoten in einer Struktur (Baum oder Ring), der einem Mirror zugeordnet werden kann.
  * Diese Klasse trennt die Planungsschicht (TreeNode-Struktur) von der
  * Implementierungsschicht (Mirror mit Links).
  *
  * Vollständig zustandslos bezüglich Link-Informationen - alle werden dynamisch berechnet.
+ * Unterstützt sowohl Baum- als auch Ring-Strukturen.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
@@ -30,7 +32,7 @@ public class MirrorNode extends TreeNode {
 
     /**
      * Setzt den Mirror für diesen Knoten.
-     * Sollte nur über TreeBuilder gesetzt werden, nicht direkt.
+     * Sollte nur über Builder (TreeBuilder/RingBuilder) gesetzt werden, nicht direkt.
      *
      * @param mirror Der zu setzende Mirror
      */
@@ -78,13 +80,12 @@ public class MirrorNode extends TreeNode {
 
     /**
      * Berechnet die Anzahl der geplanten Links basierend auf der TreeNode-Struktur.
-     * Dies sind die Links, die laut Baumstruktur existieren sollten.
-     * Stack-basierte Implementierung.
+     * Nutzt die TreeNode-Implementierung für sowohl Baum- als auch Ring-Strukturen.
      *
      * @return Anzahl der geplanten Links
      */
     public int getNumPlannedLinks() {
-        return calculatePlannedLinksFromStructure();
+        return getNumPlannedLinksFromStructure(); // Nutzt TreeNode-Methode
     }
 
     /**
@@ -111,6 +112,7 @@ public class MirrorNode extends TreeNode {
      * Prüft, ob dieser Knoten mit einem anderen MirrorNode verlinkt ist.
      * Funktioniert nur, wenn beide Knoten Mirrors haben und die Planungsschicht
      * mit der Implementierungsschicht umgesetzt wurde.
+     * Unterstützt sowohl Baum- als auch Ring-Strukturen.
      *
      * @param other Der andere MirrorNode
      * @return true, wenn eine Verbindung existiert
@@ -128,7 +130,7 @@ public class MirrorNode extends TreeNode {
     }
 
     /**
-     * Entfernt einen MirrorNode (für TreeBuilder).
+     * Entfernt einen MirrorNode (für Builder).
      *
      * @param child Der zu entfernende Kindknoten
      */
@@ -142,52 +144,8 @@ public class MirrorNode extends TreeNode {
     }
 
     /**
-     * Stack-basierte Berechnung der geplanten Links aus der TreeNode-Struktur.
-     */
-    private int calculatePlannedLinksFromStructure() {
-        int plannedLinks = 0;
-
-        // Stack für die Traversierung
-        Stack<TreeNode> stack = new Stack<>();
-        Set<TreeNode> visited = new HashSet<>();
-
-        stack.push(this);
-
-        while (!stack.isEmpty()) {
-            TreeNode current = stack.pop();
-
-            if (visited.contains(current)) {
-                continue;
-            }
-            visited.add(current);
-
-            // Jedes Kind stellt eine geplante Verbindung dar
-            for (TreeNode child : current.getChildren()) {
-                if (child == this || isAncestorOf((TreeNode) this, child)) {
-                    plannedLinks++;
-                }
-                if (!visited.contains(child)) {
-                    stack.push(child);
-                }
-            }
-
-            // Auch Parent-Verbindung zählen, wenn dieser Knoten nicht die Wurzel ist
-            TreeNode parent = current.getParent();
-            if (parent != null && (current == this || isAncestorOf((TreeNode) this, current))) {
-                if (current == this) {
-                    plannedLinks++; // Parent-Verbindung für diesen Knoten
-                }
-                if (!visited.contains(parent)) {
-                    stack.push(parent);
-                }
-            }
-        }
-
-        return plannedLinks;
-    }
-
-    /**
      * Prüft, ob eine geplante Verbindung zu einem anderen Knoten existiert.
+     * Funktioniert für Baum- und Ring-Strukturen.
      */
     private boolean isPlannedConnectionWith(MirrorNode other) {
         // Direkte Parent-Child-Beziehung
@@ -195,8 +153,8 @@ public class MirrorNode extends TreeNode {
             return true;
         }
 
-        // Geschwister-Beziehung (gleicher Parent)
-        if (this.getParent() != null && this.getParent() == other.getParent()) {
+        // Für Ring-Strukturen: Auch Geschwister können verbunden sein
+        if (isRingStructure() && this.getParent() != null && this.getParent() == other.getParent()) {
             return true;
         }
 
@@ -215,28 +173,15 @@ public class MirrorNode extends TreeNode {
                 link.getSource() == other.mirror || link.getTarget() == other.mirror);
     }
 
-    /**
-     * Hilfsmethode: Prüft, ob ein Knoten Vorfahre eines anderen ist.
-     */
-    private boolean isAncestorOf(TreeNode ancestor, TreeNode descendant) {
-        TreeNode current = descendant.getParent();
-        while (current != null) {
-            if (current == ancestor) {
-                return true;
-            }
-            current = current.getParent();
-        }
-        return false;
-    }
-
     @Override
     public String toString() {
-        return String.format("MirrorNode{id=%d, mirror=%s, planned=%d, implemented=%d, pending=%d}",
+        return String.format("MirrorNode{id=%d, mirror=%s, planned=%d, implemented=%d, pending=%d, isHead=%s}",
                 getId(),
                 mirror != null ? mirror.getID() : "null",
                 getNumPlannedLinks(),
                 getNumImplementedLinks(),
-                getNumPendingLinks());
+                getNumPendingLinks(),
+                isHead());
     }
 
     @Override

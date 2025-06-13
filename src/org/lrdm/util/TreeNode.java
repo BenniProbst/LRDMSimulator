@@ -1,12 +1,10 @@
 package org.lrdm.util;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
- * Basis-Klasse für Tree-Knoten.
- * Verwaltet nur die strukturellen Beziehungen zwischen Knoten.
+ * Basis-Klasse für strukturelle Knoten.
+ * Verwaltet Parent-Child-Beziehungen und kann sowohl für Bäume als auch für Ringe verwendet werden.
  * Keine Metadaten der Konstruktion (wie depth) sind hier enthalten.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
@@ -15,11 +13,13 @@ public class TreeNode {
     private final int id;
     private TreeNode parent;
     private List<TreeNode> children;
+    private boolean isHead; // Ersetzt das Root-Konzept für Ring-Strukturen
 
     public TreeNode(int id) {
         this.id = id;
         this.parent = null;
         this.children = new ArrayList<>();
+        this.isHead = false;
     }
 
     /**
@@ -46,6 +46,16 @@ public class TreeNode {
     }
 
     /**
+     * Setzt den Parent-Knoten explizit.
+     * Nützlich für Ring-Strukturen wo der Parent nicht automatisch über addChild gesetzt wird.
+     *
+     * @param parent Der neue Parent-Knoten
+     */
+    public void setParent(TreeNode parent) {
+        this.parent = parent;
+    }
+
+    /**
      * Überprüft, ob dieser Knoten ein Blatt ist.
      *
      * @return true wenn der Knoten keine Kinder hat
@@ -55,12 +65,113 @@ public class TreeNode {
     }
 
     /**
-     * Überprüft, ob dieser Knoten die Root ist.
+     * Überprüft, ob dieser Knoten die Root ist (nur für Baum-Strukturen).
      *
      * @return true wenn der Knoten keinen Parent hat
      */
     public boolean isRoot() {
         return parent == null;
+    }
+
+    /**
+     * Überprüft, ob dieser Knoten als Head markiert ist.
+     * Head-Knoten dienen als Startpunkt für Traversierungen in Ring-Strukturen.
+     *
+     * @return true wenn der Knoten als Head markiert ist
+     */
+    public boolean isHead() {
+        return isHead;
+    }
+
+    /**
+     * Markiert diesen Knoten als Head oder entfernt die Head-Markierung.
+     *
+     * @param head true um den Knoten als Head zu markieren
+     */
+    public void setHead(boolean head) {
+        this.isHead = head;
+    }
+
+    /**
+     * Findet den Head-Knoten in dieser Struktur.
+     * Für Bäume ist das die Root, für Ringe der explizit markierte Head.
+     *
+     * @return Der Head-Knoten oder null wenn keiner gefunden wurde
+     */
+    public TreeNode findHead() {
+        // Zuerst prüfen ob dieser Knoten Head ist
+        if (isHead) return this;
+
+        // Für Baum-Strukturen: Root finden
+        if (isRoot()) return this;
+
+        // Stack-basierte Suche nach Head in der gesamten Struktur
+        Set<TreeNode> visited = new HashSet<>();
+        Stack<TreeNode> stack = new Stack<>();
+        stack.push(this);
+
+        while (!stack.isEmpty()) {
+            TreeNode current = stack.pop();
+            if (visited.contains(current)) continue;
+            visited.add(current);
+
+            if (current.isHead()) return current;
+            if (current.isRoot() && !isRingStructure()) return current; // Root nur wenn kein Ring
+
+            // Alle Nachbarn durchsuchen
+            if (current.parent != null) stack.push(current.parent);
+            for (TreeNode child : current.children) {
+                stack.push(child);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Erkennt ob diese Struktur ein Ring ist.
+     * Ein Ring liegt vor, wenn es einen Zyklus gibt (jeder Knoten hat Parent und Kind).
+     *
+     * @return true wenn es sich um eine Ring-Struktur handelt
+     */
+    public boolean isRingStructure() {
+        Set<TreeNode> visited = new HashSet<>();
+        Stack<TreeNode> stack = new Stack<>();
+        stack.push(this);
+
+        while (!stack.isEmpty()) {
+            TreeNode current = stack.pop();
+            if (visited.contains(current)) return true; // Zyklus gefunden
+            visited.add(current);
+
+            if (current.parent != null) stack.push(current.parent);
+            for (TreeNode child : current.children) {
+                if (!visited.contains(child)) stack.push(child);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Berechnet die Anzahl der geplanten Links aus der Struktur.
+     * Für Bäume: Parent + Children
+     * Für Ringe: Parent + Children (normalerweise je 1)
+     *
+     * @return Anzahl der strukturellen Verbindungen
+     */
+    public int getNumPlannedLinksFromStructure() {
+        int linkCount = 0;
+
+        // Parent-Verbindung zählen (außer bei Tree-Root)
+        if (parent != null) {
+            linkCount++;
+        }
+
+        // Kind-Verbindungen zählen
+        linkCount += children.size();
+
+        return linkCount;
     }
 
     /**
@@ -77,20 +188,30 @@ public class TreeNode {
     }
 
     /**
-     * Findet einen Knoten mit der angegebenen ID in diesem Teilbaum.
+     * Findet einen Knoten mit der angegebenen ID in dieser Struktur.
      *
      * @param id Die zu suchende ID
      * @return Der gefundene Knoten oder null
      */
     public TreeNode findNodeById(int id) {
-        if (this.id == id) {
-            return this;
-        }
+        Set<TreeNode> visited = new HashSet<>();
+        Stack<TreeNode> stack = new Stack<>();
+        stack.push(this);
 
-        for (TreeNode child : children) {
-            TreeNode found = child.findNodeById(id);
-            if (found != null) {
-                return found;
+        while (!stack.isEmpty()) {
+            TreeNode current = stack.pop();
+            if (visited.contains(current)) continue;
+            visited.add(current);
+
+            if (current.id == id) return current;
+
+            if (current.parent != null && !visited.contains(current.parent)) {
+                stack.push(current.parent);
+            }
+            for (TreeNode child : current.children) {
+                if (!visited.contains(child)) {
+                    stack.push(child);
+                }
             }
         }
 
@@ -98,20 +219,54 @@ public class TreeNode {
     }
 
     /**
-     * Gibt den Pfad von der Root zu diesem Knoten zurück.
+     * Gibt den Pfad vom Head zu diesem Knoten zurück.
+     * Für Ringe wird der kürzeste Pfad gewählt.
      *
-     * @return Liste der Knoten vom Root zu diesem Knoten
+     * @return Liste der Knoten vom Head zu diesem Knoten
      */
-    public List<TreeNode> getPathFromRoot() {
-        List<TreeNode> path = new ArrayList<>();
-        TreeNode current = this;
+    public List<TreeNode> getPathFromHead() {
+        TreeNode head = findHead();
+        if (head == null) return Collections.emptyList();
 
-        while (current != null) {
-            path.add(0, current);
-            current = current.parent;
+        if (head == this) return Arrays.asList(this);
+
+        // BFS für kürzesten Pfad
+        Queue<TreeNode> queue = new LinkedList<>();
+        Map<TreeNode, TreeNode> predecessor = new HashMap<>();
+        Set<TreeNode> visited = new HashSet<>();
+
+        queue.offer(head);
+        visited.add(head);
+        predecessor.put(head, null);
+
+        while (!queue.isEmpty()) {
+            TreeNode current = queue.poll();
+
+            if (current == this) {
+                // Pfad rekonstruieren
+                List<TreeNode> path = new ArrayList<>();
+                TreeNode node = this;
+                while (node != null) {
+                    path.add(0, node);
+                    node = predecessor.get(node);
+                }
+                return path;
+            }
+
+            // Alle Nachbarn durchsuchen
+            List<TreeNode> neighbors = new ArrayList<>(current.children);
+            if (current.parent != null) neighbors.add(current.parent);
+
+            for (TreeNode neighbor : neighbors) {
+                if (!visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    predecessor.put(neighbor, current);
+                    queue.offer(neighbor);
+                }
+            }
         }
 
-        return path;
+        return Collections.emptyList();
     }
 
     // Getter und Setter
@@ -147,6 +302,7 @@ public class TreeNode {
                 ", children=" + children.size() +
                 ", isLeaf=" + isLeaf() +
                 ", isRoot=" + isRoot() +
+                ", isHead=" + isHead +
                 '}';
     }
 }
