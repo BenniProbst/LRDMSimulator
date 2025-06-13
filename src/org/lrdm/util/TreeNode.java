@@ -154,13 +154,13 @@ public class TreeNode {
     }
 
     /**
-     * Berechnet die Anzahl der geplanten Links aus der Struktur.
+     * Berechnet die Anzahl der direkten strukturellen Links dieses Knotens.
      * Für Bäume: Parent + Children
      * Für Ringe: Parent + Children (normalerweise je 1)
      *
-     * @return Anzahl der strukturellen Verbindungen
+     * @return Anzahl der direkten strukturellen Verbindungen
      */
-    public int getNumPlannedLinksFromStructure() {
+    public int getNumDirectLinksFromStructure() {
         int linkCount = 0;
 
         // Parent-Verbindung zählen (außer bei Tree-Root)
@@ -172,6 +172,52 @@ public class TreeNode {
         linkCount += children.size();
 
         return linkCount;
+    }
+
+    /**
+     * Berechnet die Gesamtzahl aller Links in der gesamten Struktur.
+     * Stack-basierte Traversierung ohne Rekursion.
+     * Jeder Link wird nur einmal gezählt (Parent->Child, nicht Child->Parent).
+     *
+     * @return Gesamtzahl der Links in der Struktur
+     */
+    public int getNumPlannedLinksFromStructure() {
+        Set<TreeNode> visited = new HashSet<>();
+        Stack<TreeNode> stack = new Stack<>();
+        Set<String> countedLinks = new HashSet<>(); // Verhindert Doppelzählung
+
+        // Beginne mit Head/Root der Struktur
+        TreeNode head = findHead();
+        if (head == null) head = this;
+
+        stack.push(head);
+        int totalLinks = 0;
+
+        while (!stack.isEmpty()) {
+            TreeNode current = stack.pop();
+            if (visited.contains(current)) continue;
+            visited.add(current);
+
+            // Zähle alle ausgehenden Links (Parent->Child Beziehungen)
+            for (TreeNode child : current.children) {
+                String linkId = current.id + "->" + child.id;
+                if (!countedLinks.contains(linkId)) {
+                    countedLinks.add(linkId);
+                    totalLinks++;
+                }
+
+                if (!visited.contains(child)) {
+                    stack.push(child);
+                }
+            }
+
+            // Für Ring-Strukturen: Auch Parent-Links berücksichtigen wenn nötig
+            if (isRingStructure() && current.parent != null && !visited.contains(current.parent)) {
+                stack.push(current.parent);
+            }
+        }
+
+        return totalLinks;
     }
 
     /**
