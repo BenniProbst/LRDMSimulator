@@ -3,8 +3,8 @@ package org.lrdm.topologies.base;
 import java.util.*;
 
 /**
- * Basis-Klasse für strukturelle Knoten.
- * Verwaltet Parent-Child-Beziehungen für Baum-Strukturen.
+ * Abstrakte Basis-Klasse für strukturelle Knoten.
+ * Verwaltet Parent-Child-Beziehungen und definiert Strukturvalidierung.
  * Ring-sichere Implementierung aller Traversierungsfunktionen.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
@@ -49,8 +49,104 @@ public class TreeNode {
     }
 
     /**
-     * Fügt ein Kind zu diesem Knoten hinzu.
+     * Grundlegende Strukturvalidierung - prüft ob alle Knoten miteinander verbunden sind.
+     * Verhindert isolierte Knoten in der Struktur.
+     * Unterstützt sowohl Baum- als auch Ring-Strukturen.
      */
+    public boolean isValidStructure(Set<TreeNode> allNodes) {
+        if (allNodes == null || allNodes.isEmpty()) return false;
+        if (allNodes.size() == 1) return true; // Ein einzelner Knoten ist gültig
+
+        // Prüfe ob alle Knoten zusammenhängend sind
+        return isConnectedStructure(allNodes);
+    }
+
+    /**
+     * Prüft ob alle Knoten in der gegebenen Menge zusammenhängend sind.
+     * Verwendet BFS um zu überprüfen, dass alle Knoten erreichbar sind.
+     * Ring-sichere Implementierung für alle Strukturtypen.
+     */
+    private boolean isConnectedStructure(Set<TreeNode> allNodes) {
+        if (allNodes.isEmpty()) return false;
+
+        // Starte von einem beliebigen Knoten
+        TreeNode startNode = allNodes.iterator().next();
+        Set<TreeNode> visited = new HashSet<>();
+        Queue<TreeNode> queue = new LinkedList<>();
+
+        queue.offer(startNode);
+        visited.add(startNode);
+
+        // BFS-Traversierung über alle Verbindungen
+        while (!queue.isEmpty()) {
+            TreeNode current = queue.poll();
+
+            // Besuche alle Nachbarn (Parent und Children)
+            List<TreeNode> neighbors = new ArrayList<>();
+
+            // Parent hinzufügen (falls vorhanden)
+            if (current.parent != null) {
+                neighbors.add(current.parent);
+            }
+
+            // Alle Kinder hinzufügen
+            neighbors.addAll(current.children);
+
+            // Besuche unbesuchte Nachbarn
+            for (TreeNode neighbor : neighbors) {
+                if (allNodes.contains(neighbor) && !visited.contains(neighbor)) {
+                    visited.add(neighbor);
+                    queue.offer(neighbor);
+                }
+            }
+        }
+
+        // Alle Knoten müssen erreichbar sein
+        return visited.size() == allNodes.size();
+    }
+
+    /**
+     * Grundlegende Zyklusprüfung für beliebige Knotenstrukturen.
+     * Fundamentale statische Hilfsmethode, die von Kindklassen genutzt werden kann.
+     */
+    public static boolean hasClosedCycle(Set<TreeNode> nodes) {
+        if (nodes.isEmpty()) return false;
+
+        TreeNode start = nodes.iterator().next();
+        TreeNode current = start;
+        Set<TreeNode> visitedInCycle = new HashSet<>();
+
+        do {
+            if (visitedInCycle.contains(current)) {
+                return visitedInCycle.size() == nodes.size();
+            }
+            visitedInCycle.add(current);
+
+            if (current.getChildren().size() != 1) return false;
+            current = current.getChildren().get(0);
+
+        } while (current != start && visitedInCycle.size() <= nodes.size());
+
+        return current == start && visitedInCycle.size() == nodes.size();
+    }
+
+    /**
+     * Abstrakte Methode - muss von Kindklassen implementiert werden.
+     * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
+     *
+     * @return true wenn weitere Kinder akzeptiert werden können
+     */
+    public boolean canAcceptMoreChildren();
+
+    /**
+     * Abstrakte Methode - muss von Kindklassen implementiert werden.
+     * Prüft, ob dieser Knoten aus der Struktur entfernt werden kann.
+     *
+     * @param structureRoot Root der Gesamtstruktur
+     * @return true wenn der Knoten entfernt werden kann
+     */
+    public boolean canBeRemovedFromStructure(TreeNode structureRoot);
+
     public void addChild(TreeNode child) {
         if (child != null && !children.contains(child)) {
             children.add(child);
@@ -58,33 +154,20 @@ public class TreeNode {
         }
     }
 
-    /**
-     * Entfernt ein Kind von diesem Knoten.
-     */
     public void removeChild(TreeNode child) {
         if (children.remove(child)) {
             child.parent = null;
         }
     }
 
-    /**
-     * Setzt den Parent-Knoten explizit.
-     */
     public void setParent(TreeNode parent) {
         this.parent = parent;
     }
 
-    /**
-     * Markiert diesen Knoten als Head oder entfernt die Head-Markierung.
-     */
     public void setHead(boolean head) {
         this.isHead = head;
     }
 
-    /**
-     * Findet den Head-Knoten in dieser Struktur.
-     * Ring-sichere Implementierung.
-     */
     public TreeNode findHead() {
         if (isHead) return this;
         if (isRoot()) return this;
@@ -114,9 +197,6 @@ public class TreeNode {
         return null;
     }
 
-    /**
-     * Berechnet die Anzahl der direkten strukturellen Links dieses Knotens.
-     */
     public int getNumDirectLinksFromStructure() {
         int linkCount = 0;
         if (parent != null) linkCount++;
@@ -124,10 +204,6 @@ public class TreeNode {
         return linkCount;
     }
 
-    /**
-     * Berechnet die Gesamtzahl aller Links in der gesamten Struktur.
-     * Ring-sichere Stack-basierte Traversierung.
-     */
     public int getNumPlannedLinksFromStructure() {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
@@ -166,60 +242,31 @@ public class TreeNode {
         return totalLinks;
     }
 
-    /**
-     * Überprüft, ob dieser Knoten ein Terminal-Knoten ist.
-     * Terminal = hat nur eine Verbindung (entweder nur Parent oder nur ein Kind).
-     * Nützlich für Linien-Strukturen und Stern-Blätter.
-     */
     public boolean isTerminal() {
         int connectionCount = children.size() + (parent != null ? 1 : 0);
         return connectionCount == 1;
     }
 
-    /**
-     * Überprüft, ob dieser Knoten ein Endpunkt ist.
-     * Endpunkt = entweder Terminal oder Root ohne Kinder.
-     */
     public boolean isEndpoint() {
         return isTerminal() || (isRoot() && isLeaf());
     }
 
-    /**
-     * Überprüft, ob dieser Knoten ein Blatt ist (hat keine Kinder).
-     * Universelle Definition für alle Topologien.
-     */
     public boolean isLeaf() {
         return children.isEmpty();
     }
 
-    /**
-     * Überprüft, ob dieser Knoten die Root ist (nur für Baum-Strukturen).
-     */
     public boolean isRoot() {
         return parent == null && isHead();
     }
 
-    /**
-     * Überprüft, ob dieser Knoten als Head markiert ist.
-     */
     public boolean isHead() {
         return isHead;
     }
 
-    /**
-     * Gibt den Konnektivitätsgrad dieses Knotens zurück.
-     * Anzahl aller Verbindungen (Parent + Kinder).
-     */
     public int getConnectivityDegree() {
         return children.size() + (parent != null ? 1 : 0);
     }
 
-    /**
-     * Sammelt alle Knoten in der zusammenhängenden Struktur.
-     * Ring-sichere Stack-basierte Traversierung.
-     *
-     * @return Set aller erreichbaren Knoten
-     */
     public Set<TreeNode> getAllNodesInStructure() {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
@@ -243,11 +290,6 @@ public class TreeNode {
         return visited;
     }
 
-
-    /**
-     * Berechnet die Anzahl aller Nachfahren.
-     * Ring-sichere Implementierung mit Zykluserkennung.
-     */
     public int getDescendantCount() {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
@@ -275,10 +317,6 @@ public class TreeNode {
         return count;
     }
 
-    /**
-     * Findet einen Knoten mit der angegebenen ID in dieser Struktur.
-     * Ring-sichere Implementierung.
-     */
     public TreeNode findNodeById(int id) {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
@@ -304,10 +342,6 @@ public class TreeNode {
         return null;
     }
 
-    /**
-     * Gibt den Pfad vom Head zu diesem Knoten zurück.
-     * Ring-sichere BFS-Implementierung für kürzesten Pfad.
-     */
     public List<TreeNode> getPathFromHead() {
         TreeNode head = findHead();
         if (head == null) return Collections.emptyList();
@@ -379,34 +413,4 @@ public class TreeNode {
                 ", isHead=" + isHead +
                 '}';
     }
-
-    /**
-     * Grundlegende Zyklusprüfung für beliebige Knotenstrukturen.
-     * Fundamentale Methode, die von allen Strukturtypen genutzt werden kann.
-     */
-    public static boolean hasClosedCycle(Set<TreeNode> nodes) {
-        if (nodes.isEmpty()) return false;
-
-        TreeNode start = nodes.iterator().next();
-        TreeNode current = start;
-        Set<TreeNode> visitedInCycle = new HashSet<>();
-
-        do {
-            if (visitedInCycle.contains(current)) {
-                return visitedInCycle.size() == nodes.size();
-            }
-            visitedInCycle.add(current);
-
-            if (current.getChildren().size() != 1) return false;
-            current = current.getChildren().get(0);
-
-        } while (current != start && visitedInCycle.size() <= nodes.size());
-
-        return current == start && visitedInCycle.size() == nodes.size();
-    }
-
-    public boolean isValidStructure(Set<TreeNode> allNodes){
-        return true;
-    }
-
 }

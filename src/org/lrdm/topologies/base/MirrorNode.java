@@ -16,7 +16,7 @@ import java.util.*;
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
-public abstract class MirrorNode extends TreeNode {
+public class MirrorNode extends TreeNode {
     private Mirror mirror;
     private Set<Link> implementedLinks;
 
@@ -99,23 +99,6 @@ public abstract class MirrorNode extends TreeNode {
     public int getNumPlannedLinks() {
         return getConnectivityDegree();
     }
-
-    /**
-     * Abstrakte Methode - muss von Kindklassen implementiert werden.
-     * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
-     *
-     * @return true wenn weitere Kinder akzeptiert werden können
-     */
-    public abstract boolean canAcceptMoreChildren();
-
-    /**
-     * Abstrakte Methode - muss von Kindklassen implementiert werden.
-     * Prüft, ob dieser Knoten aus der Struktur entfernt werden kann.
-     *
-     * @param structureRoot Root der Gesamtstruktur
-     * @return true wenn der Knoten entfernt werden kann
-     */
-    public abstract boolean canBeRemovedFromStructure(MirrorNode structureRoot);
 
     /**
      * Berechnet die Anzahl der entwickelten/implementierten Links.

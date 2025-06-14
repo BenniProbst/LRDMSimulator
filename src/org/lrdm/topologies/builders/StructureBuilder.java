@@ -78,13 +78,8 @@ public abstract class StructureBuilder {
             Mirror mirror = mirrorIterator.next();
             // Diese Methode muss von Kindklassen überschrieben werden,
             // um den richtigen MirrorNode-Typ zu erstellen
-            return createSpecificMirrorNode(idGenerator.getNextID(), mirror);
+            return new MirrorNode(idGenerator.getNextID(), mirror);
         }
         return null;
     }
-
-    /**
-     * Abstrakte Methode - Kindklassen erstellen den spezifischen MirrorNode-Typ.
-     */
-    protected abstract MirrorNode createSpecificMirrorNode(int id, Mirror mirror);
 }
