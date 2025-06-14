@@ -1,5 +1,6 @@
 package org.lrdm.topologies.builders;
 
+import org.lrdm.Network;
 import org.lrdm.topologies.base.MirrorNode;
 import org.lrdm.topologies.base.TreeNode;
 
@@ -16,18 +17,18 @@ import java.util.stream.Collectors;
 public class TreeBuilderBalanced extends TreeBuilder {
     private int targetLinksPerNode;
 
-    public TreeBuilderBalanced() {
-        this(2); // Standard: Binärbaum
+    public TreeBuilderBalanced(Network network) {
+        this(network, 2);
     }
 
-    public TreeBuilderBalanced(int targetLinksPerNode) {
-        super();
+    public TreeBuilderBalanced(Network network, int targetLinksPerNode) {
+        super(network);
         this.targetLinksPerNode = targetLinksPerNode;
     }
 
     @Override
     protected int getEffectiveMaxDepth() {
-        return 0; // Keine Tiefenbeschränkung für balancierte Bäume
+        return 0;
     }
 
     @Override
@@ -41,9 +42,6 @@ public class TreeBuilderBalanced extends TreeBuilder {
         return root;
     }
 
-    /**
-     * Erstellt einen balancierten Baum mit Breadth-First-Ansatz (Queue-basiert).
-     */
     private void buildBalanced(MirrorNode root, int remainingNodes, int maxDepth) {
         if (remainingNodes <= 0) return;
 

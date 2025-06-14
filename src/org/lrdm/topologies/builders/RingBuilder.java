@@ -1,5 +1,7 @@
+
 package org.lrdm.topologies.builders;
 
+import org.lrdm.Network;
 import org.lrdm.topologies.base.MirrorNode;
 import org.lrdm.topologies.base.RingMirrorNode;
 import org.lrdm.topologies.base.TreeNode;
@@ -16,12 +18,12 @@ public class RingBuilder extends StructureBuilder {
 
     private final int minRingSize;
 
-    public RingBuilder() {
-        this(3); // Mindestens 3 Knoten für einen Ring
+    public RingBuilder(Network network) {
+        this(network, 3);
     }
 
-    public RingBuilder(int minRingSize) {
-        super();
+    public RingBuilder(Network network, int minRingSize) {
+        super(network);
         this.minRingSize = Math.max(3, minRingSize);
     }
 
@@ -63,8 +65,6 @@ public class RingBuilder extends StructureBuilder {
     @Override
     public int addNodes(MirrorNode existingRoot, int nodesToAdd) {
         if (existingRoot == null || nodesToAdd <= 0) return 0;
-
-        // Für Ringe: Füge in den Ring ein
         return addNodesToRing(existingRoot, nodesToAdd);
     }
 
@@ -85,63 +85,33 @@ public class RingBuilder extends StructureBuilder {
         if (ringNodes.isEmpty()) return 0;
 
         int added = 0;
-        Iterator<RingMirrorNode> nodeIterator = ringNodes.iterator();
+        int nodeIndex = 0;
 
-        while (added < nodesToAdd && nodeIterator.hasNext()) {
-            RingMirrorNode insertionPoint = nodeIterator.next();
-            
-            // Erstelle neuen Knoten
-            RingMirrorNode newNode = new RingMirrorNode(idGenerator.getNextID());
-            
-            // Füge zwischen insertionPoint und seinem nächsten Knoten ein
-            if (!insertionPoint.getChildren().isEmpty()) {
-                TreeNode nextNode = insertionPoint.getChildren().get(0);
-                insertionPoint.removeChild(nextNode);
-                insertionPoint.addChild(newNode);
-                newNode.addChild(nextNode);
+        while (added < nodesToAdd && nodeIndex < ringNodes.size()) {
+            RingMirrorNode current = ringNodes.get(nodeIndex);
+            RingMirrorNode next = current.getNextInRing();
+
+            if (next != null) {
+                // Erstelle neuen Knoten zwischen current und next
+                RingMirrorNode newNode = new RingMirrorNode(idGenerator.getNextID());
+
+                // Entferne alte Verbindung
+                current.removeChild(next);
+
+                // Füge neue Verbindungen hinzu
+                current.addChild(newNode);
+                newNode.addChild(next);
+
                 added++;
+
+                // Aktualisiere Ring-Liste für nächste Iteration
+                ringNodes.add(nodeIndex + 1, newNode);
             }
+
+            nodeIndex++;
         }
 
         return added;
-    }
-
-    @Override
-    public int removeNodes(MirrorNode existingRoot, int nodesToRemove) {
-        if (existingRoot == null || nodesToRemove <= 0) return 0;
-
-        Set<TreeNode> allNodes = existingRoot.getAllNodesInStructure();
-        
-        // Ring muss mindestens minRingSize Knoten behalten
-        if (allNodes.size() - nodesToRemove < minRingSize) {
-            nodesToRemove = allNodes.size() - minRingSize;
-        }
-
-        if (nodesToRemove <= 0) return 0;
-
-        List<RingMirrorNode> ringNodes = new ArrayList<>();
-        for (TreeNode node : allNodes) {
-            if (node instanceof RingMirrorNode && !node.isHead()) {
-                ringNodes.add((RingMirrorNode) node);
-            }
-        }
-
-        int removed = 0;
-        for (RingMirrorNode node : ringNodes) {
-            if (removed >= nodesToRemove) break;
-            
-            // Verbinde Previous mit Next
-            TreeNode prev = node.getParent();
-            if (!node.getChildren().isEmpty() && prev != null) {
-                TreeNode next = node.getChildren().get(0);
-                prev.removeChild(node);
-                node.removeChild(next);
-                prev.addChild(next);
-                removed++;
-            }
-        }
-
-        return removed;
     }
 
     @Override
@@ -152,73 +122,89 @@ public class RingBuilder extends StructureBuilder {
             return ((RingMirrorNode) root).isValidRingStructure();
         }
 
-        // Fallback: grundlegende Ring-Validierung
         Set<TreeNode> allNodes = root.getAllNodesInStructure();
-        
+
         if (allNodes.size() < 3) return false;
 
-        // Jeder Knoten muss genau einen Parent und ein Kind haben
+        // Jeder Knoten muss Konnektivitätsgrad 2 haben
         for (TreeNode node : allNodes) {
             if (node.getConnectivityDegree() != 2 || node.getChildren().size() != 1) {
                 return false;
             }
         }
 
-        return true;
+        return hasClosedCycle(allNodes);
     }
 
     /**
-     * In Ringen sind alle Knoten konzeptuell "Blätter" (haben gleichen Grad).
+     * Prüft, ob die Knoten einen geschlossenen Zyklus bilden.
      */
+    private boolean hasClosedCycle(Set<TreeNode> nodes) {
+        if (nodes.isEmpty()) return false;
+
+        TreeNode start = nodes.iterator().next();
+        TreeNode current = start;
+        Set<TreeNode> visitedInCycle = new HashSet<>();
+
+        do {
+            if (visitedInCycle.contains(current)) {
+                return visitedInCycle.size() == nodes.size();
+            }
+            visitedInCycle.add(current);
+
+            if (current.getChildren().size() != 1) return false;
+            current = current.getChildren().get(0);
+
+        } while (current != start && visitedInCycle.size() <= nodes.size());
+
+        return current == start && visitedInCycle.size() == nodes.size();
+    }
+
     @Override
     protected boolean isLeafInStructure(MirrorNode node) {
-        return true; // Alle Ring-Knoten sind gleichwertig
+        // In einem Ring gibt es keine "Blätter" im traditionellen Sinne
+        return false;
     }
 
-    /**
-     * Ringe benötigen Parent-Links für geschlossene Struktur.
-     */
     @Override
     protected boolean needsParentLinks() {
-        return true;
+        return true; // Ringe benötigen bidirektionale Traversierung
     }
 
-    /**
-     * Für Ringe: alle Knoten sind Einfügekandidaten.
-     */
     @Override
     protected List<MirrorNode> findInsertionCandidates(MirrorNode root) {
+        // In einem Ring kann zwischen jedem Knotenpaar eingefügt werden
         List<MirrorNode> candidates = new ArrayList<>();
         Set<TreeNode> allNodes = root.getAllNodesInStructure();
-        
+
         for (TreeNode node : allNodes) {
             if (node instanceof MirrorNode) {
                 candidates.add((MirrorNode) node);
             }
         }
-        
+
         return candidates;
     }
 
-    /**
-     * Für Ringe: alle nicht-Head Knoten können entfernt werden.
-     */
     @Override
     protected List<MirrorNode> findRemovableNodes(MirrorNode root) {
+        // In einem Ring können alle Knoten entfernt werden (außer dem Root)
         List<MirrorNode> removable = new ArrayList<>();
         Set<TreeNode> allNodes = root.getAllNodesInStructure();
-        
+
         for (TreeNode node : allNodes) {
-            if (node instanceof MirrorNode && !node.isHead()) {
+            if (node instanceof MirrorNode && node != root) {
                 removable.add((MirrorNode) node);
             }
         }
-        
+
         return removable;
     }
 
     @Override
     protected boolean canRemoveNode(MirrorNode node) {
-        return !node.isHead(); // Head darf nicht entfernt werden
+        // Ring muss mindestens minRingSize Knoten behalten
+        Set<TreeNode> allNodes = node.getAllNodesInStructure();
+        return allNodes.size() > minRingSize;
     }
 }

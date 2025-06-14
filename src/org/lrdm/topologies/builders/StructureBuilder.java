@@ -18,9 +18,11 @@ import java.util.*;
  */
 public abstract class StructureBuilder {
     protected IDGenerator idGenerator;
+    protected Network network;
 
-    public StructureBuilder() {
+    public StructureBuilder(Network network) {
         this.idGenerator = IDGenerator.getInstance();
+        this.network = network;
     }
 
     /**
@@ -43,14 +45,13 @@ public abstract class StructureBuilder {
     public int addNodes(MirrorNode existingRoot, int nodesToAdd) {
         if (existingRoot == null || nodesToAdd <= 0) return 0;
 
-        // Standardimplementierung: Füge zu geeigneten Einfügepunkten hinzu
         List<MirrorNode> candidates = findInsertionCandidates(existingRoot);
         int added = 0;
 
         for (MirrorNode candidate : candidates) {
             if (added >= nodesToAdd) break;
             if (canAddNodeTo(candidate)) {
-                MirrorNode newNode = createMirrorNodeFromNetwork(null); // Wird später mit Network aufgerufen
+                MirrorNode newNode = createMirrorNodeFromNetwork();
                 candidate.addChild(newNode);
                 added++;
             }
@@ -75,10 +76,10 @@ public abstract class StructureBuilder {
 
         for (MirrorNode node : removableNodes) {
             if (removed >= nodesToRemove) break;
-            if (node != existingRoot && canRemoveNode(node)) { // Root/Head nicht entfernen
+            if (node != existingRoot && canRemoveNode(node)) {
                 MirrorNode parent = (MirrorNode) node.getParent();
                 if (parent != null) {
-                    parent.removeMirrorNode(node);
+                    parent.removeChild(node);
                     removed++;
                 }
             }
@@ -91,13 +92,12 @@ public abstract class StructureBuilder {
      * Erstellt Mirror-Verbindungen basierend auf der Struktur.
      * Verwendet Network für Mirror-Zuordnung.
      *
-     * @param network Das Network mit verfügbaren Mirrors
      * @param totalNodes Anzahl zu verwendender Knoten
      * @param simTime Simulationszeit
      * @param props Properties
      * @return Set der erstellten Links
      */
-    public final Set<Link> createAndLinkMirrors(Network network, int totalNodes, int simTime, Properties props) {
+    public final Set<Link> createAndLinkMirrors(int totalNodes, int simTime, Properties props) {
         if (network == null || totalNodes <= 0) return new HashSet<>();
 
         List<Mirror> availableMirrors = network.getMirrors();
@@ -105,14 +105,10 @@ public abstract class StructureBuilder {
             throw new IllegalArgumentException("Nicht genügend Mirrors im Network verfügbar");
         }
 
-        // Erstelle Struktur
         MirrorNode root = build(totalNodes);
         if (root == null) return new HashSet<>();
 
-        // Ordne Mirrors zu
         assignMirrorsToNodes(root, availableMirrors.subList(0, totalNodes));
-
-        // Erstelle Links
         return createLinksFromStructure(root, simTime, props);
     }
 
@@ -145,29 +141,13 @@ public abstract class StructureBuilder {
             if (visited.contains(current)) continue;
             visited.add(current);
 
-            // Ordne Mirror zu
             current.setMirror(mirrorIterator.next());
-
-            // Füge Nachbarn hinzu (Ring-sicher)
-            if (current.getParent() != null && !visited.contains(current.getParent())) {
-                stack.push((MirrorNode) current.getParent());
-            }
-            for (TreeNode child : current.getChildren()) {
-                if (!visited.contains(child)) {
-                    stack.push((MirrorNode) child);
-                }
-            }
+            addNeighborsToStack(current, stack, visited);
         }
     }
 
     /**
      * Findet alle "Blätter" der Struktur - Ring-sichere Implementierung.
-     * Für Ringe: gibt alle Knoten zurück (da konzeptuell alle "Blätter" sind).
-     * Für Trees: gibt echte Blätter zurück.
-     * Für Stars: gibt Stern-Blätter zurück.
-     *
-     * @param root Root der Struktur
-     * @return Liste der Blatt-Knoten
      */
     protected List<MirrorNode> findLeaves(MirrorNode root) {
         List<MirrorNode> leaves = new ArrayList<>();
@@ -182,20 +162,11 @@ public abstract class StructureBuilder {
             if (visited.contains(current)) continue;
             visited.add(current);
 
-            // Struktur-spezifische Blatt-Erkennung
             if (isLeafInStructure(current)) {
                 leaves.add(current);
             }
 
-            // Nachbarn hinzufügen (Ring-sicher)
-            if (current.getParent() != null && !visited.contains(current.getParent())) {
-                stack.push((MirrorNode) current.getParent());
-            }
-            for (TreeNode child : current.getChildren()) {
-                if (!visited.contains(child)) {
-                    stack.push((MirrorNode) child);
-                }
-            }
+            addNeighborsToStack(current, stack, visited);
         }
 
         return leaves;
@@ -203,25 +174,15 @@ public abstract class StructureBuilder {
 
     /**
      * Zählt alle Knoten in der Struktur - Ring-sichere Implementierung.
-     *
-     * @param root Root der Struktur
-     * @return Anzahl Knoten
      */
     public int countNodes(MirrorNode root) {
         if (root == null) return 0;
-
         Set<TreeNode> allNodes = root.getAllNodesInStructure();
         return allNodes.size();
     }
 
     /**
      * Findet die maximale "Tiefe" bis zu einem bekannten Knoten - Ring-sichere Implementierung.
-     * Für Ringe: Anzahl Schritte bis zum Head.
-     * Für Trees: Traditionelle Tiefe.
-     * Für Stars: Maximale Tiefe vom Zentrum.
-     *
-     * @param root Root der Struktur
-     * @return Maximale Tiefe
      */
     public int getMaxDepth(MirrorNode root) {
         if (root == null) return -1;
@@ -239,7 +200,6 @@ public abstract class StructureBuilder {
 
             maxDepth = Math.max(maxDepth, current.depth);
 
-            // Nur Kinder für Tiefenberechnung (nicht Parent)
             for (TreeNode child : current.node.getChildren()) {
                 if (!visited.contains(child)) {
                     queue.offer(new DepthInfo((MirrorNode) child, current.depth + 1));
@@ -252,11 +212,6 @@ public abstract class StructureBuilder {
 
     /**
      * Erstellt Links basierend auf der Struktur - Ring-sichere Stack-Implementierung.
-     *
-     * @param root Root der Struktur
-     * @param simTime Simulationszeit
-     * @param props Properties
-     * @return Set der erstellten Links
      */
     protected final Set<Link> createLinksFromStructure(MirrorNode root, int simTime, Properties props) {
         Set<Link> links = new HashSet<>();
@@ -271,7 +226,6 @@ public abstract class StructureBuilder {
             if (visited.contains(current) || current.getMirror() == null) continue;
             visited.add(current);
 
-            // Erstelle Links zu Kindern
             for (TreeNode child : current.getChildren()) {
                 MirrorNode mirrorChild = (MirrorNode) child;
                 if (mirrorChild.getMirror() != null) {
@@ -283,8 +237,6 @@ public abstract class StructureBuilder {
                             props
                     );
                     links.add(link);
-
-                    // Füge Links zu beiden Mirrors hinzu
                     current.addLink(link);
                     mirrorChild.addLink(link);
                 }
@@ -294,7 +246,6 @@ public abstract class StructureBuilder {
                 }
             }
 
-            // Für Ringe: auch Parent-Links erstellen (wenn nicht bereits vorhanden)
             if (needsParentLinks() && current.getParent() != null) {
                 MirrorNode parent = (MirrorNode) current.getParent();
                 if (!visited.contains(parent) && parent.getMirror() != null) {
@@ -306,57 +257,56 @@ public abstract class StructureBuilder {
         return links;
     }
 
-    // Abstrakte/überschreibbare Hilfsmethoden für Strukturspezifika
-    
     /**
-     * Bestimmt, ob ein Knoten in dieser Struktur als "Blatt" gilt.
-     * Muss von Kindklassen überschrieben werden.
+     * Private Hilfsmethode für das Hinzufügen von Nachbarn zum Stack.
+     * Eliminiert Code-Duplikation.
      */
-    protected boolean isLeafInStructure(MirrorNode node) {
-        return node.isLeaf(); // Standard: TreeNode.isLeaf()
+    private void addNeighborsToStack(MirrorNode current, Stack<MirrorNode> stack, Set<MirrorNode> visited) {
+        if (current.getParent() != null && !visited.contains(current.getParent())) {
+            stack.push((MirrorNode) current.getParent());
+        }
+        for (TreeNode child : current.getChildren()) {
+            if (!visited.contains(child)) {
+                stack.push((MirrorNode) child);
+            }
+        }
     }
 
     /**
-     * Bestimmt, ob diese Struktur Parent-Links benötigt (z.B. Ringe).
+     * Erstellt einen neuen MirrorNode mit einem Mirror aus dem Network.
      */
-    protected boolean needsParentLinks() {
-        return false; // Standard: nein (Trees)
-    }
-
-    /**
-     * Findet Kandidaten für das Einfügen neuer Knoten.
-     */
-    protected List<MirrorNode> findInsertionCandidates(MirrorNode root) {
-        return findLeaves(root); // Standard: an Blättern einfügen
-    }
-
-    /**
-     * Findet Knoten, die entfernt werden können.
-     */
-    protected List<MirrorNode> findRemovableNodes(MirrorNode root) {
-        return findLeaves(root); // Standard: Blätter entfernen
-    }
-
-    /**
-     * Prüft, ob zu einem Knoten ein neuer Knoten hinzugefügt werden kann.
-     */
-    protected boolean canAddNodeTo(MirrorNode node) {
-        return true; // Standard: immer möglich
-    }
-
-    /**
-     * Prüft, ob ein Knoten entfernt werden kann.
-     */
-    protected boolean canRemoveNode(MirrorNode node) {
-        return node.isLeaf(); // Standard: nur Blätter
-    }
-
-    /**
-     * Erstellt MirrorNode mit verfügbarer Mirror aus Network.
-     * Placeholder - wird mit Network-Parameter aufgerufen.
-     */
-    protected MirrorNode createMirrorNodeFromNetwork(Network network) {
+    protected MirrorNode createMirrorNodeFromNetwork() {
+        List<Mirror> availableMirrors = network.getMirrors();
+        if (!availableMirrors.isEmpty()) {
+            Mirror mirror = availableMirrors.get(0); // Oder andere Auswahllogik
+            return new MirrorNode(idGenerator.getNextID(), mirror);
+        }
         return new MirrorNode(idGenerator.getNextID());
+    }
+
+    // Abstrakte/überschreibbare Hilfsmethoden für Strukturspezifika
+    protected boolean isLeafInStructure(MirrorNode node) {
+        return node.isLeaf();
+    }
+
+    protected boolean needsParentLinks() {
+        return false;
+    }
+
+    protected List<MirrorNode> findInsertionCandidates(MirrorNode root) {
+        return findLeaves(root);
+    }
+
+    protected List<MirrorNode> findRemovableNodes(MirrorNode root) {
+        return findLeaves(root);
+    }
+
+    protected boolean canAddNodeTo(MirrorNode node) {
+        return true;
+    }
+
+    protected boolean canRemoveNode(MirrorNode node) {
+        return node.isLeaf();
     }
 
     /**
