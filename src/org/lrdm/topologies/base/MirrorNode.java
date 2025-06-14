@@ -10,11 +10,11 @@ import java.util.*;
  * Repräsentiert einen Knoten in einer Struktur (Baum oder Ring), der einem Mirror zugeordnet werden kann.
  * Diese Klasse trennt die Planungsschicht (TreeNode-Struktur) von der
  * Implementierungsschicht (Mirror mit Links).
- *
+ * <p>
  * Vollständig zustandslos bezüglich Link-Informationen - alle werden dynamisch berechnet.
  * Unterstützt sowohl Baum- als auch Ring-Strukturen.
  *
- * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
+ * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class MirrorNode extends TreeNode {
     private Mirror mirror;
@@ -91,16 +91,6 @@ public class MirrorNode extends TreeNode {
     }
 
     /**
-     * Berechnet die Anzahl der geplanten Links basierend auf der TreeNode-Struktur.
-     * Nutzt die TreeNode-Implementierung für sowohl Baum- als auch Ring-Strukturen.
-     *
-     * @return Anzahl der geplanten Links
-     */
-    public int getNumPlannedLinks() {
-        return getConnectivityDegree();
-    }
-
-    /**
      * Berechnet die Anzahl der entwickelten/implementierten Links.
      * Dies sind die Links, die tatsächlich zwischen Mirrors implementiert wurden.
      *
@@ -117,7 +107,7 @@ public class MirrorNode extends TreeNode {
      * @return Anzahl der ausstehenden Links
      */
     public int getNumPendingLinks() {
-        return Math.max(0, getNumPlannedLinks() - getNumImplementedLinks());
+        return Math.max(0, getNumPlannedLinksFromStructure() - getNumImplementedLinks());
     }
 
     /**
@@ -182,7 +172,7 @@ public class MirrorNode extends TreeNode {
         return String.format("MirrorNode{id=%d, mirror=%s, planned=%d, implemented=%d, pending=%d, isHead=%s}",
                 getId(),
                 mirror != null ? mirror.getID() : "null",
-                getNumPlannedLinks(),
+                getNumPlannedLinksFromStructure(),
                 getNumImplementedLinks(),
                 getNumPendingLinks(),
                 isHead());

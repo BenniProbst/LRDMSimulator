@@ -7,7 +7,7 @@ import java.util.*;
  * Verwaltet Parent-Child-Beziehungen und definiert Strukturvalidierung.
  * Ring-sichere Implementierung aller Traversierungsfunktionen.
  *
- * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
+ * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class TreeNode {
     private final int id;
@@ -302,10 +302,12 @@ public class TreeNode {
 
     /**
      * Berechnet die Gesamtanzahl geplanter Links in der gesamten Struktur.
-     * Verwendet DFS-Traversierung und vermeidet doppelte Zählung durch LinkPair-Set.
-     * Zählt nur Parent->Child-Beziehungen als Links.
+     * Ermittelt alle Links, die benötigt werden, um alle MirrorNodes entsprechend
+     * ihrer Konnektivitätsgrade miteinander zu verbinden.
+     * Verwendet Stack-basierte DFS-Traversierung und vermeidet doppelte Zählung.
+     * Ring-sicher durch Visited-Set.
      *
-     * @return Gesamtanzahl geplanter Links in der Struktur
+     * @return Gesamtanzahl aller geplanten Links in der Struktur
      */
     public int getNumPlannedLinksFromStructure() {
         Set<TreeNode> visited = new HashSet<>();
@@ -316,34 +318,46 @@ public class TreeNode {
         if (head == null) head = this;
 
         stack.push(head);
-        int totalLinks = 0;
+        int totalPlannedLinks = 0;
 
         while (!stack.isEmpty()) {
             TreeNode current = stack.pop();
             if (visited.contains(current)) continue;
             visited.add(current);
 
-            // Zähle alle ausgehenden Links (Parent->Child Beziehungen)
-            for (TreeNode child : current.children) {
-                LinkPair linkId = new LinkPair(current.id, child.id);
-                if (!countedLinks.contains(linkId)) {
-                    countedLinks.add(linkId);
-                    totalLinks++;
-                }
+            // Sammle alle Nachbarn dieses Knotens
+            List<TreeNode> neighbors = new ArrayList<>();
 
-                if (!visited.contains(child)) {
-                    stack.push(child);
-                }
+            // Parent hinzufügen
+            if (current.parent != null) {
+                neighbors.add(current.parent);
             }
 
-            // Auch Parent-Links für vollständige Abdeckung
-            if (current.parent != null && !visited.contains(current.parent)) {
-                stack.push(current.parent);
+            // Alle Kinder hinzufügen
+            neighbors.addAll(current.children);
+
+            // Für jeden Nachbarn einen Link zählen (aber nur einmal pro Paar)
+            for (TreeNode neighbor : neighbors) {
+                // Erstelle LinkPair mit konsistenter Reihenfolge (kleinere ID zuerst)
+                int fromId = Math.min(current.id, neighbor.id);
+                int toId = Math.max(current.id, neighbor.id);
+                LinkPair linkPair = new LinkPair(fromId, toId);
+
+                if (!countedLinks.contains(linkPair)) {
+                    countedLinks.add(linkPair);
+                    totalPlannedLinks++;
+                }
+
+                // Nachbarn für weitere Traversierung hinzufügen
+                if (!visited.contains(neighbor)) {
+                    stack.push(neighbor);
+                }
             }
         }
 
-        return totalLinks;
+        return totalPlannedLinks;
     }
+
 
     /**
      * Prüft ob dieser Knoten ein Terminal-Knoten ist.
