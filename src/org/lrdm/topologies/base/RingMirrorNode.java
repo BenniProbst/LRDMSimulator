@@ -2,6 +2,7 @@
 package org.lrdm.topologies.base;
 
 import org.lrdm.Mirror;
+
 import java.util.*;
 
 /**
@@ -23,7 +24,7 @@ public class RingMirrorNode extends MirrorNode {
     @Override
     public boolean canAcceptMoreChildren() {
         // In einem Ring hat jeder Knoten genau ein Kind (zyklische Struktur)
-        return getChildren().isEmpty();
+        return getChildren().size() < 1;
     }
 
     @Override
@@ -45,8 +46,7 @@ public class RingMirrorNode extends MirrorNode {
      * - Bildet einen geschlossenen Zyklus
      * - Mindestens 3 Knoten
      */
-    public boolean isValidRingStructure() {
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+    public boolean isValidStructure(Set<TreeNode> allNodes) {
 
         if (allNodes.size() < 3) return false;
 
@@ -58,30 +58,6 @@ public class RingMirrorNode extends MirrorNode {
         }
 
         return hasClosedCycle(allNodes);
-    }
-
-    /**
-     * Prüft, ob die Knoten einen geschlossenen Zyklus bilden.
-     */
-    private boolean hasClosedCycle(Set<TreeNode> nodes) {
-        if (nodes.isEmpty()) return false;
-
-        TreeNode start = nodes.iterator().next();
-        TreeNode current = start;
-        Set<TreeNode> visitedInCycle = new HashSet<>();
-
-        do {
-            if (visitedInCycle.contains(current)) {
-                return visitedInCycle.size() == nodes.size();
-            }
-            visitedInCycle.add(current);
-
-            if (current.getChildren().size() != 1) return false;
-            current = current.getChildren().get(0);
-
-        } while (current != start && visitedInCycle.size() <= nodes.size());
-
-        return current == start && visitedInCycle.size() == nodes.size();
     }
 
     public RingMirrorNode getNextInRing() {

@@ -1,5 +1,7 @@
 package org.lrdm.topologies.base;
 
+import org.lrdm.Mirror;
+import org.lrdm.topologies.builders.StructureBuilder;
 import java.util.*;
 
 /**
@@ -14,15 +16,30 @@ public class StarMirrorNode extends MirrorNode {
         super(id);
     }
 
-    /**
-     * Validiert, dass diese Struktur ein gültiger Stern ist.
-     * - Genau ein Zentrumsknoten (Root mit Kindern)
-     * - Alle anderen Knoten sind Blätter (Terminal-Knoten)
-     * - Mindestens 3 Knoten (Zentrum + 2 Blätter)
-     */
-    public boolean isValidStarStructure() {
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+    public StarMirrorNode(int id, Mirror mirror) {
+        super(id, mirror);
+    }
 
+    @Override
+    public boolean canAcceptMoreChildren() {
+        // Nur das Zentrum kann Kinder akzeptieren
+        return isCenter();
+    }
+
+    @Override
+    public boolean canBeRemovedFromStructure(MirrorNode structureRoot) {
+        if (structureRoot == null) return false;
+        if (this == structureRoot) return false;
+
+        // Nur Blätter können entfernt werden, nicht das Zentrum
+        return isStarLeaf();
+    }
+
+    /**
+     * Grundlegende Stern-Struktur-Validierung.
+     * Fundamentale Methode für Sternstrukturen.
+     */
+    public boolean isValidStructure(Set<TreeNode> allNodes) {
         if (allNodes.size() < 3) return false;
 
         TreeNode center = null;
@@ -82,7 +99,6 @@ public class StarMirrorNode extends MirrorNode {
 
     /**
      * Prüft, ob dieser Knoten ein Blatt des Sterns ist.
-     * Nutzt die fundamentale TreeNode-Methode.
      */
     public boolean isStarLeaf() {
         return isTerminal() && !isRoot();

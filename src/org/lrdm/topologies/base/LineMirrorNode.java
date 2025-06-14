@@ -37,14 +37,10 @@ public class LineMirrorNode extends MirrorNode {
     }
 
     /**
-     * Validiert, dass diese Struktur eine gültige Linie ist.
-     * - Genau zwei Terminal-Knoten (Endpunkte)
-     * - Alle anderen Knoten haben Konnektivitätsgrad 2
-     * - Keine Verzweigungen oder Zyklen
+     * Grundlegende Linien-Struktur-Validierung.
+     * Fundamentale Methode für Linienstrukturen.
      */
-    public boolean isValidLineStructure() {
-        Set<TreeNode> allNodes = getAllNodesInStructure();
-
+    public boolean isValidStructure(Set<TreeNode> allNodes) {
         if (allNodes.size() < 2) return false;
 
         int terminalCount = 0;

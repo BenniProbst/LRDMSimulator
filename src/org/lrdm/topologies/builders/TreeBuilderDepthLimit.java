@@ -1,3 +1,4 @@
+
 package org.lrdm.topologies.builders;
 
 import org.lrdm.Network;
@@ -45,7 +46,7 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
         int availableMirrors = countAvailableMirrors();
         int nodesToBuild = Math.min(totalNodes - 1, availableMirrors);
 
-        buildDepthFirstBalanced(root, nodesToBuild, effectiveMaxDepth);
+        addNodesDepthFirstBalanced(root, nodesToBuild, effectiveMaxDepth);
         return root;
     }
 
@@ -66,15 +67,15 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
     }
 
     /**
-     * Baut den Baum Depth-First mit balancierter Verteilung auf.
-     * Fügt immer bei dem Knoten mit den wenigsten Kindern ein.
+     * Zentrale Methode für das Hinzufügen von Knoten.
+     * Eliminiert Code-Duplikation zwischen buildTree und addNodesToExistingTree.
      */
-    private void buildDepthFirstBalanced(MirrorNode root, int remainingNodes, int effectiveMaxDepth) {
-        if (remainingNodes <= 0) return;
+    private int addNodesDepthFirstBalanced(MirrorNode root, int nodesToAdd, int effectiveMaxDepth) {
+        if (nodesToAdd <= 0) return 0;
 
         int nodesAdded = 0;
 
-        while (nodesAdded < remainingNodes && mirrorIterator.hasNext()) {
+        while (nodesAdded < nodesToAdd && mirrorIterator.hasNext()) {
             // Finde den besten Einfügepunkt (Knoten mit wenigsten Kindern in erlaubter Tiefe)
             MirrorNode bestInsertionPoint = findBestInsertionPoint(root, effectiveMaxDepth);
 
@@ -88,6 +89,8 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
                 break; // Keine Mirrors mehr verfügbar
             }
         }
+
+        return nodesAdded;
     }
 
     /**
@@ -134,29 +137,6 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
         int actualNodesToAdd = Math.min(nodesToAdd, availableMirrors);
 
         return addNodesDepthFirstBalanced(existingRoot, actualNodesToAdd, effectiveMaxDepth);
-    }
-
-    /**
-     * Fügt Knoten zum bestehenden Baum hinzu - immer bei Knoten mit wenigsten Kindern.
-     */
-    private int addNodesDepthFirstBalanced(MirrorNode root, int nodesToAdd, int effectiveMaxDepth) {
-        int added = 0;
-
-        while (added < nodesToAdd && mirrorIterator.hasNext()) {
-            MirrorNode bestInsertionPoint = findBestInsertionPoint(root, effectiveMaxDepth);
-
-            if (bestInsertionPoint == null) break; // Keine gültigen Einfügepunkte
-
-            MirrorNode newChild = createMirrorNodeFromIterator();
-            if (newChild != null) {
-                bestInsertionPoint.addChild(newChild);
-                added++;
-            } else {
-                break; // Keine Mirrors mehr verfügbar
-            }
-        }
-
-        return added;
     }
 
     // Getter und Setter

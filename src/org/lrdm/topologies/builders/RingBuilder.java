@@ -119,7 +119,7 @@ public class RingBuilder extends StructureBuilder {
         if (root == null) return false;
 
         if (root instanceof RingMirrorNode) {
-            return ((RingMirrorNode) root).isValidRingStructure();
+            return ((RingMirrorNode) root).isValidStructure();
         }
 
         Set<TreeNode> allNodes = root.getAllNodesInStructure();

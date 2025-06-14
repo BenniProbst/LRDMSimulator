@@ -379,4 +379,34 @@ public class TreeNode {
                 ", isHead=" + isHead +
                 '}';
     }
+
+    /**
+     * Grundlegende Zyklusprüfung für beliebige Knotenstrukturen.
+     * Fundamentale Methode, die von allen Strukturtypen genutzt werden kann.
+     */
+    public static boolean hasClosedCycle(Set<TreeNode> nodes) {
+        if (nodes.isEmpty()) return false;
+
+        TreeNode start = nodes.iterator().next();
+        TreeNode current = start;
+        Set<TreeNode> visitedInCycle = new HashSet<>();
+
+        do {
+            if (visitedInCycle.contains(current)) {
+                return visitedInCycle.size() == nodes.size();
+            }
+            visitedInCycle.add(current);
+
+            if (current.getChildren().size() != 1) return false;
+            current = current.getChildren().get(0);
+
+        } while (current != start && visitedInCycle.size() <= nodes.size());
+
+        return current == start && visitedInCycle.size() == nodes.size();
+    }
+
+    public boolean isValidStructure(Set<TreeNode> allNodes){
+        return true;
+    }
+
 }
