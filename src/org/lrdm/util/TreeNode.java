@@ -75,27 +75,6 @@ public class TreeNode {
     }
 
     /**
-     * Überprüft, ob dieser Knoten ein Blatt ist.
-     */
-    public boolean isLeaf() {
-        return children.isEmpty();
-    }
-
-    /**
-     * Überprüft, ob dieser Knoten die Root ist (nur für Baum-Strukturen).
-     */
-    public boolean isRoot() {
-        return parent == null;
-    }
-
-    /**
-     * Überprüft, ob dieser Knoten als Head markiert ist.
-     */
-    public boolean isHead() {
-        return isHead;
-    }
-
-    /**
      * Markiert diesen Knoten als Head oder entfernt die Head-Markierung.
      */
     public void setHead(boolean head) {
@@ -188,6 +167,54 @@ public class TreeNode {
     }
 
     /**
+     * Überprüft, ob dieser Knoten ein Terminal-Knoten ist.
+     * Terminal = hat nur eine Verbindung (entweder nur Parent oder nur ein Kind).
+     * Nützlich für Linien-Strukturen und Stern-Blätter.
+     */
+    public boolean isTerminal() {
+        int connectionCount = children.size() + (parent != null ? 1 : 0);
+        return connectionCount == 1;
+    }
+
+    /**
+     * Überprüft, ob dieser Knoten ein Endpunkt ist.
+     * Endpunkt = entweder Terminal oder Root ohne Kinder.
+     */
+    public boolean isEndpoint() {
+        return isTerminal() || (isRoot() && isLeaf());
+    }
+
+    /**
+     * Überprüft, ob dieser Knoten ein Blatt ist (hat keine Kinder).
+     * Universelle Definition für alle Topologien.
+     */
+    public boolean isLeaf() {
+        return children.isEmpty();
+    }
+
+    /**
+     * Überprüft, ob dieser Knoten die Root ist (nur für Baum-Strukturen).
+     */
+    public boolean isRoot() {
+        return parent == null && isHead();
+    }
+
+    /**
+     * Überprüft, ob dieser Knoten als Head markiert ist.
+     */
+    public boolean isHead() {
+        return isHead;
+    }
+
+    /**
+     * Gibt den Konnektivitätsgrad dieses Knotens zurück.
+     * Anzahl aller Verbindungen (Parent + Kinder).
+     */
+    public int getConnectivityDegree() {
+        return children.size() + (parent != null ? 1 : 0);
+    }
+
+    /**
      * Sammelt alle Knoten in der zusammenhängenden Struktur.
      * Ring-sichere Stack-basierte Traversierung.
      *
@@ -215,6 +242,7 @@ public class TreeNode {
 
         return visited;
     }
+
 
     /**
      * Berechnet die Anzahl aller Nachfahren.
@@ -283,7 +311,7 @@ public class TreeNode {
     public List<TreeNode> getPathFromHead() {
         TreeNode head = findHead();
         if (head == null) return Collections.emptyList();
-        if (head == this) return Arrays.asList(this);
+        if (head == this) return List.of(this);
 
         Queue<TreeNode> queue = new LinkedList<>();
         Map<TreeNode, TreeNode> predecessor = new HashMap<>();

@@ -79,7 +79,4 @@ public class StarMirrorNode extends MirrorNode {
         return getParent() == null && !getChildren().isEmpty();
     }
 
-    public boolean isLeafOfStar() {
-        return getParent() != null && getChildren().isEmpty();
-    }
 }
