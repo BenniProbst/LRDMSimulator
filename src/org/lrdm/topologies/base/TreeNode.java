@@ -23,6 +23,12 @@ public class TreeNode {
         public final int from;
         public final int to;
 
+        /**
+         * Erstellt ein neues LinkPair.
+         *
+         * @param from ID des Quellknotens
+         * @param to   ID des Zielknotens
+         */
         public LinkPair(int from, int to) {
             this.from = from;
             this.to = to;
@@ -42,6 +48,11 @@ public class TreeNode {
         }
     }
 
+    /**
+     * Erstellt einen neuen TreeNode mit gegebener ID.
+     *
+     * @param id Eindeutige Identifikationsnummer des Knotens
+     */
     public TreeNode(int id) {
         this.id = id;
         this.parent = null;
@@ -49,6 +60,12 @@ public class TreeNode {
         this.isHead = false;
     }
 
+    /**
+     * Erstellt einen neuen TreeNode mit gegebener ID und maximaler Kindanzahl.
+     *
+     * @param id          Eindeutige Identifikationsnummer des Knotens
+     * @param maxChildren Maximale Anzahl von Kindern, die dieser Knoten haben kann (muss >= 0 sein)
+     */
     public TreeNode(int id, int maxChildren) {
         this(id);
         this.maxChildren = Math.max(0, maxChildren);
@@ -58,6 +75,9 @@ public class TreeNode {
      * Grundlegende Strukturvalidierung - prüft ob alle Knoten miteinander verbunden sind.
      * Verhindert isolierte Knoten in der Struktur.
      * Unterstützt sowohl Baum- als auch Ring-Strukturen.
+     *
+     * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
+     * @return true wenn alle Knoten zusammenhängend sind, false bei isolierten Knoten oder null/leerer Menge
      */
     public boolean isValidStructure(Set<TreeNode> allNodes) {
         if (allNodes == null || allNodes.isEmpty()) return false;
@@ -71,6 +91,9 @@ public class TreeNode {
      * Prüft ob alle Knoten in der gegebenen Menge zusammenhängend sind.
      * Verwendet BFS um zu überprüfen, dass alle Knoten erreichbar sind.
      * Ring-sichere Implementierung für alle Strukturtypen.
+     *
+     * @param allNodes Menge aller zu prüfenden Knoten
+     * @return true wenn alle Knoten von einem beliebigen Startknoten erreichbar sind
      */
     private boolean isConnectedStructure(Set<TreeNode> allNodes) {
         if (allNodes.isEmpty()) return false;
@@ -115,7 +138,7 @@ public class TreeNode {
      * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
      * Basiert auf der maximalen Anzahl von Kindern.
      *
-     * @return true wenn weitere Kinder akzeptiert werden können
+     * @return true wenn die aktuelle Kindanzahl kleiner als maxChildren ist
      */
     public boolean canAcceptMoreChildren() {
         return children.size() < maxChildren;
@@ -128,8 +151,9 @@ public class TreeNode {
      * - Er keine Kinder hat (um Fragmentierung zu vermeiden)
      * - Er nicht der strukturRoot ist
      *
-     * @param structureRoot Der Root-Knoten der Struktur
-     * @return true wenn der Knoten sicher entfernt werden kann
+     * @param structureRoot Der Root-Knoten der Struktur (darf nicht null sein)
+     * @return true wenn der Knoten sicher entfernt werden kann, false bei null structureRoot,
+     *         wenn er der Root ist, nicht gefunden wird oder Kinder hat
      */
     public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
         if (structureRoot == null) return false;
@@ -147,6 +171,10 @@ public class TreeNode {
     /**
      * Grundlegende Zyklusprüfung für beliebige Knotenstrukturen.
      * Fundamentale statische Hilfsmethode, die von Kindklassen genutzt werden kann.
+     * Prüft ob alle gegebenen Knoten einen geschlossenen Zyklus bilden.
+     *
+     * @param nodes Menge von Knoten, die auf geschlossenen Zyklus geprüft werden sollen
+     * @return true wenn alle Knoten genau einen geschlossenen Zyklus bilden, false bei leerer Menge oder anderen Strukturen
      */
     public static boolean hasClosedCycle(Set<TreeNode> nodes) {
         if (nodes.isEmpty()) return false;
@@ -169,7 +197,13 @@ public class TreeNode {
         return current == start && visitedInCycle.size() == nodes.size();
     }
 
-    // Child-Management
+    /**
+     * Fügt einen Kindknoten hinzu, falls möglich.
+     * Setzt automatisch die Parent-Beziehung und prüft Kapazitätsgrenzen.
+     *
+     * @param child Der hinzuzufügende Kindknoten (darf nicht null sein, nicht bereits Kind sein,
+     *             und maxChildren darf nicht überschritten werden)
+     */
     public void addChild(TreeNode child) {
         if (child != null && !children.contains(child) && canAcceptMoreChildren()) {
             children.add(child);
@@ -177,24 +211,53 @@ public class TreeNode {
         }
     }
 
+    /**
+     * Entfernt einen Kindknoten und dessen Parent-Beziehung.
+     *
+     * @param child Der zu entfernende Kindknoten (null wird ignoriert)
+     */
     public void removeChild(TreeNode child) {
         if (children.remove(child)) {
             child.parent = null;
         }
     }
 
+    /**
+     * Setzt den Parent-Knoten direkt (Vorsicht: kann Inkonsistenzen verursachen).
+     * Normalerweise sollte addChild() verwendet werden.
+     *
+     * @param parent Der neue Parent-Knoten (kann null sein)
+     */
     public void setParent(TreeNode parent) {
         this.parent = parent;
     }
 
+    /**
+     * Markiert diesen Knoten als Head der Struktur.
+     * Head-Knoten dienen als Einstiegspunkt für Traversierungen.
+     *
+     * @param head true um als Head zu markieren, false um Head-Status zu entfernen
+     */
     public void setHead(boolean head) {
         this.isHead = head;
     }
 
+    /**
+     * Setzt die maximale Anzahl von Kindern, die dieser Knoten haben kann.
+     *
+     * @param maxChildren Maximale Kindanzahl (wird auf mindestens 0 begrenzt)
+     */
     public void setMaxChildren(int maxChildren) {
         this.maxChildren = Math.max(0, maxChildren);
     }
 
+    /**
+     * Findet den Head-Knoten der Struktur.
+     * Sucht zunächst explizit markierte Head-Knoten, dann Root-Knoten.
+     * Verwendet DFS-Traversierung über alle verbundenen Knoten.
+     *
+     * @return Head-Knoten der Struktur oder null wenn keiner gefunden wird
+     */
     public TreeNode findHead() {
         if (isHead) return this;
         if (isRoot()) return this;
@@ -224,6 +287,12 @@ public class TreeNode {
         return null;
     }
 
+    /**
+     * Berechnet die Anzahl direkter Verbindungen dieses Knotens.
+     * Zählt Parent-Verbindung (falls vorhanden) plus alle Kinder.
+     *
+     * @return Anzahl direkter Verbindungen (0 bis maxChildren+1)
+     */
     public int getNumDirectLinksFromStructure() {
         int linkCount = 0;
         if (parent != null) linkCount++;
@@ -231,6 +300,13 @@ public class TreeNode {
         return linkCount;
     }
 
+    /**
+     * Berechnet die Gesamtanzahl geplanter Links in der gesamten Struktur.
+     * Verwendet DFS-Traversierung und vermeidet doppelte Zählung durch LinkPair-Set.
+     * Zählt nur Parent->Child-Beziehungen als Links.
+     *
+     * @return Gesamtanzahl geplanter Links in der Struktur
+     */
     public int getNumPlannedLinksFromStructure() {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
@@ -269,31 +345,73 @@ public class TreeNode {
         return totalLinks;
     }
 
+    /**
+     * Prüft ob dieser Knoten ein Terminal-Knoten ist.
+     * Terminal-Knoten haben genau eine Verbindung (entweder Parent oder ein Kind).
+     *
+     * @return true wenn der Knoten genau eine Verbindung hat
+     */
     public boolean isTerminal() {
         int connectionCount = children.size() + (parent != null ? 1 : 0);
         return connectionCount == 1;
     }
 
+    /**
+     * Prüft ob dieser Knoten ein Endpunkt der Struktur ist.
+     * Endpunkte sind entweder Terminal-Knoten oder Root-Blätter.
+     *
+     * @return true wenn der Knoten ein Terminal ist oder ein Root-Blatt
+     */
     public boolean isEndpoint() {
         return isTerminal() || (isRoot() && isLeaf());
     }
 
+    /**
+     * Prüft ob dieser Knoten ein Blatt ist.
+     * Blatt-Knoten haben keine Kinder.
+     *
+     * @return true wenn der Knoten keine Kinder hat
+     */
     public boolean isLeaf() {
         return children.isEmpty();
     }
 
+    /**
+     * Prüft ob dieser Knoten ein Root-Knoten ist.
+     * Root-Knoten haben keinen Parent und sind als Head markiert.
+     *
+     * @return true wenn der Knoten keinen Parent hat und Head ist
+     */
     public boolean isRoot() {
         return parent == null && isHead();
     }
 
+    /**
+     * Prüft ob dieser Knoten als Head markiert ist.
+     *
+     * @return true wenn der Knoten als Head markiert ist
+     */
     public boolean isHead() {
         return isHead;
     }
 
+    /**
+     * Berechnet den Konnektivitätsgrad dieses Knotens.
+     * Entspricht der Anzahl direkter Nachbarn (Parent + Kinder).
+     *
+     * @return Anzahl direkter Verbindungen zu anderen Knoten
+     */
     public int getConnectivityDegree() {
         return children.size() + (parent != null ? 1 : 0);
     }
 
+    /**
+     * Sammelt alle Knoten der Struktur, zu der dieser Knoten gehört.
+     * Verwendet DFS-Traversierung über Parent- und Child-Beziehungen.
+     * Ring-sicher durch Visited-Set.
+     *
+     * @return Set aller Knoten in der zusammenhängenden Struktur
+     */
     public Set<TreeNode> getAllNodesInStructure() {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
@@ -317,6 +435,13 @@ public class TreeNode {
         return visited;
     }
 
+    /**
+     * Zählt alle Nachfahren dieses Knotens.
+     * Traversiert nur über Child-Beziehungen, nicht über Parent.
+     * Zyklus-sicher durch Visited-Set.
+     *
+     * @return Anzahl aller Nachfahren (Kinder, Enkel, etc.)
+     */
     public int getDescendantCount() {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
@@ -344,6 +469,13 @@ public class TreeNode {
         return count;
     }
 
+    /**
+     * Findet einen Knoten in der Struktur anhand seiner ID.
+     * Durchsucht alle verbundenen Knoten mit DFS-Traversierung.
+     *
+     * @param id Die ID des gesuchten Knotens
+     * @return Der gefundene Knoten oder null wenn nicht gefunden
+     */
     public TreeNode findNodeById(int id) {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
@@ -369,6 +501,13 @@ public class TreeNode {
         return null;
     }
 
+    /**
+     * Berechnet den Pfad vom Head-Knoten zu diesem Knoten.
+     * Verwendet BFS mit Predecessor-Tracking für kürzesten Pfad.
+     * Ring-sicher durch Visited-Set.
+     *
+     * @return Liste von Knoten vom Head zu diesem Knoten, leer wenn Head nicht gefunden oder nicht erreichbar
+     */
     public List<TreeNode> getPathFromHead() {
         TreeNode head = findHead();
         if (head == null) return Collections.emptyList();
@@ -412,10 +551,35 @@ public class TreeNode {
         return Collections.emptyList();
     }
 
-    // Getter
+    // Getter-Methoden
+
+    /**
+     * Gibt die eindeutige ID dieses Knotens zurück.
+     *
+     * @return Die ID des Knotens
+     */
     public int getId() { return id; }
+
+    /**
+     * Gibt den Parent-Knoten zurück.
+     *
+     * @return Der Parent-Knoten oder null wenn keiner vorhanden
+     */
     public TreeNode getParent() { return parent; }
+
+    /**
+     * Gibt eine Kopie der Kinderliste zurück.
+     * Verhindert externe Modifikation der internen Liste.
+     *
+     * @return Neue ArrayList mit allen Kindern
+     */
     public List<TreeNode> getChildren() { return new ArrayList<>(children); }
+
+    /**
+     * Gibt die maximale Anzahl von Kindern zurück.
+     *
+     * @return Maximale Kindanzahl (Integer.MAX_VALUE bedeutet unbegrenzt)
+     */
     public int getMaxChildren() { return maxChildren; }
 
     @Override
