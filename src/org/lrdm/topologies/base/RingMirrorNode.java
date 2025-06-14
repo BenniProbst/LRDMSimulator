@@ -1,6 +1,7 @@
 
 package org.lrdm.topologies.base;
 
+import org.lrdm.Mirror;
 import java.util.*;
 
 /**
@@ -13,6 +14,29 @@ public class RingMirrorNode extends MirrorNode {
 
     public RingMirrorNode(int id) {
         super(id);
+    }
+
+    public RingMirrorNode(int id, Mirror mirror) {
+        super(id, mirror);
+    }
+
+    @Override
+    public boolean canAcceptMoreChildren() {
+        // In einem Ring hat jeder Knoten genau ein Kind (zyklische Struktur)
+        return getChildren().isEmpty();
+    }
+
+    @Override
+    public boolean canBeRemovedFromStructure(MirrorNode structureRoot) {
+        if (structureRoot == null) return false;
+        if (this == structureRoot) return false; // Root kann nicht entfernt werden
+
+        // Prüfe, ob der Ring nach Entfernung noch mindestens 3 Knoten hat
+        Set<TreeNode> allNodes = getAllNodesInStructure();
+
+        // Ein Ring muss mindestens 3 Knoten haben
+        // Wenn wir nur 3 Knoten haben, kann keiner entfernt werden
+        return allNodes.size() > 3;
     }
 
     /**

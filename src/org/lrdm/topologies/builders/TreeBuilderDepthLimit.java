@@ -10,28 +10,22 @@ import java.util.*;
 /**
  * TreeBuilder-Implementation mit Tiefenbeschränkung (Depth-First-Ansatz).
  * Bevorzugt das Wachstum in die Tiefe vor der Breite.
+ * Fügt Knoten basierend auf der geringsten Anzahl von Kindern ein.
  * Zustandslos - keine gespeicherten Tiefenwerte.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
 public class TreeBuilderDepthLimit extends TreeBuilder {
     private int maxDepth;
-    private int maxChildrenPerNode;
 
     public TreeBuilderDepthLimit(Network network, int maxDepth) {
-        this(network, maxDepth, Integer.MAX_VALUE);
-    }
-
-    public TreeBuilderDepthLimit(Network network, int maxDepth, int maxChildrenPerNode) {
         super(network);
         this.maxDepth = maxDepth;
-        this.maxChildrenPerNode = Math.max(1, maxChildrenPerNode);
     }
 
-    public TreeBuilderDepthLimit(Network network, Iterator<Mirror> mirrorIterator, int maxDepth, int maxChildrenPerNode) {
+    public TreeBuilderDepthLimit(Network network, Iterator<Mirror> mirrorIterator, int maxDepth) {
         super(network, mirrorIterator);
         this.maxDepth = maxDepth;
-        this.maxChildrenPerNode = Math.max(1, maxChildrenPerNode);
     }
 
     @Override
@@ -47,117 +41,60 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
         MirrorNode root = createMirrorNodeFromIterator();
         if (root == null || totalNodes == 1) return root;
 
-        buildDepthFirstIterative(root, totalNodes - 1, effectiveMaxDepth);
+        // Berechne verfügbare Mirrors aus Iterator
+        int availableMirrors = countAvailableMirrors();
+        int nodesToBuild = Math.min(totalNodes - 1, availableMirrors);
+
+        buildDepthFirstBalanced(root, nodesToBuild, effectiveMaxDepth);
         return root;
     }
 
     /**
-     * Stack-basierter Depth-First-Aufbau des Baums.
+     * Zählt verfügbare Mirrors im Iterator ohne ihn zu konsumieren.
      */
-    private void buildDepthFirstIterative(MirrorNode root, int remainingNodes, int effectiveMaxDepth) {
+    private int countAvailableMirrors() {
+        int count = 0;
+        // Erstelle eine Kopie des Iterators um zu zählen
+        List<Mirror> mirrorList = new ArrayList<>();
+        while (mirrorIterator.hasNext()) {
+            mirrorList.add(mirrorIterator.next());
+            count++;
+        }
+        // Erstelle neuen Iterator mit den gesammelten Mirrors
+        mirrorIterator = mirrorList.iterator();
+        return count;
+    }
+
+    /**
+     * Baut den Baum Depth-First mit balancierter Verteilung auf.
+     * Fügt immer bei dem Knoten mit den wenigsten Kindern ein.
+     */
+    private void buildDepthFirstBalanced(MirrorNode root, int remainingNodes, int effectiveMaxDepth) {
         if (remainingNodes <= 0) return;
 
-        Stack<NodeInfo> stack = new Stack<>();
-        stack.push(new NodeInfo(root, remainingNodes));
+        int nodesAdded = 0;
 
-        while (!stack.isEmpty() && mirrorIterator.hasNext()) {
-            NodeInfo info = stack.pop();
-            MirrorNode current = info.node;
-            int currentDepth = calculateDepth(current);
+        while (nodesAdded < remainingNodes && mirrorIterator.hasNext()) {
+            // Finde den besten Einfügepunkt (Knoten mit wenigsten Kindern in erlaubter Tiefe)
+            MirrorNode bestInsertionPoint = findBestInsertionPoint(root, effectiveMaxDepth);
 
-            if (currentDepth >= effectiveMaxDepth - 1) continue;
+            if (bestInsertionPoint == null) break; // Keine gültigen Einfügepunkte mehr
 
-            int maxChildren = calculateMaxChildren(currentDepth, info.remainingNodes, effectiveMaxDepth);
-            int actualChildren = Math.min(maxChildren, info.remainingNodes);
-
-            for (int i = 0; i < actualChildren && mirrorIterator.hasNext(); i++) {
-                MirrorNode child = createMirrorNodeFromIterator();
-                if (child != null) {
-                    current.addChild(child);
-
-                    // Für Depth-First: Neue Kinder sofort auf Stack
-                    if (currentDepth < effectiveMaxDepth - 2) {
-                        stack.push(new NodeInfo(child, info.remainingNodes - i - 1));
-                    }
-                }
+            MirrorNode newChild = createMirrorNodeFromIterator();
+            if (newChild != null) {
+                bestInsertionPoint.addChild(newChild);
+                nodesAdded++;
+            } else {
+                break; // Keine Mirrors mehr verfügbar
             }
         }
     }
 
     /**
-     * Hilfklasse für Stack-Verwaltung.
+     * Findet den besten Einfügepunkt - Knoten mit wenigsten Kindern in erlaubter Tiefe.
      */
-    private static class NodeInfo {
-        final MirrorNode node;
-        final int remainingNodes;
-
-        NodeInfo(MirrorNode node, int remainingNodes) {
-            this.node = node;
-            this.remainingNodes = remainingNodes;
-        }
-    }
-
-    /**
-     * Berechnet die maximale Anzahl von Kindern für einen Knoten.
-     */
-    private int calculateMaxChildren(int currentDepth, int remainingNodes, int effectiveMaxDepth) {
-        if (currentDepth >= effectiveMaxDepth - 1) return 0;
-
-        int maxPossible = Math.min(maxChildrenPerNode, remainingNodes);
-
-        // Tiefenbeschränkung berücksichtigen
-        int depthsLeft = effectiveMaxDepth - currentDepth - 1;
-        if (depthsLeft > 0) {
-            // Verteile Knoten über verbleibende Tiefen
-            int avgPerDepth = (int) Math.ceil((double) remainingNodes / depthsLeft);
-            maxPossible = Math.min(maxPossible, avgPerDepth);
-        }
-
-        return Math.max(1, maxPossible);
-    }
-
-    @Override
-    public int addNodesToExistingTree(MirrorNode existingRoot, int nodesToAdd, int maxDepth) {
-        if (existingRoot == null || nodesToAdd <= 0) return 0;
-        int effectiveMaxDepth = (maxDepth > 0) ? maxDepth : this.maxDepth;
-        return addNodesDepthFirst(existingRoot, nodesToAdd, effectiveMaxDepth);
-    }
-
-    /**
-     * Fügt Knoten zum bestehenden Baum hinzu (Stack-basiert).
-     */
-    private int addNodesDepthFirst(MirrorNode root, int nodesToAdd, int effectiveMaxDepth) {
-        List<MirrorNode> insertionPoints = findDepthFirstInsertionPoints(root, effectiveMaxDepth);
-        int added = 0;
-
-        for (MirrorNode insertionPoint : insertionPoints) {
-            if (added >= nodesToAdd || !mirrorIterator.hasNext()) break;
-
-            int currentDepth = calculateDepth(insertionPoint);
-            if (currentDepth >= effectiveMaxDepth - 1) continue;
-
-            int childrenToAdd = Math.min(
-                    maxChildrenPerNode - insertionPoint.getChildren().size(),
-                    nodesToAdd - added
-            );
-
-            for (int i = 0; i < childrenToAdd && mirrorIterator.hasNext(); i++) {
-                MirrorNode newChild = createMirrorNodeFromIterator();
-                if (newChild != null) {
-                    insertionPoint.addChild(newChild);
-                    added++;
-                }
-            }
-        }
-
-        return added;
-    }
-
-    /**
-     * Findet Einfügepunkte für neue Knoten (Stack-basiert).
-     */
-    private List<MirrorNode> findDepthFirstInsertionPoints(MirrorNode root, int effectiveMaxDepth) {
-        List<MirrorNode> insertionPoints = new ArrayList<>();
+    private MirrorNode findBestInsertionPoint(MirrorNode root, int effectiveMaxDepth) {
+        List<MirrorNode> candidates = new ArrayList<>();
         Stack<MirrorNode> stack = new Stack<>();
         stack.push(root);
 
@@ -165,22 +102,61 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
             MirrorNode current = stack.pop();
             int currentDepth = calculateDepth(current);
 
-            if (currentDepth < effectiveMaxDepth - 1 &&
-                    current.getChildren().size() < maxChildrenPerNode) {
-                insertionPoints.add(current);
+            // Nur Knoten innerhalb der Tiefenbeschränkung
+            if (currentDepth < effectiveMaxDepth - 1) {
+                candidates.add(current);
             }
 
-            // Depth-First: Kinder in umgekehrter Reihenfolge hinzufügen
+            // Füge Kinder zum Stack hinzu (Depth-First)
             List<TreeNode> children = new ArrayList<>(current.getChildren());
-            Collections.reverse(children);
+            Collections.reverse(children); // Umkehren für korrekte Depth-First-Reihenfolge
             for (TreeNode child : children) {
                 stack.push((MirrorNode) child);
             }
         }
 
-        // Sortiere nach Tiefe (tiefere zuerst für Depth-First)
-        insertionPoints.sort(Comparator.comparingInt(this::calculateDepth).reversed());
-        return insertionPoints;
+        if (candidates.isEmpty()) return null;
+
+        // Sortiere nach: 1. Tiefe (tiefer zuerst), 2. Anzahl Kinder (weniger zuerst)
+        candidates.sort(Comparator
+                .comparingInt(this::calculateDepth).reversed() // Tiefere zuerst
+                .thenComparingInt(node -> node.getChildren().size())); // Weniger Kinder zuerst
+
+        return candidates.get(0);
+    }
+
+    @Override
+    public int addNodesToExistingTree(MirrorNode existingRoot, int nodesToAdd, int maxDepth) {
+        if (existingRoot == null || nodesToAdd <= 0) return 0;
+
+        int effectiveMaxDepth = (maxDepth > 0) ? maxDepth : this.maxDepth;
+        int availableMirrors = countAvailableMirrors();
+        int actualNodesToAdd = Math.min(nodesToAdd, availableMirrors);
+
+        return addNodesDepthFirstBalanced(existingRoot, actualNodesToAdd, effectiveMaxDepth);
+    }
+
+    /**
+     * Fügt Knoten zum bestehenden Baum hinzu - immer bei Knoten mit wenigsten Kindern.
+     */
+    private int addNodesDepthFirstBalanced(MirrorNode root, int nodesToAdd, int effectiveMaxDepth) {
+        int added = 0;
+
+        while (added < nodesToAdd && mirrorIterator.hasNext()) {
+            MirrorNode bestInsertionPoint = findBestInsertionPoint(root, effectiveMaxDepth);
+
+            if (bestInsertionPoint == null) break; // Keine gültigen Einfügepunkte
+
+            MirrorNode newChild = createMirrorNodeFromIterator();
+            if (newChild != null) {
+                bestInsertionPoint.addChild(newChild);
+                added++;
+            } else {
+                break; // Keine Mirrors mehr verfügbar
+            }
+        }
+
+        return added;
     }
 
     // Getter und Setter
@@ -190,13 +166,5 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
 
     public void setMaxDepth(int maxDepth) {
         this.maxDepth = maxDepth;
-    }
-
-    public int getMaxChildrenPerNode() {
-        return maxChildrenPerNode;
-    }
-
-    public void setMaxChildrenPerNode(int maxChildrenPerNode) {
-        this.maxChildrenPerNode = Math.max(1, maxChildrenPerNode);
     }
 }

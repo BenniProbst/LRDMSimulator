@@ -1,6 +1,6 @@
-
 package org.lrdm.topologies.base;
 
+import org.lrdm.Mirror;
 import java.util.*;
 
 /**
@@ -13,6 +13,27 @@ public class LineMirrorNode extends MirrorNode {
 
     public LineMirrorNode(int id) {
         super(id);
+    }
+
+    public LineMirrorNode(int id, Mirror mirror) {
+        super(id, mirror);
+    }
+
+    @Override
+    public boolean canAcceptMoreChildren() {
+        // In einer Linie kann jeder Knoten maximal 1 Kind haben (außer Endpunkten)
+        // Endpunkte (Terminal-Knoten) können 1 Kind haben
+        // Mittlere Knoten dürfen nur 1 Kind haben (keine Verzweigungen)
+        return getChildren().size() == 0 || (isTerminal() && getChildren().size() < 1);
+    }
+
+    @Override
+    public boolean canBeRemovedFromStructure(MirrorNode structureRoot) {
+        if (structureRoot == null) return false;
+        if (this == structureRoot) return false; // Root kann nicht entfernt werden
+
+        // Nur Endpunkte können sicher entfernt werden ohne die Linie zu zerbrechen
+        return isLineEndpoint();
     }
 
     /**

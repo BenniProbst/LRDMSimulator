@@ -1,3 +1,4 @@
+
 package org.lrdm.topologies.base;
 
 import org.lrdm.Link;
@@ -15,7 +16,7 @@ import java.util.*;
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
-public class MirrorNode extends TreeNode {
+public abstract class MirrorNode extends TreeNode {
     private Mirror mirror;
     private Set<Link> implementedLinks;
 
@@ -100,20 +101,21 @@ public class MirrorNode extends TreeNode {
     }
 
     /**
-     * Standardimplementierung - kann von Kindklassen überschrieben werden.
+     * Abstrakte Methode - muss von Kindklassen implementiert werden.
      * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
+     *
+     * @return true wenn weitere Kinder akzeptiert werden können
      */
-    public boolean canAcceptMoreChildren() {
-        return true; // Standardverhalten - wird von Subklassen überschrieben
-    }
+    public abstract boolean canAcceptMoreChildren();
 
     /**
-     * Standardimplementierung - kann von Kindklassen überschrieben werden.
+     * Abstrakte Methode - muss von Kindklassen implementiert werden.
      * Prüft, ob dieser Knoten aus der Struktur entfernt werden kann.
+     *
+     * @param structureRoot Root der Gesamtstruktur
+     * @return true wenn der Knoten entfernt werden kann
      */
-    public boolean canBeRemovedFromStructure(MirrorNode structureRoot) {
-        return isLeaf(); // Standardverhalten - nur Blätter können entfernt werden
-    }
+    public abstract boolean canBeRemovedFromStructure(MirrorNode structureRoot);
 
     // Rest der ursprünglichen MirrorNode-Implementierung bleibt unverändert...
 }
