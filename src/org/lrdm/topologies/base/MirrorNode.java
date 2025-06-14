@@ -99,5 +99,21 @@ public class MirrorNode extends TreeNode {
         return getConnectivityDegree();
     }
 
+    /**
+     * Standardimplementierung - kann von Kindklassen überschrieben werden.
+     * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
+     */
+    public boolean canAcceptMoreChildren() {
+        return true; // Standardverhalten - wird von Subklassen überschrieben
+    }
+
+    /**
+     * Standardimplementierung - kann von Kindklassen überschrieben werden.
+     * Prüft, ob dieser Knoten aus der Struktur entfernt werden kann.
+     */
+    public boolean canBeRemovedFromStructure(MirrorNode structureRoot) {
+        return isLeaf(); // Standardverhalten - nur Blätter können entfernt werden
+    }
+
     // Rest der ursprünglichen MirrorNode-Implementierung bleibt unverändert...
 }

@@ -1,6 +1,7 @@
 package org.lrdm.topologies.builders;
 
 import org.lrdm.Network;
+import org.lrdm.Mirror;
 import org.lrdm.topologies.base.MirrorNode;
 import org.lrdm.topologies.base.TreeNode;
 
@@ -26,17 +27,22 @@ public class TreeBuilderBalanced extends TreeBuilder {
         this.targetLinksPerNode = targetLinksPerNode;
     }
 
+    public TreeBuilderBalanced(Network network, Iterator<Mirror> mirrorIterator, int targetLinksPerNode) {
+        super(network, mirrorIterator);
+        this.targetLinksPerNode = targetLinksPerNode;
+    }
+
     @Override
     protected int getEffectiveMaxDepth() {
-        return 0;
+        return Integer.MAX_VALUE; // Keine Tiefenbeschränkung
     }
 
     @Override
     public MirrorNode buildTree(int totalNodes, int maxDepth) {
-        if (totalNodes <= 0) return null;
+        if (totalNodes <= 0 || !mirrorIterator.hasNext()) return null;
 
-        MirrorNode root = new MirrorNode(idGenerator.getNextID());
-        if (totalNodes == 1) return root;
+        MirrorNode root = createMirrorNodeFromIterator();
+        if (root == null || totalNodes == 1) return root;
 
         buildBalanced(root, totalNodes - 1, maxDepth);
         return root;
@@ -49,7 +55,7 @@ public class TreeBuilderBalanced extends TreeBuilder {
         queue.offer(root);
         int nodesAdded = 0;
 
-        while (!queue.isEmpty() && nodesAdded < remainingNodes) {
+        while (!queue.isEmpty() && nodesAdded < remainingNodes && mirrorIterator.hasNext()) {
             MirrorNode current = queue.poll();
             int currentDepth = calculateDepth(current);
 
@@ -59,11 +65,13 @@ public class TreeBuilderBalanced extends TreeBuilder {
 
             int childrenToAdd = calculateOptimalChildren(remainingNodes - nodesAdded, queue.size());
 
-            for (int i = 0; i < childrenToAdd && nodesAdded < remainingNodes; i++) {
-                MirrorNode child = new MirrorNode(idGenerator.getNextID());
-                current.addChild(child);
-                queue.offer(child);
-                nodesAdded++;
+            for (int i = 0; i < childrenToAdd && nodesAdded < remainingNodes && mirrorIterator.hasNext(); i++) {
+                MirrorNode child = createMirrorNodeFromIterator();
+                if (child != null) {
+                    current.addChild(child);
+                    queue.offer(child);
+                    nodesAdded++;
+                }
             }
         }
     }
@@ -88,7 +96,7 @@ public class TreeBuilderBalanced extends TreeBuilder {
         List<MirrorNode> candidates = findBalancedInsertionCandidates(existingRoot, maxDepth);
         int added = 0;
 
-        while (added < nodesToAdd && !candidates.isEmpty()) {
+        while (added < nodesToAdd && !candidates.isEmpty() && mirrorIterator.hasNext()) {
             MirrorNode bestCandidate = selectBestBalancedParent(candidates);
 
             if (bestCandidate != null && bestCandidate.getChildren().size() < targetLinksPerNode) {
@@ -99,14 +107,18 @@ public class TreeBuilderBalanced extends TreeBuilder {
                     continue;
                 }
 
-                MirrorNode newChild = new MirrorNode(idGenerator.getNextID());
-                bestCandidate.addChild(newChild);
-                added++;
+                MirrorNode newChild = createMirrorNodeFromIterator();
+                if (newChild != null) {
+                    bestCandidate.addChild(newChild);
+                    added++;
 
-                candidates.add(newChild);
+                    candidates.add(newChild);
 
-                if (bestCandidate.getChildren().size() >= targetLinksPerNode) {
-                    candidates.remove(bestCandidate);
+                    if (bestCandidate.getChildren().size() >= targetLinksPerNode) {
+                        candidates.remove(bestCandidate);
+                    }
+                } else {
+                    break; // Keine Mirrors mehr verfügbar
                 }
             } else {
                 if (bestCandidate != null) {
