@@ -65,7 +65,7 @@ public abstract class TreeBuilder {
         MirrorNode root = createTreeStructureWithMirrors(mirrors.size(), getEffectiveMaxDepth(), mirrors);
         if (root == null) return new HashSet<>();
 
-        return createLinksFromTreeStructure(root, simTime, props);
+        return createLinksFromStructure(root, simTime, props);
     }
 
     /**
@@ -88,7 +88,7 @@ public abstract class TreeBuilder {
     /**
      * Imperativ implementierte Link-Erstellung mit Stack statt Rekursion.
      */
-    protected final Set<Link> createLinksFromTreeStructure(MirrorNode root, int simTime, Properties props) {
+    protected final Set<Link> createLinksFromStructure(MirrorNode root, int simTime, Properties props) {
         Set<Link> links = new HashSet<>();
         if (root == null) return links;
 

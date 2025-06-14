@@ -1,12 +1,15 @@
 
-package org.lrdm;
+package org.lrdm.topologies;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.lrdm.Link;
+import org.lrdm.Mirror;
+import org.lrdm.Network;
+import org.lrdm.TimedRDMSim;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 import org.lrdm.util.IDGenerator;
 import org.lrdm.topologies.base.MirrorNode;
 import org.lrdm.topologies.base.TreeNode;
