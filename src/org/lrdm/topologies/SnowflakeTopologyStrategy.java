@@ -8,8 +8,8 @@ import org.lrdm.effectors.Action;
 import org.lrdm.effectors.MirrorChange;
 import org.lrdm.topologies.base.TopologyStrategy;
 import org.lrdm.util.IDGenerator;
-import org.lrdm.util.TreeNode;
-import org.lrdm.util.TreeBuilder;
+import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.builders.TreeBuilder;
 
 import org.lrdm.topologies.exceptions.*;
 import org.lrdm.topologies.validators.SnowflakeTopologyValidator;

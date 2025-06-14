@@ -8,8 +8,8 @@ import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
 import org.lrdm.topologies.BalancedTreeTopologyStrategy;
-import org.lrdm.util.MirrorNode;
-import org.lrdm.util.TreeNode;
+import org.lrdm.topologies.base.MirrorNode;
+import org.lrdm.topologies.base.TreeNode;
 
 import java.io.IOException;
 import java.util.*;

@@ -1,7 +1,10 @@
-package org.lrdm.util;
+package org.lrdm.topologies.builders;
 
 import org.lrdm.Link;
 import org.lrdm.Mirror;
+import org.lrdm.topologies.base.MirrorNode;
+import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.util.IDGenerator;
 
 import java.util.*;
 

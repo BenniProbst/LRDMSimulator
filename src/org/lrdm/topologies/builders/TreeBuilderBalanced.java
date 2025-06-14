@@ -1,5 +1,8 @@
 
-package org.lrdm.util;
+package org.lrdm.topologies.builders;
+
+import org.lrdm.topologies.base.MirrorNode;
+import org.lrdm.topologies.base.TreeNode;
 
 import java.util.*;
 import java.util.stream.Collectors;

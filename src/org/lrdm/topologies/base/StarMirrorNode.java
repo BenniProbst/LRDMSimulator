@@ -1,4 +1,4 @@
-package org.lrdm.util;
+package org.lrdm.topologies.base;
 
 import java.util.*;
 
@@ -16,14 +16,12 @@ public class StarMirrorNode extends MirrorNode {
 
     /**
      * Validiert, dass diese Struktur ein gültiger Stern ist.
-     * - Genau ein Zentrumsknoten (hat nur Kinder, keinen Parent)
-     * - Alle anderen Knoten sind Blätter (haben nur Parent, keine Kinder)
+     * - Genau ein Zentrumsknoten (Root mit Kindern)
+     * - Alle anderen Knoten sind Blätter (Terminal-Knoten)
      * - Mindestens 3 Knoten (Zentrum + 2 Blätter)
-     *
-     * @return true wenn gültiger Stern
      */
     public boolean isValidStarStructure() {
-        Set<TreeNode> allNodes = getAllNodesInStructure(); // Nutzt TreeNode-Methode
+        Set<TreeNode> allNodes = getAllNodesInStructure();
 
         if (allNodes.size() < 3) return false;
 
@@ -31,13 +29,13 @@ public class StarMirrorNode extends MirrorNode {
         int leafCount = 0;
 
         for (TreeNode node : allNodes) {
-            if (node.getParent() == null && !node.getChildren().isEmpty()) {
-                if (center != null) return false;
+            if (node.isRoot() && !node.isLeaf()) {
+                if (center != null) return false; // Nur ein Zentrum erlaubt
                 center = node;
-            } else if (node.getParent() != null && node.getChildren().isEmpty()) {
+            } else if (node.isTerminal() && !node.isRoot()) {
                 leafCount++;
             } else {
-                return false;
+                return false; // Ungültige Knotenkonfiguration
             }
         }
 
@@ -48,10 +46,10 @@ public class StarMirrorNode extends MirrorNode {
      * Findet das Zentrum des Sterns.
      */
     public StarMirrorNode getCenter() {
-        Set<TreeNode> allNodes = getAllNodesInStructure(); // Nutzt TreeNode-Methode
+        Set<TreeNode> allNodes = getAllNodesInStructure();
 
         for (TreeNode node : allNodes) {
-            if (node.getParent() == null && !node.getChildren().isEmpty() && node instanceof StarMirrorNode) {
+            if (node.isRoot() && !node.isLeaf() && node instanceof StarMirrorNode) {
                 return (StarMirrorNode) node;
             }
         }
@@ -64,10 +62,10 @@ public class StarMirrorNode extends MirrorNode {
      */
     public List<StarMirrorNode> getLeaves() {
         List<StarMirrorNode> leaves = new ArrayList<>();
-        Set<TreeNode> allNodes = getAllNodesInStructure(); // Nutzt TreeNode-Methode
+        Set<TreeNode> allNodes = getAllNodesInStructure();
 
         for (TreeNode node : allNodes) {
-            if (node.getParent() != null && node.getChildren().isEmpty() && node instanceof StarMirrorNode) {
+            if (node.isTerminal() && !node.isRoot() && node instanceof StarMirrorNode) {
                 leaves.add((StarMirrorNode) node);
             }
         }
@@ -75,8 +73,18 @@ public class StarMirrorNode extends MirrorNode {
         return leaves;
     }
 
+    /**
+     * Prüft, ob dieser Knoten das Zentrum des Sterns ist.
+     */
     public boolean isCenter() {
-        return getParent() == null && !getChildren().isEmpty();
+        return isRoot() && !isLeaf();
     }
 
+    /**
+     * Prüft, ob dieser Knoten ein Blatt des Sterns ist.
+     * Nutzt die fundamentale TreeNode-Methode.
+     */
+    public boolean isStarLeaf() {
+        return isTerminal() && !isRoot();
+    }
 }

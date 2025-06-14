@@ -1,4 +1,4 @@
-package org.lrdm.util;
+package org.lrdm.topologies.base;
 
 import java.util.*;
 
@@ -19,17 +19,13 @@ public class TreeMirrorNode extends MirrorNode {
      * - Genau ein Root-Knoten (kein Parent)
      * - Keine Zyklen
      * - Zusammenhängend
-     *
-     * @return true wenn gültiger Baum
      */
     public boolean isValidTreeStructure() {
         TreeNode head = findHead();
         if (head == null) return false;
-        
-        // Muss Root sein (kein Parent)
+
         if (!head.isRoot()) return false;
-        
-        // Prüfe auf Zyklen und Zusammenhang
+
         return validateTreeProperties(head);
     }
 
@@ -40,19 +36,35 @@ public class TreeMirrorNode extends MirrorNode {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
         stack.push(root);
-        
+
         while (!stack.isEmpty()) {
             TreeNode current = stack.pop();
             if (visited.contains(current)) return false; // Zyklus gefunden
             visited.add(current);
-            
-            // Nur Kinder besuchen (bei Bäumen keine Parent-Traversierung nötig)
+
             for (TreeNode child : current.getChildren()) {
-                if (child.getParent() != current) return false; // Inkonsistente Parent-Child-Beziehung
+                if (child.getParent() != current) return false;
                 stack.push(child);
             }
         }
-        
+
         return true;
+    }
+
+    /**
+     * Findet alle Blätter im Baum.
+     * Nutzt die fundamentale TreeNode isLeaf()-Methode.
+     */
+    public List<TreeMirrorNode> getTreeLeaves() {
+        List<TreeMirrorNode> leaves = new ArrayList<>();
+        Set<TreeNode> allNodes = getAllNodesInStructure();
+
+        for (TreeNode node : allNodes) {
+            if (node.isLeaf() && node instanceof TreeMirrorNode) {
+                leaves.add((TreeMirrorNode) node);
+            }
+        }
+
+        return leaves;
     }
 }

@@ -8,11 +8,10 @@ import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
 import org.lrdm.topologies.BalancedTreeTopologyStrategy;
-import org.lrdm.util.MirrorNode;
-import org.lrdm.util.TreeNode;
-import org.lrdm.util.TreeBuilder;
-import org.lrdm.util.TreeBuilderDepthLimit;
-import org.lrdm.util.TreeBuilderBalanced;
+import org.lrdm.topologies.base.MirrorNode;
+import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.builders.TreeBuilderDepthLimit;
+import org.lrdm.topologies.builders.TreeBuilderBalanced;
 
 import java.io.IOException;
 import java.util.*;

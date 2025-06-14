@@ -1,4 +1,5 @@
-package org.lrdm.util;
+
+package org.lrdm.topologies.base;
 
 import java.util.*;
 
@@ -16,19 +17,18 @@ public class RingMirrorNode extends MirrorNode {
 
     /**
      * Validiert, dass diese Struktur ein gültiger Ring ist.
-     * - Jeder Knoten hat genau einen Parent und ein Kind
+     * - Jeder Knoten hat Konnektivitätsgrad 2
      * - Bildet einen geschlossenen Zyklus
      * - Mindestens 3 Knoten
-     *
-     * @return true wenn gültiger Ring
      */
     public boolean isValidRingStructure() {
-        Set<TreeNode> allNodes = getAllNodesInStructure(); // Nutzt TreeNode-Methode
+        Set<TreeNode> allNodes = getAllNodesInStructure();
 
         if (allNodes.size() < 3) return false;
 
+        // Jeder Knoten muss Konnektivitätsgrad 2 haben
         for (TreeNode node : allNodes) {
-            if (node.getParent() == null || node.getChildren().size() != 1) {
+            if (node.getConnectivityDegree() != 2 || node.getChildren().size() != 1) {
                 return false;
             }
         }
@@ -69,5 +69,13 @@ public class RingMirrorNode extends MirrorNode {
     public RingMirrorNode getPreviousInRing() {
         TreeNode prev = getParent();
         return (prev instanceof RingMirrorNode) ? (RingMirrorNode) prev : null;
+    }
+
+    /**
+     * Im Ring gibt es keine "Blätter" im traditionellen Sinne.
+     * Alle Knoten haben den gleichen Konnektivitätsgrad.
+     */
+    public boolean isRingNode() {
+        return getConnectivityDegree() == 2;
     }
 }

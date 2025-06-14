@@ -1,5 +1,5 @@
 
-package org.lrdm.util;
+package org.lrdm.topologies.base;
 
 import org.lrdm.Link;
 import org.lrdm.Mirror;
@@ -36,7 +36,7 @@ public class MirrorNode extends TreeNode {
      *
      * @param mirror Der zu setzende Mirror
      */
-    protected void setMirror(Mirror mirror) {
+    public void setMirror(Mirror mirror) {
         this.mirror = mirror;
     }
 
