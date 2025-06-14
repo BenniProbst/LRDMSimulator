@@ -1,4 +1,3 @@
-
 package org.lrdm.topologies.builders;
 
 import org.lrdm.topologies.base.MirrorNode;
@@ -35,10 +34,10 @@ public class TreeBuilderBalanced extends TreeBuilder {
     public MirrorNode buildTree(int totalNodes, int maxDepth) {
         if (totalNodes <= 0) return null;
 
-        MirrorNode root = createMirrorNode();
+        MirrorNode root = new MirrorNode(idGenerator.getNextID());
         if (totalNodes == 1) return root;
 
-        buildBalanced(root, totalNodes - 1, maxDepth); // -1 weil root bereits erstellt
+        buildBalanced(root, totalNodes - 1, maxDepth);
         return root;
     }
 
@@ -56,16 +55,14 @@ public class TreeBuilderBalanced extends TreeBuilder {
             MirrorNode current = queue.poll();
             int currentDepth = calculateDepth(current);
 
-            // Prüfe Tiefenbeschränkung
             if (maxDepth > 0 && currentDepth >= maxDepth - 1) {
                 continue;
             }
 
-            // Berechne optimale Anzahl Kinder für Balance
             int childrenToAdd = calculateOptimalChildren(remainingNodes - nodesAdded, queue.size());
 
             for (int i = 0; i < childrenToAdd && nodesAdded < remainingNodes; i++) {
-                MirrorNode child = createMirrorNode();
+                MirrorNode child = new MirrorNode(idGenerator.getNextID());
                 current.addChild(child);
                 queue.offer(child);
                 nodesAdded++;
@@ -73,60 +70,43 @@ public class TreeBuilderBalanced extends TreeBuilder {
         }
     }
 
-    /**
-     * Berechnet die optimale Anzahl von Kindern für einen Knoten.
-     */
     private int calculateOptimalChildren(int remainingNodes, int queueSize) {
         if (remainingNodes <= 0) return 0;
-
-        // Standardmäßig targetLinksPerNode Kinder
         int baseChildren = Math.min(targetLinksPerNode, remainingNodes);
-
-        // Anpassung für bessere Balance
         if (queueSize > 0) {
             int avgChildren = (int) Math.ceil((double) remainingNodes / (queueSize + 1));
             baseChildren = Math.min(baseChildren, avgChildren);
         }
-
         return Math.max(1, baseChildren);
     }
 
     @Override
     public int addNodesToExistingTree(MirrorNode existingRoot, int nodesToAdd, int maxDepth) {
         if (existingRoot == null || nodesToAdd <= 0) return 0;
-
         return addNodesToExistingTreeBalanced(existingRoot, nodesToAdd, maxDepth);
     }
 
-    /**
-     * Fügt Knoten balanciert zu einem bestehenden Baum hinzu.
-     */
     private int addNodesToExistingTreeBalanced(MirrorNode existingRoot, int nodesToAdd, int maxDepth) {
         List<MirrorNode> candidates = findBalancedInsertionCandidates(existingRoot, maxDepth);
         int added = 0;
 
-        // Breadth-First-Einfügung für Balance
         while (added < nodesToAdd && !candidates.isEmpty()) {
-            // Wähle den besten Kandidaten (niedrigste Tiefe, wenigste Kinder)
             MirrorNode bestCandidate = selectBestBalancedParent(candidates);
 
             if (bestCandidate != null && bestCandidate.getChildren().size() < targetLinksPerNode) {
                 int candidateDepth = calculateDepth(bestCandidate);
 
-                // Prüfe Tiefenbeschränkung
                 if (maxDepth > 0 && candidateDepth >= maxDepth - 1) {
                     candidates.remove(bestCandidate);
                     continue;
                 }
 
-                MirrorNode newChild = createMirrorNode();
+                MirrorNode newChild = new MirrorNode(idGenerator.getNextID());
                 bestCandidate.addChild(newChild);
                 added++;
 
-                // Füge neues Kind zur Kandidatenliste hinzu
                 candidates.add(newChild);
 
-                // Entferne Kandidat wenn er voll ist
                 if (bestCandidate.getChildren().size() >= targetLinksPerNode) {
                     candidates.remove(bestCandidate);
                 }
@@ -141,12 +121,8 @@ public class TreeBuilderBalanced extends TreeBuilder {
         return added;
     }
 
-    /**
-     * Findet alle möglichen Einfügepunkte (Stack-basiert).
-     */
     private List<MirrorNode> findBalancedInsertionCandidates(MirrorNode root, int maxDepth) {
         List<MirrorNode> candidates = new ArrayList<>();
-
         Stack<MirrorNode> stack = new Stack<>();
         stack.push(root);
 
@@ -163,40 +139,29 @@ public class TreeBuilderBalanced extends TreeBuilder {
             }
         }
 
-        // Filtere nur Knoten, die noch Platz für Kinder haben
         candidates = candidates.stream()
                 .filter(node -> node.getChildren().size() < targetLinksPerNode)
                 .filter(node -> maxDepth <= 0 || calculateDepth(node) < maxDepth - 1)
                 .collect(Collectors.toList());
 
-        // Sortiere nach Balance-Kriterien: niedrigere Tiefe zuerst, dann weniger Kinder
         candidates.sort(Comparator.comparingInt(this::calculateDepth)
                 .thenComparingInt(a -> a.getChildren().size()));
 
         return candidates;
     }
 
-    /**
-     * Wählt den besten Einfügepunkt basierend auf Balance-Kriterien.
-     */
     private MirrorNode selectBestBalancedParent(List<MirrorNode> candidates) {
         if (candidates.isEmpty()) return null;
-
-        // Wähle Knoten mit niedrigster Tiefe und wenigsten Kindern
         return candidates.stream()
                 .min(Comparator.comparingInt(this::calculateDepth)
                         .thenComparingInt(a -> a.getChildren().size()))
                 .orElse(null);
     }
 
-    /**
-     * Berechnet eine Balance-Metrik für den Baum (Stack-basiert).
-     */
     public double calculateTreeBalance(MirrorNode root) {
         if (root == null) return 0.0;
 
         Map<Integer, Integer> depthCounts = new HashMap<>();
-
         Stack<MirrorNode> stack = new Stack<>();
         stack.push(root);
 
@@ -210,9 +175,8 @@ public class TreeBuilderBalanced extends TreeBuilder {
             }
         }
 
-        if (depthCounts.size() <= 1) return 0.0; // Perfekt balanciert bei nur einer Ebene
+        if (depthCounts.size() <= 1) return 0.0;
 
-        // Berechne Standardabweichung der Knoten pro Ebene
         double avgNodesPerDepth = depthCounts.values().stream()
                 .mapToInt(Integer::intValue).average().orElse(0.0);
 
@@ -223,7 +187,6 @@ public class TreeBuilderBalanced extends TreeBuilder {
         return Math.sqrt(variance);
     }
 
-    // Getter und Setter
     public int getTargetLinksPerNode() {
         return targetLinksPerNode;
     }

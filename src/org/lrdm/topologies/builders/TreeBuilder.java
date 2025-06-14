@@ -1,71 +1,52 @@
 package org.lrdm.topologies.builders;
 
-import org.lrdm.Link;
-import org.lrdm.Mirror;
-import org.lrdm.topologies.base.MirrorNode;
 import org.lrdm.topologies.base.TreeNode;
-import org.lrdm.util.IDGenerator;
-
-import java.util.*;
+import org.lrdm.topologies.base.MirrorNode;
+import org.lrdm.topologies.base.TreeMirrorNode;
 
 /**
  * Abstrakte Basisklasse für TreeBuilder-Implementierungen.
+ * Erweitert StructureBuilder für Baum-spezifische Funktionalität.
  * Zustandslos - jede Methode analysiert/erstellt vollständig neu.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
-public abstract class TreeBuilder {
-    protected IDGenerator idGenerator;
-
-    public TreeBuilder() {
-        this.idGenerator = IDGenerator.getInstance();
-    }
+public abstract class TreeBuilder extends StructureBuilder {
 
     /**
      * Erstellt einen neuen Baum mit der angegebenen Anzahl von Knoten.
+     *
+     * @param totalNodes Anzahl der zu erstellenden Knoten
+     * @param maxDepth Maximale Tiefe des Baums
+     * @return Root-Knoten des erstellten Baums
      */
     public abstract MirrorNode buildTree(int totalNodes, int maxDepth);
 
     /**
+     * Implementiert StructureBuilder.build() für Bäume.
+     * Nutzt getEffectiveMaxDepth() als Standard-Tiefe.
+     */
+    @Override
+    public final MirrorNode build(int totalNodes) {
+        return buildTree(totalNodes, getEffectiveMaxDepth());
+    }
+
+    /**
      * Fügt Knoten zu einem bestehenden Baum hinzu.
+     *
+     * @param existingRoot Bestehender Baum-Root
+     * @param nodesToAdd Anzahl hinzuzufügender Knoten
+     * @param maxDepth Maximale Tiefe
+     * @return Anzahl tatsächlich hinzugefügter Knoten
      */
     public abstract int addNodesToExistingTree(MirrorNode existingRoot, int nodesToAdd, int maxDepth);
 
     /**
-     * Entfernt Knoten aus einem bestehenden Baum.
+     * Überschreibt StructureBuilder.addNodes() für Bäume.
      */
-    public int removeNodesFromTree(MirrorNode root, int nodesToRemove) {
-        if (root == null || nodesToRemove <= 0) return 0;
-
-        List<MirrorNode> leaves = findLeaves(root);
-        int removed = 0;
-
-        for (MirrorNode leaf : leaves) {
-            if (removed >= nodesToRemove) break;
-            if (leaf != root) { // Root nicht entfernen
-                MirrorNode parent = (MirrorNode) leaf.getParent();
-                if (parent != null) {
-                    parent.getChildren().remove(leaf);
-                    parent.removeMirrorNode(leaf);
-                    removed++;
-                }
-            }
-        }
-
-        return removed;
-    }
-
-    /**
-     * Erstellt Mirror-Verbindungen basierend auf der Tree-Struktur.
-     * Network Parameter entfernt - wird nicht benötigt.
-     */
-    public final Set<Link> createAndLinkMirrors(List<Mirror> mirrors, int simTime, Properties props) {
-        if (mirrors.isEmpty()) return new HashSet<>();
-
-        MirrorNode root = createTreeStructureWithMirrors(mirrors.size(), getEffectiveMaxDepth(), mirrors);
-        if (root == null) return new HashSet<>();
-
-        return createLinksFromStructure(root, simTime, props);
+    @Override
+    public final int addNodes(MirrorNode existingRoot, int nodesToAdd) {
+        return addNodesToExistingTree(existingRoot, nodesToAdd, getEffectiveMaxDepth());
     }
 
     /**
@@ -86,182 +67,35 @@ public abstract class TreeBuilder {
     }
 
     /**
-     * Imperativ implementierte Link-Erstellung mit Stack statt Rekursion.
+     * Validiert Baumstruktur.
      */
-    protected final Set<Link> createLinksFromStructure(MirrorNode root, int simTime, Properties props) {
-        Set<Link> links = new HashSet<>();
-        if (root == null) return links;
+    @Override
+    public boolean validateStructure(MirrorNode root) {
+        if (root == null) return false;
+        if (!root.isRoot()) return false;
 
-        // Stack-basierte Implementierung statt Rekursion
-        Stack<MirrorNode> stack = new Stack<>();
+        // Verwende TreeMirrorNode-Validierung wenn verfügbar
+        if (root instanceof TreeMirrorNode) {
+            return ((TreeMirrorNode) root).isValidTreeStructure();
+        }
+
+        // Fallback: grundlegende Baumvalidierung
+        return validateBasicTreeStructure(root);
+    }
+
+    /**
+     * Grundlegende Baumvalidierung ohne Zyklen.
+     */
+    private boolean validateBasicTreeStructure(MirrorNode root) {
+        java.util.Set<MirrorNode> visited = new java.util.HashSet<>();
+        java.util.Stack<MirrorNode> stack = new java.util.Stack<>();
         stack.push(root);
 
         while (!stack.isEmpty()) {
             MirrorNode current = stack.pop();
-            if (current.getMirror() == null) continue;
+            if (visited.contains(current)) return false; // Zyklus gefunden
+            visited.add(current);
 
-            for (TreeNode child : current.getChildren()) {
-                MirrorNode mirrorChild = (MirrorNode) child;
-                if (mirrorChild.getMirror() != null) {
-                    Link link = new Link(
-                            idGenerator.getNextID(),
-                            current.getMirror(),
-                            mirrorChild.getMirror(),
-                            simTime,
-                            props
-                    );
-                    links.add(link);
-
-                    current.getMirror().addLink(link);
-                    mirrorChild.getMirror().addLink(link);
-
-                    current.addLink(link);
-                    mirrorChild.addLink(link);
-                }
-                stack.push(mirrorChild);
-            }
-        }
-
-        return links;
-    }
-
-    /**
-     * Erstellt eine MirrorNode-Struktur und ordnet Mirrors zu.
-     */
-    protected final MirrorNode createTreeStructureWithMirrors(int totalNodes, int maxDepth, List<Mirror> mirrors) {
-        if (mirrors.isEmpty()) return null;
-
-        MirrorNode root = buildTree(totalNodes, maxDepth);
-        if (root == null) return null;
-
-        assignMirrorsToNodes(root, mirrors);
-        return root;
-    }
-
-    /**
-     * Ordnet Mirrors den MirrorNodes zu - Stack-basiert statt rekursiv.
-     */
-    protected final void assignMirrorsToNodes(MirrorNode root, List<Mirror> mirrors) {
-        if (root == null || mirrors.isEmpty()) return;
-
-        Queue<MirrorNode> queue = new LinkedList<>();
-        queue.offer(root);
-        int mirrorIndex = 0;
-
-        while (!queue.isEmpty() && mirrorIndex < mirrors.size()) {
-            MirrorNode current = queue.poll();
-
-            if (mirrorIndex < mirrors.size()) {
-                current.setMirror(mirrors.get(mirrorIndex));
-                mirrorIndex++;
-            }
-
-            for (TreeNode child : current.getChildren()) {
-                queue.offer((MirrorNode) child);
-            }
-        }
-    }
-
-    /**
-     * Findet alle Blätter des Baums - Stack-basiert.
-     */
-    protected List<MirrorNode> findLeaves(MirrorNode root) {
-        List<MirrorNode> leaves = new ArrayList<>();
-        if (root == null) return leaves;
-
-        Stack<MirrorNode> stack = new Stack<>();
-        stack.push(root);
-
-        while (!stack.isEmpty()) {
-            MirrorNode current = stack.pop();
-
-            if (current.getChildren().isEmpty()) {
-                leaves.add(current);
-            } else {
-                for (TreeNode child : current.getChildren()) {
-                    stack.push((MirrorNode) child);
-                }
-            }
-        }
-
-        // Sortiere nach Tiefe (tiefste zuerst)
-        leaves.sort((a, b) -> Integer.compare(calculateDepth(b), calculateDepth(a)));
-
-        return leaves;
-    }
-
-    /**
-     * Hilfsmethode: Erstellt MirrorNode mit neuer ID.
-     */
-    protected final MirrorNode createMirrorNode() {
-        return new MirrorNode(getNextId());
-    }
-
-    /**
-     * Generiert nächste ID.
-     */
-    protected final int getNextId() {
-        return idGenerator.getNextID();
-    }
-
-    /**
-     * Hilfsmethoden für Tests - zählt Knoten im Baum.
-     */
-    public int countNodes(MirrorNode root) {
-        if (root == null) return 0;
-
-        int count = 0;
-        Stack<MirrorNode> stack = new Stack<>();
-        stack.push(root);
-
-        while (!stack.isEmpty()) {
-            MirrorNode current = stack.pop();
-            count++;
-
-            for (TreeNode child : current.getChildren()) {
-                stack.push((MirrorNode) child);
-            }
-        }
-
-        return count;
-    }
-
-    /**
-     * Hilfsmethode für Tests - findet maximale Tiefe.
-     */
-    public int getMaxDepth(MirrorNode root) {
-        if (root == null) return -1;
-
-        int maxDepth = 0;
-        Stack<MirrorNode> stack = new Stack<>();
-        stack.push(root);
-
-        while (!stack.isEmpty()) {
-            MirrorNode current = stack.pop();
-            int depth = calculateDepth(current);
-            maxDepth = Math.max(maxDepth, depth);
-
-            for (TreeNode child : current.getChildren()) {
-                stack.push((MirrorNode) child);
-            }
-        }
-
-        return maxDepth;
-    }
-
-    /**
-     * Hilfsmethode für Tests - validiert Baumstruktur.
-     */
-    public boolean validateTreeStructure(MirrorNode root) {
-        if (root == null) return true;
-
-        Stack<MirrorNode> stack = new Stack<>();
-        stack.push(root);
-
-        while (!stack.isEmpty()) {
-            MirrorNode current = stack.pop();
-
-            // Validiere Parent-Child-Beziehungen
             for (TreeNode child : current.getChildren()) {
                 if (child.getParent() != current) return false;
                 stack.push((MirrorNode) child);
@@ -269,5 +103,21 @@ public abstract class TreeBuilder {
         }
 
         return true;
+    }
+
+    /**
+     * Für Bäume sind Blätter eindeutig definiert.
+     */
+    @Override
+    protected boolean isLeafInStructure(MirrorNode node) {
+        return node.isLeaf();
+    }
+
+    /**
+     * Bäume benötigen keine Parent-Links.
+     */
+    @Override
+    protected boolean needsParentLinks() {
+        return false;
     }
 }
