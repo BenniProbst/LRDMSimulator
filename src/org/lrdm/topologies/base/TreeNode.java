@@ -14,6 +14,7 @@ public class TreeNode {
     private TreeNode parent;
     private List<TreeNode> children;
     private boolean isHead; // Ersetzt das Root-Konzept für Ring-Strukturen
+    private int maxChildren = Integer.MAX_VALUE; // Standardmäßig unbegrenzt
 
     /**
      * Einfache Tupel-Klasse für Link-IDs (um String-Konkatenation zu vermeiden).
@@ -46,6 +47,11 @@ public class TreeNode {
         this.parent = null;
         this.children = new ArrayList<>();
         this.isHead = false;
+    }
+
+    public TreeNode(int id, int maxChildren) {
+        this(id);
+        this.maxChildren = Math.max(0, maxChildren);
     }
 
     /**
@@ -106,6 +112,39 @@ public class TreeNode {
     }
 
     /**
+     * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
+     * Basiert auf der maximalen Anzahl von Kindern.
+     *
+     * @return true wenn weitere Kinder akzeptiert werden können
+     */
+    public boolean canAcceptMoreChildren() {
+        return children.size() < maxChildren;
+    }
+
+    /**
+     * Prüft, ob dieser Knoten aus der Struktur entfernt werden kann.
+     * Ein Knoten kann entfernt werden, wenn:
+     * - Er gefunden werden kann in der Struktur
+     * - Er keine Kinder hat (um Fragmentierung zu vermeiden)
+     * - Er nicht der strukturRoot ist
+     *
+     * @param structureRoot Der Root-Knoten der Struktur
+     * @return true wenn der Knoten sicher entfernt werden kann
+     */
+    public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
+        if (structureRoot == null) return false;
+        if (this == structureRoot) return false; // Root kann nicht entfernt werden
+
+        // Prüfe ob dieser Knoten in der Struktur gefunden werden kann
+        Set<TreeNode> allNodes = structureRoot.getAllNodesInStructure();
+        if (!allNodes.contains(this)) return false;
+
+        // Knoten kann nur entfernt werden, wenn er keine Kinder hat
+        // Dies verhindert Fragmentierung der Struktur
+        return children.isEmpty();
+    }
+
+    /**
      * Grundlegende Zyklusprüfung für beliebige Knotenstrukturen.
      * Fundamentale statische Hilfsmethode, die von Kindklassen genutzt werden kann.
      */
@@ -130,25 +169,9 @@ public class TreeNode {
         return current == start && visitedInCycle.size() == nodes.size();
     }
 
-    /**
-     * Abstrakte Methode - muss von Kindklassen implementiert werden.
-     * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
-     *
-     * @return true wenn weitere Kinder akzeptiert werden können
-     */
-    public boolean canAcceptMoreChildren();
-
-    /**
-     * Abstrakte Methode - muss von Kindklassen implementiert werden.
-     * Prüft, ob dieser Knoten aus der Struktur entfernt werden kann.
-     *
-     * @param structureRoot Root der Gesamtstruktur
-     * @return true wenn der Knoten entfernt werden kann
-     */
-    public boolean canBeRemovedFromStructure(TreeNode structureRoot);
-
+    // Child-Management
     public void addChild(TreeNode child) {
-        if (child != null && !children.contains(child)) {
+        if (child != null && !children.contains(child) && canAcceptMoreChildren()) {
             children.add(child);
             child.parent = this;
         }
@@ -166,6 +189,10 @@ public class TreeNode {
 
     public void setHead(boolean head) {
         this.isHead = head;
+    }
+
+    public void setMaxChildren(int maxChildren) {
+        this.maxChildren = Math.max(0, maxChildren);
     }
 
     public TreeNode findHead() {
@@ -389,6 +416,7 @@ public class TreeNode {
     public int getId() { return id; }
     public TreeNode getParent() { return parent; }
     public List<TreeNode> getChildren() { return new ArrayList<>(children); }
+    public int getMaxChildren() { return maxChildren; }
 
     @Override
     public boolean equals(Object obj) {
@@ -408,6 +436,7 @@ public class TreeNode {
         return "TreeNode{" +
                 "id=" + id +
                 ", children=" + children.size() +
+                ", maxChildren=" + maxChildren +
                 ", isLeaf=" + isLeaf() +
                 ", isRoot=" + isRoot() +
                 ", isHead=" + isHead +
