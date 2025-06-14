@@ -175,6 +175,32 @@ public class TreeNode {
     }
 
     /**
+     * Einfache Tupel-Klasse für Link-IDs (um String-Konkatenation zu vermeiden).
+     */
+    public static class LinkPair {
+        public final int from;
+        public final int to;
+
+        public LinkPair(int from, int to) {
+            this.from = from;
+            this.to = to;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (!(obj instanceof LinkPair)) return false;
+            LinkPair other = (LinkPair) obj;
+            return from == other.from && to == other.to;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(from, to);
+        }
+    }
+
+    /**
      * Berechnet die Gesamtzahl aller Links in der gesamten Struktur.
      * Stack-basierte Traversierung ohne Rekursion.
      * Jeder Link wird nur einmal gezählt (Parent->Child, nicht Child->Parent).
@@ -184,7 +210,7 @@ public class TreeNode {
     public int getNumPlannedLinksFromStructure() {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
-        Set<String> countedLinks = new HashSet<>(); // Verhindert Doppelzählung
+        Set<LinkPair> countedLinks = new HashSet<>(); // Verhindert Doppelzählung
 
         // Beginne mit Head/Root der Struktur
         TreeNode head = findHead();
@@ -200,7 +226,7 @@ public class TreeNode {
 
             // Zähle alle ausgehenden Links (Parent->Child Beziehungen)
             for (TreeNode child : current.children) {
-                String linkId = current.id + "->" + child.id;
+                LinkPair linkId = new LinkPair(current.id, child.id);
                 if (!countedLinks.contains(linkId)) {
                     countedLinks.add(linkId);
                     totalLinks++;
@@ -219,6 +245,7 @@ public class TreeNode {
 
         return totalLinks;
     }
+
 
     /**
      * Berechnet die Anzahl aller Nachfahren.

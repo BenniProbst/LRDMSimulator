@@ -145,21 +145,13 @@ public class MirrorNode extends TreeNode {
 
     /**
      * Prüft, ob eine geplante Verbindung zu einem anderen Knoten existiert.
-     * Funktioniert für Baum- und Ring-Strukturen.
+     * Einfache Parent-Child-Beziehung prüfen.
      */
     private boolean isPlannedConnectionWith(MirrorNode other) {
         // Direkte Parent-Child-Beziehung
-        if (this.getParent() == other || other.getParent() == this) {
-            return true;
-        }
-
-        // Für Ring-Strukturen: Auch Geschwister können verbunden sein
-        if (isRingStructure() && this.getParent() != null && this.getParent() == other.getParent()) {
-            return true;
-        }
-
-        return false;
+        return this.getParent() == other || other.getParent() == this;
     }
+
 
     /**
      * Prüft, ob eine implementierte Verbindung zu einem anderen Knoten existiert.
