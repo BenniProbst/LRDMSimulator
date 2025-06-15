@@ -1,4 +1,3 @@
-
 package org.lrdm.topologies.base;
 
 import org.lrdm.Mirror;
@@ -39,10 +38,9 @@ public class StarMirrorNode extends MirrorNode {
         // Nach Entfernung müssen noch mindestens 3 Knoten übrig bleiben
         if (structureNodes.size() < 4) return false;
 
-        // Nur Blätter (nicht Head-Nodes) können entfernt werden
-        // Nutze TreeNode isLeaf() direkt
+        // Nur Blätter (Terminal-Knoten, keine Head-Nodes) können entfernt werden
         return super.canBeRemovedFromStructure(structureRoot) &&
-                isLeaf() && !isHead();
+                isTerminal() && !isHead();
     }
 
     @Override
@@ -123,19 +121,18 @@ public class StarMirrorNode extends MirrorNode {
     }
 
     /**
-     * Nutzt getAllNodesInStructure() + TreeNode isLeaf() für alle Blätter.
-     * Filtert nur echte Blätter (keine Head-Nodes).
+     * Direkte Wiederverwendung von getEndpointsOfStructure() aus TreeNode.
+     * Stern-Blätter sind exakt die Terminal-Knoten (Endpunkte) der Struktur.
      */
     public List<StarMirrorNode> getLeaves() {
         List<StarMirrorNode> leaves = new ArrayList<>();
 
-        // getAllNodesInStructure() gibt uns bereits nur Strukturelemente
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        // Nutze TreeNode getEndpointsOfStructure() - das sind die Blätter!
+        Set<TreeNode> endpoints = getEndpointsOfStructure();
 
-        for (TreeNode node : allNodes) {
-            // Nutze TreeNode isLeaf() und isHead() direkt
-            if (node instanceof StarMirrorNode starNode &&
-                    starNode.isLeaf() && !starNode.isHead()) {
+        for (TreeNode endpoint : endpoints) {
+            // Filtere nur echte Blätter (keine Head-Nodes)
+            if (endpoint instanceof StarMirrorNode starNode && !starNode.isHead()) {
                 leaves.add(starNode);
             }
         }
@@ -149,11 +146,10 @@ public class StarMirrorNode extends MirrorNode {
     public List<StarMirrorNode> getChildHeads() {
         List<StarMirrorNode> childHeads = new ArrayList<>();
 
-        // getAllNodesInStructure() gibt uns bereits nur Strukturelemente
         Set<TreeNode> allNodes = getAllNodesInStructure();
 
         for (TreeNode node : allNodes) {
-            // Nutze TreeNode isHead() und getParent() direkt
+            // Head-Nodes mit Parent (außer Zentrum)
             if (node instanceof StarMirrorNode starNode &&
                     starNode.isHead() && starNode.getParent() != null) {
                 childHeads.add(starNode);
