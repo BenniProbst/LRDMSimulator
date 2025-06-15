@@ -326,6 +326,109 @@ public class MirrorNode extends TreeNode {
         return getEdgeLinks().size();
     }
 
+    /**
+     * Erweiterte Strukturvalidierung für MirrorNode.
+     * Überprüft zusätzlich zur TreeNode-Validierung die Mirror-Link-Konsistenz:
+     * - Alle Struktur-Mirrors müssen mindestens einen Link zu anderen Struktur-Mirrors haben
+     * - Keine Self-Links (Mirror mit sich selbst verknüpft)
+     * - Keine Links zu Mirrors außerhalb der Struktur
+     *
+     * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
+     * @return true wenn sowohl TreeNode- als auch Mirror-Validierung erfolgreich sind
+     */
+    @Override
+    public boolean isValidStructure(Set<TreeNode> allNodes) {
+        // Zuerst die grundlegende TreeNode-Strukturvalidierung
+        if (!super.isValidStructure(allNodes)) {
+            return false;
+        }
+
+        // Verwende bereits vorhandene Funktionen für Mirror-Sammlung
+        Set<Mirror> structureMirrors = getMirrorsOfStructure();
+
+        // Wenn keine Mirrors vorhanden sind, ist die Struktur gültig (reine TreeNode-Struktur)
+        if (structureMirrors.isEmpty()) {
+            return true;
+        }
+
+        // Verwende bereits vorhandene Funktion für Link-Sammlung
+        Set<Link> structureLinks = getLinksOfStructure();
+
+        // Validiere jeden Mirror in der Struktur
+        for (Mirror mirror : structureMirrors) {
+            if (!isValidMirrorInStructure(mirror, structureMirrors, structureLinks)) {
+                return false;
+            }
+        }
+
+        // Validiere alle Links der Struktur
+        for (Link link : structureLinks) {
+            if (!isValidLinkInStructure(link, structureMirrors)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Validiert einen einzelnen Mirror innerhalb der Struktur.
+     *
+     * @param mirror Der zu validierende Mirror
+     * @param structureMirrors Alle Mirrors der Struktur
+     * @param structureLinks Alle Links der Struktur (bereits gefiltert)
+     * @return true wenn der Mirror gültig ist
+     */
+    private boolean isValidMirrorInStructure(Mirror mirror, Set<Mirror> structureMirrors, Set<Link> structureLinks) {
+        // Prüfe, ob der Mirror mindestens einen Link zu einem anderen Mirror der Struktur hat
+        boolean hasValidConnection = false;
+
+        for (Link link : structureLinks) {
+            // Wenn der Mirror an einem struktur-internen Link beteiligt ist
+            if (link.getSource().equals(mirror) || link.getTarget().equals(mirror)) {
+                hasValidConnection = true;
+                break;
+            }
+        }
+
+        // Ein Mirror ohne Verbindungen zu anderen Struktur-Mirrors ist nur gültig,
+        // wenn die Struktur nur aus einem Mirror besteht
+        return hasValidConnection || structureMirrors.size() == 1;
+    }
+
+    /**
+     * Validiert einen einzelnen Link innerhalb der Struktur.
+     * Nutzt bereits vorhandene isLinkOfStructure() Funktion für Konsistenz.
+     *
+     * @param link Der zu validierende Link
+     * @param structureMirrors Alle Mirrors der Struktur
+     * @return true wenn der Link gültig ist
+     */
+    private boolean isValidLinkInStructure(Link link, Set<Mirror> structureMirrors) {
+        Mirror source = link.getSource();
+        Mirror target = link.getTarget();
+
+        // Prüfe auf Self-Links (Mirror mit sich selbst verknüpft)
+        if (source.equals(target)) {
+            return false; // Self-Links sind ungültig
+        }
+
+        // Da structureLinks bereits gefiltert wurde durch getLinksOfStructure(),
+        // wissen wir, dass beide Endpoints zur Struktur gehören.
+        // Zusätzliche Validierung: beide müssen wirklich in structureMirrors sein
+        return structureMirrors.contains(source) && structureMirrors.contains(target);
+    }
+
+    /**
+     * Convenience-Methode für Strukturvalidierung ohne Parameter.
+     * Verwendet getAllNodesInStructure() um die relevanten Knoten zu ermitteln.
+     *
+     * @return true wenn die Struktur gültig ist
+     */
+    public boolean isValidStructure() {
+        return isValidStructure(getAllNodesInStructure());
+    }
+
     @Override
     public String toString() {
         return String.format("MirrorNode{id=%d, mirror=%s, planned=%d, implemented=%d, pending=%d, isHead=%s}",

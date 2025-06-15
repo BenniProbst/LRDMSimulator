@@ -5,7 +5,7 @@ import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
 import org.lrdm.topologies.BalancedTreeTopologyStrategy;
-import org.lrdm.topologies.base.TopologyStrategy;
+import org.lrdm.topologies.TopologyStrategy;
 
 import java.io.*;
 import java.util.ArrayList;

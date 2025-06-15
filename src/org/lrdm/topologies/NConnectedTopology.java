@@ -6,7 +6,6 @@ import org.lrdm.Network;
 import org.lrdm.effectors.Action;
 import org.lrdm.effectors.MirrorChange;
 import org.lrdm.effectors.TargetLinkChange;
-import org.lrdm.topologies.base.*;
 import org.lrdm.util.IDGenerator;
 
 import java.util.*;
