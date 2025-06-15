@@ -27,6 +27,7 @@ public class RingMirrorNode extends MirrorNode {
         return getChildren().isEmpty();
     }
 
+    @Override
     public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
         // Prüfe, ob der Ring nach Entfernung noch mindestens 3 Knoten hat
         Set<TreeNode> allNodes = getAllNodesInStructure();
@@ -42,6 +43,7 @@ public class RingMirrorNode extends MirrorNode {
      * - Bildet einen geschlossenen Zyklus
      * - Mindestens 3 Knoten
      */
+    @Override
     public boolean isValidStructure(Set<TreeNode> allNodes) {
 
         if (allNodes.size() < 3) return false;

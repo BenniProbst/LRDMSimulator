@@ -17,35 +17,25 @@ public class TreeNode {
     private int maxChildren = Integer.MAX_VALUE; // Standardmäßig unbegrenzt
 
     /**
-     * Einfache Tupel-Klasse für Link-IDs (um String-Konkatenation zu vermeiden).
-     */
-    public static class LinkPair {
-        public final int from;
-        public final int to;
-
+         * Einfache Tupel-Klasse für Link-IDs (um String-Konkatenation zu vermeiden).
+         */
+        public record LinkPair(int from, int to) {
         /**
          * Erstellt ein neues LinkPair.
          *
          * @param from ID des Quellknotens
          * @param to   ID des Zielknotens
          */
-        public LinkPair(int from, int to) {
-            this.from = from;
-            this.to = to;
+        public LinkPair {
         }
 
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof LinkPair)) return false;
-            LinkPair other = (LinkPair) obj;
-            return from == other.from && to == other.to;
-        }
+            @Override
+            public boolean equals(Object obj) {
+                if (this == obj) return true;
+                if (!(obj instanceof LinkPair other)) return false;
+                return from == other.from && to == other.to;
+            }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(from, to);
-        }
     }
 
     /**
@@ -595,6 +585,104 @@ public class TreeNode {
      * @return Maximale Kindanzahl (Integer.MAX_VALUE bedeutet unbegrenzt)
      */
     public int getMaxChildren() { return maxChildren; }
+
+
+    /**
+     * Sammelt alle Knoten der Substruktur, zu der dieser Knoten gehört.
+     * Stoppt bei Head-Knoten, um Substrukturen abzugrenzen.
+     * Verwendet imperative Stack-basierte Traversierung ohne Rekursion.
+     *
+     * @return Set aller Knoten in der zusammenhängenden Substruktur
+     */
+    public Set<TreeNode> getAllNodes() {
+        Set<TreeNode> allNodes = new HashSet<>();
+        Set<TreeNode> visited = new HashSet<>();
+        Stack<TreeNode> stack = new Stack<>();
+
+        stack.push(this);
+
+        while (!stack.isEmpty()) {
+            TreeNode current = stack.pop();
+
+            if (visited.contains(current)) {
+                continue;
+            }
+
+            visited.add(current);
+            allNodes.add(current);
+
+            // Füge Parent hinzu, wenn es kein Head-Knoten ist
+            if (current.parent != null && !current.parent.isHead()) {
+                if (!visited.contains(current.parent)) {
+                    stack.push(current.parent);
+                }
+            }
+
+            // Füge alle Kinder hinzu, die keine Head-Knoten sind
+            for (TreeNode child : current.children) {
+                if (!child.isHead() && !visited.contains(child)) {
+                    stack.push(child);
+                }
+            }
+        }
+
+        return allNodes;
+    }
+
+    /**
+     * Ermittelt alle Endpunkte (Terminal-Knoten) der Struktur.
+     * Filtert aus der Menge aller Knoten der Substruktur die Terminal-Knoten heraus.
+     * Verwendet imperative Stack-basierte Traversierung ohne Rekursion.
+     *
+     * @return Set aller Terminal-Knoten (Endpunkte) in der Substruktur
+     */
+    public Set<TreeNode> getEndpointsOfStructure() {
+        Set<TreeNode> endpoints = new HashSet<>();
+        Set<TreeNode> allNodes = getAllNodes();
+
+        // Filtere Terminal-Knoten aus der Gesamtmenge
+        for (TreeNode node : allNodes) {
+            if (node.isTerminal()) {
+                endpoints.add(node);
+            }
+        }
+
+        return endpoints;
+    }
+
+    /**
+     * Prüft, ob ein gegebener TreeNode Teil der Substruktur ist.
+     * Verwendet die bereits implementierte getAllNodes() Methode zur effizienten Prüfung.
+     *
+     * @param node Der zu prüfende TreeNode (null wird als false behandelt)
+     * @return true wenn der Knoten Teil der Substruktur ist, false sonst
+     */
+    public boolean isPartOfStructure(TreeNode node) {
+        if (node == null) {
+            return false;
+        }
+
+        // Verwende die bereits implementierte getAllNodes() Methode
+        Set<TreeNode> allNodes = getAllNodes();
+        return allNodes.contains(node);
+    }
+
+    /**
+     * Prüft, ob ein gegebener TreeNode ein Endpunkt der Substruktur ist.
+     * Verwendet die bereits implementierte getEndpointsOfStructure() Methode zur effizienten Prüfung.
+     *
+     * @param node Der zu prüfende TreeNode (null wird als false behandelt)
+     * @return true wenn der Knoten ein Endpunkt der Substruktur ist, false sonst
+     */
+    public boolean isEndpointOfStructure(TreeNode node) {
+        if (node == null) {
+            return false;
+        }
+
+        // Verwende die bereits implementierte getEndpointsOfStructure() Methode
+        Set<TreeNode> endpoints = getEndpointsOfStructure();
+        return endpoints.contains(node);
+    }
 
     @Override
     public boolean equals(Object obj) {
