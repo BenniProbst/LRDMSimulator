@@ -24,20 +24,16 @@ public class RingMirrorNode extends MirrorNode {
     @Override
     public boolean canAcceptMoreChildren() {
         // In einem Ring hat jeder Knoten genau ein Kind (zyklische Struktur)
-        return getChildren().size() < 1;
+        return getChildren().isEmpty();
     }
 
-    @Override
-    public boolean canBeRemovedFromStructure(MirrorNode structureRoot) {
-        if (structureRoot == null) return false;
-        if (this == structureRoot) return false; // Root kann nicht entfernt werden
-
+    public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
         // Prüfe, ob der Ring nach Entfernung noch mindestens 3 Knoten hat
         Set<TreeNode> allNodes = getAllNodesInStructure();
 
         // Ein Ring muss mindestens 3 Knoten haben
         // Wenn wir nur 3 Knoten haben, kann keiner entfernt werden
-        return allNodes.size() > 3;
+        return allNodes.size() >= 3 && super.canBeRemovedFromStructure(structureRoot);
     }
 
     /**

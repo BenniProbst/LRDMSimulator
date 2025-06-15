@@ -119,7 +119,7 @@ public class MirrorNode extends TreeNode {
      * @param other Der andere MirrorNode
      * @return true, wenn eine Verbindung existiert
      */
-    public boolean isLinkedWith(org.lrdm.topologies.base.MirrorNode other) {
+    public boolean isLinkedWith(MirrorNode other) {
         if (other == null || this.mirror == null || other.mirror == null) {
             return false;
         }
@@ -136,7 +136,7 @@ public class MirrorNode extends TreeNode {
      *
      * @param child Der zu entfernende Kindknoten
      */
-    public void removeMirrorNode(org.lrdm.topologies.base.MirrorNode child) {
+    public void removeMirrorNode(MirrorNode child) {
         removeChild(child);
         // Entferne auch alle zugehörigen implementierten Links
         if (child != null) {
@@ -149,7 +149,7 @@ public class MirrorNode extends TreeNode {
      * Prüft, ob eine geplante Verbindung zu einem anderen Knoten existiert.
      * Einfache Parent-Child-Beziehung prüfen.
      */
-    private boolean isPlannedConnectionWith(org.lrdm.topologies.base.MirrorNode other) {
+    private boolean isPlannedConnectionWith(MirrorNode other) {
         // Direkte Parent-Child-Beziehung
         return this.getParent() == other || other.getParent() == this;
     }
@@ -158,7 +158,7 @@ public class MirrorNode extends TreeNode {
     /**
      * Prüft, ob eine implementierte Verbindung zu einem anderen Knoten existiert.
      */
-    private boolean hasImplementedConnectionWith(org.lrdm.topologies.base.MirrorNode other) {
+    private boolean hasImplementedConnectionWith(MirrorNode other) {
         if (other == null || other.mirror == null) {
             return false;
         }
@@ -181,7 +181,7 @@ public class MirrorNode extends TreeNode {
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (!(obj instanceof org.lrdm.topologies.base.MirrorNode)) return false;
+        if (!(obj instanceof MirrorNode)) return false;
         org.lrdm.topologies.base.MirrorNode other = (org.lrdm.topologies.base.MirrorNode) obj;
         return getId() == other.getId();
     }

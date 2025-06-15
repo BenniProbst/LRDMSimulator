@@ -160,12 +160,12 @@ public class TreeNode {
         if (this == structureRoot) return false; // Root kann nicht entfernt werden
 
         // Prüfe ob dieser Knoten in der Struktur gefunden werden kann
-        Set<TreeNode> allNodes = structureRoot.getAllNodesInStructure();
-        if (!allNodes.contains(this)) return false;
+        Set<TreeNode> allNodes = getAllNodesInStructure();
+        if (!allNodes.contains(structureRoot)) return false;
 
         // Knoten kann nur entfernt werden, wenn er keine Kinder hat
         // Dies verhindert Fragmentierung der Struktur
-        return children.isEmpty();
+        return structureRoot.getChildren().isEmpty();
     }
 
     /**
