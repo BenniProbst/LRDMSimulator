@@ -130,8 +130,8 @@ public class StructureNode {
         this.headStatus = new HashMap<>();
         this.nodeTypes = new HashSet<>();
 
-        // Standardtypen hinzufügen für Rückwärtskompatibilität
-        this.nodeTypes.add(StructureType.DEFAULT);
+        // Automatische Typ-Ermittlung über Instanz-Analyse
+        initializeNodeTypes();
     }
 
     /**
@@ -143,6 +143,37 @@ public class StructureNode {
     public StructureNode(int id, int maxChildren) {
         this(id);
         this.maxChildren = Math.max(0, maxChildren);
+    }
+
+    /**
+     * Initialisiert die nodeTypes basierend auf der instanceof-Analyse.
+     * Diese Methode wird automatisch vom Konstruktor aufgerufen und
+     * ermittelt die korrekten StructureTypes für die jeweilige Instanz.
+     */
+    protected void initializeNodeTypes() {
+        // Standard-Typ für alle StructureNodes
+        this.nodeTypes.add(StructureType.DEFAULT);
+
+        // Automatische Typ-Erkennung über instanceof
+        if (this instanceof MirrorNode) {
+            this.nodeTypes.add(StructureType.MIRROR);
+        }
+
+        if (this instanceof TreeMirrorNode) {
+            this.nodeTypes.add(StructureType.TREE);
+        }
+
+        if (this instanceof RingMirrorNode) {
+            this.nodeTypes.add(StructureType.RING);
+        }
+
+        if (this instanceof LineMirrorNode) {
+            this.nodeTypes.add(StructureType.LINE);
+        }
+
+        if (this instanceof StarMirrorNode) {
+            this.nodeTypes.add(StructureType.STAR);
+        }
     }
 
     // ===== STRUKTURTYP-ERMITTLUNG =====

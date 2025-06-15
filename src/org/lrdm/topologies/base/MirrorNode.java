@@ -40,6 +40,17 @@ public class MirrorNode extends StructureNode {
     }
 
     /**
+     * Bestimmt die Typ-ID basierend auf der MirrorNode-Instanz.
+     * Überschreibt StructureNode.deriveTypeId() für automatische Typ-Erkennung.
+     *
+     * @return Der Standard-Strukturtyp für MirrorNodes
+     */
+    @Override
+    protected StructureType deriveTypeId() {
+        return StructureType.MIRROR;
+    }
+
+    /**
      * Setzt den Mirror für diesen Knoten.
      * Sollte nur über Builder (TreeBuilder/RingBuilder) gesetzt werden, nicht direkt.
      *
