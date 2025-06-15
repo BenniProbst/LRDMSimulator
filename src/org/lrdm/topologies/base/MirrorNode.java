@@ -245,22 +245,22 @@ public class MirrorNode extends StructureNode {
         final int headId = head.getId();
 
         // Prüfe eigene Zugehörigkeit zur Struktur
-        boolean thisInStructure = false;
+        boolean thisInStructure;
         if (this.getParent() != null) {
             ChildRecord thisRecord = this.getParent().findChildRecordById(this.getId());
             thisInStructure = thisRecord != null && thisRecord.belongsToStructure(typeId, headId);
         } else {
-            // Kein Parent - prüfe, ob wir der Head sind
+            // Kein Parent - prüfe ob wir der Head sind
             thisInStructure = this.isHead(typeId) && this.getId() == headId;
         }
 
         // Prüfe andere Knoten Zugehörigkeit zur Struktur
-        boolean otherInStructure = false;
+        boolean otherInStructure;
         if (other.getParent() != null) {
             ChildRecord otherRecord = other.getParent().findChildRecordById(other.getId());
             otherInStructure = otherRecord != null && otherRecord.belongsToStructure(typeId, headId);
         } else {
-            // Kein Parent - prüfe, ob der andere der Head ist
+            // Kein Parent - prüfe ob der andere der Head ist
             otherInStructure = other.isHead(typeId) && other.getId() == headId;
         }
 
@@ -269,7 +269,7 @@ public class MirrorNode extends StructureNode {
             return false;
         }
 
-        // Jetzt prüfe ich die implementierte Mirror-Verbindung
+        // Jetzt prüfe die implementierte Mirror-Verbindung
         return this.mirror.isLinkedWith(other.mirror);
     }
 
