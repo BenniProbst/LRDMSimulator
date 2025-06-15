@@ -1024,7 +1024,7 @@ public class StructureNode {
 
     /**
      * Prüft, ob dieser Knoten ein Blatt ist (keine Kinder hat).
-     * Wichtig für Entfernungs Logik und Struktur-Analyse.
+     * Wichtig für Entfernungslogik und Struktur-Analyse.
      *
      * @return true, wenn keine Kinder vorhanden sind
      */
@@ -1053,7 +1053,7 @@ public class StructureNode {
     }
 
     /**
-     * Berechnet den Konnektivitäts-grad (Anzahl aller Verbindungen).
+     * Berechnet den Konnektivität-grad (Anzahl aller Verbindungen).
      * Summe aus Parent-Verbindung und Kind-Verbindungen.
      *
      * @return Gesamtanzahl der Verbindungen
