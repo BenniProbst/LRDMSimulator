@@ -134,28 +134,34 @@ public class TreeNode {
         return children.size() < maxChildren;
     }
 
+
     /**
      * Prüft, ob dieser Knoten aus der Struktur entfernt werden kann.
      * Ein Knoten kann entfernt werden, wenn:
-     * - Er gefunden werden kann in der Struktur
-     * - Er keine Kinder hat (um Fragmentierung zu vermeiden)
-     * - Er nicht der strukturRoot ist
+     * - Er Teil der Struktur ist (über getAllNodesInStructure ermittelt)
+     * - Seine Entfernung die Strukturintegrität nicht gefährdet
+     * - Er ein Blatt ist (keine Kinder hat, um Fragmentierung zu vermeiden)
      *
-     * @param structureRoot Der Root-Knoten der Struktur (darf nicht null sein)
-     * @return true wenn der Knoten sicher entfernt werden kann, false bei null structureRoot,
-     *         wenn er der Root ist, nicht gefunden wird oder Kinder hat
+     * Der strukturRoot kann ebenfalls entfernt werden, wenn er ein Blatt ist.
+     *
+     * @param structureRoot Der Root-Knoten der Struktur für Referenz (darf nicht null sein)
+     * @return true wenn der Knoten sicher entfernt werden kann
      */
     public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
         if (structureRoot == null) return false;
-        if (this == structureRoot) return false; // Root kann nicht entfernt werden
 
-        // Prüfe ob dieser Knoten in der Struktur gefunden werden kann
-        Set<TreeNode> allNodes = getAllNodes();
-        if (!allNodes.contains(structureRoot)) return false;
+        // Verwende die korrekte Strukturermittlung
+        Set<TreeNode> structureNodes = structureRoot.getAllNodesInStructure();
 
-        // Knoten kann nur entfernt werden, wenn er keine Kinder hat
+        // Prüfe ob dieser Knoten Teil der Struktur ist
+        if (!structureNodes.contains(this)) {
+            return false; // Knoten ist nicht Teil der Struktur
+        }
+
+        // Ein Knoten kann entfernt werden, wenn er ein Blatt ist
         // Dies verhindert Fragmentierung der Struktur
-        return structureRoot.getChildren().isEmpty();
+        // Auch der Head/Root kann entfernt werden, wenn er ein Blatt ist
+        return this.isLeaf();
     }
 
     /**
