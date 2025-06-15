@@ -23,7 +23,7 @@ import java.util.*;
  * - 85 %+ der Traversierungs- und Validierungslogik wird wiederverwendet
  * - Fokussiert auf linien-spezifische Validierung und Convenience-Methoden
  *
- * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
+ * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class LineMirrorNode extends MirrorNode {
 

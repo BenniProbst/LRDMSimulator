@@ -2,16 +2,17 @@
 package org.lrdm.topologies.base;
 
 import org.lrdm.Mirror;
-
 import java.util.*;
 
 /**
  * Spezialisierte MirrorNode für Ring-Strukturen.
- * Validiert, dass die Struktur tatsächlich ein Ring ist.
+ * Validiert, dass die Struktur einen geschlossenen Ring bildet.
  *
- * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
+ * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class RingMirrorNode extends MirrorNode {
+
+    // ===== KONSTRUKTOREN =====
 
     public RingMirrorNode(int id) {
         super(id);
@@ -21,162 +22,260 @@ public class RingMirrorNode extends MirrorNode {
         super(id, mirror);
     }
 
+    // ===== TYP-SYSTEM INTEGRATION =====
+
+    @Override
+    protected StructureType deriveTypeId() {
+        return StructureType.RING;
+    }
+
+    /**
+     * Ring-spezifische Head-Finding-Logik.
+     * Überschreibt die Standard-Head-Finding für optimierte Ring-Navigation.
+     */
+    @Override
+    public StructureNode findHead(StructureType typeId) {
+        if (typeId != StructureType.RING) {
+            return super.findHead(typeId); // Delegiere an Standard-Implementierung
+        }
+
+        // Ring-spezifische Head-Finding-Optimierung
+        Set<StructureNode> visited = new HashSet<>();
+        StructureNode current = this;
+
+        while (current != null && !visited.contains(current)) {
+            visited.add(current);
+
+            if (current.isHead(typeId)) {
+                return current;
+            }
+
+            // In Ringen können wir sowohl Parent als auch Child traversieren
+            StructureNode parent = current.getParent();
+            if (parent != null && !visited.contains(parent)) {
+                current = parent;
+                continue;
+            }
+
+            // Wenn kein Parent, versuche erstes Kind
+            Set<StructureNode> children = current.getChildren(typeId, current.getId());
+            if (!children.isEmpty()) {
+                current = children.iterator().next();
+            } else {
+                break;
+            }
+        }
+
+        return null; // Kein Head gefunden
+    }
+
+    // ===== STRUKTUR-MANAGEMENT =====
+
     @Override
     public boolean canAcceptMoreChildren() {
-        // In einem Ring hat jeder Knoten genau ein Kind (zyklische Struktur)
-        // nur wenn isValidStructure erfüllt ist und super.canAcceptMoreChildren auch
+        StructureType typeId = StructureType.RING;
+        StructureNode head = findHead(typeId);
+
         return super.canAcceptMoreChildren() &&
                 isValidStructure() &&
-                getChildren().isEmpty();
+                getChildren(typeId, head != null ? head.getId() : this.getId()).isEmpty();
     }
 
     @Override
     public boolean canBeRemovedFromStructure(StructureNode structureRoot) {
         if (structureRoot == null) return false;
 
-        // Verwende die korrekte Strukturermittlung
-        Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
+        StructureType typeId = StructureType.RING;
+        StructureNode head = findHead(typeId);
+        if (head == null) head = structureRoot;
 
-        // Ein Ring muss mindestens 3 Knoten haben.
-        // Nach Entfernung müssen noch mindestens 3 Knoten übrig bleiben
+        Set<StructureNode> structureNodes = getAllNodesInStructure(typeId, head);
+
+        // Ring muss mindestens 3 Knoten haben
         if (structureNodes.size() < 4) return false;
 
-        // Nur wenn super.canBeRemovedFromStructure auch erfüllt ist
         return super.canBeRemovedFromStructure(structureRoot);
     }
 
+    // ===== STRUKTUR-VALIDIERUNG (VEREINFACHT) =====
+
     /**
-     * Erweiterte Ring-Struktur-Validierung.
-     * Zusätzlich zu super.isValidStructure und den bisherigen Ring-Validierungen:
-     * - Alle MirrorNodes haben genau ein Parent und ein Kind
-     * - Ausnahme: Head-Node darf einen externen Parent haben
-     * - Head-Node muss mindestens einen Edge-Link haben (Verbindung nach außen)
-     * - Alle anderen Knoten bilden einen geschlossenen Zyklus
+     * Ring-Struktur-Validierung mit expliziter RING-Typ-ID.
+     * ERSETZT sowohl isValidStructure als auch isRingNode.
      */
     @Override
-    public boolean isValidStructure(Set<StructureNode> allNodes) {
-        // Zuerst die grundlegende MirrorNode-Struktur validierung
-        if (!super.isValidStructure(allNodes)) {
+    public boolean isValidStructure(Set<StructureNode> allNodes, StructureType typeId, StructureNode head) {
+        if (!super.isValidStructure(allNodes, typeId, head)) {
             return false;
         }
 
         if (allNodes.size() < 3) return false;
 
-        // Sammle alle Ring-Knoten und finde Head-Knoten
         Set<RingMirrorNode> ringNodes = new HashSet<>();
         RingMirrorNode headNode = null;
 
         for (StructureNode node : allNodes) {
             if (!(node instanceof RingMirrorNode ringNode)) {
-                return false; // Alle Knoten müssen RingMirrorNodes sein
+                return false;
             }
 
             ringNodes.add(ringNode);
-            if (ringNode.isHead()) {
-                if (headNode != null) return false; // Nur ein Head erlaubt
+            if (ringNode.isHead(typeId)) {
+                if (headNode != null) return false;
                 headNode = ringNode;
             }
         }
 
-        if (headNode == null) return false; // Ein Head muss vorhanden sein
+        if (headNode == null) return false;
 
-        // Validiere Ring-spezifische Eigenschaften
+        // Validiere alle Ring-Knoten
         for (RingMirrorNode ringNode : ringNodes) {
-            if (!isValidRingNode(ringNode, headNode)) {
+            if (!isValidRingNode(ringNode, headNode, typeId)) {
                 return false;
             }
         }
 
-        // Prüfe geschlossenen Zyklus für alle Knoten
-        if (!hasClosedCycle(allNodes)) {
-            return false;
-        }
+        return hasClosedCycle(allNodes, typeId, head) &&
+                headNode.getNumEdgeLinks(typeId, head) > 0;
+    }
 
-        // Head-Node muss Edge-Links haben (Verbindung nach außen)
-        return headNode.getNumEdgeLinks() != 0; // Head muss mit externen Strukturen verbunden sein
+    @Override
+    public boolean isValidStructure(Set<StructureNode> allNodes) {
+        StructureType typeId = StructureType.RING;
+        StructureNode head = findHead(typeId);
+        return isValidStructure(allNodes, typeId, head != null ? head : this);
     }
 
     /**
-     * Validiert einen einzelnen Ring-Knoten.
-     *
-     * @param ringNode Der zu validierende Ring-Knoten
-     * @param headNode Der Head-Knoten des Rings
-     * @return true wenn der Knoten gültig ist
+     * Convenience-Methode: Prüft ob die aktuelle Ring-Struktur gültig ist.
+     * ERSETZT isRingNode() - eine Methode für beide Zwecke.
      */
-    private boolean isValidRingNode(RingMirrorNode ringNode, RingMirrorNode headNode) {
-        // Jeder Knoten muss Interconnectivities 2 haben und genau ein Kind
-        if (ringNode.getConnectivityDegree() != 2 || ringNode.getChildren().size() != 1) {
+    public boolean isValidStructure() {
+        StructureType typeId = StructureType.RING;
+        StructureNode head = findHead(typeId);
+        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head != null ? head : this);
+        return isValidStructure(allNodes, typeId, head != null ? head : this);
+    }
+
+    /**
+     * Validiert einzelnen Ring-Knoten.
+     */
+    private boolean isValidRingNode(RingMirrorNode ringNode, RingMirrorNode headNode, StructureType typeId) {
+        final int headId = headNode.getId();
+        int degree = ringNode.getConnectivityDegree(typeId, headId);
+
+        if (degree != 2 || ringNode.getChildren(typeId, headId).size() != 1) {
             return false;
         }
 
+        StructureNode parent = ringNode.getParent();
+        Set<StructureNode> structureNodes = ringNode.getAllNodesInStructure(typeId, headNode);
+
         if (ringNode == headNode) {
-            // Head-Node darf einen externen Parent haben.
-            // Parent kann null sein (kein externer Parent) oder außerhalb der Struktur
-            StructureNode parent = ringNode.getParent();
+            // Head darf externen Parent haben
             if (parent != null) {
-                Set<StructureNode> structureNodes = ringNode.getAllNodesInStructure();
-                // Parent darf nicht Teil der Ring-Struktur sein
-                return !structureNodes.contains(parent); // Head-Parent muss extern sein
+                return !structureNodes.contains(parent);
             }
         } else {
-            // Normale Ring-Knoten: genau ein Parent und ein Kind, beide in der Struktur
-            if (ringNode.getParent() == null) {
-                return false; // Normale Knoten müssen einen Parent haben
-            }
-
-            // Parent muss Teil der Ring-Struktur sein
-            Set<StructureNode> structureNodes = ringNode.getAllNodesInStructure();
-            return structureNodes.contains(ringNode.getParent()); // Parent muss in der Struktur sein
+            // Normale Knoten müssen internen Parent haben
+            if (parent == null) return false;
+            return structureNodes.contains(parent);
         }
 
         return true;
     }
 
-    /**
-     * Erweiterte Ring-Knoten-Validierung.
-     * Ein Ring-Knoten ist nur gültig, wenn:
-     * - Die gesamte Struktur einen geschlossenen Zyklus bildet
-     * - Die gesamte Struktur gültig ist
-     * - Der Konnektivität-Grad 2 ist
-     */
-    public boolean isRingNode() {
-        // Prüfe grundlegende Ring-Eigenschaften
-        if (getConnectivityDegree() != 2) {
-            return false;
-        }
-
-        // Sammle alle Knoten der Struktur
-        Set<StructureNode> structureNodes = getAllNodesInStructure();
-
-        // Prüfe geschlossenen Zyklus für alle MirrorNodes mit Mirrors
-        Set<StructureNode> mirrorNodes = new HashSet<>();
-        for (StructureNode node : structureNodes) {
-            if (node instanceof MirrorNode mirrorNode && mirrorNode.getMirror() != null) {
-                mirrorNodes.add(node);
-            }
-        }
-
-        // Struktur muss gültig sein und geschlossenen Zyklus bilden
-        return isValidStructure() &&
-                !mirrorNodes.isEmpty() &&
-                hasClosedCycle(mirrorNodes);
-    }
+    // ===== RING-NAVIGATION =====
 
     public RingMirrorNode getNextInRing() {
-        if (getChildren().size() != 1) return null;
-        StructureNode next = getChildren().get(0);
+        StructureType typeId = StructureType.RING;
+        StructureNode head = findHead(typeId);
+        final int headId = head != null ? head.getId() : this.getId();
+
+        Set<StructureNode> children = getChildren(typeId, headId);
+        if (children.size() != 1) return null;
+
+        StructureNode next = children.iterator().next();
         return (next instanceof RingMirrorNode) ? (RingMirrorNode) next : null;
     }
 
     public RingMirrorNode getPreviousInRing() {
+        StructureType typeId = StructureType.RING;
+        StructureNode head = findHead(typeId);
+
         StructureNode prev = getParent();
-        // Für Head-Node kann der Parent extern sein
-        if (isHead() && prev != null) {
-            Set<StructureNode> structureNodes = getAllNodesInStructure();
+
+        if (isHead(typeId) && prev != null) {
+            Set<StructureNode> structureNodes = getAllNodesInStructure(typeId, head != null ? head : this);
             if (!structureNodes.contains(prev)) {
                 return null; // Externer Parent
             }
         }
+
         return (prev instanceof RingMirrorNode) ? (RingMirrorNode) prev : null;
+    }
+
+    public RingMirrorNode getRingHead() {
+        StructureNode head = findHead(StructureType.RING);
+        return (head instanceof RingMirrorNode) ? (RingMirrorNode) head : null;
+    }
+
+    public int getRingSize() {
+        StructureType typeId = StructureType.RING;
+        StructureNode head = findHead(typeId);
+        return getAllNodesInStructure(typeId, head != null ? head : this).size();
+    }
+
+    public int getPositionInRing() {
+        StructureType typeId = StructureType.RING;
+        StructureNode head = findHead(typeId);
+
+        if (head == null || !(head instanceof RingMirrorNode ringHead)) return -1;
+
+        RingMirrorNode current = ringHead;
+        int position = 0;
+
+        do {
+            if (current == this) return position;
+            current = current.getNextInRing();
+            position++;
+        } while (current != null && current != ringHead && position < getRingSize());
+
+        return -1;
+    }
+
+    public List<RingMirrorNode> getAllRingNodes() {
+        List<RingMirrorNode> ringNodes = new ArrayList<>();
+        RingMirrorNode head = getRingHead();
+
+        if (head == null) return ringNodes;
+
+        RingMirrorNode current = head;
+        int maxNodes = getRingSize();
+        int count = 0;
+
+        do {
+            ringNodes.add(current);
+            current = current.getNextInRing();
+            count++;
+        } while (current != null && current != head && count < maxNodes);
+
+        return ringNodes;
+    }
+
+    // ===== HILFSMETHODEN =====
+
+    private int getConnectivityDegree(StructureType typeId, int headId) {
+        int connections = 0;
+
+        if (getParent() != null) {
+            ChildRecord parentRecord = getParent().findChildRecordById(getId());
+            if (parentRecord != null && parentRecord.belongsToStructure(typeId, headId)) {
+                connections++;
+            }
+        }
+
+        connections += getChildren(typeId, headId).size();
+        return connections;
     }
 }
