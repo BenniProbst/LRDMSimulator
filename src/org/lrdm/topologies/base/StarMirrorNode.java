@@ -103,9 +103,7 @@ public class StarMirrorNode extends MirrorNode {
             if (parent != centerNode) return false;
 
             // Blatt kann entweder keine Kinder haben oder Head einer anderen Struktur sein
-            if (!starNode.isLeaf() && !starNode.isHead()) {
-                return false; // Nur Head-Nodes dürfen Kinder haben
-            }
+            return starNode.isLeaf() || starNode.isHead(); // Nur Head-Nodes dürfen Kinder haben
         }
 
         return true;
