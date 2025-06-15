@@ -291,40 +291,34 @@ public class TreeNode {
     }
 
     /**
-     * Berechnet die Gesamtanzahl geplanter Links in der gesamten Struktur.
-     * Ermittelt alle Links, die benötigt werden, um alle MirrorNodes entsprechend
-     * ihrer Konnektivitätsgrade miteinander zu verbinden.
-     * Verwendet Stack-basierte DFS-Traversierung und vermeidet doppelte Zählung.
-     * Ring-sicher durch Visited-Set.
+     * Berechnet die Gesamtanzahl geplanter Links in der Substruktur.
+     * Ermittelt alle Links, die benötigt werden, um alle TreeNodes entsprechend
+     * ihrer Parent-Child-Beziehungen miteinander zu verbinden.
+     * Verwendet die getAllNodesInStructure() Methode für konsistente Substruktur-Abgrenzung.
+     * Vermeidet doppelte Zählung durch LinkPair-Set.
      *
-     * @return Gesamtanzahl aller geplanten Links in der Struktur
+     * @return Gesamtanzahl aller geplanten Links in der Substruktur
      */
     public int getNumPlannedLinksFromStructure() {
-        Set<TreeNode> visited = new HashSet<>();
-        Stack<TreeNode> stack = new Stack<>();
+        Set<TreeNode> allNodes = getAllNodesInStructure();
         Set<LinkPair> countedLinks = new HashSet<>();
 
-        TreeNode head = findHead();
-        if (head == null) head = this;
-
-        stack.push(head);
-        int totalPlannedLinks = 0;
-
-        while (!stack.isEmpty()) {
-            TreeNode current = stack.pop();
-            if (visited.contains(current)) continue;
-            visited.add(current);
-
-            // Sammle alle Nachbarn dieses Knotens
+        // Durchlaufe alle Knoten der Substruktur
+        for (TreeNode current : allNodes) {
+            // Sammle alle Nachbarn dieses Knotens (nur die, die auch in der Substruktur sind)
             List<TreeNode> neighbors = new ArrayList<>();
 
-            // Parent hinzufügen
-            if (current.parent != null) {
+            // Parent hinzufügen (falls in der Substruktur)
+            if (current.parent != null && allNodes.contains(current.parent)) {
                 neighbors.add(current.parent);
             }
 
-            // Alle Kinder hinzufügen
-            neighbors.addAll(current.children);
+            // Alle Kinder hinzufügen (die bereits durch getAllNodesInStructure() gefiltert sind)
+            for (TreeNode child : current.children) {
+                if (allNodes.contains(child)) {
+                    neighbors.add(child);
+                }
+            }
 
             // Für jeden Nachbarn einen Link zählen (aber nur einmal pro Paar)
             for (TreeNode neighbor : neighbors) {
@@ -333,19 +327,11 @@ public class TreeNode {
                 int toId = Math.max(current.id, neighbor.id);
                 LinkPair linkPair = new LinkPair(fromId, toId);
 
-                if (!countedLinks.contains(linkPair)) {
-                    countedLinks.add(linkPair);
-                    totalPlannedLinks++;
-                }
-
-                // Nachbarn für weitere Traversierung hinzufügen
-                if (!visited.contains(neighbor)) {
-                    stack.push(neighbor);
-                }
+                countedLinks.add(linkPair);
             }
         }
 
-        return totalPlannedLinks;
+        return countedLinks.size();
     }
 
 
