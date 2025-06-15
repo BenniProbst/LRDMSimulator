@@ -197,7 +197,7 @@ class StructureNodeTest {
             assertFalse(child1.canBeRemovedFromStructure(child1));
 
             // child2 und grandchild sind Blätter
-            assertTrue(child2.canBeRemovedFromStructure(child1)); // child2 ist Teil von child1's Struktur
+            assertTrue(child2.canBeRemovedFromStructure(child1)); // child2 ist Teil von child1 Struktur
             assertTrue(grandchild.canBeRemovedFromStructure(child1)); // grandchild ist Teil von child1's Struktur
         }
 
