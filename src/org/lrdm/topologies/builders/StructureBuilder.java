@@ -1,14 +1,20 @@
-package org.lrdm.topologies.builders;
 
-import org.lrdm.Network;
-import org.lrdm.topologies.base.MirrorNode;
+package org.lrdm.topologies.base;
+
+import org.lrdm.IDGenerator;
 import org.lrdm.Mirror;
-import org.lrdm.util.IDGenerator;
-import java.util.*;
+import org.lrdm.Network;
+
+import java.util.Iterator;
 
 /**
  * Abstrakte Basisklasse für alle Structure-Builder.
  * Nutzt die polymorphe isValidStructure()-Methode der MirrorNodes.
+ *
+ * Vereinfacht durch Nutzung von StructureNode-Funktionen:
+ * - addNodes() und removeNodes() verwenden nur noch int-Parameter
+ * - Struktur-Navigation über findHead() und getAllNodesInStructure()
+ * - Implementierung erfolgt in Kindklassen für strukturspezifische Logik
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
@@ -29,7 +35,33 @@ public abstract class StructureBuilder {
         this.mirrorIterator = mirrorIterator;
     }
 
+    /**
+     * Erstellt eine neue Struktur mit der angegebenen Anzahl von Knoten.
+     *
+     * @param totalNodes Anzahl der zu erstellenden Knoten
+     * @return Root-Knoten der erstellten Struktur
+     */
     public abstract MirrorNode build(int totalNodes);
+
+    /**
+     * Fügt Knoten zu einer bestehenden Struktur hinzu.
+     * Vereinfacht: Verwendet nur noch int-Parameter für nodesToAdd.
+     * Die Root-Ermittlung erfolgt über findHead() aus StructureNode.
+     *
+     * @param nodesToAdd Anzahl der hinzuzufügenden Knoten
+     * @return Anzahl der tatsächlich hinzugefügten Knoten
+     */
+    public abstract int addNodes(int nodesToAdd);
+
+    /**
+     * Entfernt Knoten aus einer bestehenden Struktur.
+     * Neue Funktion: Verwendet nur noch int-Parameter für nodesToRemove.
+     * Die Root-Ermittlung erfolgt über findHead() aus StructureNode.
+     *
+     * @param nodesToRemove Anzahl der zu entfernenden Knoten
+     * @return Anzahl der tatsächlich entfernten Knoten
+     */
+    public abstract int removeNodes(int nodesToRemove);
 
     /**
      * Allgemeine Strukturvalidierung - delegiert an die strukturspezifische
@@ -41,45 +73,53 @@ public abstract class StructureBuilder {
         return root.isValidStructure();
     }
 
-    // Rest der StructureBuilder-Implementierung...
-    public int addNodes(MirrorNode existingRoot, int nodesToAdd) {
-        if (existingRoot == null || nodesToAdd <= 0) return 0;
-
-        List<MirrorNode> candidates = findInsertionCandidates(existingRoot);
-        int added = 0;
-
-        for (MirrorNode candidate : candidates) {
-            if (added >= nodesToAdd) break;
-            if (canAddNodeTo(candidate)) {
-                MirrorNode newNode = getMirrorNodeFromIterator();
-                if (newNode != null) {
-                    candidate.addChild(newNode);
-                    // Nutze die polymorphe Validierung
-                    if (existingRoot.isValidStructure()) {
-                        added++;
-                    } else {
-                        candidate.removeChild(newNode);
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-
-        return added;
-    }
-
-    protected abstract List<MirrorNode> findInsertionCandidates(MirrorNode root);
-    protected abstract boolean canAddNodeTo(MirrorNode node);
-
+    /**
+     * Hilfsmethode: Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * Kann von Kindklassen überschrieben werden, um spezifische MirrorNode-Typen zu erstellen.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null, wenn kein Mirror verfügbar
+     */
     protected MirrorNode getMirrorNodeFromIterator() {
         if (mirrorIterator.hasNext()) {
             Mirror mirror = mirrorIterator.next();
-            // Diese Methode muss von Kindklassen überschrieben werden,
-            // um den richtigen MirrorNode-Typ zu erstellen
             return new MirrorNode(idGenerator.getNextID(), mirror);
         }
         return null;
+    }
+
+    /**
+     * Getter für den ID-Generator.
+     *
+     * @return Der verwendete ID-Generator
+     */
+    protected IDGenerator getIdGenerator() {
+        return idGenerator;
+    }
+
+    /**
+     * Getter für das Netzwerk.
+     *
+     * @return Das verwendete Netzwerk
+     */
+    protected Network getNetwork() {
+        return network;
+    }
+
+    /**
+     * Getter für den Mirror-Iterator.
+     *
+     * @return Der verwendete Mirror-Iterator
+     */
+    protected Iterator<Mirror> getMirrorIterator() {
+        return mirrorIterator;
+    }
+
+    /**
+     * Prüft, ob noch weitere Mirrors verfügbar sind.
+     *
+     * @return true, wenn noch Mirrors im Iterator verfügbar sind
+     */
+    protected boolean hasMoreMirrors() {
+        return mirrorIterator.hasNext();
     }
 }
