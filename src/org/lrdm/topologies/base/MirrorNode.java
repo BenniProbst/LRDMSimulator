@@ -237,7 +237,7 @@ public class MirrorNode extends StructureNode {
             candidateLinks.addAll(mirror.getLinks());
         }
 
-        // Filtere Links: beide Endpoints müssen in der Struktur sein
+        // Filtere Links: Beide Endpoints müssen in der Struktur sein
         for (Link link : candidateLinks) {
             boolean sourceInStructure = structureMirrors.contains(link.getSource());
             boolean targetInStructure = structureMirrors.contains(link.getTarget());
@@ -282,7 +282,7 @@ public class MirrorNode extends StructureNode {
      * Prüft, ob ein Link vollständig zur Substruktur gehört.
      *
      * @param link Der zu prüfende Link
-     * @return true wenn beide Endpoints zur Struktur gehören
+     * @return true, wenn beide Endpoints zur Struktur gehören
      */
     public boolean isLinkOfStructure(Link link) {
         if (link == null) return false;
@@ -296,7 +296,7 @@ public class MirrorNode extends StructureNode {
      * Prüft, ob ein Link ein Edge-Link der Substruktur ist.
      *
      * @param link Der zu prüfende Link
-     * @return true wenn nur ein Endpoint zur Struktur gehört
+     * @return true, wenn nur ein Endpoint zur Struktur gehört
      */
     public boolean isEdgeLink(Link link) {
         if (link == null) return false;
@@ -327,18 +327,18 @@ public class MirrorNode extends StructureNode {
     }
 
     /**
-     * Erweiterte Strukturvalidierung für MirrorNode.
+     * Erweiterte Struktur Validierung für MirrorNode.
      * Überprüft zusätzlich zur StructureNode-Validierung die Mirror-Link-Konsistenz:
      * - Alle Struktur-Mirrors müssen mindestens einen Link zu anderen Struktur-Mirrors haben
      * - Keine Self-Links (Mirror mit sich selbst verknüpft)
      * - Keine Links zu Mirrors außerhalb der Struktur
      *
      * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
-     * @return true wenn sowohl StructureNode- als auch Mirror-Validierung erfolgreich sind
+     * @return true, wenn sowohl StructureNode- als auch Mirror-Validierung erfolgreich sind
      */
     @Override
     public boolean isValidStructure(Set<StructureNode> allNodes) {
-        // Zuerst die grundlegende StructureNode-Strukturvalidierung
+        // Zuerst die grundlegende StructureNode-Struktur Validierung
         if (!super.isValidStructure(allNodes)) {
             return false;
         }
@@ -351,7 +351,7 @@ public class MirrorNode extends StructureNode {
             return true;
         }
 
-        // Verwende bereits vorhandene Funktion für Link-Sammlung
+        // Verwende bereits vorhandene Funktionen für Link-Sammlung
         Set<Link> structureLinks = getLinksOfStructure();
 
         // Validiere jeden Mirror in der Struktur
@@ -398,7 +398,7 @@ public class MirrorNode extends StructureNode {
 
     /**
      * Validiert einen einzelnen Link innerhalb der Struktur.
-     * Nutzt bereits vorhandene isLinkOfStructure() Funktion für Konsistenz.
+     * Nutzt bereits vorhandene isLinkOfStructure() Funktionen für Konsistenz.
      *
      * @param link Der zu validierende Link
      * @param structureMirrors Alle Mirrors der Struktur
@@ -415,13 +415,13 @@ public class MirrorNode extends StructureNode {
 
         // Da structureLinks bereits gefiltert wurde durch getLinksOfStructure(),
         // wissen wir, dass beide Endpoints zur Struktur gehören.
-        // Zusätzliche Validierung: beide müssen wirklich in structureMirrors sein
+        // Zusätzliche Validierung: Beide müssen wirklich in structureMirrors sein
         return structureMirrors.contains(source) && structureMirrors.contains(target);
     }
 
     /**
-     * Convenience-Methode für Strukturvalidierung ohne Parameter.
-     * Verwendet getAllNodesInStructure() um die relevanten Knoten zu ermitteln.
+     * Convenience-Methode für Struktur validierung ohne Parameter.
+     * Verwendet getAllNodesInStructure(), um die relevanten Knoten zu ermitteln.
      *
      * @return true wenn die Struktur gültig ist
      */

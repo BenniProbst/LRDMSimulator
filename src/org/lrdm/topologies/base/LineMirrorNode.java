@@ -21,7 +21,7 @@ public class LineMirrorNode extends MirrorNode {
 
     @Override
     public boolean canAcceptMoreChildren() {
-        // In einer Linie kann jeder Knoten maximal 1 Kind haben
+        // In einer Linie kann jeder Knoten maximal 1 Kind haben.
         // Nur wenn isValidStructure erfüllt ist und super.canAcceptMoreChildren auch
         return super.canAcceptMoreChildren() &&
                 isValidStructure() &&
@@ -35,12 +35,12 @@ public class LineMirrorNode extends MirrorNode {
         // Verwende die korrekte Strukturermittlung
         Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
 
-        // Eine Linie muss mindestens 2 Knoten haben
+        // Eine Linie muss mindestens 2 Knoten haben.
         // Nach Entfernung müssen noch mindestens 2 Knoten übrig bleiben
         if (structureNodes.size() < 3) return false;
 
-        // Nur Endpunkte können sicher entfernt werden ohne die Linie zu zerbrechen
-        // Und nur wenn super.canBeRemovedFromStructure auch erfüllt ist
+        // Nur Endpunkte können sicher entfernt werden, ohne die Linie zu zerbrechen
+        // und nur wenn super.canBeRemovedFromStructure auch erfüllt ist
         return super.canBeRemovedFromStructure(structureRoot) && isEndpoint();
     }
 
@@ -55,7 +55,7 @@ public class LineMirrorNode extends MirrorNode {
      */
     @Override
     public boolean isValidStructure(Set<StructureNode> allNodes) {
-        // Zuerst die grundlegende MirrorNode-Strukturvalidierung
+        // Zuerst die grundlegende MirrorNode-Struktur validierung
         if (!super.isValidStructure(allNodes)) {
             return false;
         }
@@ -87,7 +87,7 @@ public class LineMirrorNode extends MirrorNode {
             }
         }
 
-        // Prüfe dass die Struktur frei von Zyklen ist (StructureNode-Funktion)
+        // Prüfe, dass die Struktur frei von Zyklen ist (StructureNode-Funktion)
         if (hasClosedCycle(allNodes)) {
             return false; // Linien dürfen keine Zyklen haben
         }
@@ -132,7 +132,7 @@ public class LineMirrorNode extends MirrorNode {
         } else {
             // Normale Knoten: müssen Parent in der Struktur haben
             if (parent == null) {
-                return false; // Knoten muss verbunden sein
+                return false; // Knoten müssen verbunden sein
             }
             return structureNodes.contains(parent); // Parent muss in der Struktur sein
         }
@@ -162,7 +162,7 @@ public class LineMirrorNode extends MirrorNode {
     /**
      * Findet den anderen Endpunkt der Linie.
      *
-     * @return Der andere Endpunkt oder null wenn dieser Knoten kein Endpunkt ist
+     * @return Der andere Endpunkt oder null, wenn dieser Knoten kein Endpunkt ist
      */
     public LineMirrorNode getOtherEndpoint() {
         if (!isEndpoint()) return null;
@@ -177,7 +177,7 @@ public class LineMirrorNode extends MirrorNode {
      * Findet den Head-Knoten der Linie.
      * Nutzt findHead() aus StructureNode und castet sicher.
      *
-     * @return Der Head-Knoten oder null wenn keiner gefunden wird
+     * @return Der Head-Knoten oder null, wenn nichts gefunden wird
      */
     public LineMirrorNode getLineHead() {
         StructureNode head = findHead(); // Wiederverwendung aus StructureNode
@@ -188,7 +188,7 @@ public class LineMirrorNode extends MirrorNode {
      * Prüft, ob dieser Knoten ein mittlerer Knoten der Linie ist.
      * Nutzt isTerminal() aus StructureNode.
      *
-     * @return true wenn der Knoten genau 2 Verbindungen hat (nicht Terminal)
+     * @return true, wenn der Knoten genau 2 Verbindungen hat (nicht Terminal)
      */
     public boolean isMiddleNode() {
         return !isTerminal() && getConnectivityDegree() == 2;
@@ -198,7 +198,7 @@ public class LineMirrorNode extends MirrorNode {
      * Berechnet die Position dieses Knotens in der Linie (0-basiert).
      * Nutzt getPathFromHead() aus StructureNode.
      *
-     * @return Position vom Head-Endpunkt aus gezählt, oder -1 bei Fehler
+     * @return Position vom Head-Endpunkt aus gezählt, oder -1 bei Fehlern
      */
     public int getPositionInLine() {
         List<StructureNode> pathFromHead = getPathFromHead(); // Wiederverwendung aus StructureNode

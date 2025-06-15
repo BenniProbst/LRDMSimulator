@@ -30,7 +30,7 @@ public class TreeMirrorNode extends MirrorNode {
     public boolean canBeRemovedFromStructure(StructureNode structureRoot) {
         if (structureRoot == null) return false;
 
-        // Nutze StructureNode canBeRemovedFromStructure() - das ist für Bäume perfekt
+        // Nutze StructureNode canBeRemovedFromStructure() - das ist für Bäume perfekt.
         // Bäume erlauben Entfernung von Blättern (auch Root, wenn er Blatt ist)
         return super.canBeRemovedFromStructure(structureRoot);
     }
@@ -45,7 +45,7 @@ public class TreeMirrorNode extends MirrorNode {
      */
     @Override
     public boolean isValidStructure(Set<StructureNode> allNodes) {
-        // Zuerst die grundlegende MirrorNode-Strukturvalidierung
+        // Zuerst die grundlegende MirrorNode-Struktur validierung
         if (!super.isValidStructure(allNodes)) {
             return false;
         }
@@ -72,10 +72,10 @@ public class TreeMirrorNode extends MirrorNode {
 
         // Prüfe auf Zyklen - Bäume dürfen keine haben
         if (hasClosedCycle(allNodes)) {
-            return false; // Bäume sind zyklenfrei
+            return false; // Bäume sind Zyklen frei
         }
 
-        // Ein Baum mit n Knoten hat genau n-1 Kanten
+        // Ein Baum mit n Knoten hat genau n-1 Kanten.
         // Nutze getNumPlannedLinksFromStructure() aus StructureNode
         int expectedEdges = allNodes.size() - 1;
         int actualEdges = getNumPlannedLinksFromStructure();
@@ -109,7 +109,7 @@ public class TreeMirrorNode extends MirrorNode {
         } else {
             // Normale Knoten: müssen genau einen Parent in der Struktur haben
             if (parent == null) {
-                return false; // Knoten muss verbunden sein
+                return false; // Knoten müssen verbunden sein
             }
             return structureNodes.contains(parent); // Parent muss in der Struktur sein
         }
@@ -197,7 +197,7 @@ public class TreeMirrorNode extends MirrorNode {
             maxDepth = Math.max(maxDepth, depth);
         }
 
-        // Unterschied zwischen tiefster und flachster Blatt > 1 = unbalanciert
+        // Unterschied zwischen tiefstem und flachstem Blatt > 1 = unbalanciert
         return maxDepth - minDepth <= 1;
     }
 }

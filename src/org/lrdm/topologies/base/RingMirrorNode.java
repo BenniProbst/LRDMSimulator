@@ -24,7 +24,7 @@ public class RingMirrorNode extends MirrorNode {
     @Override
     public boolean canAcceptMoreChildren() {
         // In einem Ring hat jeder Knoten genau ein Kind (zyklische Struktur)
-        // Nur wenn isValidStructure erfüllt ist und super.canAcceptMoreChildren auch
+        // nur wenn isValidStructure erfüllt ist und super.canAcceptMoreChildren auch
         return super.canAcceptMoreChildren() &&
                 isValidStructure() &&
                 getChildren().isEmpty();
@@ -37,7 +37,7 @@ public class RingMirrorNode extends MirrorNode {
         // Verwende die korrekte Strukturermittlung
         Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
 
-        // Ein Ring muss mindestens 3 Knoten haben
+        // Ein Ring muss mindestens 3 Knoten haben.
         // Nach Entfernung müssen noch mindestens 3 Knoten übrig bleiben
         if (structureNodes.size() < 4) return false;
 
@@ -55,7 +55,7 @@ public class RingMirrorNode extends MirrorNode {
      */
     @Override
     public boolean isValidStructure(Set<StructureNode> allNodes) {
-        // Zuerst die grundlegende MirrorNode-Strukturvalidierung
+        // Zuerst die grundlegende MirrorNode-Struktur validierung
         if (!super.isValidStructure(allNodes)) {
             return false;
         }
@@ -104,13 +104,13 @@ public class RingMirrorNode extends MirrorNode {
      * @return true wenn der Knoten gültig ist
      */
     private boolean isValidRingNode(RingMirrorNode ringNode, RingMirrorNode headNode) {
-        // Jeder Knoten muss Konnektivitätsgrad 2 haben und genau ein Kind
+        // Jeder Knoten muss Interconnectivities 2 haben und genau ein Kind
         if (ringNode.getConnectivityDegree() != 2 || ringNode.getChildren().size() != 1) {
             return false;
         }
 
         if (ringNode == headNode) {
-            // Head-Node darf einen externen Parent haben
+            // Head-Node darf einen externen Parent haben.
             // Parent kann null sein (kein externer Parent) oder außerhalb der Struktur
             StructureNode parent = ringNode.getParent();
             if (parent != null) {
@@ -137,7 +137,7 @@ public class RingMirrorNode extends MirrorNode {
      * Ein Ring-Knoten ist nur gültig, wenn:
      * - Die gesamte Struktur einen geschlossenen Zyklus bildet
      * - Die gesamte Struktur gültig ist
-     * - Der Konnektivitätsgrad 2 ist
+     * - Der Konnektivität-Grad 2 ist
      */
     public boolean isRingNode() {
         // Prüfe grundlegende Ring-Eigenschaften

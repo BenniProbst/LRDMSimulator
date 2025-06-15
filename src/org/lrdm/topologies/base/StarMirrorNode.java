@@ -35,7 +35,7 @@ public class StarMirrorNode extends MirrorNode {
         Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
 
         // Ein Stern muss mindestens 3 Knoten haben (Zentrum + min. 2 Blätter)
-        // Nach Entfernung müssen noch mindestens 3 Knoten übrig bleiben
+        // nach Entfernung müssen noch mindestens 3 Knoten übrig bleiben
         if (structureNodes.size() < 4) return false;
 
         // Nur Blätter (Terminal-Knoten, keine Head-Nodes) können entfernt werden
@@ -45,7 +45,7 @@ public class StarMirrorNode extends MirrorNode {
 
     @Override
     public boolean isValidStructure(Set<StructureNode> allNodes) {
-        // Zuerst die grundlegende MirrorNode-Strukturvalidierung
+        // Zuerst die grundlegende MirrorNode-Struktur validierung
         if (!super.isValidStructure(allNodes)) {
             return false;
         }

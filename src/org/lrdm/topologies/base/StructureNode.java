@@ -4,7 +4,7 @@ import java.util.*;
 
 /**
  * Abstrakte Basis-Klasse für strukturelle Knoten.
- * Verwaltet Parent-Child-Beziehungen und definiert Strukturvalidierung.
+ * Verwaltet Parent-Child-Beziehungen und definiert Struktur validierung.
  * Ring-sichere Implementierung aller Traversierungsfunktionen.
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
@@ -12,7 +12,7 @@ import java.util.*;
 public class StructureNode {
     private final int id;
     private StructureNode parent;
-    private List<StructureNode> children;
+    private final List<StructureNode> children;
     private boolean isHead; // Ersetzt das Root-Konzept für Ring-Strukturen
     private int maxChildren = Integer.MAX_VALUE; // Standardmäßig unbegrenzt
 
@@ -62,28 +62,28 @@ public class StructureNode {
     }
 
     /**
-     * Grundlegende Strukturvalidierung - prüft ob alle Knoten miteinander verbunden sind.
+     * Grundlegende Struktur Validierung - prüft, ob alle Knoten miteinander verbunden sind.
      * Verhindert isolierte Knoten in der Struktur.
      * Unterstützt sowohl Baum- als auch Ring-Strukturen.
      *
      * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
-     * @return true wenn alle Knoten zusammenhängend sind, false bei isolierten Knoten oder null/leerer Menge
+     * @return true, wenn alle Knoten zusammenhängend sind, false bei isolierten Knoten oder null/leerer Menge
      */
     public boolean isValidStructure(Set<StructureNode> allNodes) {
         if (allNodes == null || allNodes.isEmpty()) return false;
         if (allNodes.size() == 1) return true; // Ein einzelner Knoten ist gültig
 
-        // Prüfe ob alle Knoten zusammenhängend sind
+        // Prüfe, ob alle Knoten zusammenhängend sind
         return isConnectedStructure(allNodes);
     }
 
     /**
-     * Prüft ob alle Knoten in der gegebenen Menge zusammenhängend sind.
-     * Verwendet BFS um zu überprüfen, dass alle Knoten erreichbar sind.
+     * Prüft, ob alle Knoten in der gegebenen Menge zusammenhängend sind.
+     * Verwendet BFS, um zu überprüfen, dass alle Knoten erreichbar sind.
      * Ring-sichere Implementierung für alle Strukturtypen.
      *
      * @param allNodes Menge aller zu prüfenden Knoten
-     * @return true wenn alle Knoten von einem beliebigen Startknoten erreichbar sind
+     * @return true, wenn alle Knoten von einem beliebigen Startknoten erreichbar sind
      */
     private boolean isConnectedStructure(Set<StructureNode> allNodes) {
         if (allNodes.isEmpty()) return false;
@@ -111,7 +111,7 @@ public class StructureNode {
             // Alle Kinder hinzufügen
             neighbors.addAll(current.children);
 
-            // Besuche unbesuchte Nachbarn
+            // Besuche fehlende Nachbarn
             for (StructureNode neighbor : neighbors) {
                 if (allNodes.contains(neighbor) && !visited.contains(neighbor)) {
                     visited.add(neighbor);
@@ -141,11 +141,11 @@ public class StructureNode {
      * - Er Teil der Struktur ist (über getAllNodesInStructure ermittelt)
      * - Seine Entfernung die Strukturintegrität nicht gefährdet
      * - Er ein Blatt ist (keine Kinder hat, um Fragmentierung zu vermeiden)
-     *
+     * <p>
      * Der strukturRoot kann ebenfalls entfernt werden, wenn er ein Blatt ist.
      *
      * @param structureRoot Der Root-Knoten der Struktur für Referenz (darf nicht null sein)
-     * @return true wenn der Knoten sicher entfernt werden kann
+     * @return true, wenn der Knoten sicher entfernt werden kann
      */
     public boolean canBeRemovedFromStructure(StructureNode structureRoot) {
         if (structureRoot == null) return false;
@@ -153,24 +153,24 @@ public class StructureNode {
         // Verwende die korrekte Strukturermittlung
         Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
 
-        // Prüfe ob dieser Knoten Teil der Struktur ist
+        // Prüfe, ob dieser Knoten Teil der Struktur ist
         if (!structureNodes.contains(this)) {
             return false; // Knoten ist nicht Teil der Struktur
         }
 
-        // Ein Knoten kann entfernt werden, wenn er ein Blatt ist
-        // Dies verhindert Fragmentierung der Struktur
-        // Auch der Head/Root kann entfernt werden, wenn er ein Blatt ist
+        // Ein Knoten kann entfernt werden, wenn er ein Blatt ist.
+        // dies verhindert Fragmentierung der Struktur.
+        // auch der Head/Root kann entfernt werden, wenn er ein Blatt ist
         return this.isLeaf();
     }
 
     /**
      * Grundlegende Zyklusprüfung für beliebige Knotenstrukturen.
      * Fundamentale statische Hilfsmethode, die von Kindklassen genutzt werden kann.
-     * Prüft ob alle gegebenen Knoten einen geschlossenen Zyklus bilden.
+     * Prüft, ob alle gegebenen Knoten einen geschlossenen Zyklus bilden.
      *
      * @param nodes Menge von Knoten, die auf geschlossenen Zyklus geprüft werden sollen
-     * @return true wenn alle Knoten genau einen geschlossenen Zyklus bilden, false bei leerer Menge oder anderen Strukturen
+     * @return true, wenn alle Knoten genau einen geschlossenen Zyklus bilden, false bei leerer Menge oder anderen Strukturen
      */
     public static boolean hasClosedCycle(Set<StructureNode> nodes) {
         if (nodes.isEmpty()) return false;
@@ -230,9 +230,9 @@ public class StructureNode {
 
     /**
      * Markiert diesen Knoten als Head der Struktur.
-     * Head-Knoten dienen als Einstiegspunkt für Traversierungen.
+     * Head-Knoten dienen als Einstiegspunkt für Traversierung.
      *
-     * @param head true um als Head zu markieren, false um Head-Status zu entfernen
+     * @param head true, um Head zu markieren, false, um Head-Status zu entfernen
      */
     public void setHead(boolean head) {
         this.isHead = head;
@@ -252,7 +252,7 @@ public class StructureNode {
      * Sucht zunächst explizit markierte Head-Knoten, dann Root-Knoten.
      * Verwendet DFS-Traversierung über alle verbundenen Knoten.
      *
-     * @return Head-Knoten der Struktur oder null wenn keiner gefunden wird
+     * @return Head-Knoten der Struktur oder null, wenn nichts gefunden wird
      */
     public StructureNode findHead() {
         if (isHead) return this;
@@ -342,10 +342,10 @@ public class StructureNode {
 
 
     /**
-     * Prüft ob dieser Knoten ein Terminal-Knoten ist.
+     * Prüft, ob dieser Knoten ein Terminal-Knoten ist.
      * Terminal-Knoten haben genau eine Verbindung (entweder Parent oder ein Kind).
      *
-     * @return true wenn der Knoten genau eine Verbindung hat
+     * @return true, wenn der Knoten genau eine Verbindung hat
      */
     public boolean isTerminal() {
         int connectionCount = children.size() + (parent != null ? 1 : 0);
@@ -353,46 +353,46 @@ public class StructureNode {
     }
 
     /**
-     * Prüft ob dieser Knoten ein Endpunkt der Struktur ist.
+     * Prüft, ob dieser Knoten ein Endpunkt der Struktur ist.
      * Endpunkte sind entweder Terminal-Knoten oder Root-Blätter.
      *
-     * @return true wenn der Knoten ein Terminal ist oder ein Root-Blatt
+     * @return true, wenn der Knoten ein Terminal ist oder ein Root-Blatt
      */
     public boolean isEndpoint() {
         return isTerminal() || (isRoot() && isLeaf());
     }
 
     /**
-     * Prüft ob dieser Knoten ein Blatt ist.
+     * Prüft, ob dieser Knoten ein Blatt ist.
      * Blatt-Knoten haben keine Kinder.
      *
-     * @return true wenn der Knoten keine Kinder hat
+     * @return true, wenn der Knoten keine Kinder hat
      */
     public boolean isLeaf() {
         return children.isEmpty();
     }
 
     /**
-     * Prüft ob dieser Knoten ein Root-Knoten ist.
+     * Prüft, ob dieser Knoten ein Root-Knoten ist.
      * Root-Knoten haben keinen Parent und sind als Head markiert.
      *
-     * @return true wenn der Knoten keinen Parent hat und Head ist
+     * @return true, wenn der Knoten keinen Parent hat und Head ist
      */
     public boolean isRoot() {
         return parent == null && isHead();
     }
 
     /**
-     * Prüft ob dieser Knoten als Head markiert ist.
+     * Prüft, ob dieser Knoten als Head markiert ist.
      *
-     * @return true wenn der Knoten als Head markiert ist
+     * @return true, wenn der Knoten als Head markiert ist
      */
     public boolean isHead() {
         return isHead;
     }
 
     /**
-     * Berechnet den Konnektivitätsgrad dieses Knotens.
+     * Berechnet den Konnektivität-Grad dieses Knotens.
      * Entspricht der Anzahl direkter Nachbarn (Parent + Kinder).
      *
      * @return Anzahl direkter Verbindungen zu anderen Knoten
@@ -499,10 +499,10 @@ public class StructureNode {
 
     /**
      * Berechnet den Pfad vom Head-Knoten zu diesem Knoten.
-     * Verwendet BFS mit Predecessor-Tracking für kürzesten Pfad.
+     * Verwendet BFS mit Predecessor-Tracking für den kürzesten Pfad.
      * Ring-sicher durch Visited-Set.
      *
-     * @return Liste von Knoten vom Head zu diesem Knoten, leer wenn Head nicht gefunden oder nicht erreichbar
+     * @return Die Liste von Knoten vom Head zu diesem Knoten ist leer, wenn der Head nicht gefunden wurde oder nicht erreichbar ist.
      */
     public List<StructureNode> getPathFromHead() {
         StructureNode head = findHead();
@@ -559,13 +559,13 @@ public class StructureNode {
     /**
      * Gibt den Parent-Knoten zurück.
      *
-     * @return Der Parent-Knoten oder null wenn keiner vorhanden
+     * @return Der Parent-Knoten oder null wenn nicht vorhanden
      */
     public StructureNode getParent() { return parent; }
 
     /**
      * Gibt eine Kopie der Kinderliste zurück.
-     * Verhindert externe Modifikation der internen Liste.
+     * Verhindert externe Modifikationen der internen Liste.
      *
      * @return Neue ArrayList mit allen Kindern
      */
@@ -651,7 +651,7 @@ public class StructureNode {
      * Verwendet die bereits implementierte getAllNodes() Methode zur effizienten Prüfung.
      *
      * @param node Der zu prüfende StructureNode (null wird als false behandelt)
-     * @return true wenn der Knoten Teil der Substruktur ist, false sonst
+     * @return true, wenn der Knoten Teil der Substruktur ist, false sonst
      */
     public boolean isPartOfStructure(StructureNode node) {
         if (node == null) {
