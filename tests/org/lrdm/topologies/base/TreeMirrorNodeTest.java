@@ -157,7 +157,7 @@ class TreeMirrorNodeTest {
              *       root (Tiefe 0)
              *      /    \
              *  child1 child2 (Tiefe 1)
-             *    |         |
+             *    |........|
              * grandchild1 grandchild2 (Tiefe 2)
              */
             root = new TreeMirrorNode(1);
@@ -442,7 +442,7 @@ class TreeMirrorNodeTest {
             mirror1.addLink(edgeLink);
             externalMirror.addLink(edgeLink);
 
-            // Zusätzlichen Link hinzufügen (3 statt 2 für 3 Knoten)
+            // zusätzlichen Link hinzufügen (3 statt 2 für 3 Knoten)
             Link extraLink = new Link(4, mirror1, mirror3, 0, props);
             mirror1.addLink(extraLink);
             mirror3.addLink(extraLink);
@@ -526,7 +526,7 @@ class TreeMirrorNodeTest {
             externalMirror.addLink(edgeLink);
 
             Set<StructureNode> treeWithExternal = Set.of(root, child);
-            assertTrue(root.isValidStructure(treeWithExternal)); // Externer Parent OK
+            assertTrue(root.isValidStructure(treeWithExternal)); // Externer Parent. OK
         }
 
         @Test
@@ -693,7 +693,7 @@ class TreeMirrorNodeTest {
         }
 
         @Test
-        @DisplayName("Baum-Balancierungs-Edge-Cases")
+        @DisplayName("Baum-Balancierung-Edge-Cases")
         void testTreeBalancingEdgeCases() {
             // Einzelner Knoten
             TreeMirrorNode single = new TreeMirrorNode(1);
@@ -764,7 +764,7 @@ class TreeMirrorNodeTest {
         }
 
         @Test
-        @DisplayName("Baum-Integritäts-Validierung")
+        @DisplayName("Baum-Integrity-Validierung")
         void testTreeIntegrityValidation() {
             TreeMirrorNode root = new TreeMirrorNode(1);
             TreeMirrorNode child1 = new TreeMirrorNode(2);
@@ -778,7 +778,7 @@ class TreeMirrorNodeTest {
             Set<StructureNode> treeWithoutMirrors = Set.of(root, child1, child2);
             assertFalse(root.isValidStructure(treeWithoutMirrors));
 
-            // Mit Mirrors aber ohne passende Links
+            // Mit Mirrors, aber ohne passende Links
             Mirror rootMirror = new Mirror(101, 0, props);
             Mirror childMirror1 = new Mirror(102, 0, props);
             Mirror childMirror2 = new Mirror(103, 0, props);
