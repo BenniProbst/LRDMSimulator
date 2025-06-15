@@ -20,7 +20,7 @@ public class StructureNode {
     private StructureNode parent;
     private final Set<ChildRecord> children;
     private final Map<StructureType, Boolean> headStatus; // StructureType -> isHead für diesen Typ
-    private final Set<StructureType> nodeTypes; // Welche Typen dieser Knoten selbst repräsentiert
+    protected Set<StructureType> nodeTypes; // Welche Typen dieser Knoten selbst repräsentiert
     private int maxChildren = Integer.MAX_VALUE; // Standardmäßig unbegrenzt
 
     /**
@@ -130,8 +130,8 @@ public class StructureNode {
         this.headStatus = new HashMap<>();
         this.nodeTypes = new HashSet<>();
 
-        // Automatische Typ-Ermittlung über Instanz-Analyse
-        initializeNodeTypes();
+        // Typ-Ermittlung über Instanz-Analyse
+        this.nodeTypes.add(StructureType.DEFAULT);
     }
 
     /**
@@ -143,37 +143,6 @@ public class StructureNode {
     public StructureNode(int id, int maxChildren) {
         this(id);
         this.maxChildren = Math.max(0, maxChildren);
-    }
-
-    /**
-     * Initialisiert die nodeTypes basierend auf der instanceof-Analyse.
-     * Diese Methode wird automatisch vom Konstruktor aufgerufen und
-     * ermittelt die korrekten StructureTypes für die jeweilige Instanz.
-     */
-    protected void initializeNodeTypes() {
-        // Standard-Typ für alle StructureNodes
-        this.nodeTypes.add(StructureType.DEFAULT);
-
-        // Automatische Typ-Erkennung über instanceof
-        if (this instanceof MirrorNode) {
-            this.nodeTypes.add(StructureType.MIRROR);
-        }
-
-        if (this instanceof TreeMirrorNode) {
-            this.nodeTypes.add(StructureType.TREE);
-        }
-
-        if (this instanceof RingMirrorNode) {
-            this.nodeTypes.add(StructureType.RING);
-        }
-
-        if (this instanceof LineMirrorNode) {
-            this.nodeTypes.add(StructureType.LINE);
-        }
-
-        if (this instanceof StarMirrorNode) {
-            this.nodeTypes.add(StructureType.STAR);
-        }
     }
 
     // ===== STRUKTURTYP-ERMITTLUNG =====
@@ -363,47 +332,37 @@ public class StructureNode {
         // Stack-basierte Zyklus-Traversierung
         StructureNode start = nodes.iterator().next();
         Set<StructureNode> visitedInCycle = new HashSet<>();
-        Stack<StructureNode> stack = new Stack<>();
+        StructureNode current = start;
 
-        stack.push(start);
-
-        while (!stack.isEmpty()) {
-            StructureNode current = stack.pop();
-
-            // Zyklus-Ende erreicht?
-            if (current == start && !visitedInCycle.isEmpty()) {
-                return visitedInCycle.size() == nodes.size();
-            }
-
-            // Bereits besucht? Dann ist es kein einfacher geschlossener Zyklus
+        // Folge der Kette bis wir entweder einen Zyklus finden oder die Menge verlassen
+        do {
             if (visitedInCycle.contains(current)) {
-                return false;
+                // Zyklus gefunden - prüfe ob es ein vollständiger Zyklus ist
+                return current == start && visitedInCycle.size() == nodes.size();
             }
 
             visitedInCycle.add(current);
 
-            // Zu viele Knoten besucht?
-            if (visitedInCycle.size() > nodes.size()) {
-                return false;
-            }
-
-            // Nächsten Knoten auf den Stack legen
+            // Folge dem einzigen Kind
             Set<StructureNode> children = current.getChildren();
-            if (children.size() == 1) {
-                StructureNode nextNode = children.iterator().next();
-
-                // Prüfe, ob das Kind in der Knotenmenge ist
-                if (nodes.contains(nextNode)) {
-                    stack.push(nextNode);
-                } else {
-                    return false; // Kind nicht in der zu prüfenden Menge
-                }
-            } else {
-                return false; // Mehr oder weniger als ein Kind
+            if (children.size() != 1) {
+                return false; // Sollte nicht passieren, da bereits geprüft
             }
-        }
 
-        return false;
+            StructureNode child = children.iterator().next();
+
+            // Prüfe ob das Kind in der ursprünglichen Menge ist
+            if (!nodes.contains(child)) {
+                return false; // Zyklus verlässt die Knotenmenge
+            }
+
+            current = child;
+
+        } while (!visitedInCycle.contains(current));
+
+        // Wenn wir hier ankommen, haben wir einen Zyklus gefunden
+        // Prüfe ob es ein vollständiger Zyklus zurück zum Start ist
+        return current == start && visitedInCycle.size() == nodes.size();
     }
 
     // ===== HILFSKLASSE FÜR STACK-BASIERTE DFS =====
@@ -530,56 +489,64 @@ public class StructureNode {
         }
     }
 
-    // ===== KIND-ZUGRIFF =====
-
-    /**
-     * Gibt alle Kinder für einen bestimmten Strukturtyp und Head-ID zurück.
-     *
-     * @param typeId Die gewünschte Typ-ID
-     * @param headId Die gewünschte Head-ID
-     * @return Set aller Kinder mit dieser Typ-ID und Head-ID
-     */
-    public Set<StructureNode> getChildren(StructureType typeId, int headId) {
-        return children.stream()
-                .filter(record -> record.belongsToStructure(typeId, headId))
-                .map(ChildRecord::child)
-                .collect(HashSet::new, HashSet::add, HashSet::addAll);
-    }
-
-    /**
-     * Gibt alle Kinder für einen bestimmten Strukturtyp zurück.
-     *
-     * @param typeId Die gewünschte Typ-ID
-     * @return Set aller Kinder mit dieser Typ-ID
-     */
-    public Set<StructureNode> getChildren(StructureType typeId) {
-        return children.stream()
-                .filter(record -> record.hasType(typeId))
-                .map(ChildRecord::child)
-                .collect(HashSet::new, HashSet::add, HashSet::addAll);
-    }
-
-    /**
-     * Gibt alle Kinder zurück (alle Typen).
-     * Verwendet für Legacy-Kompatibilität und einfache Traversierung.
-     *
-     * @return Set aller Kindknoten
-     */
-    public Set<StructureNode> getChildren() {
-        return children.stream()
-                .map(ChildRecord::child)
-                .collect(HashSet::new, HashSet::add, HashSet::addAll);
-    }
-
     /**
      * Findet einen ChildRecord anhand der Knoten-ID.
      * Hilfsmethode für interne Kind-Verwaltung.
      */
-    private ChildRecord findChildRecordById(int childId) {
+    protected ChildRecord findChildRecordById(int childId) {
         return children.stream()
                 .filter(record -> record.child().getId() == childId)
                 .findFirst()
                 .orElse(null);
+    }
+
+    // ===== KIND-ZUGRIFF =====
+
+    /**
+     * Gibt alle direkten Kindknoten zurück (ohne Typ-Filter).
+     * Sammelt alle Kinder aus allen ChildRecords.
+     *
+     * @return Set aller direkten Kindknoten
+     */
+    public Set<StructureNode> getChildren() {
+        Set<StructureNode> allChildren = new HashSet<>();
+        for (ChildRecord record : children) {
+            allChildren.add(record.child());
+        }
+        return allChildren;
+    }
+
+    /**
+     * Gibt alle direkten Kindknoten für einen bestimmten Strukturtyp zurück.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @return Set aller Kindknoten für den gegebenen Typ
+     */
+    public Set<StructureNode> getChildren(StructureType typeId) {
+        Set<StructureNode> typeChildren = new HashSet<>();
+        for (ChildRecord record : children) {
+            if (record.hasType(typeId)) {
+                typeChildren.add(record.child());
+            }
+        }
+        return typeChildren;
+    }
+
+    /**
+     * Gibt alle direkten Kindknoten für eine spezifische Struktur zurück.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param headId Die Head-ID der gewünschten Struktur
+     * @return Set aller Kindknoten für die spezifische Struktur
+     */
+    public Set<StructureNode> getChildren(StructureType typeId, int headId) {
+        Set<StructureNode> structureChildren = new HashSet<>();
+        for (ChildRecord record : children) {
+            if (record.belongsToStructure(typeId, headId)) {
+                structureChildren.add(record.child());
+            }
+        }
+        return structureChildren;
     }
 
     // ===== HEAD-SUCHE =====
@@ -759,10 +726,10 @@ public class StructureNode {
         if (allNodes.size() <= 1) return 0;
 
         // Für Bäume: n Knoten = n-1 Links
-        // Für Ringe: n Knoten = n Links
-        // Für andere Strukturen kann dies überschrieben werden
+        // für Ringe: n Knoten = n Links
+        // für andere Strukturen kann dies überschrieben werden
         if (typeId == StructureType.RING) {
-            return allNodes.size(); // Ring: jeder Knoten hat genau einen ausgehenden Link
+            return allNodes.size(); // Ring: Jeder Knoten hat genau einen ausgehenden Link
         } else {
             return allNodes.size() - 1; // Baum/Standard: n-1 Links
         }

@@ -1,3 +1,11 @@
+
+package org.lrdm.topologies.base;
+
+import org.lrdm.Link;
+import org.lrdm.Mirror;
+
+import java.util.*;
+
 /**
  * Repräsentiert einen Knoten in einer Struktur (Baum oder Ring), der einem Mirror zugeordnet werden kann.
  * Diese Klasse trennt die Planungsschicht (StructureNode-Struktur) von der
@@ -18,6 +26,7 @@ public class MirrorNode extends StructureNode {
      */
     public MirrorNode(int id) {
         super(id);
+        this.nodeTypes.add(StructureType.MIRROR);
     }
 
     /**
@@ -220,7 +229,7 @@ public class MirrorNode extends StructureNode {
 
     /**
      * Prüft, ob eine implementierte Verbindung zu einem anderen Knoten über eine spezifische Struktur existiert.
-     * Verifiziert die Head-ID und Typ-ID Identität vor der Mirror-Link-Prüfung.
+     * Verifiziert die Head-ID und Typ-ID-Identität vor der Mirror-Link-Prüfung.
      *
      * @param other Der andere MirrorNode
      * @param typeId Die Typ-ID der gewünschten Struktur
@@ -241,7 +250,7 @@ public class MirrorNode extends StructureNode {
             ChildRecord thisRecord = this.getParent().findChildRecordById(this.getId());
             thisInStructure = thisRecord != null && thisRecord.belongsToStructure(typeId, headId);
         } else {
-            // Kein Parent - prüfe ob wir der Head sind
+            // Kein Parent - prüfe, ob wir der Head sind
             thisInStructure = this.isHead(typeId) && this.getId() == headId;
         }
 
@@ -251,7 +260,7 @@ public class MirrorNode extends StructureNode {
             ChildRecord otherRecord = other.getParent().findChildRecordById(other.getId());
             otherInStructure = otherRecord != null && otherRecord.belongsToStructure(typeId, headId);
         } else {
-            // Kein Parent - prüfe ob der andere der Head ist
+            // Kein Parent - prüfe, ob der andere der Head ist
             otherInStructure = other.isHead(typeId) && other.getId() == headId;
         }
 
@@ -260,7 +269,7 @@ public class MirrorNode extends StructureNode {
             return false;
         }
 
-        // Jetzt prüfe die implementierte Mirror-Verbindung
+        // Jetzt prüfe ich die implementierte Mirror-Verbindung
         return this.mirror.isLinkedWith(other.mirror);
     }
 
