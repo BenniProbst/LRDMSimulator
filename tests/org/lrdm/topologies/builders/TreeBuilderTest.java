@@ -1,4 +1,4 @@
-package org.lrdm.topologies.base;
+package org.lrdm.topologies.builders;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -12,8 +12,8 @@ import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
 import org.lrdm.topologies.BalancedTreeTopologyStrategy;
-import org.lrdm.topologies.builders.TreeBuilderDepthLimit;
-import org.lrdm.topologies.builders.TreeBuilderBalanced;
+import org.lrdm.topologies.base.MirrorNode;
+import org.lrdm.topologies.base.StructureNode;
 
 import java.io.IOException;
 import java.util.*;
