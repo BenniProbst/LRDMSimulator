@@ -102,59 +102,41 @@ public class LineMirrorNode extends MirrorNode {
 
     /**
      * Validiert einen einzelnen Linien-Knoten.
-     *
+     * 
      * @param lineNode Der zu validierende Linien-Knoten
      * @param headNode Der Head-Knoten der Linie
      * @return true wenn der Knoten gültig ist
      */
     private boolean isValidLineNode(LineMirrorNode lineNode, LineMirrorNode headNode) {
         int degree = lineNode.getConnectivityDegree();
-
+        
         // Terminal-Knoten (Endpunkte) haben Grad 1
         if (lineNode.isTerminal()) {
             if (degree != 1) return false;
-
-            if (lineNode == headNode) {
-                // Head-Endpunkt: darf externen Parent haben
-                TreeNode parent = lineNode.getParent();
-                if (parent != null) {
-                    Set<TreeNode> structureNodes = lineNode.getAllNodesInStructure();
-                    // Parent darf nicht Teil der Linien-Struktur sein
-                    return !structureNodes.contains(parent); // Head-Parent muss extern sein
-                }
-            } else {
-                // Normaler Endpunkt: muss einen Parent in der Struktur haben
-                if (lineNode.getParent() == null) {
-                    return false; // Endpunkt muss verbunden sein
-                }
-
-                Set<TreeNode> structureNodes = lineNode.getAllNodesInStructure();
-                return structureNodes.contains(lineNode.getParent()); // Parent muss in der Struktur sein
-            }
         } else {
             // Mittlere Knoten haben Grad 2 (ein Parent, ein Kind)
             if (degree != 2 || lineNode.getChildren().size() != 1) {
                 return false;
             }
-
-            if (lineNode == headNode) {
-                // Head-Mittelknoten: darf externen Parent haben
-                TreeNode parent = lineNode.getParent();
-                if (parent != null) {
-                    Set<TreeNode> structureNodes = lineNode.getAllNodesInStructure();
-                    return !structureNodes.contains(parent); // Head-Parent muss extern sein
-                }
-            } else {
-                // Normale Mittelknoten: Parent muss in der Struktur sein
-                if (lineNode.getParent() == null) {
-                    return false; // Mittelknoten muss Parent haben
-                }
-
-                Set<TreeNode> structureNodes = lineNode.getAllNodesInStructure();
-                return structureNodes.contains(lineNode.getParent()); // Parent muss in der Struktur sein
-            }
         }
-
+        
+        // Validiere Parent-Beziehung für alle Knoten
+        TreeNode parent = lineNode.getParent();
+        Set<TreeNode> structureNodes = lineNode.getAllNodesInStructure();
+        
+        if (lineNode == headNode) {
+            // Head-Node: darf externen Parent haben
+            if (parent != null) {
+                return !structureNodes.contains(parent); // Head-Parent muss extern sein
+            }
+        } else {
+            // Normale Knoten: müssen Parent in der Struktur haben
+            if (parent == null) {
+                return false; // Knoten muss verbunden sein
+            }
+            return structureNodes.contains(parent); // Parent muss in der Struktur sein
+        }
+        
         return true;
     }
 
