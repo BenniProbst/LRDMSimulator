@@ -83,12 +83,12 @@ public class LineMirrorNode extends MirrorNode {
     public boolean canAcceptMoreChildren() {
         // Ermittle LINE-spezifische Struktur-Kontext
         StructureType typeId = StructureType.LINE;
-        StructureNode head = findHead(typeId); // ✅ Wiederverwendung aus StructureNode
+        StructureNode head = findHead(typeId);
 
         // Basis-Validierung und Linien-spezifische Prüfungen
-        return super.canAcceptMoreChildren() && // ✅ Wiederverwendung aus MirrorNode
+        return super.canAcceptMoreChildren() &&
                 isValidStructure() && // Struktur muss gültig bleiben
-                getChildren(typeId, head != null ? head.getId() : this.getId()).isEmpty(); // ✅ Wiederverwendung
+                getChildren(typeId, head != null ? head.getId() : this.getId()).isEmpty();
     }
 
     /**
@@ -114,18 +114,18 @@ public class LineMirrorNode extends MirrorNode {
 
         // Ermittle LINE-spezifischen Struktur-Kontext
         StructureType typeId = StructureType.LINE;
-        StructureNode head = findHead(typeId); // ✅ Wiederverwendung aus StructureNode
+        StructureNode head = findHead(typeId);
         if (head == null) head = structureRoot;
 
-        Set<StructureNode> structureNodes = getAllNodesInStructure(typeId, head); // ✅ Wiederverwendung
+        Set<StructureNode> structureNodes = getAllNodesInStructure(typeId, head);
 
         // Eine Linie muss mindestens 2 Knoten haben.
         // Nach Entfernung müssen noch mindestens 2 Knoten übrig bleiben
         if (structureNodes.size() < 3) return false;
 
         // Nur Endpunkte können sicher entfernt werden, ohne die Linie zu zerbrechen
-        return super.canBeRemovedFromStructure(structureRoot) && // ✅ Wiederverwendung aus MirrorNode
-                isEndpoint(this, typeId, head.getId()); // ✅ Wiederverwendung aus StructureNode
+        return super.canBeRemovedFromStructure(structureRoot) &&
+                isEndpoint(this, typeId, head.getId());
     }
 
     // ===== STRUKTUR-VALIDIERUNG =====
@@ -155,7 +155,7 @@ public class LineMirrorNode extends MirrorNode {
     @Override
     public boolean isValidStructure(Set<StructureNode> allNodes, StructureType typeId, StructureNode head) {
         // Zuerst die grundlegende MirrorNode-Struktur validierung
-        if (!super.isValidStructure(allNodes, typeId, head)) { // ✅ Wiederverwendung aus MirrorNode
+        if (!super.isValidStructure(allNodes, typeId, head)) {
             return false;
         }
 
@@ -188,16 +188,16 @@ public class LineMirrorNode extends MirrorNode {
         }
 
         // Prüfe, dass die Struktur frei von Zyklen ist (mit LINE-Typ-ID)
-        if (hasClosedCycle(allNodes, typeId, head)) { // ✅ Wiederverwendung aus StructureNode
+        if (hasClosedCycle(allNodes, typeId, head)) {
             return false; // Linien dürfen keine Zyklen haben
         }
 
         // Nutze LINE-spezifische Endpunkt-Ermittlung
-        Set<StructureNode> endpoints = getEndpointsOfStructure(typeId, head); // ✅ Wiederverwendung
+        Set<StructureNode> endpoints = getEndpointsOfStructure(typeId, head);
         if (endpoints.size() != 2) return false; // Linie hat genau 2 Endpunkte
 
         // Head-Node muss Edge-Links haben (Verbindung nach außen)
-        return headNode.getNumEdgeLinks(typeId, head) > 0; // ✅ Wiederverwendung aus MirrorNode
+        return headNode.getNumEdgeLinks(typeId, head) > 0;
     }
 
     /**
@@ -210,7 +210,7 @@ public class LineMirrorNode extends MirrorNode {
     @Override
     public boolean isValidStructure(Set<StructureNode> allNodes) {
         StructureType typeId = StructureType.LINE;
-        StructureNode head = findHead(typeId); // ✅ Wiederverwendung aus StructureNode
+        StructureNode head = findHead(typeId);
         return isValidStructure(allNodes, typeId, head != null ? head : this);
     }
 
@@ -226,8 +226,8 @@ public class LineMirrorNode extends MirrorNode {
      */
     public boolean isValidStructure() {
         StructureType typeId = StructureType.LINE;
-        StructureNode head = findHead(typeId); // ✅ Wiederverwendung aus StructureNode
-        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head != null ? head : this); // ✅ Wiederverwendung
+        StructureNode head = findHead(typeId);
+        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head != null ? head : this);
         return isValidStructure(allNodes, typeId, head != null ? head : this);
     }
 
@@ -255,18 +255,18 @@ public class LineMirrorNode extends MirrorNode {
         int degree = lineNode.getConnectivityDegree(typeId, headId);
 
         // Terminal-Knoten (Endpunkte) haben Grad 1
-        if (isEndpoint(lineNode, typeId, headId)) { // ✅ Wiederverwendung aus StructureNode
+        if (isEndpoint(lineNode, typeId, headId)) {
             if (degree != 1) return false;
         } else {
             // Mittlere Knoten haben Grad 2 (ein Parent, ein Kind)
-            if (degree != 2 || lineNode.getChildren(typeId, headId).size() != 1) { // ✅ Wiederverwendung
+            if (degree != 2 || lineNode.getChildren(typeId, headId).size() != 1) {
                 return false;
             }
         }
 
         // Validiere Parent-Beziehung für alle Knoten mit LINE-Typ-ID
-        StructureNode parent = lineNode.getParent(); // ✅ Wiederverwendung aus StructureNode
-        Set<StructureNode> structureNodes = lineNode.getAllNodesInStructure(typeId, headNode); // ✅ Wiederverwendung
+        StructureNode parent = lineNode.getParent();
+        Set<StructureNode> structureNodes = lineNode.getAllNodesInStructure(typeId, headNode);
 
         if (lineNode == headNode) {
             // Head-Node: darf externen Parent haben
@@ -300,10 +300,10 @@ public class LineMirrorNode extends MirrorNode {
         List<LineMirrorNode> endpoints = new ArrayList<>();
 
         StructureType typeId = StructureType.LINE;
-        StructureNode head = findHead(typeId); // ✅ Wiederverwendung aus StructureNode
+        StructureNode head = findHead(typeId);
 
         // Nutze LINE-spezifische Endpunkt-Ermittlung
-        Set<StructureNode> structureEndpoints = getEndpointsOfStructure(typeId, head); // ✅ Wiederverwendung
+        Set<StructureNode> structureEndpoints = getEndpointsOfStructure(typeId, head);
 
         for (StructureNode endpoint : structureEndpoints) {
             if (endpoint instanceof LineMirrorNode lineNode) {
@@ -327,9 +327,9 @@ public class LineMirrorNode extends MirrorNode {
      */
     public LineMirrorNode getOtherEndpoint() {
         StructureType typeId = StructureType.LINE;
-        StructureNode head = findHead(typeId); // ✅ Wiederverwendung aus StructureNode
+        StructureNode head = findHead(typeId);
 
-        if (!isEndpoint(this, typeId, head != null ? head.getId() : this.getId())) { // ✅ Wiederverwendung
+        if (!isEndpoint(this, typeId, head != null ? head.getId() : this.getId())) {
             return null;
         }
 
@@ -349,7 +349,7 @@ public class LineMirrorNode extends MirrorNode {
      * @return Der Head-Knoten oder null, wenn nichts gefunden wird
      */
     public LineMirrorNode getLineHead() {
-        StructureNode head = findHead(StructureType.LINE); // ✅ Wiederverwendung aus StructureNode
+        StructureNode head = findHead(StructureType.LINE);
         return (head instanceof LineMirrorNode) ? (LineMirrorNode) head : null;
     }
 
@@ -366,10 +366,10 @@ public class LineMirrorNode extends MirrorNode {
      */
     public boolean isMiddleNode() {
         StructureType typeId = StructureType.LINE;
-        StructureNode head = findHead(typeId); // ✅ Wiederverwendung aus StructureNode
+        StructureNode head = findHead(typeId);
         final int headId = head != null ? head.getId() : this.getId();
 
-        return !isEndpoint(this, typeId, headId) && // ✅ Wiederverwendung aus StructureNode
+        return !isEndpoint(this, typeId, headId) &&
                 getConnectivityDegree(typeId, headId) == 2;
     }
 
@@ -385,8 +385,8 @@ public class LineMirrorNode extends MirrorNode {
      */
     public boolean isEndpoint() {
         StructureType typeId = StructureType.LINE;
-        StructureNode head = findHead(typeId); // ✅ Wiederverwendung aus StructureNode
-        return isEndpoint(this, typeId, head != null ? head.getId() : this.getId()); // ✅ Wiederverwendung
+        StructureNode head = findHead(typeId);
+        return isEndpoint(this, typeId, head != null ? head.getId() : this.getId());
     }
 
     /**
@@ -406,7 +406,7 @@ public class LineMirrorNode extends MirrorNode {
      */
     public int getPositionInLine() {
         StructureType typeId = StructureType.LINE;
-        StructureNode head = findHead(typeId); // ✅ Wiederverwendung aus StructureNode
+        StructureNode head = findHead(typeId);
 
         // Nutze BFS für Pfadberechnung in LINE-Struktur
         if (head == null) return -1;
@@ -427,7 +427,7 @@ public class LineMirrorNode extends MirrorNode {
             }
 
             // Traversiere LINE-spezifische Kinder
-            Set<StructureNode> children = current.getChildren(typeId, head.getId()); // ✅ Wiederverwendung
+            Set<StructureNode> children = current.getChildren(typeId, head.getId());
             for (StructureNode child : children) {
                 if (!visited.contains(child)) {
                     visited.add(child);
@@ -463,15 +463,15 @@ public class LineMirrorNode extends MirrorNode {
         int connections = 0;
 
         // Parent-Verbindung zählen (wenn LINE-Typ-ID und Head-ID passen)
-        if (getParent() != null) { // ✅ Wiederverwendung aus StructureNode
-            ChildRecord parentRecord = getParent().findChildRecordById(getId()); // ✅ Wiederverwendung
+        if (getParent() != null) {
+            ChildRecord parentRecord = getParent().findChildRecordById(getId());
             if (parentRecord != null && parentRecord.belongsToStructure(typeId, headId)) {
                 connections++;
             }
         }
 
         // Kind-Verbindungen zählen (wenn LINE-Typ-ID und Head-ID passen)
-        connections += getChildren(typeId, headId).size(); // ✅ Wiederverwendung aus StructureNode
+        connections += getChildren(typeId, headId).size();
 
         return connections;
     }
