@@ -198,7 +198,7 @@ public class RingMirrorNode extends MirrorNode {
      * - super.isValidStructure() für MirrorNode-Basis-Validierung
      * - hasClosedCycle() mit RING-Typ-ID für Zyklusprüfung
      * - getNumEdgeLinks() für Edge-Link-Validierung
-     * - isValidRingNode() für individuelle Knoten validierung
+     * - isValidRingNode() für individuelle Knoten Validierung
      *
      * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
      * @param typeId Die Typ-ID der gewünschten Struktur (sollte RING sein)
