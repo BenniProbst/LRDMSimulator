@@ -619,6 +619,12 @@ public class MirrorNode extends StructureNode {
     private boolean isValidMirrorInStructure(Mirror mirror, Set<Mirror> structureMirrors, Set<Link> structureLinks) {
         if (mirror == null) return false;
 
+        // ✅ KORRIGIERT: structureMirrors Parameter wird verwendet
+        // Mirror muss in der Struktur enthalten sein
+        if (!structureMirrors.contains(mirror)) {
+            return false;
+        }
+
         // Mirror muss mindestens einen Link zu anderen Struktur-Mirrors haben
         boolean hasStructureConnection = false;
         for (Link link : mirror.getLinks()) {
@@ -637,6 +643,7 @@ public class MirrorNode extends StructureNode {
 
         return hasStructureConnection;
     }
+
 
     /**
      * Validiert einen einzelnen Link innerhalb der Struktur.
