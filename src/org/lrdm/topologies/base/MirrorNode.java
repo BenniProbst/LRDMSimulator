@@ -178,6 +178,154 @@ public class MirrorNode extends TreeNode {
         return mirror.isLinkedWith(other.mirror);
     }
 
+    /**
+     * Sammelt alle Mirrors der Substruktur.
+     * Verwendet getAllNodesInStructure() aus TreeNode für konsistente Substruktur-Abgrenzung.
+     *
+     * @return Set aller Mirror-Instanzen in der Substruktur (ohne null-Werte)
+     */
+    public Set<Mirror> getMirrorsOfStructure() {
+        Set<Mirror> mirrors = new HashSet<>();
+        Set<TreeNode> allNodes = getAllNodesInStructure();
+
+        for (TreeNode node : allNodes) {
+            if (node instanceof MirrorNode mirrorNode) {
+                if (mirrorNode.mirror != null) {
+                    mirrors.add(mirrorNode.mirror);
+                }
+            }
+        }
+
+        return mirrors;
+    }
+
+    /**
+     * Sammelt alle Mirrors der Endpunkte der Substruktur.
+     * Verwendet getEndpointsOfStructure() aus TreeNode für Endpunkt-Identifikation.
+     *
+     * @return Set aller Mirror-Instanzen der Endpunkte (ohne null-Werte)
+     */
+    public Set<Mirror> getMirrorsOfEndpoints() {
+        Set<Mirror> endpointMirrors = new HashSet<>();
+        Set<TreeNode> endpoints = getEndpointsOfStructure();
+
+        for (TreeNode endpoint : endpoints) {
+            if (endpoint instanceof MirrorNode mirrorNode) {
+                if (mirrorNode.mirror != null) {
+                    endpointMirrors.add(mirrorNode.mirror);
+                }
+            }
+        }
+
+        return endpointMirrors;
+    }
+
+    /**
+     * Sammelt alle Links, die vollständig zur Substruktur gehören.
+     * Ein Link gehört zur Struktur, wenn sowohl Source als auch Target
+     * Mirrors von MirrorNodes der Substruktur sind.
+     *
+     * @return Set aller Links, die Teil der Substruktur sind
+     */
+    public Set<Link> getLinksOfStructure() {
+        Set<Link> structureLinks = new HashSet<>();
+        Set<Mirror> structureMirrors = getMirrorsOfStructure();
+
+        // Sammle alle Links von allen Mirrors der Struktur
+        Set<Link> candidateLinks = new HashSet<>();
+        for (Mirror mirror : structureMirrors) {
+            candidateLinks.addAll(mirror.getLinks());
+        }
+
+        // Filtere Links: beide Endpoints müssen in der Struktur sein
+        for (Link link : candidateLinks) {
+            boolean sourceInStructure = structureMirrors.contains(link.getSource());
+            boolean targetInStructure = structureMirrors.contains(link.getTarget());
+
+            if (sourceInStructure && targetInStructure) {
+                structureLinks.add(link);
+            }
+        }
+
+        return structureLinks;
+    }
+
+    /**
+     * Sammelt alle Edge-Links (Randverbindungen).
+     * Ein Edge-Link ist ein Link, bei dem nur entweder Source ODER Target
+     * ein Mirror der Substruktur ist (aber nicht beide).
+     * Diese Links verbinden die Struktur mit anderen Strukturen.
+     *
+     * @return Set aller Edge-Links der Substruktur
+     */
+    public Set<Link> getEdgeLinks() {
+        Set<Link> edgeLinks = new HashSet<>();
+        Set<Mirror> structureMirrors = getMirrorsOfStructure();
+
+        // Sammle alle Links von allen Mirrors der Struktur
+        for (Mirror mirror : structureMirrors) {
+            for (Link link : mirror.getLinks()) {
+                boolean sourceInStructure = structureMirrors.contains(link.getSource());
+                boolean targetInStructure = structureMirrors.contains(link.getTarget());
+
+                // Edge-Link: nur einer der Endpoints ist in der Struktur (XOR)
+                if (sourceInStructure ^ targetInStructure) {
+                    edgeLinks.add(link);
+                }
+            }
+        }
+
+        return edgeLinks;
+    }
+
+    /**
+     * Prüft, ob ein Link vollständig zur Substruktur gehört.
+     *
+     * @param link Der zu prüfende Link
+     * @return true wenn beide Endpoints zur Struktur gehören
+     */
+    public boolean isLinkOfStructure(Link link) {
+        if (link == null) return false;
+
+        Set<Mirror> structureMirrors = getMirrorsOfStructure();
+        return structureMirrors.contains(link.getSource()) &&
+                structureMirrors.contains(link.getTarget());
+    }
+
+    /**
+     * Prüft, ob ein Link ein Edge-Link der Substruktur ist.
+     *
+     * @param link Der zu prüfende Link
+     * @return true wenn nur ein Endpoint zur Struktur gehört
+     */
+    public boolean isEdgeLink(Link link) {
+        if (link == null) return false;
+
+        Set<Mirror> structureMirrors = getMirrorsOfStructure();
+        boolean sourceInStructure = structureMirrors.contains(link.getSource());
+        boolean targetInStructure = structureMirrors.contains(link.getTarget());
+
+        return sourceInStructure ^ targetInStructure; // XOR
+    }
+
+    /**
+     * Zählt die Anzahl der struktur-internen Links.
+     *
+     * @return Anzahl der Links innerhalb der Substruktur
+     */
+    public int getNumLinksOfStructure() {
+        return getLinksOfStructure().size();
+    }
+
+    /**
+     * Zählt die Anzahl der Edge-Links.
+     *
+     * @return Anzahl der Edge-Links der Substruktur
+     */
+    public int getNumEdgeLinks() {
+        return getEdgeLinks().size();
+    }
+
     @Override
     public String toString() {
         return String.format("MirrorNode{id=%d, mirror=%s, planned=%d, implemented=%d, pending=%d, isHead=%s}",
@@ -192,8 +340,7 @@ public class MirrorNode extends TreeNode {
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (!(obj instanceof MirrorNode)) return false;
-        MirrorNode other = (MirrorNode) obj;
+        if (!(obj instanceof MirrorNode other)) return false;
         return getId() == other.getId();
     }
 
