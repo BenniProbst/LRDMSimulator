@@ -741,22 +741,43 @@ public class StructureNode {
         return path.isEmpty() ? List.of(this) : path;
     }
 
-    // ===== LINK-ZÄHLUNG =====
+
+// ===== LINK-ZÄHLUNG =====
+
+    /**
+     * Berechnet die Anzahl der geplanten Links in einer spezifischen Struktur.
+     * Berücksichtigt Typ-ID und Head-ID für korrekte Kanal-Traversierung.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return Anzahl der geplanten Links in der spezifischen Struktur
+     */
+    public int getNumPlannedLinksFromStructure(StructureType typeId, StructureNode head) {
+        if (head == null) return 0;
+
+        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head);
+        if (allNodes.size() <= 1) return 0;
+
+        // Für Bäume: n Knoten = n-1 Links
+        // Für Ringe: n Knoten = n Links
+        // Für andere Strukturen kann dies überschrieben werden
+        if (typeId == StructureType.RING) {
+            return allNodes.size(); // Ring: jeder Knoten hat genau einen ausgehenden Link
+        } else {
+            return allNodes.size() - 1; // Baum/Standard: n-1 Links
+        }
+    }
 
     /**
      * Berechnet die Anzahl der geplanten Links in der Struktur.
-     * Ein Link verbindet zwei Knoten, daher: (Anzahl Knoten - 1) für Bäume.
-     * Für andere Strukturen kann die Berechnung überschrieben werden.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @return Anzahl der geplanten Links in der Struktur
      */
     public int getNumPlannedLinksFromStructure() {
-        Set<StructureNode> allNodes = getAllNodesInStructure();
-        if (allNodes.size() <= 1) return 0;
-
-        // Für Bäume: n Knoten = n-1 Links
-        // für andere Strukturen kann dies überschrieben werden
-        return allNodes.size() - 1;
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return getNumPlannedLinksFromStructure(typeId, head != null ? head : this);
     }
 
     /**
