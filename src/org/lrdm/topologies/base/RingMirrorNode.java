@@ -93,11 +93,7 @@ public class RingMirrorNode extends MirrorNode {
         }
 
         // Head-Node muss Edge-Links haben (Verbindung nach außen)
-        if (headNode.getNumEdgeLinks() == 0) {
-            return false; // Head muss mit externen Strukturen verbunden sein
-        }
-
-        return true;
+        return headNode.getNumEdgeLinks() != 0; // Head muss mit externen Strukturen verbunden sein
     }
 
     /**
@@ -120,9 +116,7 @@ public class RingMirrorNode extends MirrorNode {
             if (parent != null) {
                 Set<TreeNode> structureNodes = ringNode.getAllNodesInStructure();
                 // Parent darf nicht Teil der Ring-Struktur sein
-                if (structureNodes.contains(parent)) {
-                    return false; // Head-Parent muss extern sein
-                }
+                return !structureNodes.contains(parent); // Head-Parent muss extern sein
             }
         } else {
             // Normale Ring-Knoten: genau ein Parent und ein Kind, beide in der Struktur
@@ -132,9 +126,7 @@ public class RingMirrorNode extends MirrorNode {
 
             // Parent muss Teil der Ring-Struktur sein
             Set<TreeNode> structureNodes = ringNode.getAllNodesInStructure();
-            if (!structureNodes.contains(ringNode.getParent())) {
-                return false; // Parent muss in der Struktur sein
-            }
+            return structureNodes.contains(ringNode.getParent()); // Parent muss in der Struktur sein
         }
 
         return true;
