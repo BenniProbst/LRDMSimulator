@@ -111,7 +111,7 @@ public class StructureNode {
             // Alle Kinder hinzufügen
             neighbors.addAll(current.children);
 
-            // Besuche fehlende Nachbarn
+            // Besuche fehlende Knoten
             for (StructureNode neighbor : neighbors) {
                 if (allNodes.contains(neighbor) && !visited.contains(neighbor)) {
                     visited.add(neighbor);
