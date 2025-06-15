@@ -1,6 +1,7 @@
 package org.lrdm.topologies.base;
 
 import org.lrdm.Mirror;
+
 import java.util.*;
 
 /**
@@ -19,95 +20,125 @@ public class TreeMirrorNode extends MirrorNode {
         super(id, mirror);
     }
 
-    /**
-     * Validiert, dass diese Struktur ein gültiger Baum ist.
-     * Überschreibt die TreeNode-Methode mit baum-spezifischer Logik.
-     * - Genau ein Root-Knoten (kein Parent)
-     * - Keine Zyklen
-     * - Zusammenhängend
-     * - n Knoten haben genau n-1 Kanten
-     */
-    @Override
-    public boolean isValidStructure(Set<TreeNode> allNodes) {
-        if (allNodes.isEmpty()) return false;
-
-        // Ein Baum mit n Knoten hat genau n-1 Kanten
-        int totalEdges = 0;
-        TreeNode root = null;
-        int rootCount = 0;
-
-        for (TreeNode node : allNodes) {
-            totalEdges += node.getChildren().size();
-
-            // Zähle Root-Knoten
-            if (node.isRoot()) {
-                rootCount++;
-                root = node;
-            }
-        }
-
-        // Genau ein Root und korrekte Anzahl Kanten
-        if (rootCount != 1 || totalEdges != allNodes.size() - 1) {
-            return false;
-        }
-
-        // Prüfe auf Zyklen und Zusammenhang
-        return validateTreeProperties(root, allNodes);
-    }
-
-    /**
-     * Validiert Baum-Eigenschaften: keine Zyklen, alle Knoten erreichbar.
-     * Verwendet DFS für Zykluserkennung und Zusammenhangsprüfung.
-     */
-    private boolean validateTreeProperties(TreeNode root, Set<TreeNode> allNodes) {
-        if (root == null) return false;
-
-        Set<TreeNode> visited = new HashSet<>();
-        Stack<TreeNode> stack = new Stack<>();
-        stack.push(root);
-
-        while (!stack.isEmpty()) {
-            TreeNode current = stack.pop();
-            if (visited.contains(current)) return false; // Zyklus gefunden
-            visited.add(current);
-
-            // Validiere Parent-Child-Konsistenz
-            for (TreeNode child : current.getChildren()) {
-                if (child.getParent() != current) return false;
-                stack.push(child);
-            }
-        }
-
-        // Alle Knoten müssen erreichbar sein (Zusammenhang)
-        return visited.size() == allNodes.size();
-    }
-
     @Override
     public boolean canAcceptMoreChildren() {
         // Bäume können normalerweise immer weitere Kinder haben
-        return true;
+        return super.canAcceptMoreChildren() && isValidStructure();
     }
 
     @Override
-    public boolean canBeRemovedFromStructure(MirrorNode structureRoot) {
+    public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
         if (structureRoot == null) return false;
-        if (this == structureRoot) return false; // Root kann nicht entfernt werden
 
-        // In Bäumen können normalerweise Blätter entfernt werden
-        return isLeaf();
+        // Nutze TreeNode canBeRemovedFromStructure() - das ist für Bäume perfekt
+        // Bäume erlauben Entfernung von Blättern (auch Root, wenn er Blatt ist)
+        return super.canBeRemovedFromStructure(structureRoot);
     }
 
     /**
-     * Findet alle Blätter im Baum.
-     * Nutzt die fundamentale TreeNode isLeaf()-Methode.
+     * Erweiterte Baum-Struktur-Validierung.
+     * Zusätzlich zu super.isValidStructure:
+     * - Genau ein Root-Knoten (kein Parent, aber Head markiert)
+     * - Keine Zyklen (nutzt hasClosedCycle() aus TreeNode)
+     * - n Knoten haben genau n-1 Kanten
+     * - Head-Node darf externen Parent haben und muss Edge-Links haben
+     */
+    @Override
+    public boolean isValidStructure(Set<TreeNode> allNodes) {
+        // Zuerst die grundlegende MirrorNode-Strukturvalidierung
+        if (!super.isValidStructure(allNodes)) {
+            return false;
+        }
+
+        if (allNodes.isEmpty()) return false;
+
+        // Sammle alle Baum-Knoten und finde Head-Knoten (Root)
+        Set<TreeMirrorNode> treeNodes = new HashSet<>();
+        TreeMirrorNode rootNode = null;
+
+        for (TreeNode node : allNodes) {
+            if (!(node instanceof TreeMirrorNode treeNode)) {
+                return false; // Alle Knoten müssen TreeMirrorNodes sein
+            }
+
+            treeNodes.add(treeNode);
+            if (treeNode.isHead()) {
+                if (rootNode != null) return false; // Nur ein Root erlaubt
+                rootNode = treeNode;
+            }
+        }
+
+        if (rootNode == null) return false; // Ein Root muss vorhanden sein
+
+        // Prüfe auf Zyklen - Bäume dürfen keine haben
+        if (hasClosedCycle(allNodes)) {
+            return false; // Bäume sind zyklenfrei
+        }
+
+        // Ein Baum mit n Knoten hat genau n-1 Kanten
+        // Nutze getNumPlannedLinksFromStructure() aus TreeNode
+        int expectedEdges = allNodes.size() - 1;
+        int actualEdges = getNumPlannedLinksFromStructure();
+        if (actualEdges != expectedEdges) {
+            return false;
+        }
+
+        // Validiere Baum-spezifische Eigenschaften für alle Knoten
+        for (TreeMirrorNode treeNode : treeNodes) {
+            if (!isValidTreeNode(treeNode, rootNode)) {
+                return false;
+            }
+        }
+
+        // Root muss Edge-Links haben (Verbindung nach außen)
+        return rootNode.getNumEdgeLinks() != 0;
+    }
+
+    /**
+     * Validiert einen einzelnen Baum-Knoten.
+     */
+    private boolean isValidTreeNode(TreeMirrorNode treeNode, TreeMirrorNode rootNode) {
+        TreeNode parent = treeNode.getParent();
+        Set<TreeNode> structureNodes = treeNode.getAllNodesInStructure();
+
+        if (treeNode == rootNode) {
+            // Root-Knoten: darf externen Parent haben, aber kein interner Parent
+            if (parent != null) {
+                return !structureNodes.contains(parent); // Root-Parent muss extern sein
+            }
+        } else {
+            // Normale Knoten: müssen genau einen Parent in der Struktur haben
+            if (parent == null) {
+                return false; // Knoten muss verbunden sein
+            }
+            return structureNodes.contains(parent); // Parent muss in der Struktur sein
+        }
+
+        return true;
+    }
+
+    /**
+     * Wiederverwendung der TreeNode findHead() Funktion.
+     * Findet die Root des Baums.
+     */
+    public TreeMirrorNode getTreeRoot() {
+        TreeNode head = findHead(); // Wiederverwendung aus TreeNode
+        return (head instanceof TreeMirrorNode) ? (TreeMirrorNode) head : null;
+    }
+
+    /**
+     * Direkte Wiederverwendung von getEndpointsOfStructure() aus TreeNode.
+     * Baum-Blätter sind exakt die Terminal-Knoten (Endpunkte) der Struktur.
      */
     public List<TreeMirrorNode> getTreeLeaves() {
         List<TreeMirrorNode> leaves = new ArrayList<>();
-        Set<TreeNode> allNodes = getAllNodes();
 
-        for (TreeNode node : allNodes) {
-            if (node.isLeaf() && node instanceof TreeMirrorNode) {
-                leaves.add((TreeMirrorNode) node);
+        // Nutze TreeNode getEndpointsOfStructure() - das sind die Blätter!
+        Set<TreeNode> endpoints = getEndpointsOfStructure();
+
+        for (TreeNode endpoint : endpoints) {
+            if (endpoint instanceof TreeMirrorNode treeNode) {
+                leaves.add(treeNode);
             }
         }
 
@@ -115,98 +146,58 @@ public class TreeMirrorNode extends MirrorNode {
     }
 
     /**
-     * Findet die Root des Baums.
-     */
-    public TreeMirrorNode getTreeRoot() {
-        Set<TreeNode> allNodes = getAllNodes();
-
-        for (TreeNode node : allNodes) {
-            if (node.isRoot() && node instanceof TreeMirrorNode) {
-                return (TreeMirrorNode) node;
-            }
-        }
-
-        return null;
-    }
-
-    /**
      * Berechnet die Tiefe dieses Knotens im Baum.
+     * Nutzt getPathFromHead() aus TreeNode für konsistente Pfadberechnung.
      */
     public int getDepthInTree() {
-        int depth = 0;
-        TreeNode current = this;
-
-        while (current.getParent() != null) {
-            depth++;
-            current = current.getParent();
-        }
-
-        return depth;
+        List<TreeNode> pathFromRoot = getPathFromHead(); // Wiederverwendung aus TreeNode
+        return pathFromRoot.isEmpty() ? 0 : pathFromRoot.size() - 1;
     }
 
     /**
      * Berechnet die maximale Tiefe des Baums.
+     * Nutzt getAllNodesInStructure() und getDepthInTree() für alle Knoten.
      */
     public int getMaxTreeDepth() {
-        TreeMirrorNode root = getTreeRoot();
-        if (root == null) return 0;
+        int maxDepth = 0;
+        Set<TreeNode> allNodes = getAllNodesInStructure(); // Wiederverwendung aus TreeNode
 
-        return calculateMaxDepthFromNode(root);
-    }
-
-    /**
-     * Hilfsmethode zur rekursiven Tiefenberechnung.
-     */
-    private int calculateMaxDepthFromNode(TreeNode node) {
-        if (node.isLeaf()) return 0;
-
-        int maxChildDepth = 0;
-        for (TreeNode child : node.getChildren()) {
-            maxChildDepth = Math.max(maxChildDepth, calculateMaxDepthFromNode(child));
+        for (TreeNode node : allNodes) {
+            if (node instanceof TreeMirrorNode treeNode) {
+                maxDepth = Math.max(maxDepth, treeNode.getDepthInTree());
+            }
         }
 
-        return 1 + maxChildDepth;
+        return maxDepth;
     }
 
     /**
      * Zählt die Gesamtanzahl der Knoten im Baum.
+     * Nutzt getAllNodesInStructure() aus TreeNode.
      */
     public int getTreeSize() {
-        return getAllNodes().size();
+        return getAllNodesInStructure().size(); // Wiederverwendung aus TreeNode
     }
 
     /**
      * Prüft, ob dieser Baum balanciert ist.
-     * Ein Baum istbalanciert, wenn sich die Tiefen der Blätter um maximal 1 unterscheiden.
+     * Ein Baum ist balanciert, wenn sich die Tiefen der Blätter um maximal 1 unterscheiden.
+     * Nutzt getTreeLeaves() und getDepthInTree().
      */
     public boolean isBalanced() {
-        TreeMirrorNode root = getTreeRoot();
-        if (root == null) return false;
+        List<TreeMirrorNode> leaves = getTreeLeaves(); // Wiederverwendung
+        if (leaves.isEmpty()) return true;
 
-        return checkBalance(root) != -1;
-    }
-
-    /**
-     * Hilfsmethode für Balancierung-Check.
-     * Gibt -1 zurück wenn unbalanciert, sonst die Tiefe.
-     */
-    private int checkBalance(TreeNode node) {
-        if (node.isLeaf()) return 0;
-
-        int maxDepth = 0;
         int minDepth = Integer.MAX_VALUE;
+        int maxDepth = 0;
 
-        for (TreeNode child : node.getChildren()) {
-            int childDepth = checkBalance(child);
-            if (childDepth == -1) return -1; // Bereits unbalanciert
-
-            maxDepth = Math.max(maxDepth, childDepth);
-            minDepth = Math.min(minDepth, childDepth);
+        for (TreeMirrorNode leaf : leaves) {
+            int depth = leaf.getDepthInTree(); // Wiederverwendung
+            minDepth = Math.min(minDepth, depth);
+            maxDepth = Math.max(maxDepth, depth);
         }
 
-        // Unterschied zwischen tiefster und flachster Subtree > 1 = unbalanciert
-        if (maxDepth - minDepth > 1) return -1;
-
-        return 1 + maxDepth;
+        // Unterschied zwischen tiefster und flachster Blatt > 1 = unbalanciert
+        return maxDepth - minDepth <= 1;
     }
 }
