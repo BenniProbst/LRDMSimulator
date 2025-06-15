@@ -1,9 +1,9 @@
+package org.lrdm.topologies.builders;
 
-package org.lrdm.topologies.base;
-
-import org.lrdm.IDGenerator;
-import org.lrdm.Mirror;
 import org.lrdm.Network;
+import org.lrdm.Mirror;
+import org.lrdm.topologies.base.MirrorNode;
+import org.lrdm.util.IDGenerator;
 
 import java.util.Iterator;
 
@@ -64,7 +64,7 @@ public abstract class StructureBuilder {
     public abstract int removeNodes(int nodesToRemove);
 
     /**
-     * Allgemeine Strukturvalidierung - delegiert an die strukturspezifische
+     * Allgemeine Struktur Validierung - delegiert an die strukturspezifische
      * isValidStructure()-Methode der jeweiligen MirrorNode-Implementierung.
      * Nutzt Polymorphismus für saubere Architektur.
      */
@@ -77,7 +77,7 @@ public abstract class StructureBuilder {
      * Hilfsmethode: Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
      * Kann von Kindklassen überschrieben werden, um spezifische MirrorNode-Typen zu erstellen.
      *
-     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null, wenn kein Mirror verfügbar
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null, wenn kein Mirror verfügbar ist
      */
     protected MirrorNode getMirrorNodeFromIterator() {
         if (mirrorIterator.hasNext()) {
