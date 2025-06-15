@@ -11,14 +11,13 @@ import java.util.*;
  * Diese Klasse trennt die Planungsschicht (TreeNode-Struktur) von der
  * Implementierungsschicht (Mirror mit Links).
  * <p>
- * Vollständig zustandslos bezüglich Link-Informationen - alle werden dynamisch berechnet.
+ * Vollständig zustandslos bezüglich Link-Informationen - alle werden über das Mirror verwaltet.
  * Unterstützt sowohl Baum- als auch Ring-Strukturen.
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class MirrorNode extends TreeNode {
     private Mirror mirror;
-    private Set<Link> implementedLinks;
 
     /**
      * Erstellt einen neuen MirrorNode.
@@ -27,7 +26,6 @@ public class MirrorNode extends TreeNode {
      */
     public MirrorNode(int id) {
         super(id);
-        this.implementedLinks = new HashSet<>();
     }
 
     /**
@@ -39,7 +37,6 @@ public class MirrorNode extends TreeNode {
     public MirrorNode(int id, Mirror mirror) {
         super(id);
         this.mirror = mirror;
-        this.implementedLinks = new HashSet<>();
     }
 
     /**
@@ -63,41 +60,53 @@ public class MirrorNode extends TreeNode {
 
     /**
      * Fügt einen implementierten Link hinzu.
+     * Delegiert an das zugeordnete Mirror.
      *
      * @param link Der hinzuzufügende Link
      */
     public void addLink(Link link) {
-        if (link != null) {
-            implementedLinks.add(link);
+        if (mirror != null && link != null) {
+            mirror.addLink(link);
         }
     }
 
     /**
      * Entfernt einen implementierten Link.
+     * Delegiert an das zugeordnete Mirror.
      *
      * @param link Der zu entfernende Link
      */
     public void removeLink(Link link) {
-        implementedLinks.remove(link);
+        if (mirror != null && link != null) {
+            mirror.removeLink(link);
+        }
     }
 
     /**
      * Gibt alle implementierten Links zurück.
+     * Delegiert an das zugeordnete Mirror.
      *
      * @return Set der implementierten Links
      */
     public Set<Link> getImplementedLinks() {
-        return new HashSet<>(implementedLinks);
+        if (mirror != null) {
+            return new HashSet<>(mirror.getLinks());
+        }
+        return new HashSet<>();
     }
 
     /**
      * Berechnet die Anzahl der entwickelten/implementierten Links.
      * Dies sind die Links, die tatsächlich zwischen Mirrors implementiert wurden.
+     * Delegiert an das zugeordnete Mirror.
      *
      * @return Anzahl der implementierten Links
      */
     public int getNumImplementedLinks() {
-        return implementedLinks.size();
+        if (mirror != null) {
+            return mirror.getLinks().size();
+        }
+        return 0;
     }
 
     /**
@@ -138,10 +147,13 @@ public class MirrorNode extends TreeNode {
      */
     public void removeMirrorNode(MirrorNode child) {
         removeChild(child);
-        // Entferne auch alle zugehörigen implementierten Links
-        if (child != null) {
-            implementedLinks.removeIf(link ->
-                    (link.getSource() == child.mirror) || (link.getTarget() == child.mirror));
+        // Entferne auch alle zugehörigen implementierten Links über das Mirror
+        if (child != null && child.mirror != null && this.mirror != null) {
+            Set<Link> linksToRemove = mirror.getJointMirrorLinks(child.mirror);
+            for (Link link : linksToRemove) {
+                mirror.removeLink(link);
+                child.mirror.removeLink(link);
+            }
         }
     }
 
@@ -154,17 +166,16 @@ public class MirrorNode extends TreeNode {
         return this.getParent() == other || other.getParent() == this;
     }
 
-
     /**
      * Prüft, ob eine implementierte Verbindung zu einem anderen Knoten existiert.
+     * Delegiert an das zugeordnete Mirror.
      */
     private boolean hasImplementedConnectionWith(MirrorNode other) {
-        if (other == null || other.mirror == null) {
+        if (other == null || other.mirror == null || this.mirror == null) {
             return false;
         }
 
-        return implementedLinks.stream().anyMatch(link ->
-                link.getSource() == other.mirror || link.getTarget() == other.mirror);
+        return mirror.isLinkedWith(other.mirror);
     }
 
     @Override
@@ -182,7 +193,7 @@ public class MirrorNode extends TreeNode {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof MirrorNode)) return false;
-        org.lrdm.topologies.base.MirrorNode other = (org.lrdm.topologies.base.MirrorNode) obj;
+        MirrorNode other = (MirrorNode) obj;
         return getId() == other.getId();
     }
 
@@ -190,5 +201,4 @@ public class MirrorNode extends TreeNode {
     public int hashCode() {
         return Objects.hash(getId());
     }
-
 }
