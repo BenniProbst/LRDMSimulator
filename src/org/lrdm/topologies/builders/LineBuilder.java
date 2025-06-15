@@ -118,7 +118,7 @@ public class LineBuilder extends StructureBuilder {
             return new RemoveNodesInfo(null, 0);
         }
 
-        Set<TreeNode> allNodes = existingRoot.getAllNodesInStructure();
+        Set<TreeNode> allNodes = existingRoot.getAllNodes();
 
         if (allNodes.size() - nodesToRemove < minLineSize) {
             nodesToRemove = allNodes.size() - minLineSize;
@@ -139,7 +139,7 @@ public class LineBuilder extends StructureBuilder {
             return lineRoot.getEndpoints();
         }
 
-        Set<TreeNode> allNodes = root.getAllNodesInStructure();
+        Set<TreeNode> allNodes = root.getAllNodes();
         for (TreeNode node : allNodes) {
             if (node.isTerminal() && node instanceof LineMirrorNode) {
                 endpoints.add((LineMirrorNode) node);
@@ -157,7 +157,7 @@ public class LineBuilder extends StructureBuilder {
             return ((LineMirrorNode) root).isValidLineStructure();
         }
 
-        Set<TreeNode> allNodes = root.getAllNodesInStructure();
+        Set<TreeNode> allNodes = root.getAllNodes();
 
         if (allNodes.size() < 2) return false;
 

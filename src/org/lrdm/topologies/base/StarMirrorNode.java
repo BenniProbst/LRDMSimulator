@@ -1,7 +1,7 @@
 package org.lrdm.topologies.base;
 
 import org.lrdm.Mirror;
-import org.lrdm.topologies.builders.StructureBuilder;
+
 import java.util.*;
 
 /**
@@ -63,7 +63,7 @@ public class StarMirrorNode extends MirrorNode {
      * Findet das Zentrum des Sterns.
      */
     public StarMirrorNode getCenter() {
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<TreeNode> allNodes = getAllNodes();
 
         for (TreeNode node : allNodes) {
             if (node.isRoot() && !node.isLeaf() && node instanceof StarMirrorNode) {
@@ -79,7 +79,7 @@ public class StarMirrorNode extends MirrorNode {
      */
     public List<StarMirrorNode> getLeaves() {
         List<StarMirrorNode> leaves = new ArrayList<>();
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<TreeNode> allNodes = getAllNodes();
 
         for (TreeNode node : allNodes) {
             if (node.isTerminal() && !node.isRoot() && node instanceof StarMirrorNode) {

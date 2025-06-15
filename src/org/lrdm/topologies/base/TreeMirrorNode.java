@@ -103,7 +103,7 @@ public class TreeMirrorNode extends MirrorNode {
      */
     public List<TreeMirrorNode> getTreeLeaves() {
         List<TreeMirrorNode> leaves = new ArrayList<>();
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<TreeNode> allNodes = getAllNodes();
 
         for (TreeNode node : allNodes) {
             if (node.isLeaf() && node instanceof TreeMirrorNode) {
@@ -118,7 +118,7 @@ public class TreeMirrorNode extends MirrorNode {
      * Findet die Root des Baums.
      */
     public TreeMirrorNode getTreeRoot() {
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<TreeNode> allNodes = getAllNodes();
 
         for (TreeNode node : allNodes) {
             if (node.isRoot() && node instanceof TreeMirrorNode) {
@@ -172,7 +172,7 @@ public class TreeMirrorNode extends MirrorNode {
      * Zählt die Gesamtanzahl der Knoten im Baum.
      */
     public int getTreeSize() {
-        return getAllNodesInStructure().size();
+        return getAllNodes().size();
     }
 
     /**

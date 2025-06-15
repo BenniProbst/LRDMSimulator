@@ -72,7 +72,7 @@ public class RingBuilder extends StructureBuilder {
      * Fügt Knoten in einen bestehenden Ring ein.
      */
     private int addNodesToRing(MirrorNode existingRoot, int nodesToAdd) {
-        Set<TreeNode> allNodes = existingRoot.getAllNodesInStructure();
+        Set<TreeNode> allNodes = existingRoot.getAllNodes();
         List<RingMirrorNode> ringNodes = new ArrayList<>();
 
         // Sammle alle Ring-Knoten
@@ -122,7 +122,7 @@ public class RingBuilder extends StructureBuilder {
             return ((RingMirrorNode) root).isValidStructure();
         }
 
-        Set<TreeNode> allNodes = root.getAllNodesInStructure();
+        Set<TreeNode> allNodes = root.getAllNodes();
 
         if (allNodes.size() < 3) return false;
 
@@ -175,7 +175,7 @@ public class RingBuilder extends StructureBuilder {
     protected List<MirrorNode> findInsertionCandidates(MirrorNode root) {
         // In einem Ring kann zwischen jedem Knotenpaar eingefügt werden
         List<MirrorNode> candidates = new ArrayList<>();
-        Set<TreeNode> allNodes = root.getAllNodesInStructure();
+        Set<TreeNode> allNodes = root.getAllNodes();
 
         for (TreeNode node : allNodes) {
             if (node instanceof MirrorNode) {
@@ -190,7 +190,7 @@ public class RingBuilder extends StructureBuilder {
     protected List<MirrorNode> findRemovableNodes(MirrorNode root) {
         // In einem Ring können alle Knoten entfernt werden (außer dem Root)
         List<MirrorNode> removable = new ArrayList<>();
-        Set<TreeNode> allNodes = root.getAllNodesInStructure();
+        Set<TreeNode> allNodes = root.getAllNodes();
 
         for (TreeNode node : allNodes) {
             if (node instanceof MirrorNode && node != root) {
@@ -204,7 +204,7 @@ public class RingBuilder extends StructureBuilder {
     @Override
     protected boolean canRemoveNode(MirrorNode node) {
         // Ring muss mindestens minRingSize Knoten behalten
-        Set<TreeNode> allNodes = node.getAllNodesInStructure();
+        Set<TreeNode> allNodes = node.getAllNodes();
         return allNodes.size() > minRingSize;
     }
 }

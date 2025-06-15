@@ -30,7 +30,7 @@ public class RingMirrorNode extends MirrorNode {
     @Override
     public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
         // Prüfe, ob der Ring nach Entfernung noch mindestens 3 Knoten hat
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<TreeNode> allNodes = getAllNodes();
 
         // Ein Ring muss mindestens 3 Knoten haben
         // Wenn wir nur 3 Knoten haben, kann keiner entfernt werden

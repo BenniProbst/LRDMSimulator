@@ -81,7 +81,7 @@ public class StarBuilder extends StructureBuilder {
         }
 
         // Fallback: Suche Knoten ohne Parent mit Kindern
-        Set<TreeNode> allNodes = root.getAllNodesInStructure();
+        Set<TreeNode> allNodes = root.getAllNodes();
         for (TreeNode node : allNodes) {
             if (node.isRoot() && !node.isLeaf() && node instanceof StarMirrorNode) {
                 return (StarMirrorNode) node;
@@ -95,7 +95,7 @@ public class StarBuilder extends StructureBuilder {
     public int removeNodes(MirrorNode existingRoot, int nodesToRemove) {
         if (existingRoot == null || nodesToRemove <= 0) return 0;
 
-        Set<TreeNode> allNodes = existingRoot.getAllNodesInStructure();
+        Set<TreeNode> allNodes = existingRoot.getAllNodes();
         
         // Stern muss mindestens minStarSize Knoten behalten
         if (allNodes.size() - nodesToRemove < minStarSize) {
@@ -126,7 +126,7 @@ public class StarBuilder extends StructureBuilder {
      */
     private List<StarMirrorNode> findStarLeaves(MirrorNode root) {
         List<StarMirrorNode> leaves = new ArrayList<>();
-        Set<TreeNode> allNodes = root.getAllNodesInStructure();
+        Set<TreeNode> allNodes = root.getAllNodes();
         
         for (TreeNode node : allNodes) {
             if (node instanceof StarMirrorNode) {
@@ -149,7 +149,7 @@ public class StarBuilder extends StructureBuilder {
         }
 
         // Fallback: grundlegende Stern-Validierung
-        Set<TreeNode> allNodes = root.getAllNodesInStructure();
+        Set<TreeNode> allNodes = root.getAllNodes();
         
         if (allNodes.size() < 3) return false;
 

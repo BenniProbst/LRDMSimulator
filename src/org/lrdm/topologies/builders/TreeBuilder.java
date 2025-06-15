@@ -65,7 +65,7 @@ public abstract class TreeBuilder extends StructureBuilder {
     protected boolean validateTreeStructure(MirrorNode root) {
         if (root == null) return false;
 
-        Set<TreeNode> allNodes = root.getAllNodesInStructure();
+        Set<TreeNode> allNodes = root.getAllNodes();
         Set<TreeNode> visited = new HashSet<>();
 
         // Prüfe auf Zyklen und korrekte Baum-Struktur

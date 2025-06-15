@@ -150,7 +150,7 @@ public class TreeNode {
         if (this == structureRoot) return false; // Root kann nicht entfernt werden
 
         // Prüfe ob dieser Knoten in der Struktur gefunden werden kann
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<TreeNode> allNodes = getAllNodes();
         if (!allNodes.contains(structureRoot)) return false;
 
         // Knoten kann nur entfernt werden, wenn er keine Kinder hat
@@ -416,7 +416,7 @@ public class TreeNode {
      *
      * @return Set aller Knoten in der zusammenhängenden Struktur
      */
-    public Set<TreeNode> getAllNodesInStructure() {
+    public Set<TreeNode> getAllNodes() {
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
         stack.push(this);
@@ -594,7 +594,7 @@ public class TreeNode {
      *
      * @return Set aller Knoten in der zusammenhängenden Substruktur
      */
-    public Set<TreeNode> getAllNodes() {
+    public Set<TreeNode> getAllNodesInStructure() {
         Set<TreeNode> allNodes = new HashSet<>();
         Set<TreeNode> visited = new HashSet<>();
         Stack<TreeNode> stack = new Stack<>();
@@ -638,7 +638,7 @@ public class TreeNode {
      */
     public Set<TreeNode> getEndpointsOfStructure() {
         Set<TreeNode> endpoints = new HashSet<>();
-        Set<TreeNode> allNodes = getAllNodes();
+        Set<TreeNode> allNodes = getAllNodesInStructure();
 
         // Filtere Terminal-Knoten aus der Gesamtmenge
         for (TreeNode node : allNodes) {
@@ -663,7 +663,7 @@ public class TreeNode {
         }
 
         // Verwende die bereits implementierte getAllNodes() Methode
-        Set<TreeNode> allNodes = getAllNodes();
+        Set<TreeNode> allNodes = getAllNodesInStructure();
         return allNodes.contains(node);
     }
 

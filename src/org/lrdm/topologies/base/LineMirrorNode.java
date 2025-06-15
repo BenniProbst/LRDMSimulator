@@ -66,7 +66,7 @@ public class LineMirrorNode extends MirrorNode {
      */
     public List<LineMirrorNode> getEndpoints() {
         List<LineMirrorNode> endpoints = new ArrayList<>();
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<TreeNode> allNodes = getAllNodes();
 
         for (TreeNode node : allNodes) {
             if (node.isTerminal() && node instanceof LineMirrorNode) {
