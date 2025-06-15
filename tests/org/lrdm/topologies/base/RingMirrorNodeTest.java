@@ -23,7 +23,7 @@ class RingMirrorNodeTest {
     private TimedRDMSim sim;
     private RingMirrorNode ringNode;
     private Properties props;
-    private static final String config = "resources/sim-test-mirrornode.conf";
+    private static final String config = "resources/sim-test-mirror node.conf";
 
     @BeforeEach
     void setUp() throws IOException {
@@ -242,7 +242,7 @@ class RingMirrorNodeTest {
             node3.setParent(node1);
             assertFalse(node1.isValidStructure(Set.of(node1, node2, node3)));
 
-            // Mit Head aber ohne Edge-Links ungültig
+            // Mit Head, aber ohne Edge-Links ungültig
             node1.setHead(true);
             Mirror mirror1 = new Mirror(101, 0, props);
             Mirror mirror2 = new Mirror(102, 0, props);
@@ -336,7 +336,7 @@ class RingMirrorNodeTest {
             assertEquals(node2, head.getNextInRing());
             assertEquals(node3, node2.getNextInRing());
             assertEquals(node4, node3.getNextInRing());
-            assertEquals(null, node4.getNextInRing()); // Head ist Parent, nicht Child
+            assertNull(node4.getNextInRing()); // Head ist Parent, nicht Child
 
             // Prüfe mit unvollständigem Ring
             node4.setParent(null);
@@ -500,7 +500,7 @@ class RingMirrorNodeTest {
             for (int i = 0; i < 20; i++) {
                 RingMirrorNode current = ringNodes.get(i);
                 RingMirrorNode next = ringNodes.get((i + 1) % 20);
-                
+
                 if (i < 19) {
                     current.addChild(next);
                 } else {
@@ -525,9 +525,10 @@ class RingMirrorNodeTest {
             // Sollte schnell sein (< 1000ms für 20 Knoten)
             assertTrue(endTime - startTime < 1000);
 
-            // Korrekte Funktionalität
+            // Korrekte Funktionalität validieren
             assertNotNull(mirrors);
-            // isRing wird false sein ohne Mirrors und Links
+            // isRing wird false sein ohne Mirrors und Links, aber die Operation sollte schnell sein
+            assertFalse(isRing); // Ohne Mirrors und implementierte Links ist es kein gültiger Ring
         }
 
         @Test
@@ -575,7 +576,7 @@ class RingMirrorNodeTest {
         }
 
         @Test
-        @DisplayName("Ring-Integritäts-Validierung")
+        @DisplayName("Ring-Integrity-Validierung")
         void testRingIntegrityValidation() {
             RingMirrorNode node1 = new RingMirrorNode(1);
             RingMirrorNode node2 = new RingMirrorNode(2);
