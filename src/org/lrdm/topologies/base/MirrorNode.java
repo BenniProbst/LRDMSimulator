@@ -1,18 +1,10 @@
-
-package org.lrdm.topologies.base;
-
-import org.lrdm.Link;
-import org.lrdm.Mirror;
-
-import java.util.*;
-
 /**
  * Repräsentiert einen Knoten in einer Struktur (Baum oder Ring), der einem Mirror zugeordnet werden kann.
  * Diese Klasse trennt die Planungsschicht (StructureNode-Struktur) von der
  * Implementierungsschicht (Mirror mit Links).
  * <p>
  * Vollständig zustandslos bezüglich Link-Informationen - alle werden über das Mirror verwaltet.
- * Unterstützt sowohl Baum- als auch Ring-Strukturen.
+ * Unterstützt Multi-Type-Strukturen mit Typ-ID und Head-ID-Berücksichtigung.
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
@@ -50,6 +42,8 @@ public class MirrorNode extends StructureNode {
         return StructureType.MIRROR;
     }
 
+    // ===== MIRROR MANAGEMENT =====
+
     /**
      * Setzt den Mirror für diesen Knoten.
      * Sollte nur über Builder (TreeBuilder/RingBuilder) gesetzt werden, nicht direkt.
@@ -68,6 +62,8 @@ public class MirrorNode extends StructureNode {
     public Mirror getMirror() {
         return mirror;
     }
+
+    // ===== LINK MANAGEMENT =====
 
     /**
      * Fügt einen implementierten Link hinzu.
@@ -121,34 +117,151 @@ public class MirrorNode extends StructureNode {
     }
 
     /**
-     * Berechnet die Anzahl der noch ausstehenden Links.
+     * Berechnet die Anzahl der noch ausstehenden Links für eine spezifische Struktur.
      * Dies ist die Differenz zwischen geplanten und implementierten Links.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return Anzahl der ausstehenden Links
+     */
+    public int getNumPendingLinks(StructureType typeId, StructureNode head) {
+        return Math.max(0, getNumPlannedLinksFromStructure(typeId, head) - getNumImplementedLinks());
+    }
+
+    /**
+     * Berechnet die Anzahl der noch ausstehenden Links.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @return Anzahl der ausstehenden Links
      */
     public int getNumPendingLinks() {
-        return Math.max(0, getNumPlannedLinksFromStructure() - getNumImplementedLinks());
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return getNumPendingLinks(typeId, head != null ? head : this);
+    }
+
+    // ===== VERBINDUNGSPRÜFUNG =====
+
+    /**
+     * Prüft, ob dieser Knoten mit einem anderen MirrorNode über eine spezifische Struktur verlinkt ist.
+     * Berücksichtigt sowohl geplante als auch implementierte Verbindungen für die spezifische Struktur.
+     *
+     * @param other Der andere MirrorNode
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return true, wenn eine Verbindung über den spezifischen Kanal existiert
+     */
+    public boolean isLinkedWith(MirrorNode other, StructureType typeId, StructureNode head) {
+        if (other == null || this.mirror == null || other.mirror == null) {
+            return false;
+        }
+
+        // Prüfe sowohl geplante als auch implementierte Verbindungen für spezifische Struktur
+        boolean plannedConnection = isPlannedConnectionWith(other, typeId, head);
+        boolean implementedConnection = hasImplementedConnectionWith(other, typeId, head);
+
+        return plannedConnection && implementedConnection;
     }
 
     /**
      * Prüft, ob dieser Knoten mit einem anderen MirrorNode verlinkt ist.
-     * Funktioniert nur, wenn beide Knoten Mirrors haben und die Planungsschicht
-     * mit der Implementierungsschicht umgesetzt wurde.
-     * Unterstützt sowohl Baum- als auch Ring-Strukturen.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @param other Der andere MirrorNode
      * @return true, wenn eine Verbindung existiert
      */
     public boolean isLinkedWith(MirrorNode other) {
-        if (other == null || this.mirror == null || other.mirror == null) {
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return isLinkedWith(other, typeId, head != null ? head : this);
+    }
+
+    /**
+     * Prüft, ob eine geplante Verbindung zu einem anderen Knoten über eine spezifische Struktur existiert.
+     * Verwendet Stack-basierte Traversierung zur Abschätzung der Link-Verbindungen.
+     *
+     * @param other Der andere MirrorNode
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return true, wenn eine geplante Verbindung über den spezifischen Kanal existiert
+     */
+    private boolean isPlannedConnectionWith(MirrorNode other, StructureType typeId, StructureNode head) {
+        if (other == null || head == null) return false;
+
+        final int headId = head.getId();
+        Set<StructureNode> visited = new HashSet<>();
+        Stack<StructureNode> stack = new Stack<>();
+        stack.push(this);
+
+        while (!stack.isEmpty()) {
+            StructureNode current = stack.pop();
+
+            if (visited.contains(current)) continue;
+            visited.add(current);
+
+            // Gefunden?
+            if (current == other) return true;
+
+            // Parent traversieren (wenn Typ-ID und Head-ID passen)
+            if (current.getParent() != null) {
+                ChildRecord parentRecord = current.getParent().findChildRecordById(current.getId());
+                if (parentRecord != null && parentRecord.belongsToStructure(typeId, headId)) {
+                    stack.push(current.getParent());
+                }
+            }
+
+            // Kinder traversieren (wenn Typ-ID und Head-ID passen)
+            Set<StructureNode> structureChildren = current.getChildren(typeId, headId);
+            stack.addAll(structureChildren);
+        }
+
+        return false;
+    }
+
+    /**
+     * Prüft, ob eine implementierte Verbindung zu einem anderen Knoten über eine spezifische Struktur existiert.
+     * Verifiziert die Head-ID und Typ-ID Identität vor der Mirror-Link-Prüfung.
+     *
+     * @param other Der andere MirrorNode
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return true, wenn eine implementierte Verbindung über den spezifischen Kanal existiert
+     */
+    private boolean hasImplementedConnectionWith(MirrorNode other, StructureType typeId, StructureNode head) {
+        if (other == null || this.mirror == null || other.mirror == null || head == null) {
             return false;
         }
 
-        // Prüfe sowohl geplante als auch implementierte Verbindungen
-        boolean plannedConnection = isPlannedConnectionWith(other);
-        boolean implementedConnection = hasImplementedConnectionWith(other);
+        // Prüfe, ob beide Knoten zur gleichen Struktur (typeId + headId) gehören
+        final int headId = head.getId();
 
-        return plannedConnection && implementedConnection;
+        // Prüfe eigene Zugehörigkeit zur Struktur
+        boolean thisInStructure = false;
+        if (this.getParent() != null) {
+            ChildRecord thisRecord = this.getParent().findChildRecordById(this.getId());
+            thisInStructure = thisRecord != null && thisRecord.belongsToStructure(typeId, headId);
+        } else {
+            // Kein Parent - prüfe ob wir der Head sind
+            thisInStructure = this.isHead(typeId) && this.getId() == headId;
+        }
+
+        // Prüfe andere Knoten Zugehörigkeit zur Struktur
+        boolean otherInStructure = false;
+        if (other.getParent() != null) {
+            ChildRecord otherRecord = other.getParent().findChildRecordById(other.getId());
+            otherInStructure = otherRecord != null && otherRecord.belongsToStructure(typeId, headId);
+        } else {
+            // Kein Parent - prüfe ob der andere der Head ist
+            otherInStructure = other.isHead(typeId) && other.getId() == headId;
+        }
+
+        // Beide müssen zur gleichen Struktur gehören
+        if (!thisInStructure || !otherInStructure) {
+            return false;
+        }
+
+        // Jetzt prüfe die implementierte Mirror-Verbindung
+        return this.mirror.isLinkedWith(other.mirror);
     }
 
     /**
@@ -160,50 +273,66 @@ public class MirrorNode extends StructureNode {
         removeChild(child);
         // Entferne auch alle zugehörigen implementierten Links über das Mirror
         if (child != null && child.mirror != null && this.mirror != null) {
-            Set<Link> linksToRemove = mirror.getJointMirrorLinks(child.mirror);
-            for (Link link : linksToRemove) {
-                mirror.removeLink(link);
-                child.mirror.removeLink(link);
+            Set<Link> linksToRemove = new HashSet<>();
+            for (Link link : mirror.getLinks()) {
+                if (link.getSource().getID() == child.mirror.getID() ||
+                        link.getTarget().getID() == child.mirror.getID()) {
+                    linksToRemove.add(link);
+                }
+            }
+            linksToRemove.forEach(this::removeLink);
+        }
+    }
+
+    // ===== STRUKTUR-SAMMLUNG MIT MULTI-TYPE-UNTERSTÜTZUNG =====
+
+    /**
+     * Sammelt alle Mirrors einer spezifischen Substruktur.
+     * Verwendet getAllNodesInStructure() für konsistente Substruktur-Abgrenzung.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return Set aller Mirror-Instanzen in der spezifischen Substruktur (ohne null-Werte)
+     */
+    public Set<Mirror> getMirrorsOfStructure(StructureType typeId, StructureNode head) {
+        Set<Mirror> mirrors = new HashSet<>();
+        Set<StructureNode> structureNodes = getAllNodesInStructure(typeId, head);
+
+        for (StructureNode node : structureNodes) {
+            if (node instanceof MirrorNode mirrorNode && mirrorNode.getMirror() != null) {
+                mirrors.add(mirrorNode.getMirror());
             }
         }
-    }
 
-    /**
-     * Prüft, ob eine geplante Verbindung zu einem anderen Knoten existiert.
-     * Einfache Parent-Child-Beziehung prüfen.
-     */
-    private boolean isPlannedConnectionWith(MirrorNode other) {
-        // Direkte Parent-Child-Beziehung
-        return this.getParent() == other || other.getParent() == this;
-    }
-
-    /**
-     * Prüft, ob eine implementierte Verbindung zu einem anderen Knoten existiert.
-     * Delegiert an das zugeordnete Mirror.
-     */
-    private boolean hasImplementedConnectionWith(MirrorNode other) {
-        if (other == null || other.mirror == null || this.mirror == null) {
-            return false;
-        }
-
-        return mirror.isLinkedWith(other.mirror);
+        return mirrors;
     }
 
     /**
      * Sammelt alle Mirrors der Substruktur.
-     * Verwendet getAllNodesInStructure() aus StructureNode für konsistente Substruktur-Abgrenzung.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @return Set aller Mirror-Instanzen in der Substruktur (ohne null-Werte)
      */
     public Set<Mirror> getMirrorsOfStructure() {
-        Set<Mirror> mirrors = new HashSet<>();
-        Set<StructureNode> allNodes = getAllNodesInStructure();
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return getMirrorsOfStructure(typeId, head != null ? head : this);
+    }
 
-        for (StructureNode node : allNodes) {
-            if (node instanceof MirrorNode mirrorNode) {
-                if (mirrorNode.mirror != null) {
-                    mirrors.add(mirrorNode.mirror);
-                }
+    /**
+     * Sammelt alle Mirrors der Endpunkte einer spezifischen Substruktur.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return Set aller Mirror-Instanzen der Endpunkte (ohne null-Werte)
+     */
+    public Set<Mirror> getMirrorsOfEndpoints(StructureType typeId, StructureNode head) {
+        Set<Mirror> mirrors = new HashSet<>();
+        Set<StructureNode> endpoints = getEndpointsOfStructure(typeId, head);
+
+        for (StructureNode endpoint : endpoints) {
+            if (endpoint instanceof MirrorNode mirrorNode && mirrorNode.getMirror() != null) {
+                mirrors.add(mirrorNode.getMirror());
             }
         }
 
@@ -212,49 +341,37 @@ public class MirrorNode extends StructureNode {
 
     /**
      * Sammelt alle Mirrors der Endpunkte der Substruktur.
-     * Verwendet getEndpointsOfStructure() aus StructureNode für Endpunkt-Identifikation.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @return Set aller Mirror-Instanzen der Endpunkte (ohne null-Werte)
      */
     public Set<Mirror> getMirrorsOfEndpoints() {
-        Set<Mirror> endpointMirrors = new HashSet<>();
-        Set<StructureNode> endpoints = getEndpointsOfStructure();
-
-        for (StructureNode endpoint : endpoints) {
-            if (endpoint instanceof MirrorNode mirrorNode) {
-                if (mirrorNode.mirror != null) {
-                    endpointMirrors.add(mirrorNode.mirror);
-                }
-            }
-        }
-
-        return endpointMirrors;
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return getMirrorsOfEndpoints(typeId, head != null ? head : this);
     }
 
+    // ===== LINK-SAMMLUNG MIT MULTI-TYPE-UNTERSTÜTZUNG =====
+
     /**
-     * Sammelt alle Links, die vollständig zur Substruktur gehören.
+     * Sammelt alle Links, die vollständig zu einer spezifischen Substruktur gehören.
      * Ein Link gehört zur Struktur, wenn sowohl Source als auch Target
-     * Mirrors von MirrorNodes der Substruktur sind.
+     * Mirrors von MirrorNodes der spezifischen Substruktur sind.
      *
-     * @return Set aller Links, die Teil der Substruktur sind
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return Set aller Links, die Teil der spezifischen Substruktur sind
      */
-    public Set<Link> getLinksOfStructure() {
+    public Set<Link> getLinksOfStructure(StructureType typeId, StructureNode head) {
         Set<Link> structureLinks = new HashSet<>();
-        Set<Mirror> structureMirrors = getMirrorsOfStructure();
+        Set<Mirror> structureMirrors = getMirrorsOfStructure(typeId, head);
 
         // Sammle alle Links von allen Mirrors der Struktur
-        Set<Link> candidateLinks = new HashSet<>();
         for (Mirror mirror : structureMirrors) {
-            candidateLinks.addAll(mirror.getLinks());
-        }
-
-        // Filtere Links: Beide Endpoints müssen in der Struktur sein
-        for (Link link : candidateLinks) {
-            boolean sourceInStructure = structureMirrors.contains(link.getSource());
-            boolean targetInStructure = structureMirrors.contains(link.getTarget());
-
-            if (sourceInStructure && targetInStructure) {
-                structureLinks.add(link);
+            for (Link link : mirror.getLinks()) {
+                if (isLinkOfStructure(link, structureMirrors)) {
+                    structureLinks.add(link);
+                }
             }
         }
 
@@ -262,25 +379,34 @@ public class MirrorNode extends StructureNode {
     }
 
     /**
-     * Sammelt alle Edge-Links (Randverbindungen).
-     * Ein Edge-Link ist ein Link, bei dem nur entweder Source ODER Target
-     * ein Mirror der Substruktur ist (aber nicht beide).
-     * Diese Links verbinden die Struktur mit anderen Strukturen.
+     * Sammelt alle Links, die vollständig zur Substruktur gehören.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
-     * @return Set aller Edge-Links der Substruktur
+     * @return Set aller Links, die Teil der Substruktur sind
      */
-    public Set<Link> getEdgeLinks() {
+    public Set<Link> getLinksOfStructure() {
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return getLinksOfStructure(typeId, head != null ? head : this);
+    }
+
+    /**
+     * Sammelt alle Edge-Links (Randverbindungen) einer spezifischen Substruktur.
+     * Ein Edge-Link ist ein Link, bei dem nur entweder Source ODER Target
+     * ein Mirror der spezifischen Substruktur ist (aber nicht beide).
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return Set aller Edge-Links der spezifischen Substruktur
+     */
+    public Set<Link> getEdgeLinks(StructureType typeId, StructureNode head) {
         Set<Link> edgeLinks = new HashSet<>();
-        Set<Mirror> structureMirrors = getMirrorsOfStructure();
+        Set<Mirror> structureMirrors = getMirrorsOfStructure(typeId, head);
 
         // Sammle alle Links von allen Mirrors der Struktur
         for (Mirror mirror : structureMirrors) {
             for (Link link : mirror.getLinks()) {
-                boolean sourceInStructure = structureMirrors.contains(link.getSource());
-                boolean targetInStructure = structureMirrors.contains(link.getTarget());
-
-                // Edge-Link: nur einer der Endpoints ist in der Struktur (XOR)
-                if (sourceInStructure ^ targetInStructure) {
+                if (isEdgeLink(link, structureMirrors)) {
                     edgeLinks.add(link);
                 }
             }
@@ -290,89 +416,158 @@ public class MirrorNode extends StructureNode {
     }
 
     /**
+     * Sammelt alle Edge-Links (Randverbindungen).
+     * Verwendet automatische Typ- und Head-Ermittlung.
+     *
+     * @return Set aller Edge-Links der Substruktur
+     */
+    public Set<Link> getEdgeLinks() {
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return getEdgeLinks(typeId, head != null ? head : this);
+    }
+
+    // ===== LINK-KLASSIFIKATION =====
+
+    /**
+     * Prüft, ob ein Link vollständig zu einer spezifischen Substruktur gehört.
+     *
+     * @param link Der zu prüfende Link
+     * @param structureMirrors Die Mirrors der spezifischen Struktur
+     * @return true, wenn beide Endpoints zur Struktur gehören
+     */
+    private boolean isLinkOfStructure(Link link, Set<Mirror> structureMirrors) {
+        if (link == null || structureMirrors == null) return false;
+
+        boolean sourceInStructure = structureMirrors.contains(link.getSource());
+        boolean targetInStructure = structureMirrors.contains(link.getTarget());
+
+        return sourceInStructure && targetInStructure;
+    }
+
+    /**
      * Prüft, ob ein Link vollständig zur Substruktur gehört.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @param link Der zu prüfende Link
      * @return true, wenn beide Endpoints zur Struktur gehören
      */
     public boolean isLinkOfStructure(Link link) {
-        if (link == null) return false;
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        Set<Mirror> structureMirrors = getMirrorsOfStructure(typeId, head != null ? head : this);
+        return isLinkOfStructure(link, structureMirrors);
+    }
 
-        Set<Mirror> structureMirrors = getMirrorsOfStructure();
-        return structureMirrors.contains(link.getSource()) &&
-                structureMirrors.contains(link.getTarget());
+    /**
+     * Prüft, ob ein Link ein Edge-Link einer spezifischen Substruktur ist.
+     *
+     * @param link Der zu prüfende Link
+     * @param structureMirrors Die Mirrors der spezifischen Struktur
+     * @return true, wenn nur ein Endpoint zur Struktur gehört
+     */
+    private boolean isEdgeLink(Link link, Set<Mirror> structureMirrors) {
+        if (link == null || structureMirrors == null) return false;
+
+        boolean sourceInStructure = structureMirrors.contains(link.getSource());
+        boolean targetInStructure = structureMirrors.contains(link.getTarget());
+
+        return sourceInStructure != targetInStructure; // XOR: nur einer ist in der Struktur
     }
 
     /**
      * Prüft, ob ein Link ein Edge-Link der Substruktur ist.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @param link Der zu prüfende Link
      * @return true, wenn nur ein Endpoint zur Struktur gehört
      */
     public boolean isEdgeLink(Link link) {
-        if (link == null) return false;
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        Set<Mirror> structureMirrors = getMirrorsOfStructure(typeId, head != null ? head : this);
+        return isEdgeLink(link, structureMirrors);
+    }
 
-        Set<Mirror> structureMirrors = getMirrorsOfStructure();
-        boolean sourceInStructure = structureMirrors.contains(link.getSource());
-        boolean targetInStructure = structureMirrors.contains(link.getTarget());
+    // ===== LINK-ZÄHLUNG =====
 
-        return sourceInStructure ^ targetInStructure; // XOR
+    /**
+     * Zählt die Anzahl der struktur-internen Links einer spezifischen Struktur.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return Anzahl der Links innerhalb der spezifischen Substruktur
+     */
+    public int getNumLinksOfStructure(StructureType typeId, StructureNode head) {
+        return getLinksOfStructure(typeId, head).size();
     }
 
     /**
      * Zählt die Anzahl der struktur-internen Links.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @return Anzahl der Links innerhalb der Substruktur
      */
     public int getNumLinksOfStructure() {
-        return getLinksOfStructure().size();
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return getNumLinksOfStructure(typeId, head != null ? head : this);
+    }
+
+    /**
+     * Zählt die Anzahl der Edge-Links einer spezifischen Struktur.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
+     * @return Anzahl der Edge-Links der spezifischen Substruktur
+     */
+    public int getNumEdgeLinks(StructureType typeId, StructureNode head) {
+        return getEdgeLinks(typeId, head).size();
     }
 
     /**
      * Zählt die Anzahl der Edge-Links.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @return Anzahl der Edge-Links der Substruktur
      */
     public int getNumEdgeLinks() {
-        return getEdgeLinks().size();
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return getNumEdgeLinks(typeId, head != null ? head : this);
     }
 
+    // ===== STRUKTURVALIDIERUNG =====
+
     /**
-     * Erweiterte Struktur Validierung für MirrorNode.
-     * Überprüft zusätzlich zur StructureNode-Validierung die Mirror-Link-Konsistenz:
-     * - Alle Struktur-Mirrors müssen mindestens einen Link zu anderen Struktur-Mirrors haben
-     * - Keine Self-Links (Mirror mit sich selbst verknüpft)
-     * - Keine Links zu Mirrors außerhalb der Struktur
+     * Erweiterte Struktur Validierung für MirrorNode mit spezifischer Struktur.
+     * Überprüft zusätzlich zur StructureNode-Validierung die Mirror-Link-Konsistenz.
      *
      * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
      * @return true, wenn sowohl StructureNode- als auch Mirror-Validierung erfolgreich sind
      */
-    @Override
-    public boolean isValidStructure(Set<StructureNode> allNodes) {
-        // Zuerst die grundlegende StructureNode-Struktur Validierung
+    public boolean isValidStructure(Set<StructureNode> allNodes, StructureType typeId, StructureNode head) {
+        // Zuerst die grundlegende StructureNode-Validierung
         if (!super.isValidStructure(allNodes)) {
             return false;
         }
 
-        // Verwende bereits vorhandene Funktionen für Mirror-Sammlung
-        Set<Mirror> structureMirrors = getMirrorsOfStructure();
+        if (head == null) return false;
 
-        // Wenn keine Mirrors vorhanden sind, ist die Struktur gültig (reine StructureNode-Struktur)
-        if (structureMirrors.isEmpty()) {
-            return true;
-        }
+        // Sammle alle Mirrors der spezifischen Struktur
+        Set<Mirror> structureMirrors = getMirrorsOfStructure(typeId, head);
+        Set<Link> structureLinks = getLinksOfStructure(typeId, head);
 
-        // Verwende bereits vorhandene Funktionen für Link-Sammlung
-        Set<Link> structureLinks = getLinksOfStructure();
-
-        // Validiere jeden Mirror in der Struktur
+        // Validiere jeden Mirror in der spezifischen Struktur
         for (Mirror mirror : structureMirrors) {
             if (!isValidMirrorInStructure(mirror, structureMirrors, structureLinks)) {
                 return false;
             }
         }
 
-        // Validiere alle Links der Struktur
+        // Validiere jeden Link in der spezifischen Struktur
         for (Link link : structureLinks) {
             if (!isValidLinkInStructure(link, structureMirrors)) {
                 return false;
@@ -383,51 +578,17 @@ public class MirrorNode extends StructureNode {
     }
 
     /**
-     * Validiert einen einzelnen Mirror innerhalb der Struktur.
+     * Erweiterte Struktur Validierung für MirrorNode.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
-     * @param mirror Der zu validierende Mirror
-     * @param structureMirrors Alle Mirrors der Struktur
-     * @param structureLinks Alle Links der Struktur (bereits gefiltert)
-     * @return true wenn der Mirror gültig ist
+     * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
+     * @return true, wenn sowohl StructureNode- als auch Mirror-Validierung erfolgreich sind
      */
-    private boolean isValidMirrorInStructure(Mirror mirror, Set<Mirror> structureMirrors, Set<Link> structureLinks) {
-        // Prüfe, ob der Mirror mindestens einen Link zu einem anderen Mirror der Struktur hat
-        boolean hasValidConnection = false;
-
-        for (Link link : structureLinks) {
-            // Wenn der Mirror an einem struktur-internen Link beteiligt ist
-            if (link.getSource().equals(mirror) || link.getTarget().equals(mirror)) {
-                hasValidConnection = true;
-                break;
-            }
-        }
-
-        // Ein Mirror ohne Verbindungen zu anderen Struktur-Mirrors ist nur gültig,
-        // wenn die Struktur nur aus einem Mirror besteht
-        return hasValidConnection || structureMirrors.size() == 1;
-    }
-
-    /**
-     * Validiert einen einzelnen Link innerhalb der Struktur.
-     * Nutzt bereits vorhandene isLinkOfStructure() Funktionen für Konsistenz.
-     *
-     * @param link Der zu validierende Link
-     * @param structureMirrors Alle Mirrors der Struktur
-     * @return true wenn der Link gültig ist
-     */
-    private boolean isValidLinkInStructure(Link link, Set<Mirror> structureMirrors) {
-        Mirror source = link.getSource();
-        Mirror target = link.getTarget();
-
-        // Prüfe auf Self-Links (Mirror mit sich selbst verknüpft)
-        if (source.equals(target)) {
-            return false; // Self-Links sind ungültig
-        }
-
-        // Da structureLinks bereits gefiltert wurde durch getLinksOfStructure(),
-        // wissen wir, dass beide Endpoints zur Struktur gehören.
-        // Zusätzliche Validierung: Beide müssen wirklich in structureMirrors sein
-        return structureMirrors.contains(source) && structureMirrors.contains(target);
+    @Override
+    public boolean isValidStructure(Set<StructureNode> allNodes) {
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        return isValidStructure(allNodes, typeId, head != null ? head : this);
     }
 
     /**
@@ -437,18 +598,57 @@ public class MirrorNode extends StructureNode {
      * @return true wenn die Struktur gültig ist
      */
     public boolean isValidStructure() {
-        return isValidStructure(getAllNodesInStructure());
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head != null ? head : this);
+        return isValidStructure(allNodes, typeId, head != null ? head : this);
+    }
+
+    /**
+     * Validiert einen einzelnen Mirror innerhalb der Struktur.
+     */
+    private boolean isValidMirrorInStructure(Mirror mirror, Set<Mirror> structureMirrors, Set<Link> structureLinks) {
+        if (mirror == null) return false;
+
+        // Mirror muss mindestens einen Link zu anderen Struktur-Mirrors haben
+        boolean hasStructureConnection = false;
+        for (Link link : mirror.getLinks()) {
+            if (structureLinks.contains(link)) {
+                hasStructureConnection = true;
+                break;
+            }
+        }
+
+        // Prüfe auf Self-Links (sollten nicht existieren)
+        for (Link link : mirror.getLinks()) {
+            if (link.getSource().getID() == link.getTarget().getID()) {
+                return false; // Self-Link gefunden
+            }
+        }
+
+        return hasStructureConnection;
+    }
+
+    /**
+     * Validiert einen einzelnen Link innerhalb der Struktur.
+     */
+    private boolean isValidLinkInStructure(Link link, Set<Mirror> structureMirrors) {
+        if (link == null) return false;
+
+        Mirror source = link.getSource();
+        Mirror target = link.getTarget();
+
+        // Beide Mirrors müssen zur Struktur gehören
+        boolean sourceInStructure = structureMirrors.contains(source);
+        boolean targetInStructure = structureMirrors.contains(target);
+
+        return sourceInStructure && targetInStructure;
     }
 
     @Override
     public String toString() {
-        return String.format("MirrorNode{id=%d, mirror=%s, planned=%d, implemented=%d, pending=%d, isHead=%s}",
-                getId(),
-                mirror != null ? mirror.getID() : "null",
-                getNumPlannedLinksFromStructure(),
-                getNumImplementedLinks(),
-                getNumPendingLinks(),
-                isHead());
+        return String.format("MirrorNode{id=%d, mirror=%s, children=%d}",
+                getId(), mirror != null ? mirror.getID() : "null", getChildren().size());
     }
 
     @Override
@@ -460,6 +660,6 @@ public class MirrorNode extends StructureNode {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId());
+        return Integer.hashCode(getId());
     }
 }
