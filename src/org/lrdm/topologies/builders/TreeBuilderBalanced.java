@@ -41,7 +41,7 @@ public class TreeBuilderBalanced extends TreeBuilder {
     public MirrorNode buildTree(int totalNodes, int maxDepth) {
         if (totalNodes <= 0 || !mirrorIterator.hasNext()) return null;
 
-        MirrorNode root = createMirrorNodeFromIterator();
+        MirrorNode root = getMirrorNodeFromIterator();
         if (root == null || totalNodes == 1) return root;
 
         buildBalanced(root, totalNodes - 1, maxDepth);
@@ -66,7 +66,7 @@ public class TreeBuilderBalanced extends TreeBuilder {
             int childrenToAdd = calculateOptimalChildren(remainingNodes - nodesAdded, queue.size());
 
             for (int i = 0; i < childrenToAdd && nodesAdded < remainingNodes && mirrorIterator.hasNext(); i++) {
-                MirrorNode child = createMirrorNodeFromIterator();
+                MirrorNode child = getMirrorNodeFromIterator();
                 if (child != null) {
                     current.addChild(child);
                     queue.offer(child);
@@ -107,7 +107,7 @@ public class TreeBuilderBalanced extends TreeBuilder {
                     continue;
                 }
 
-                MirrorNode newChild = createMirrorNodeFromIterator();
+                MirrorNode newChild = getMirrorNodeFromIterator();
                 if (newChild != null) {
                     bestCandidate.addChild(newChild);
                     added++;

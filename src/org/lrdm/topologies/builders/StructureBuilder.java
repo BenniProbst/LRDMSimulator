@@ -51,7 +51,7 @@ public abstract class StructureBuilder {
         for (MirrorNode candidate : candidates) {
             if (added >= nodesToAdd) break;
             if (canAddNodeTo(candidate)) {
-                MirrorNode newNode = createMirrorNodeFromIterator();
+                MirrorNode newNode = getMirrorNodeFromIterator();
                 if (newNode != null) {
                     candidate.addChild(newNode);
                     // Nutze die polymorphe Validierung
@@ -73,7 +73,7 @@ public abstract class StructureBuilder {
     protected abstract List<MirrorNode> findInsertionCandidates(MirrorNode root);
     protected abstract boolean canAddNodeTo(MirrorNode node);
 
-    protected MirrorNode createMirrorNodeFromIterator() {
+    protected MirrorNode getMirrorNodeFromIterator() {
         if (mirrorIterator.hasNext()) {
             Mirror mirror = mirrorIterator.next();
             // Diese Methode muss von Kindklassen überschrieben werden,

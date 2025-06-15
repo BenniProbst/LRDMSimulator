@@ -442,7 +442,7 @@ class TreeMirrorNodeTest {
             mirror1.addLink(edgeLink);
             externalMirror.addLink(edgeLink);
 
-            // zusätzlichen Link hinzufügen (3 statt 2 für 3 Knoten)
+            // Link hinzufügen (3 statt 2 für 3 Knoten)
             Link extraLink = new Link(4, mirror1, mirror3, 0, props);
             mirror1.addLink(extraLink);
             mirror3.addLink(extraLink);

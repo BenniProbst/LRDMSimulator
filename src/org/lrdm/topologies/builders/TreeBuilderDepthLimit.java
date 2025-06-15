@@ -39,7 +39,7 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
         if (totalNodes <= 0 || !mirrorIterator.hasNext()) return null;
 
         int effectiveMaxDepth = (maxDepth > 0) ? maxDepth : this.maxDepth;
-        MirrorNode root = createMirrorNodeFromIterator();
+        MirrorNode root = getMirrorNodeFromIterator();
         if (root == null || totalNodes == 1) return root;
 
         // Berechne verfügbare Mirrors aus Iterator
@@ -81,7 +81,7 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
 
             if (bestInsertionPoint == null) break; // Keine gültigen Einfügepunkte mehr
 
-            MirrorNode newChild = createMirrorNodeFromIterator();
+            MirrorNode newChild = getMirrorNodeFromIterator();
             if (newChild != null) {
                 bestInsertionPoint.addChild(newChild);
                 nodesAdded++;
