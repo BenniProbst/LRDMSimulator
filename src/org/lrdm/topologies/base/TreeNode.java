@@ -581,7 +581,7 @@ public class TreeNode {
 
     /**
      * Sammelt alle Knoten der Substruktur, zu der dieser Knoten gehört.
-     * Stoppt bei Head-Knoten, um Substrukturen abzugrenzen.
+     * Head-Knoten gehören zur Struktur, aber ihre Parents/Kinder werden nicht traversiert.
      * Verwendet imperative Stack-basierte Traversierung ohne Rekursion.
      *
      * @return Set aller Knoten in der zusammenhängenden Substruktur
@@ -601,18 +601,22 @@ public class TreeNode {
             }
 
             visited.add(current);
-            allNodes.add(current);
+            allNodes.add(current); // Head-Node wird zur Struktur hinzugefügt
 
-            // Füge Parent hinzu, wenn es kein Head-Knoten ist
-            if (current.parent != null && !current.parent.isHead()) {
-                if (!visited.contains(current.parent)) {
-                    stack.push(current.parent);
-                }
+            // Wenn current eine Head-Node ist, stoppe die Traversierung hier
+            // (aber füge die Head-Node selbst zur Struktur hinzu)
+            if (current.isHead()) {
+                continue; // Nicht weiter traversieren von Head-Nodes
             }
 
-            // Füge alle Kinder hinzu, die keine Head-Knoten sind
+            // Füge Parent hinzu (nur wenn current keine Head-Node ist)
+            if (current.parent != null && !visited.contains(current.parent)) {
+                stack.push(current.parent);
+            }
+
+            // Füge alle Kinder hinzu (nur wenn current keine Head-Node ist)
             for (TreeNode child : current.children) {
-                if (!child.isHead() && !visited.contains(child)) {
+                if (!visited.contains(child)) {
                     stack.push(child);
                 }
             }
