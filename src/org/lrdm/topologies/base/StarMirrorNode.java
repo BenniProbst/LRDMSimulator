@@ -29,10 +29,10 @@ public class StarMirrorNode extends MirrorNode {
     }
 
     @Override
-    public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
+    public boolean canBeRemovedFromStructure(StructureNode structureRoot) {
         if (structureRoot == null) return false;
 
-        Set<TreeNode> structureNodes = structureRoot.getAllNodesInStructure();
+        Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
 
         // Ein Stern muss mindestens 3 Knoten haben (Zentrum + min. 2 Blätter)
         // Nach Entfernung müssen noch mindestens 3 Knoten übrig bleiben
@@ -44,7 +44,7 @@ public class StarMirrorNode extends MirrorNode {
     }
 
     @Override
-    public boolean isValidStructure(Set<TreeNode> allNodes) {
+    public boolean isValidStructure(Set<StructureNode> allNodes) {
         // Zuerst die grundlegende MirrorNode-Strukturvalidierung
         if (!super.isValidStructure(allNodes)) {
             return false;
@@ -56,7 +56,7 @@ public class StarMirrorNode extends MirrorNode {
         Set<StarMirrorNode> starNodes = new HashSet<>();
         StarMirrorNode centerNode = null;
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (!(node instanceof StarMirrorNode starNode)) {
                 return false; // Alle Knoten müssen StarMirrorNodes sein
             }
@@ -88,8 +88,8 @@ public class StarMirrorNode extends MirrorNode {
      * Validiert einen einzelnen Stern-Knoten.
      */
     private boolean isValidStarNode(StarMirrorNode starNode, StarMirrorNode centerNode) {
-        TreeNode parent = starNode.getParent();
-        Set<TreeNode> structureNodes = starNode.getAllNodesInStructure();
+        StructureNode parent = starNode.getParent();
+        Set<StructureNode> structureNodes = starNode.getAllNodesInStructure();
 
         if (starNode == centerNode) {
             // Zentrum: darf externen Parent haben, muss mindestens 2 Kinder haben
@@ -110,25 +110,25 @@ public class StarMirrorNode extends MirrorNode {
     }
 
     /**
-     * Wiederverwendung der TreeNode findHead() Funktion.
+     * Wiederverwendung der StructureNode findHead() Funktion.
      * Findet das Zentrum des Sterns.
      */
     public StarMirrorNode getCenter() {
-        TreeNode head = findHead(); // Wiederverwendung aus TreeNode
+        StructureNode head = findHead(); // Wiederverwendung aus StructureNode
         return (head instanceof StarMirrorNode) ? (StarMirrorNode) head : null;
     }
 
     /**
-     * Direkte Wiederverwendung von getEndpointsOfStructure() aus TreeNode.
+     * Direkte Wiederverwendung von getEndpointsOfStructure() aus StructureNode.
      * Stern-Blätter sind exakt die Terminal-Knoten (Endpunkte) der Struktur.
      */
     public List<StarMirrorNode> getLeaves() {
         List<StarMirrorNode> leaves = new ArrayList<>();
 
-        // Nutze TreeNode getEndpointsOfStructure() - das sind die Blätter!
-        Set<TreeNode> endpoints = getEndpointsOfStructure();
+        // Nutze StructureNode getEndpointsOfStructure() - das sind die Blätter!
+        Set<StructureNode> endpoints = getEndpointsOfStructure();
 
-        for (TreeNode endpoint : endpoints) {
+        for (StructureNode endpoint : endpoints) {
             // Filtere nur echte Blätter (keine Head-Nodes)
             if (endpoint instanceof StarMirrorNode starNode && !starNode.isHead()) {
                 leaves.add(starNode);
@@ -139,14 +139,14 @@ public class StarMirrorNode extends MirrorNode {
     }
 
     /**
-     * Nutzt getAllNodesInStructure() + TreeNode isHead() für alle Kind-Head-Nodes.
+     * Nutzt getAllNodesInStructure() + StructureNode isHead() für alle Kind-Head-Nodes.
      */
     public List<StarMirrorNode> getChildHeads() {
         List<StarMirrorNode> childHeads = new ArrayList<>();
 
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<StructureNode> allNodes = getAllNodesInStructure();
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             // Head-Nodes mit Parent (außer Zentrum)
             if (node instanceof StarMirrorNode starNode &&
                     starNode.isHead() && starNode.getParent() != null) {
@@ -159,7 +159,7 @@ public class StarMirrorNode extends MirrorNode {
 
     /**
      * Prüft, ob dieser Knoten das Zentrum des Sterns ist.
-     * Nutzt TreeNode isHead() und isLeaf() direkt.
+     * Nutzt StructureNode isHead() und isLeaf() direkt.
      */
     public boolean isCenter() {
         return isHead() && !isLeaf();
@@ -167,7 +167,7 @@ public class StarMirrorNode extends MirrorNode {
 
     /**
      * Prüft, ob dieser Knoten eine Kind-Head-Node des Sterns ist.
-     * Nutzt TreeNode isHead() und getParent() direkt.
+     * Nutzt StructureNode isHead() und getParent() direkt.
      */
     public boolean isChildHead() {
         return isHead() && getParent() != null;

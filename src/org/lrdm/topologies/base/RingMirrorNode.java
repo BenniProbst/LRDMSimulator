@@ -31,11 +31,11 @@ public class RingMirrorNode extends MirrorNode {
     }
 
     @Override
-    public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
+    public boolean canBeRemovedFromStructure(StructureNode structureRoot) {
         if (structureRoot == null) return false;
 
         // Verwende die korrekte Strukturermittlung
-        Set<TreeNode> structureNodes = structureRoot.getAllNodesInStructure();
+        Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
 
         // Ein Ring muss mindestens 3 Knoten haben
         // Nach Entfernung müssen noch mindestens 3 Knoten übrig bleiben
@@ -54,7 +54,7 @@ public class RingMirrorNode extends MirrorNode {
      * - Alle anderen Knoten bilden einen geschlossenen Zyklus
      */
     @Override
-    public boolean isValidStructure(Set<TreeNode> allNodes) {
+    public boolean isValidStructure(Set<StructureNode> allNodes) {
         // Zuerst die grundlegende MirrorNode-Strukturvalidierung
         if (!super.isValidStructure(allNodes)) {
             return false;
@@ -66,7 +66,7 @@ public class RingMirrorNode extends MirrorNode {
         Set<RingMirrorNode> ringNodes = new HashSet<>();
         RingMirrorNode headNode = null;
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (!(node instanceof RingMirrorNode ringNode)) {
                 return false; // Alle Knoten müssen RingMirrorNodes sein
             }
@@ -112,9 +112,9 @@ public class RingMirrorNode extends MirrorNode {
         if (ringNode == headNode) {
             // Head-Node darf einen externen Parent haben
             // Parent kann null sein (kein externer Parent) oder außerhalb der Struktur
-            TreeNode parent = ringNode.getParent();
+            StructureNode parent = ringNode.getParent();
             if (parent != null) {
-                Set<TreeNode> structureNodes = ringNode.getAllNodesInStructure();
+                Set<StructureNode> structureNodes = ringNode.getAllNodesInStructure();
                 // Parent darf nicht Teil der Ring-Struktur sein
                 return !structureNodes.contains(parent); // Head-Parent muss extern sein
             }
@@ -125,7 +125,7 @@ public class RingMirrorNode extends MirrorNode {
             }
 
             // Parent muss Teil der Ring-Struktur sein
-            Set<TreeNode> structureNodes = ringNode.getAllNodesInStructure();
+            Set<StructureNode> structureNodes = ringNode.getAllNodesInStructure();
             return structureNodes.contains(ringNode.getParent()); // Parent muss in der Struktur sein
         }
 
@@ -146,11 +146,11 @@ public class RingMirrorNode extends MirrorNode {
         }
 
         // Sammle alle Knoten der Struktur
-        Set<TreeNode> structureNodes = getAllNodesInStructure();
+        Set<StructureNode> structureNodes = getAllNodesInStructure();
 
         // Prüfe geschlossenen Zyklus für alle MirrorNodes mit Mirrors
-        Set<TreeNode> mirrorNodes = new HashSet<>();
-        for (TreeNode node : structureNodes) {
+        Set<StructureNode> mirrorNodes = new HashSet<>();
+        for (StructureNode node : structureNodes) {
             if (node instanceof MirrorNode mirrorNode && mirrorNode.getMirror() != null) {
                 mirrorNodes.add(node);
             }
@@ -164,15 +164,15 @@ public class RingMirrorNode extends MirrorNode {
 
     public RingMirrorNode getNextInRing() {
         if (getChildren().size() != 1) return null;
-        TreeNode next = getChildren().get(0);
+        StructureNode next = getChildren().get(0);
         return (next instanceof RingMirrorNode) ? (RingMirrorNode) next : null;
     }
 
     public RingMirrorNode getPreviousInRing() {
-        TreeNode prev = getParent();
+        StructureNode prev = getParent();
         // Für Head-Node kann der Parent extern sein
         if (isHead() && prev != null) {
-            Set<TreeNode> structureNodes = getAllNodesInStructure();
+            Set<StructureNode> structureNodes = getAllNodesInStructure();
             if (!structureNodes.contains(prev)) {
                 return null; // Externer Parent
             }

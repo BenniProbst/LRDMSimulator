@@ -3,7 +3,7 @@ package org.lrdm.topologies.builders;
 import org.lrdm.Network;
 import org.lrdm.topologies.base.LineMirrorNode;
 import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.base.StructureNode;
 
 import java.util.*;
 
@@ -92,7 +92,7 @@ public class LineBuilder extends StructureBuilder {
             LineMirrorNode endpoint = endpoints.get(endpointIndex);
 
             if (info.allNodes.size() - removed > minLineSize) {
-                TreeNode parent = endpoint.getParent();
+                StructureNode parent = endpoint.getParent();
                 if (parent != null) {
                     parent.removeChild(endpoint);
                     removed++;
@@ -118,7 +118,7 @@ public class LineBuilder extends StructureBuilder {
             return new RemoveNodesInfo(null, 0);
         }
 
-        Set<TreeNode> allNodes = existingRoot.getAllNodes();
+        Set<StructureNode> allNodes = existingRoot.getAllNodes();
 
         if (allNodes.size() - nodesToRemove < minLineSize) {
             nodesToRemove = allNodes.size() - minLineSize;
@@ -139,8 +139,8 @@ public class LineBuilder extends StructureBuilder {
             return lineRoot.getEndpoints();
         }
 
-        Set<TreeNode> allNodes = root.getAllNodes();
-        for (TreeNode node : allNodes) {
+        Set<StructureNode> allNodes = root.getAllNodes();
+        for (StructureNode node : allNodes) {
             if (node.isTerminal() && node instanceof LineMirrorNode) {
                 endpoints.add((LineMirrorNode) node);
             }
@@ -157,13 +157,13 @@ public class LineBuilder extends StructureBuilder {
             return ((LineMirrorNode) root).isValidLineStructure();
         }
 
-        Set<TreeNode> allNodes = root.getAllNodes();
+        Set<StructureNode> allNodes = root.getAllNodes();
 
         if (allNodes.size() < 2) return false;
 
         int terminalCount = 0;
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             int degree = node.getConnectivityDegree();
 
             if (degree == 1) {
@@ -213,10 +213,10 @@ public class LineBuilder extends StructureBuilder {
      * Hilfklasse für Entfernungsvalidierung.
      */
     private static class RemoveNodesInfo {
-        final Set<TreeNode> allNodes;
+        final Set<StructureNode> allNodes;
         final int adjustedNodesToRemove;
 
-        RemoveNodesInfo(Set<TreeNode> allNodes, int adjustedNodesToRemove) {
+        RemoveNodesInfo(Set<StructureNode> allNodes, int adjustedNodesToRemove) {
             this.allNodes = allNodes;
             this.adjustedNodesToRemove = adjustedNodesToRemove;
         }

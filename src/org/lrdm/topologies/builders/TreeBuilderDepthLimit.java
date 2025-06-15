@@ -4,7 +4,7 @@ package org.lrdm.topologies.builders;
 import org.lrdm.Network;
 import org.lrdm.Mirror;
 import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.base.StructureNode;
 
 import java.util.*;
 
@@ -111,9 +111,9 @@ public class TreeBuilderDepthLimit extends TreeBuilder {
             }
 
             // Füge Kinder zum Stack hinzu (Depth-First)
-            List<TreeNode> children = new ArrayList<>(current.getChildren());
+            List<StructureNode> children = new ArrayList<>(current.getChildren());
             Collections.reverse(children); // Umkehren für korrekte Depth-First-Reihenfolge
-            for (TreeNode child : children) {
+            for (StructureNode child : children) {
                 stack.push((MirrorNode) child);
             }
         }

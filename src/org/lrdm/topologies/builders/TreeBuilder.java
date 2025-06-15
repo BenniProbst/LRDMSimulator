@@ -2,7 +2,7 @@ package org.lrdm.topologies.builders;
 
 import org.lrdm.Network;
 import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.base.StructureNode;
 import org.lrdm.Mirror;
 
 import java.util.*;
@@ -65,8 +65,8 @@ public abstract class TreeBuilder extends StructureBuilder {
     protected boolean validateTreeStructure(MirrorNode root) {
         if (root == null) return false;
 
-        Set<TreeNode> allNodes = root.getAllNodes();
-        Set<TreeNode> visited = new HashSet<>();
+        Set<StructureNode> allNodes = root.getAllNodes();
+        Set<StructureNode> visited = new HashSet<>();
 
         // Prüfe auf Zyklen und korrekte Baum-Struktur
         return !hasCycles(root, visited, null) &&
@@ -77,11 +77,11 @@ public abstract class TreeBuilder extends StructureBuilder {
     /**
      * Prüft auf Zyklen im Baum.
      */
-    private boolean hasCycles(TreeNode node, Set<TreeNode> visited, TreeNode parent) {
+    private boolean hasCycles(StructureNode node, Set<StructureNode> visited, StructureNode parent) {
         if (visited.contains(node)) return true;
         visited.add(node);
 
-        for (TreeNode child : node.getChildren()) {
+        for (StructureNode child : node.getChildren()) {
             if (child != parent && hasCycles(child, visited, node)) {
                 return true;
             }
@@ -93,10 +93,10 @@ public abstract class TreeBuilder extends StructureBuilder {
     /**
      * Validiert Baum-spezifische Eigenschaften.
      */
-    private boolean hasValidTreeProperties(Set<TreeNode> allNodes) {
+    private boolean hasValidTreeProperties(Set<StructureNode> allNodes) {
         // Ein Baum mit n Knoten hat genau n-1 Kanten
         int totalEdges = 0;
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             totalEdges += node.getChildren().size();
         }
         return totalEdges == allNodes.size() - 1;
@@ -107,7 +107,7 @@ public abstract class TreeBuilder extends StructureBuilder {
      */
     protected int calculateDepth(MirrorNode node) {
         int depth = 0;
-        TreeNode current = node;
+        StructureNode current = node;
 
         while (current.getParent() != null) {
             depth++;

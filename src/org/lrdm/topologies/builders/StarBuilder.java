@@ -2,7 +2,7 @@ package org.lrdm.topologies.builders;
 
 import org.lrdm.topologies.base.MirrorNode;
 import org.lrdm.topologies.base.StarMirrorNode;
-import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.base.StructureNode;
 
 import java.util.*;
 
@@ -81,8 +81,8 @@ public class StarBuilder extends StructureBuilder {
         }
 
         // Fallback: Suche Knoten ohne Parent mit Kindern
-        Set<TreeNode> allNodes = root.getAllNodes();
-        for (TreeNode node : allNodes) {
+        Set<StructureNode> allNodes = root.getAllNodes();
+        for (StructureNode node : allNodes) {
             if (node.isRoot() && !node.isLeaf() && node instanceof StarMirrorNode) {
                 return (StarMirrorNode) node;
             }
@@ -95,7 +95,7 @@ public class StarBuilder extends StructureBuilder {
     public int removeNodes(MirrorNode existingRoot, int nodesToRemove) {
         if (existingRoot == null || nodesToRemove <= 0) return 0;
 
-        Set<TreeNode> allNodes = existingRoot.getAllNodes();
+        Set<StructureNode> allNodes = existingRoot.getAllNodes();
         
         // Stern muss mindestens minStarSize Knoten behalten
         if (allNodes.size() - nodesToRemove < minStarSize) {
@@ -111,7 +111,7 @@ public class StarBuilder extends StructureBuilder {
         for (StarMirrorNode leaf : leaves) {
             if (removed >= nodesToRemove) break;
             
-            TreeNode parent = leaf.getParent();
+            StructureNode parent = leaf.getParent();
             if (parent != null) {
                 parent.removeChild(leaf);
                 removed++;
@@ -126,9 +126,9 @@ public class StarBuilder extends StructureBuilder {
      */
     private List<StarMirrorNode> findStarLeaves(MirrorNode root) {
         List<StarMirrorNode> leaves = new ArrayList<>();
-        Set<TreeNode> allNodes = root.getAllNodes();
+        Set<StructureNode> allNodes = root.getAllNodes();
         
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (node instanceof StarMirrorNode) {
                 StarMirrorNode starNode = (StarMirrorNode) node;
                 if (starNode.isStarLeaf()) {
@@ -149,14 +149,14 @@ public class StarBuilder extends StructureBuilder {
         }
 
         // Fallback: grundlegende Stern-Validierung
-        Set<TreeNode> allNodes = root.getAllNodes();
+        Set<StructureNode> allNodes = root.getAllNodes();
         
         if (allNodes.size() < 3) return false;
 
-        TreeNode center = null;
+        StructureNode center = null;
         int leafCount = 0;
         
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (node.isRoot() && !node.isLeaf()) {
                 if (center != null) return false; // Nur ein Zentrum erlaubt
                 center = node;

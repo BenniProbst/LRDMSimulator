@@ -1,4 +1,4 @@
-package org.lrdm.topologies;
+package org.lrdm.topologies.base;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -11,8 +11,7 @@ import org.lrdm.TimedRDMSim;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.builders.TreeBuilderDepthLimit;
 import org.lrdm.topologies.builders.TreeBuilderBalanced;
 
@@ -289,10 +288,10 @@ class TreeBuilderTest {
             assertNotNull(mirrorProbe);
             List<Mirror> mirrors = mirrorProbe.getMirrors();
 
-            // Erstelle TreeNode-Struktur
-            TreeNode treeRoot = new TreeNode(1, 0);
-            TreeNode child1 = new TreeNode(2, 1);
-            TreeNode child2 = new TreeNode(3, 1);
+            // Erstelle StructureNode-Struktur
+            StructureNode treeRoot = new StructureNode(1, 0);
+            StructureNode child1 = new StructureNode(2, 1);
+            StructureNode child2 = new StructureNode(3, 1);
             treeRoot.addChild(child1);
             treeRoot.addChild(child2);
 
@@ -419,7 +418,7 @@ class TreeBuilderTest {
                 "Node " + node.getId() + " has " + node.getChildren().size() +
                         " children, max allowed: " + maxChildren);
 
-        for (TreeNode child : node.getChildren()) {
+        for (StructureNode child : node.getChildren()) {
             validateMaxChildrenConstraint((MirrorNode) child, maxChildren);
         }
     }
@@ -438,7 +437,7 @@ class TreeBuilderTest {
 
     private void calculateDepthCounts(MirrorNode node, Map<Integer, Integer> depthCounts) {
         depthCounts.merge(node.getDepth(), 1, Integer::sum);
-        for (TreeNode child : node.getChildren()) {
+        for (StructureNode child : node.getChildren()) {
             calculateDepthCounts((MirrorNode) child, depthCounts);
         }
     }

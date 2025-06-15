@@ -29,11 +29,11 @@ public class LineMirrorNode extends MirrorNode {
     }
 
     @Override
-    public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
+    public boolean canBeRemovedFromStructure(StructureNode structureRoot) {
         if (structureRoot == null) return false;
 
         // Verwende die korrekte Strukturermittlung
-        Set<TreeNode> structureNodes = structureRoot.getAllNodesInStructure();
+        Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
 
         // Eine Linie muss mindestens 2 Knoten haben
         // Nach Entfernung müssen noch mindestens 2 Knoten übrig bleiben
@@ -54,7 +54,7 @@ public class LineMirrorNode extends MirrorNode {
      * - Genau 2 Terminal-Knoten (Endpunkte)
      */
     @Override
-    public boolean isValidStructure(Set<TreeNode> allNodes) {
+    public boolean isValidStructure(Set<StructureNode> allNodes) {
         // Zuerst die grundlegende MirrorNode-Strukturvalidierung
         if (!super.isValidStructure(allNodes)) {
             return false;
@@ -66,7 +66,7 @@ public class LineMirrorNode extends MirrorNode {
         Set<LineMirrorNode> lineNodes = new HashSet<>();
         LineMirrorNode headNode = null;
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (!(node instanceof LineMirrorNode lineNode)) {
                 return false; // Alle Knoten müssen LineMirrorNodes sein
             }
@@ -87,13 +87,13 @@ public class LineMirrorNode extends MirrorNode {
             }
         }
 
-        // Prüfe dass die Struktur frei von Zyklen ist (TreeNode-Funktion)
+        // Prüfe dass die Struktur frei von Zyklen ist (StructureNode-Funktion)
         if (hasClosedCycle(allNodes)) {
             return false; // Linien dürfen keine Zyklen haben
         }
 
-        // Nutze bereits vorhandene getEndpointsOfStructure() aus TreeNode
-        Set<TreeNode> endpoints = getEndpointsOfStructure();
+        // Nutze bereits vorhandene getEndpointsOfStructure() aus StructureNode
+        Set<StructureNode> endpoints = getEndpointsOfStructure();
         if (endpoints.size() != 2) return false; // Linie hat genau 2 Endpunkte
 
         // Head-Node muss Edge-Links haben (Verbindung nach außen)
@@ -121,8 +121,8 @@ public class LineMirrorNode extends MirrorNode {
         }
         
         // Validiere Parent-Beziehung für alle Knoten
-        TreeNode parent = lineNode.getParent();
-        Set<TreeNode> structureNodes = lineNode.getAllNodesInStructure();
+        StructureNode parent = lineNode.getParent();
+        Set<StructureNode> structureNodes = lineNode.getAllNodesInStructure();
         
         if (lineNode == headNode) {
             // Head-Node: darf externen Parent haben
@@ -141,16 +141,16 @@ public class LineMirrorNode extends MirrorNode {
     }
 
     /**
-     * Wiederverwendung der TreeNode getEndpointsOfStructure() Funktion.
+     * Wiederverwendung der StructureNode getEndpointsOfStructure() Funktion.
      * Filtert nur LineMirrorNode-Instanzen heraus.
      */
     public List<LineMirrorNode> getEndpoints() {
         List<LineMirrorNode> endpoints = new ArrayList<>();
 
-        // Nutze die bereits vorhandene TreeNode-Funktion
-        Set<TreeNode> structureEndpoints = getEndpointsOfStructure();
+        // Nutze die bereits vorhandene StructureNode-Funktion
+        Set<StructureNode> structureEndpoints = getEndpointsOfStructure();
 
-        for (TreeNode endpoint : structureEndpoints) {
+        for (StructureNode endpoint : structureEndpoints) {
             if (endpoint instanceof LineMirrorNode lineNode) {
                 endpoints.add(lineNode);
             }
@@ -175,18 +175,18 @@ public class LineMirrorNode extends MirrorNode {
 
     /**
      * Findet den Head-Knoten der Linie.
-     * Nutzt findHead() aus TreeNode und castet sicher.
+     * Nutzt findHead() aus StructureNode und castet sicher.
      *
      * @return Der Head-Knoten oder null wenn keiner gefunden wird
      */
     public LineMirrorNode getLineHead() {
-        TreeNode head = findHead(); // Wiederverwendung aus TreeNode
+        StructureNode head = findHead(); // Wiederverwendung aus StructureNode
         return (head instanceof LineMirrorNode) ? (LineMirrorNode) head : null;
     }
 
     /**
      * Prüft, ob dieser Knoten ein mittlerer Knoten der Linie ist.
-     * Nutzt isTerminal() aus TreeNode.
+     * Nutzt isTerminal() aus StructureNode.
      *
      * @return true wenn der Knoten genau 2 Verbindungen hat (nicht Terminal)
      */
@@ -196,12 +196,12 @@ public class LineMirrorNode extends MirrorNode {
 
     /**
      * Berechnet die Position dieses Knotens in der Linie (0-basiert).
-     * Nutzt getPathFromHead() aus TreeNode.
+     * Nutzt getPathFromHead() aus StructureNode.
      *
      * @return Position vom Head-Endpunkt aus gezählt, oder -1 bei Fehler
      */
     public int getPositionInLine() {
-        List<TreeNode> pathFromHead = getPathFromHead(); // Wiederverwendung aus TreeNode
+        List<StructureNode> pathFromHead = getPathFromHead(); // Wiederverwendung aus StructureNode
         return pathFromHead.isEmpty() ? -1 : pathFromHead.size() - 1;
     }
 }

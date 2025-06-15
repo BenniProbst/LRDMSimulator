@@ -27,10 +27,10 @@ public class TreeMirrorNode extends MirrorNode {
     }
 
     @Override
-    public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
+    public boolean canBeRemovedFromStructure(StructureNode structureRoot) {
         if (structureRoot == null) return false;
 
-        // Nutze TreeNode canBeRemovedFromStructure() - das ist für Bäume perfekt
+        // Nutze StructureNode canBeRemovedFromStructure() - das ist für Bäume perfekt
         // Bäume erlauben Entfernung von Blättern (auch Root, wenn er Blatt ist)
         return super.canBeRemovedFromStructure(structureRoot);
     }
@@ -39,12 +39,12 @@ public class TreeMirrorNode extends MirrorNode {
      * Erweiterte Baum-Struktur-Validierung.
      * Zusätzlich zu super.isValidStructure:
      * - Genau ein Root-Knoten (kein Parent, aber Head markiert)
-     * - Keine Zyklen (nutzt hasClosedCycle() aus TreeNode)
+     * - Keine Zyklen (nutzt hasClosedCycle() aus StructureNode)
      * - n Knoten haben genau n-1 Kanten
      * - Head-Node darf externen Parent haben und muss Edge-Links haben
      */
     @Override
-    public boolean isValidStructure(Set<TreeNode> allNodes) {
+    public boolean isValidStructure(Set<StructureNode> allNodes) {
         // Zuerst die grundlegende MirrorNode-Strukturvalidierung
         if (!super.isValidStructure(allNodes)) {
             return false;
@@ -56,7 +56,7 @@ public class TreeMirrorNode extends MirrorNode {
         Set<TreeMirrorNode> treeNodes = new HashSet<>();
         TreeMirrorNode rootNode = null;
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (!(node instanceof TreeMirrorNode treeNode)) {
                 return false; // Alle Knoten müssen TreeMirrorNodes sein
             }
@@ -76,7 +76,7 @@ public class TreeMirrorNode extends MirrorNode {
         }
 
         // Ein Baum mit n Knoten hat genau n-1 Kanten
-        // Nutze getNumPlannedLinksFromStructure() aus TreeNode
+        // Nutze getNumPlannedLinksFromStructure() aus StructureNode
         int expectedEdges = allNodes.size() - 1;
         int actualEdges = getNumPlannedLinksFromStructure();
         if (actualEdges != expectedEdges) {
@@ -98,8 +98,8 @@ public class TreeMirrorNode extends MirrorNode {
      * Validiert einen einzelnen Baum-Knoten.
      */
     private boolean isValidTreeNode(TreeMirrorNode treeNode, TreeMirrorNode rootNode) {
-        TreeNode parent = treeNode.getParent();
-        Set<TreeNode> structureNodes = treeNode.getAllNodesInStructure();
+        StructureNode parent = treeNode.getParent();
+        Set<StructureNode> structureNodes = treeNode.getAllNodesInStructure();
 
         if (treeNode == rootNode) {
             // Root-Knoten: darf externen Parent haben, aber kein interner Parent
@@ -118,25 +118,25 @@ public class TreeMirrorNode extends MirrorNode {
     }
 
     /**
-     * Wiederverwendung der TreeNode findHead() Funktion.
+     * Wiederverwendung der StructureNode findHead() Funktion.
      * Findet die Root des Baums.
      */
     public TreeMirrorNode getTreeRoot() {
-        TreeNode head = findHead(); // Wiederverwendung aus TreeNode
+        StructureNode head = findHead(); // Wiederverwendung aus StructureNode
         return (head instanceof TreeMirrorNode) ? (TreeMirrorNode) head : null;
     }
 
     /**
-     * Direkte Wiederverwendung von getEndpointsOfStructure() aus TreeNode.
+     * Direkte Wiederverwendung von getEndpointsOfStructure() aus StructureNode.
      * Baum-Blätter sind exakt die Terminal-Knoten (Endpunkte) der Struktur.
      */
     public List<TreeMirrorNode> getTreeLeaves() {
         List<TreeMirrorNode> leaves = new ArrayList<>();
 
-        // Nutze TreeNode getEndpointsOfStructure() - das sind die Blätter!
-        Set<TreeNode> endpoints = getEndpointsOfStructure();
+        // Nutze StructureNode getEndpointsOfStructure() - das sind die Blätter!
+        Set<StructureNode> endpoints = getEndpointsOfStructure();
 
-        for (TreeNode endpoint : endpoints) {
+        for (StructureNode endpoint : endpoints) {
             if (endpoint instanceof TreeMirrorNode treeNode) {
                 leaves.add(treeNode);
             }
@@ -147,10 +147,10 @@ public class TreeMirrorNode extends MirrorNode {
 
     /**
      * Berechnet die Tiefe dieses Knotens im Baum.
-     * Nutzt getPathFromHead() aus TreeNode für konsistente Pfadberechnung.
+     * Nutzt getPathFromHead() aus StructureNode für konsistente Pfadberechnung.
      */
     public int getDepthInTree() {
-        List<TreeNode> pathFromRoot = getPathFromHead(); // Wiederverwendung aus TreeNode
+        List<StructureNode> pathFromRoot = getPathFromHead(); // Wiederverwendung aus StructureNode
         return pathFromRoot.isEmpty() ? 0 : pathFromRoot.size() - 1;
     }
 
@@ -160,9 +160,9 @@ public class TreeMirrorNode extends MirrorNode {
      */
     public int getMaxTreeDepth() {
         int maxDepth = 0;
-        Set<TreeNode> allNodes = getAllNodesInStructure(); // Wiederverwendung aus TreeNode
+        Set<StructureNode> allNodes = getAllNodesInStructure(); // Wiederverwendung aus StructureNode
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (node instanceof TreeMirrorNode treeNode) {
                 maxDepth = Math.max(maxDepth, treeNode.getDepthInTree());
             }
@@ -173,10 +173,10 @@ public class TreeMirrorNode extends MirrorNode {
 
     /**
      * Zählt die Gesamtanzahl der Knoten im Baum.
-     * Nutzt getAllNodesInStructure() aus TreeNode.
+     * Nutzt getAllNodesInStructure() aus StructureNode.
      */
     public int getTreeSize() {
-        return getAllNodesInStructure().size(); // Wiederverwendung aus TreeNode
+        return getAllNodesInStructure().size(); // Wiederverwendung aus StructureNode
     }
 
     /**

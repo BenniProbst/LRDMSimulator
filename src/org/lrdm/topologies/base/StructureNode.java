@@ -9,10 +9,10 @@ import java.util.*;
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
-public class TreeNode {
+public class StructureNode {
     private final int id;
-    private TreeNode parent;
-    private List<TreeNode> children;
+    private StructureNode parent;
+    private List<StructureNode> children;
     private boolean isHead; // Ersetzt das Root-Konzept für Ring-Strukturen
     private int maxChildren = Integer.MAX_VALUE; // Standardmäßig unbegrenzt
 
@@ -39,11 +39,11 @@ public class TreeNode {
     }
 
     /**
-     * Erstellt einen neuen TreeNode mit gegebener ID.
+     * Erstellt einen neuen StructureNode mit gegebener ID.
      *
      * @param id Eindeutige Identifikationsnummer des Knotens
      */
-    public TreeNode(int id) {
+    public StructureNode(int id) {
         this.id = id;
         this.parent = null;
         this.children = new ArrayList<>();
@@ -51,12 +51,12 @@ public class TreeNode {
     }
 
     /**
-     * Erstellt einen neuen TreeNode mit gegebener ID und maximaler Kindanzahl.
+     * Erstellt einen neuen StructureNode mit gegebener ID und maximaler Kindanzahl.
      *
      * @param id          Eindeutige Identifikationsnummer des Knotens
      * @param maxChildren Maximale Anzahl von Kindern, die dieser Knoten haben kann (muss >= 0 sein)
      */
-    public TreeNode(int id, int maxChildren) {
+    public StructureNode(int id, int maxChildren) {
         this(id);
         this.maxChildren = Math.max(0, maxChildren);
     }
@@ -69,7 +69,7 @@ public class TreeNode {
      * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
      * @return true wenn alle Knoten zusammenhängend sind, false bei isolierten Knoten oder null/leerer Menge
      */
-    public boolean isValidStructure(Set<TreeNode> allNodes) {
+    public boolean isValidStructure(Set<StructureNode> allNodes) {
         if (allNodes == null || allNodes.isEmpty()) return false;
         if (allNodes.size() == 1) return true; // Ein einzelner Knoten ist gültig
 
@@ -85,23 +85,23 @@ public class TreeNode {
      * @param allNodes Menge aller zu prüfenden Knoten
      * @return true wenn alle Knoten von einem beliebigen Startknoten erreichbar sind
      */
-    private boolean isConnectedStructure(Set<TreeNode> allNodes) {
+    private boolean isConnectedStructure(Set<StructureNode> allNodes) {
         if (allNodes.isEmpty()) return false;
 
         // Starte von einem beliebigen Knoten
-        TreeNode startNode = allNodes.iterator().next();
-        Set<TreeNode> visited = new HashSet<>();
-        Queue<TreeNode> queue = new LinkedList<>();
+        StructureNode startNode = allNodes.iterator().next();
+        Set<StructureNode> visited = new HashSet<>();
+        Queue<StructureNode> queue = new LinkedList<>();
 
         queue.offer(startNode);
         visited.add(startNode);
 
         // BFS-Traversierung über alle Verbindungen
         while (!queue.isEmpty()) {
-            TreeNode current = queue.poll();
+            StructureNode current = queue.poll();
 
             // Besuche alle Nachbarn (Parent und Children)
-            List<TreeNode> neighbors = new ArrayList<>();
+            List<StructureNode> neighbors = new ArrayList<>();
 
             // Parent hinzufügen (falls vorhanden)
             if (current.parent != null) {
@@ -112,7 +112,7 @@ public class TreeNode {
             neighbors.addAll(current.children);
 
             // Besuche unbesuchte Nachbarn
-            for (TreeNode neighbor : neighbors) {
+            for (StructureNode neighbor : neighbors) {
                 if (allNodes.contains(neighbor) && !visited.contains(neighbor)) {
                     visited.add(neighbor);
                     queue.offer(neighbor);
@@ -147,11 +147,11 @@ public class TreeNode {
      * @param structureRoot Der Root-Knoten der Struktur für Referenz (darf nicht null sein)
      * @return true wenn der Knoten sicher entfernt werden kann
      */
-    public boolean canBeRemovedFromStructure(TreeNode structureRoot) {
+    public boolean canBeRemovedFromStructure(StructureNode structureRoot) {
         if (structureRoot == null) return false;
 
         // Verwende die korrekte Strukturermittlung
-        Set<TreeNode> structureNodes = structureRoot.getAllNodesInStructure();
+        Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
 
         // Prüfe ob dieser Knoten Teil der Struktur ist
         if (!structureNodes.contains(this)) {
@@ -172,12 +172,12 @@ public class TreeNode {
      * @param nodes Menge von Knoten, die auf geschlossenen Zyklus geprüft werden sollen
      * @return true wenn alle Knoten genau einen geschlossenen Zyklus bilden, false bei leerer Menge oder anderen Strukturen
      */
-    public static boolean hasClosedCycle(Set<TreeNode> nodes) {
+    public static boolean hasClosedCycle(Set<StructureNode> nodes) {
         if (nodes.isEmpty()) return false;
 
-        TreeNode start = nodes.iterator().next();
-        TreeNode current = start;
-        Set<TreeNode> visitedInCycle = new HashSet<>();
+        StructureNode start = nodes.iterator().next();
+        StructureNode current = start;
+        Set<StructureNode> visitedInCycle = new HashSet<>();
 
         do {
             if (visitedInCycle.contains(current)) {
@@ -200,7 +200,7 @@ public class TreeNode {
      * @param child Der hinzuzufügende Kindknoten (darf nicht null sein, nicht bereits Kind sein,
      *             und maxChildren darf nicht überschritten werden)
      */
-    public void addChild(TreeNode child) {
+    public void addChild(StructureNode child) {
         if (child != null && !children.contains(child) && canAcceptMoreChildren()) {
             children.add(child);
             child.parent = this;
@@ -212,7 +212,7 @@ public class TreeNode {
      *
      * @param child Der zu entfernende Kindknoten (null wird ignoriert)
      */
-    public void removeChild(TreeNode child) {
+    public void removeChild(StructureNode child) {
         if (children.remove(child)) {
             child.parent = null;
         }
@@ -224,7 +224,7 @@ public class TreeNode {
      *
      * @param parent Der neue Parent-Knoten (kann null sein)
      */
-    public void setParent(TreeNode parent) {
+    public void setParent(StructureNode parent) {
         this.parent = parent;
     }
 
@@ -254,16 +254,16 @@ public class TreeNode {
      *
      * @return Head-Knoten der Struktur oder null wenn keiner gefunden wird
      */
-    public TreeNode findHead() {
+    public StructureNode findHead() {
         if (isHead) return this;
         if (isRoot()) return this;
 
-        Set<TreeNode> visited = new HashSet<>();
-        Stack<TreeNode> stack = new Stack<>();
+        Set<StructureNode> visited = new HashSet<>();
+        Stack<StructureNode> stack = new Stack<>();
         stack.push(this);
 
         while (!stack.isEmpty()) {
-            TreeNode current = stack.pop();
+            StructureNode current = stack.pop();
             if (visited.contains(current)) continue;
             visited.add(current);
 
@@ -273,7 +273,7 @@ public class TreeNode {
             if (current.parent != null && !visited.contains(current.parent)) {
                 stack.push(current.parent);
             }
-            for (TreeNode child : current.children) {
+            for (StructureNode child : current.children) {
                 if (!visited.contains(child)) {
                     stack.push(child);
                 }
@@ -306,13 +306,13 @@ public class TreeNode {
      * @return Gesamtanzahl aller geplanten Links in der Substruktur
      */
     public int getNumPlannedLinksFromStructure() {
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<StructureNode> allNodes = getAllNodesInStructure();
         Set<LinkPair> countedLinks = new HashSet<>();
 
         // Durchlaufe alle Knoten der Substruktur
-        for (TreeNode current : allNodes) {
+        for (StructureNode current : allNodes) {
             // Sammle alle Nachbarn dieses Knotens (nur die, die auch in der Substruktur sind)
-            List<TreeNode> neighbors = new ArrayList<>();
+            List<StructureNode> neighbors = new ArrayList<>();
 
             // Parent hinzufügen (falls in der Substruktur)
             if (current.parent != null && allNodes.contains(current.parent)) {
@@ -320,14 +320,14 @@ public class TreeNode {
             }
 
             // Alle Kinder hinzufügen (die bereits durch getAllNodesInStructure() gefiltert sind)
-            for (TreeNode child : current.children) {
+            for (StructureNode child : current.children) {
                 if (allNodes.contains(child)) {
                     neighbors.add(child);
                 }
             }
 
             // Für jeden Nachbarn einen Link zählen (aber nur einmal pro Paar)
-            for (TreeNode neighbor : neighbors) {
+            for (StructureNode neighbor : neighbors) {
                 // Erstelle LinkPair mit konsistenter Reihenfolge (kleinere ID zuerst)
                 int fromId = Math.min(current.id, neighbor.id);
                 int toId = Math.max(current.id, neighbor.id);
@@ -408,20 +408,20 @@ public class TreeNode {
      *
      * @return Set aller Knoten in der zusammenhängenden Struktur
      */
-    public Set<TreeNode> getAllNodes() {
-        Set<TreeNode> visited = new HashSet<>();
-        Stack<TreeNode> stack = new Stack<>();
+    public Set<StructureNode> getAllNodes() {
+        Set<StructureNode> visited = new HashSet<>();
+        Stack<StructureNode> stack = new Stack<>();
         stack.push(this);
 
         while (!stack.isEmpty()) {
-            TreeNode current = stack.pop();
+            StructureNode current = stack.pop();
             if (visited.contains(current)) continue;
             visited.add(current);
 
             if (current.parent != null && !visited.contains(current.parent)) {
                 stack.push(current.parent);
             }
-            for (TreeNode child : current.children) {
+            for (StructureNode child : current.children) {
                 if (!visited.contains(child)) {
                     stack.push(child);
                 }
@@ -439,23 +439,23 @@ public class TreeNode {
      * @return Anzahl aller Nachfahren (Kinder, Enkel, etc.)
      */
     public int getDescendantCount() {
-        Set<TreeNode> visited = new HashSet<>();
-        Stack<TreeNode> stack = new Stack<>();
+        Set<StructureNode> visited = new HashSet<>();
+        Stack<StructureNode> stack = new Stack<>();
 
         // Alle direkten Kinder hinzufügen
-        for (TreeNode child : children) {
+        for (StructureNode child : children) {
             stack.push(child);
         }
 
         int count = 0;
         while (!stack.isEmpty()) {
-            TreeNode current = stack.pop();
+            StructureNode current = stack.pop();
             if (visited.contains(current)) continue; // Zyklus-Schutz
             visited.add(current);
             count++;
 
             // Weitere Nachfahren hinzufügen
-            for (TreeNode child : current.children) {
+            for (StructureNode child : current.children) {
                 if (!visited.contains(child)) {
                     stack.push(child);
                 }
@@ -472,13 +472,13 @@ public class TreeNode {
      * @param id Die ID des gesuchten Knotens
      * @return Der gefundene Knoten oder null wenn nicht gefunden
      */
-    public TreeNode findNodeById(int id) {
-        Set<TreeNode> visited = new HashSet<>();
-        Stack<TreeNode> stack = new Stack<>();
+    public StructureNode findNodeById(int id) {
+        Set<StructureNode> visited = new HashSet<>();
+        Stack<StructureNode> stack = new Stack<>();
         stack.push(this);
 
         while (!stack.isEmpty()) {
-            TreeNode current = stack.pop();
+            StructureNode current = stack.pop();
             if (visited.contains(current)) continue;
             visited.add(current);
 
@@ -487,7 +487,7 @@ public class TreeNode {
             if (current.parent != null && !visited.contains(current.parent)) {
                 stack.push(current.parent);
             }
-            for (TreeNode child : current.children) {
+            for (StructureNode child : current.children) {
                 if (!visited.contains(child)) {
                     stack.push(child);
                 }
@@ -504,26 +504,26 @@ public class TreeNode {
      *
      * @return Liste von Knoten vom Head zu diesem Knoten, leer wenn Head nicht gefunden oder nicht erreichbar
      */
-    public List<TreeNode> getPathFromHead() {
-        TreeNode head = findHead();
+    public List<StructureNode> getPathFromHead() {
+        StructureNode head = findHead();
         if (head == null) return Collections.emptyList();
         if (head == this) return List.of(this);
 
-        Queue<TreeNode> queue = new LinkedList<>();
-        Map<TreeNode, TreeNode> predecessor = new HashMap<>();
-        Set<TreeNode> visited = new HashSet<>();
+        Queue<StructureNode> queue = new LinkedList<>();
+        Map<StructureNode, StructureNode> predecessor = new HashMap<>();
+        Set<StructureNode> visited = new HashSet<>();
 
         queue.offer(head);
         visited.add(head);
         predecessor.put(head, null);
 
         while (!queue.isEmpty()) {
-            TreeNode current = queue.poll();
+            StructureNode current = queue.poll();
 
             if (current == this) {
                 // Pfad rekonstruieren
-                List<TreeNode> path = new ArrayList<>();
-                TreeNode node = this;
+                List<StructureNode> path = new ArrayList<>();
+                StructureNode node = this;
                 while (node != null) {
                     path.add(0, node);
                     node = predecessor.get(node);
@@ -532,10 +532,10 @@ public class TreeNode {
             }
 
             // Alle Nachbarn durchsuchen
-            List<TreeNode> neighbors = new ArrayList<>(current.children);
+            List<StructureNode> neighbors = new ArrayList<>(current.children);
             if (current.parent != null) neighbors.add(current.parent);
 
-            for (TreeNode neighbor : neighbors) {
+            for (StructureNode neighbor : neighbors) {
                 if (!visited.contains(neighbor)) {
                     visited.add(neighbor);
                     predecessor.put(neighbor, current);
@@ -561,7 +561,7 @@ public class TreeNode {
      *
      * @return Der Parent-Knoten oder null wenn keiner vorhanden
      */
-    public TreeNode getParent() { return parent; }
+    public StructureNode getParent() { return parent; }
 
     /**
      * Gibt eine Kopie der Kinderliste zurück.
@@ -569,7 +569,7 @@ public class TreeNode {
      *
      * @return Neue ArrayList mit allen Kindern
      */
-    public List<TreeNode> getChildren() { return new ArrayList<>(children); }
+    public List<StructureNode> getChildren() { return new ArrayList<>(children); }
 
     /**
      * Gibt die maximale Anzahl von Kindern zurück.
@@ -586,15 +586,15 @@ public class TreeNode {
      *
      * @return Set aller Knoten in der zusammenhängenden Substruktur
      */
-    public Set<TreeNode> getAllNodesInStructure() {
-        Set<TreeNode> allNodes = new HashSet<>();
-        Set<TreeNode> visited = new HashSet<>();
-        Stack<TreeNode> stack = new Stack<>();
+    public Set<StructureNode> getAllNodesInStructure() {
+        Set<StructureNode> allNodes = new HashSet<>();
+        Set<StructureNode> visited = new HashSet<>();
+        Stack<StructureNode> stack = new Stack<>();
 
         stack.push(this);
 
         while (!stack.isEmpty()) {
-            TreeNode current = stack.pop();
+            StructureNode current = stack.pop();
 
             if (visited.contains(current)) {
                 continue;
@@ -615,7 +615,7 @@ public class TreeNode {
             }
 
             // Füge alle Kinder hinzu (nur wenn current keine Head-Node ist)
-            for (TreeNode child : current.children) {
+            for (StructureNode child : current.children) {
                 if (!visited.contains(child)) {
                     stack.push(child);
                 }
@@ -632,12 +632,12 @@ public class TreeNode {
      *
      * @return Set aller Terminal-Knoten (Endpunkte) in der Substruktur
      */
-    public Set<TreeNode> getEndpointsOfStructure() {
-        Set<TreeNode> endpoints = new HashSet<>();
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+    public Set<StructureNode> getEndpointsOfStructure() {
+        Set<StructureNode> endpoints = new HashSet<>();
+        Set<StructureNode> allNodes = getAllNodesInStructure();
 
         // Filtere Terminal-Knoten aus der Gesamtmenge
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (node.isTerminal()) {
                 endpoints.add(node);
             }
@@ -647,36 +647,36 @@ public class TreeNode {
     }
 
     /**
-     * Prüft, ob ein gegebener TreeNode Teil der Substruktur ist.
+     * Prüft, ob ein gegebener StructureNode Teil der Substruktur ist.
      * Verwendet die bereits implementierte getAllNodes() Methode zur effizienten Prüfung.
      *
-     * @param node Der zu prüfende TreeNode (null wird als false behandelt)
+     * @param node Der zu prüfende StructureNode (null wird als false behandelt)
      * @return true wenn der Knoten Teil der Substruktur ist, false sonst
      */
-    public boolean isPartOfStructure(TreeNode node) {
+    public boolean isPartOfStructure(StructureNode node) {
         if (node == null) {
             return false;
         }
 
         // Verwende die bereits implementierte getAllNodes() Methode
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<StructureNode> allNodes = getAllNodesInStructure();
         return allNodes.contains(node);
     }
 
     /**
-     * Prüft, ob ein gegebener TreeNode ein Endpunkt der Substruktur ist.
+     * Prüft, ob ein gegebener StructureNode ein Endpunkt der Substruktur ist.
      * Verwendet die bereits implementierte getEndpointsOfStructure() Methode zur effizienten Prüfung.
      *
-     * @param node Der zu prüfende TreeNode (null wird als false behandelt)
+     * @param node Der zu prüfende StructureNode (null wird als false behandelt)
      * @return true wenn der Knoten ein Endpunkt der Substruktur ist, false sonst
      */
-    public boolean isEndpointOfStructure(TreeNode node) {
+    public boolean isEndpointOfStructure(StructureNode node) {
         if (node == null) {
             return false;
         }
 
         // Verwende die bereits implementierte getEndpointsOfStructure() Methode
-        Set<TreeNode> endpoints = getEndpointsOfStructure();
+        Set<StructureNode> endpoints = getEndpointsOfStructure();
         return endpoints.contains(node);
     }
 
@@ -684,8 +684,8 @@ public class TreeNode {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        TreeNode treeNode = (TreeNode) obj;
-        return id == treeNode.id;
+        StructureNode structureNode = (StructureNode) obj;
+        return id == structureNode.id;
     }
 
     @Override
@@ -695,7 +695,7 @@ public class TreeNode {
 
     @Override
     public String toString() {
-        return "TreeNode{" +
+        return "StructureNode{" +
                 "id=" + id +
                 ", children=" + children.size() +
                 ", maxChildren=" + maxChildren +

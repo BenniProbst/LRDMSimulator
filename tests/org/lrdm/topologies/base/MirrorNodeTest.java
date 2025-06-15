@@ -1,5 +1,5 @@
 
-package org.lrdm.topologies;
+package org.lrdm.topologies.base;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,9 +10,8 @@ import org.lrdm.Network;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
+import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 import org.lrdm.util.IDGenerator;
-import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.TreeNode;
 
 import java.io.IOException;
 import java.util.*;
@@ -100,7 +99,7 @@ class MirrorNodeTest {
     @Test
     @DisplayName("createAndLinkMirrors erstellt direkte Tree-Verbindungen")
     void testCreateAndLinkMirrorsDirectTreeLinking() throws IOException {
-        // Erstelle eine TreeNode-Struktur mit MirrorNodes
+        // Erstelle eine StructureNode-Struktur mit MirrorNodes
         MirrorNode root = new MirrorNode(1, 0);
         MirrorNode child1 = new MirrorNode(2, 1);
         MirrorNode child2 = new MirrorNode(3, 1);
@@ -212,7 +211,7 @@ class MirrorNodeTest {
         mirrorNode.addChild(child2);
         child1.addChild(grandchild);
 
-        // TreeNode-Hierarchie
+        // StructureNode-Hierarchie
         assertEquals(2, mirrorNode.getChildren().size());
         assertEquals(1, child1.getChildren().size());
         assertEquals(0, child2.getChildren().size());
@@ -366,7 +365,7 @@ class MirrorNodeTest {
     // Hilfsmethoden für direkte Tree-Linking-Logik
 
     /**
-     * Erstellt Links basierend auf der TreeNode-Struktur direkt.
+     * Erstellt Links basierend auf der StructureNode-Struktur direkt.
      * Jeder Parent wird mit seinen direkten Kindern verlinkt.
      */
     private Set<Link> createTreeLinksDirectly(MirrorNode root, int simTime, Properties props) {
@@ -378,7 +377,7 @@ class MirrorNodeTest {
     private void createTreeLinksRecursive(MirrorNode node, Set<Link> links, int simTime, Properties props) {
         if (node.getMirror() == null) return;
 
-        for (TreeNode child : node.getChildren()) {
+        for (StructureNode child : node.getChildren()) {
             MirrorNode mirrorChild = (MirrorNode) child;
             if (mirrorChild.getMirror() != null) {
                 // Erstelle Link zwischen Parent und Kind

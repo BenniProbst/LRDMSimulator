@@ -8,7 +8,7 @@ import java.util.*;
 
 /**
  * Repräsentiert einen Knoten in einer Struktur (Baum oder Ring), der einem Mirror zugeordnet werden kann.
- * Diese Klasse trennt die Planungsschicht (TreeNode-Struktur) von der
+ * Diese Klasse trennt die Planungsschicht (StructureNode-Struktur) von der
  * Implementierungsschicht (Mirror mit Links).
  * <p>
  * Vollständig zustandslos bezüglich Link-Informationen - alle werden über das Mirror verwaltet.
@@ -16,7 +16,7 @@ import java.util.*;
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
-public class MirrorNode extends TreeNode {
+public class MirrorNode extends StructureNode {
     private Mirror mirror;
 
     /**
@@ -180,15 +180,15 @@ public class MirrorNode extends TreeNode {
 
     /**
      * Sammelt alle Mirrors der Substruktur.
-     * Verwendet getAllNodesInStructure() aus TreeNode für konsistente Substruktur-Abgrenzung.
+     * Verwendet getAllNodesInStructure() aus StructureNode für konsistente Substruktur-Abgrenzung.
      *
      * @return Set aller Mirror-Instanzen in der Substruktur (ohne null-Werte)
      */
     public Set<Mirror> getMirrorsOfStructure() {
         Set<Mirror> mirrors = new HashSet<>();
-        Set<TreeNode> allNodes = getAllNodesInStructure();
+        Set<StructureNode> allNodes = getAllNodesInStructure();
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (node instanceof MirrorNode mirrorNode) {
                 if (mirrorNode.mirror != null) {
                     mirrors.add(mirrorNode.mirror);
@@ -201,15 +201,15 @@ public class MirrorNode extends TreeNode {
 
     /**
      * Sammelt alle Mirrors der Endpunkte der Substruktur.
-     * Verwendet getEndpointsOfStructure() aus TreeNode für Endpunkt-Identifikation.
+     * Verwendet getEndpointsOfStructure() aus StructureNode für Endpunkt-Identifikation.
      *
      * @return Set aller Mirror-Instanzen der Endpunkte (ohne null-Werte)
      */
     public Set<Mirror> getMirrorsOfEndpoints() {
         Set<Mirror> endpointMirrors = new HashSet<>();
-        Set<TreeNode> endpoints = getEndpointsOfStructure();
+        Set<StructureNode> endpoints = getEndpointsOfStructure();
 
-        for (TreeNode endpoint : endpoints) {
+        for (StructureNode endpoint : endpoints) {
             if (endpoint instanceof MirrorNode mirrorNode) {
                 if (mirrorNode.mirror != null) {
                     endpointMirrors.add(mirrorNode.mirror);
@@ -328,17 +328,17 @@ public class MirrorNode extends TreeNode {
 
     /**
      * Erweiterte Strukturvalidierung für MirrorNode.
-     * Überprüft zusätzlich zur TreeNode-Validierung die Mirror-Link-Konsistenz:
+     * Überprüft zusätzlich zur StructureNode-Validierung die Mirror-Link-Konsistenz:
      * - Alle Struktur-Mirrors müssen mindestens einen Link zu anderen Struktur-Mirrors haben
      * - Keine Self-Links (Mirror mit sich selbst verknüpft)
      * - Keine Links zu Mirrors außerhalb der Struktur
      *
      * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
-     * @return true wenn sowohl TreeNode- als auch Mirror-Validierung erfolgreich sind
+     * @return true wenn sowohl StructureNode- als auch Mirror-Validierung erfolgreich sind
      */
     @Override
-    public boolean isValidStructure(Set<TreeNode> allNodes) {
-        // Zuerst die grundlegende TreeNode-Strukturvalidierung
+    public boolean isValidStructure(Set<StructureNode> allNodes) {
+        // Zuerst die grundlegende StructureNode-Strukturvalidierung
         if (!super.isValidStructure(allNodes)) {
             return false;
         }
@@ -346,7 +346,7 @@ public class MirrorNode extends TreeNode {
         // Verwende bereits vorhandene Funktionen für Mirror-Sammlung
         Set<Mirror> structureMirrors = getMirrorsOfStructure();
 
-        // Wenn keine Mirrors vorhanden sind, ist die Struktur gültig (reine TreeNode-Struktur)
+        // Wenn keine Mirrors vorhanden sind, ist die Struktur gültig (reine StructureNode-Struktur)
         if (structureMirrors.isEmpty()) {
             return true;
         }

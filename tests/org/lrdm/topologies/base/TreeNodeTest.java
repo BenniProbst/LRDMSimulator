@@ -1,4 +1,4 @@
-package org.lrdm.topologies;
+package org.lrdm.topologies.base;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,8 +10,7 @@ import org.lrdm.TimedRDMSim;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 
 import java.io.IOException;
 import java.util.*;
@@ -19,7 +18,7 @@ import java.util.*;
 import static org.lrdm.TestProperties.loadProperties;
 import static org.junit.jupiter.api.Assertions.*;
 
-@DisplayName("TreeNode und MirrorNode Tests")
+@DisplayName("StructureNode und MirrorNode Tests")
 class TreeNodeTest {
 
     private TimedRDMSim sim;
@@ -36,14 +35,14 @@ class TreeNodeTest {
     }
 
     @Nested
-    @DisplayName("TreeNode Basis-Funktionalität")
+    @DisplayName("StructureNode Basis-Funktionalität")
     class TreeNodeBasicTests {
 
-        private TreeNode rootNode;
+        private StructureNode rootNode;
 
         @BeforeEach
         void setUp() {
-            rootNode = new TreeNode(1, 0);
+            rootNode = new StructureNode(1, 0);
         }
 
         @Test
@@ -60,7 +59,7 @@ class TreeNodeTest {
         @Test
         @DisplayName("addChild sollte Kind korrekt hinzufügen und Parent setzen")
         void testAddChild() {
-            TreeNode child = new TreeNode(2, 1);
+            StructureNode child = new StructureNode(2, 1);
             
             rootNode.addChild(child);
             
@@ -75,7 +74,7 @@ class TreeNodeTest {
         @Test
         @DisplayName("removeChild sollte Kind korrekt entfernen")
         void testRemoveChild() {
-            TreeNode child = new TreeNode(2, 1);
+            StructureNode child = new StructureNode(2, 1);
             rootNode.addChild(child);
             
             rootNode.removeChild(child);
@@ -88,9 +87,9 @@ class TreeNodeTest {
         @Test
         @DisplayName("getDescendantCount sollte alle Nachfahren zählen")
         void testGetDescendantCount() {
-            TreeNode child1 = new TreeNode(2, 1);
-            TreeNode child2 = new TreeNode(3, 1);
-            TreeNode grandchild = new TreeNode(4, 2);
+            StructureNode child1 = new StructureNode(2, 1);
+            StructureNode child2 = new StructureNode(3, 1);
+            StructureNode grandchild = new StructureNode(4, 2);
             
             rootNode.addChild(child1);
             rootNode.addChild(child2);
@@ -105,9 +104,9 @@ class TreeNodeTest {
         @Test
         @DisplayName("findNodeById sollte Knoten korrekt finden")
         void testFindNodeById() {
-            TreeNode child1 = new TreeNode(2, 1);
-            TreeNode child2 = new TreeNode(3, 1);
-            TreeNode grandchild = new TreeNode(4, 2);
+            StructureNode child1 = new StructureNode(2, 1);
+            StructureNode child2 = new StructureNode(3, 1);
+            StructureNode grandchild = new StructureNode(4, 2);
             
             rootNode.addChild(child1);
             rootNode.addChild(child2);
@@ -123,22 +122,22 @@ class TreeNodeTest {
         @Test
         @DisplayName("getPathFromRoot sollte korrekten Pfad zurückgeben")
         void testGetPathFromRoot() {
-            TreeNode child1 = new TreeNode(2, 1);
-            TreeNode grandchild = new TreeNode(3, 2);
+            StructureNode child1 = new StructureNode(2, 1);
+            StructureNode grandchild = new StructureNode(3, 2);
             
             rootNode.addChild(child1);
             child1.addChild(grandchild);
             
-            List<TreeNode> rootPath = rootNode.getPathFromRoot();
+            List<StructureNode> rootPath = rootNode.getPathFromRoot();
             assertEquals(1, rootPath.size());
             assertEquals(rootNode, rootPath.get(0));
             
-            List<TreeNode> childPath = child1.getPathFromRoot();
+            List<StructureNode> childPath = child1.getPathFromRoot();
             assertEquals(2, childPath.size());
             assertEquals(rootNode, childPath.get(0));
             assertEquals(child1, childPath.get(1));
             
-            List<TreeNode> grandchildPath = grandchild.getPathFromRoot();
+            List<StructureNode> grandchildPath = grandchild.getPathFromRoot();
             assertEquals(3, grandchildPath.size());
             assertEquals(rootNode, grandchildPath.get(0));
             assertEquals(child1, grandchildPath.get(1));
@@ -148,9 +147,9 @@ class TreeNodeTest {
         @Test
         @DisplayName("equals und hashCode funktionieren korrekt")
         void testEqualsAndHashCode() {
-            TreeNode node1 = new TreeNode(1, 0);
-            TreeNode node2 = new TreeNode(1, 0);
-            TreeNode node3 = new TreeNode(2, 0);
+            StructureNode node1 = new StructureNode(1, 0);
+            StructureNode node2 = new StructureNode(1, 0);
+            StructureNode node3 = new StructureNode(2, 0);
             
             assertEquals(node1, node2);
             assertNotEquals(node1, node3);
@@ -622,7 +621,7 @@ class TreeNodeTest {
             
             mirrorRoot.addChild(child);
             
-            // Sollte sowohl als TreeNode-Kind als auch als MirrorNode hinzugefügt werden
+            // Sollte sowohl als StructureNode-Kind als auch als MirrorNode hinzugefügt werden
             assertEquals(1, mirrorRoot.getChildren().size());
             assertEquals(1, mirrorRoot.getNumMirrors());
             assertTrue(mirrorRoot.getAllMirrors().contains(child));
@@ -707,7 +706,7 @@ class TreeNodeTest {
         }
 
         @Test
-        @DisplayName("TreeNode zu MirrorNode Konvertierung mit echten Mirrors")
+        @DisplayName("StructureNode zu MirrorNode Konvertierung mit echten Mirrors")
         void testTreeNodeToMirrorNodeConversionWithRealMirrors() throws IOException {
             initSimulator();
             sim.initialize(new BalancedTreeTopologyStrategy());
@@ -722,10 +721,10 @@ class TreeNodeTest {
             List<Mirror> mirrors = mirrorProbe.getMirrors();
             assertEquals(3, mirrors.size());
             
-            // Erstelle TreeNode-Struktur
-            TreeNode treeRoot = new TreeNode(20, 0);
-            TreeNode treeChild1 = new TreeNode(21, 1);
-            TreeNode treeChild2 = new TreeNode(22, 1);
+            // Erstelle StructureNode-Struktur
+            StructureNode treeRoot = new StructureNode(20, 0);
+            StructureNode treeChild1 = new StructureNode(21, 1);
+            StructureNode treeChild2 = new StructureNode(22, 1);
             
             treeRoot.addChild(treeChild1);
             treeRoot.addChild(treeChild2);
@@ -734,7 +733,7 @@ class TreeNodeTest {
             MirrorNode mirrorRoot = new MirrorNode(treeRoot.getId(), treeRoot.getDepth(), mirrors.get(0));
             
             for (int i = 0; i < treeRoot.getChildren().size() && i + 1 < mirrors.size(); i++) {
-                TreeNode child = treeRoot.getChildren().get(i);
+                StructureNode child = treeRoot.getChildren().get(i);
                 MirrorNode mirrorChild = new MirrorNode(child.getId(), child.getDepth(), mirrors.get(i + 1));
                 mirrorRoot.addChild(mirrorChild);
             }

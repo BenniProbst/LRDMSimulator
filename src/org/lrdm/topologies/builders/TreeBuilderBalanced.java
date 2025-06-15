@@ -3,7 +3,7 @@ package org.lrdm.topologies.builders;
 import org.lrdm.Network;
 import org.lrdm.Mirror;
 import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.base.StructureNode;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -144,7 +144,7 @@ public class TreeBuilderBalanced extends TreeBuilder {
                 candidates.add(node);
             }
 
-            for (TreeNode child : node.getChildren()) {
+            for (StructureNode child : node.getChildren()) {
                 stack.push((MirrorNode) child);
             }
         }
@@ -180,7 +180,7 @@ public class TreeBuilderBalanced extends TreeBuilder {
             int depth = calculateDepth(node);
             depthCounts.put(depth, depthCounts.getOrDefault(depth, 0) + 1);
 
-            for (TreeNode child : node.getChildren()) {
+            for (StructureNode child : node.getChildren()) {
                 stack.push((MirrorNode) child);
             }
         }

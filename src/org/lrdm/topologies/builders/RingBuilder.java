@@ -4,7 +4,7 @@ package org.lrdm.topologies.builders;
 import org.lrdm.Network;
 import org.lrdm.topologies.base.MirrorNode;
 import org.lrdm.topologies.base.RingMirrorNode;
-import org.lrdm.topologies.base.TreeNode;
+import org.lrdm.topologies.base.StructureNode;
 
 import java.util.*;
 
@@ -72,11 +72,11 @@ public class RingBuilder extends StructureBuilder {
      * Fügt Knoten in einen bestehenden Ring ein.
      */
     private int addNodesToRing(MirrorNode existingRoot, int nodesToAdd) {
-        Set<TreeNode> allNodes = existingRoot.getAllNodes();
+        Set<StructureNode> allNodes = existingRoot.getAllNodes();
         List<RingMirrorNode> ringNodes = new ArrayList<>();
 
         // Sammle alle Ring-Knoten
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (node instanceof RingMirrorNode) {
                 ringNodes.add((RingMirrorNode) node);
             }
@@ -122,12 +122,12 @@ public class RingBuilder extends StructureBuilder {
             return ((RingMirrorNode) root).isValidStructure();
         }
 
-        Set<TreeNode> allNodes = root.getAllNodes();
+        Set<StructureNode> allNodes = root.getAllNodes();
 
         if (allNodes.size() < 3) return false;
 
         // Jeder Knoten muss Konnektivitätsgrad 2 haben
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (node.getConnectivityDegree() != 2 || node.getChildren().size() != 1) {
                 return false;
             }
@@ -139,12 +139,12 @@ public class RingBuilder extends StructureBuilder {
     /**
      * Prüft, ob die Knoten einen geschlossenen Zyklus bilden.
      */
-    private boolean hasClosedCycle(Set<TreeNode> nodes) {
+    private boolean hasClosedCycle(Set<StructureNode> nodes) {
         if (nodes.isEmpty()) return false;
 
-        TreeNode start = nodes.iterator().next();
-        TreeNode current = start;
-        Set<TreeNode> visitedInCycle = new HashSet<>();
+        StructureNode start = nodes.iterator().next();
+        StructureNode current = start;
+        Set<StructureNode> visitedInCycle = new HashSet<>();
 
         do {
             if (visitedInCycle.contains(current)) {
@@ -175,9 +175,9 @@ public class RingBuilder extends StructureBuilder {
     protected List<MirrorNode> findInsertionCandidates(MirrorNode root) {
         // In einem Ring kann zwischen jedem Knotenpaar eingefügt werden
         List<MirrorNode> candidates = new ArrayList<>();
-        Set<TreeNode> allNodes = root.getAllNodes();
+        Set<StructureNode> allNodes = root.getAllNodes();
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (node instanceof MirrorNode) {
                 candidates.add((MirrorNode) node);
             }
@@ -190,9 +190,9 @@ public class RingBuilder extends StructureBuilder {
     protected List<MirrorNode> findRemovableNodes(MirrorNode root) {
         // In einem Ring können alle Knoten entfernt werden (außer dem Root)
         List<MirrorNode> removable = new ArrayList<>();
-        Set<TreeNode> allNodes = root.getAllNodes();
+        Set<StructureNode> allNodes = root.getAllNodes();
 
-        for (TreeNode node : allNodes) {
+        for (StructureNode node : allNodes) {
             if (node instanceof MirrorNode && node != root) {
                 removable.add((MirrorNode) node);
             }
@@ -204,7 +204,7 @@ public class RingBuilder extends StructureBuilder {
     @Override
     protected boolean canRemoveNode(MirrorNode node) {
         // Ring muss mindestens minRingSize Knoten behalten
-        Set<TreeNode> allNodes = node.getAllNodes();
+        Set<StructureNode> allNodes = node.getAllNodes();
         return allNodes.size() > minRingSize;
     }
 }
