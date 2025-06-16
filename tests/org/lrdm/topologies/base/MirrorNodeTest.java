@@ -355,7 +355,7 @@ class MirrorNodeTest {
 
                 // Teste Struktur-Funktionen mit echten Mirrors
                 Set<Mirror> mirrors = node1.getMirrorsOfStructure(mirrorType, node1);
-                assertTrue(!mirrors.isEmpty());
+                assertFalse(mirrors.isEmpty());
                 assertTrue(mirrors.contains(node1.getMirror()));
             }
         }
