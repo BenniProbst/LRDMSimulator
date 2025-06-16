@@ -209,17 +209,7 @@ class StructureNodeTest {
         @Test
         @DisplayName("ChildRecord Funktionalität")
         void testChildRecord() {
-            Set<StructureNode.StructureType> types = Set.of(
-                    StructureNode.StructureType.TREE,
-                    StructureNode.StructureType.RING
-            );
-            Map<StructureNode.StructureType, Integer> headIds = Map.of(
-                    StructureNode.StructureType.TREE, 1,
-                    StructureNode.StructureType.RING, 2
-            );
-
-            StructureNode child = new StructureNode(10);
-            StructureNode.ChildRecord record = new StructureNode.ChildRecord(child, types, headIds);
+            StructureNode.ChildRecord record = createTestChildRecord();
 
             assertTrue(record.hasType(StructureNode.StructureType.TREE));
             assertTrue(record.hasType(StructureNode.StructureType.RING));
@@ -232,6 +222,20 @@ class StructureNodeTest {
             assertEquals(Integer.valueOf(1), record.getHeadId(StructureNode.StructureType.TREE));
             assertEquals(Integer.valueOf(2), record.getHeadId(StructureNode.StructureType.RING));
             assertNull(record.getHeadId(StructureNode.StructureType.LINE));
+        }
+
+        private StructureNode.ChildRecord createTestChildRecord() {
+            Set<StructureNode.StructureType> types = Set.of(
+                    StructureNode.StructureType.TREE,
+                    StructureNode.StructureType.RING
+            );
+            Map<StructureNode.StructureType, Integer> headIds = Map.of(
+                    StructureNode.StructureType.TREE, 1,
+                    StructureNode.StructureType.RING, 2
+            );
+
+            StructureNode child = new StructureNode(10);
+            return new StructureNode.ChildRecord(child, types, headIds);
         }
 
         @Test
