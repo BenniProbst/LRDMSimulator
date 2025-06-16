@@ -551,40 +551,46 @@ public class StructureNode {
 
     // ===== HEAD-SUCHE =====
 
+
     /**
      * Findet den Head-Knoten für einen bestimmten Strukturtyp.
-     * Sucht rekursiv nach oben, bis ein Head-Knoten gefunden wird.
+     * Sucht strikt nach Head-Knoten und gibt null zurück, wenn keiner gefunden wird.
      * Verwendet Stack-basierte Traversierung für Ring-Sicherheit.
      *
      * @param typeId Die Typ-ID der gewünschten Struktur
      * @return Head-Knoten für diesen Strukturtyp oder null
      */
     public StructureNode findHead(StructureType typeId) {
-        Stack<StructureNode> stack = new Stack<>();
+        if (typeId == null) {
+            return null;
+        }
+
+        // Stack-basierte Traversierung für Ring-Sicherheit
         Set<StructureNode> visited = new HashSet<>();
+        Stack<StructureNode> stack = new Stack<>();
         stack.push(this);
 
         while (!stack.isEmpty()) {
             StructureNode current = stack.pop();
 
-            if (visited.contains(current)) continue; // Ring-sicher
+            if (visited.contains(current)) {
+                continue; // Bereits besucht - verhindert Zyklen
+            }
             visited.add(current);
 
-            // Prüfe, ob aktueller Knoten Head für diesen Typ ist
+            // Prüfe, ob der aktuelle Knoten ein Head für den gewünschten Typ ist
             if (current.isHead(typeId)) {
-                return current;
+                return current; // Head-Knoten gefunden - gib Head-Knoten zurück, nicht dessen ID
             }
 
-            // Parent traversieren (wenn Typ-ID passt)
-            if (current.parent != null) {
-                ChildRecord parentRecord = current.parent.findChildRecordById(current.getId());
-                if (parentRecord != null && parentRecord.hasType(typeId)) {
-                    stack.push(current.parent);
-                }
+            // Füge Parent hinzu (nicht Kinder - wir suchen nach oben zum Head)
+            if (current.getParent() != null && !visited.contains(current.getParent())) {
+                stack.push(current.getParent());
             }
         }
 
-        return null; // Kein Head gefunden
+        // Kein Head gefunden - gib null zurück anstatt nach Kindern zu suchen
+        return null;
     }
 
     // ===== ENDPUNKT-ERKENNUNG =====

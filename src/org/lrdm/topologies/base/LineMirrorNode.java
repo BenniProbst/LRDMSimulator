@@ -340,6 +340,45 @@ public class LineMirrorNode extends MirrorNode {
     }
 
     /**
+     * Findet den Head-Knoten für einen bestimmten Strukturtyp.
+     * Überschreibt MirrorNode.findHead() für LINE-spezifische Optimierung.
+     * Sucht strikt nach Head-Knoten und gibt null zurück, wenn keiner gefunden wird.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @return Head-Knoten für diesen Strukturtyp oder null
+     */
+    @Override
+    public StructureNode findHead(StructureType typeId) {
+        if (typeId == null) {
+            return null;
+        }
+
+        // Für LINE-Strukturen: optimierte lineare Traversierung nach oben
+        if (typeId == StructureType.LINE) {
+            Set<StructureNode> visited = new HashSet<>();
+            StructureNode current = this;
+
+            while (current != null && !visited.contains(current)) {
+                visited.add(current);
+
+                // Prüfe, ob der aktuelle Knoten ein Head für LINE ist
+                if (current.isHead(StructureType.LINE)) {
+                    return current; // Head-Knoten gefunden
+                }
+
+                // Gehe zum Parent (lineare Traversierung)
+                current = current.getParent();
+            }
+
+            // Kein HEAD für LINE gefunden
+            return null;
+        }
+
+        // Für andere Strukturtypen: verwende Sie die Standard-Implementierung
+        return super.findHead(typeId);
+    }
+
+    /**
      * Findet den Head-Knoten der LINE-Struktur.
      * Nutzt findHead() mit expliziter LINE-Typ-ID für typsichere Suche.
      * <p>

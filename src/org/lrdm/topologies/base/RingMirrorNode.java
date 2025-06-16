@@ -69,56 +69,6 @@ public class RingMirrorNode extends MirrorNode {
         return StructureType.RING;
     }
 
-    /**
-     * Ring-spezifische Head-Finding-Logik mit Optimierung für zyklische Strukturen.
-     * <p>
-     * Überschreibt die Standard-Head-Finding für optimierte Ring-Navigation:
-     * - Vermeidet Endlos-Loops durch bidirektionale Traversierung
-     * - Nutzt sowohl Parent- als auch Child-Navigation für Ring-Strukturen
-     * - Fallback auf Standard-Implementierung für andere Strukturtypen
-     * <p>
-     * Architektur-Konsistenz: Alle spezialisierten Node-Typen überschreiben findHead()
-     * für typ-spezifische Optimierungen und korrekte Multi-Type-Koexistenz.
-     *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @return Head-Knoten für diesen Strukturtyp oder null
-     */
-    @Override
-    public StructureNode findHead(StructureType typeId) {
-        if (typeId != StructureType.RING) {
-            return super.findHead(typeId); // Delegiere an Standard-Implementierung
-        }
-
-        // Ring-spezifische Head-Finding-Optimierung mit bidirektionaler Traversierung
-        Set<StructureNode> visited = new HashSet<>();
-        StructureNode current = this;
-
-        while (current != null && !visited.contains(current)) {
-            visited.add(current);
-
-            if (current.isHead(typeId)) {
-                return current;
-            }
-
-            // In Ringen können wir sowohl Parent als auch Child traversieren
-            StructureNode parent = current.getParent();
-            if (parent != null && !visited.contains(parent)) {
-                current = parent;
-                continue;
-            }
-
-            // Wenn kein valider Parent, versuche erstes Kind für Ring-Navigation
-            Set<StructureNode> children = current.getChildren(typeId, current.getId());
-            if (!children.isEmpty()) {
-                current = children.iterator().next();
-            } else {
-                break; // Keine weitere Navigation möglich
-            }
-        }
-
-        return null; // Kein Head gefunden
-    }
-
     // ===== STRUKTUR-MANAGEMENT =====
 
     /**
@@ -398,6 +348,61 @@ public class RingMirrorNode extends MirrorNode {
     }
 
     // ===== RING-SPEZIFISCHE CONVENIENCE-METHODEN =====
+
+
+    /**
+     * Ring-spezifische Head-Finding-Logik mit Optimierung für zyklische Strukturen.
+     * Überschreibt MirrorNode.findHead() für RING-spezifische Optimierung.
+     * Sucht strikt nach Head-Knoten und gibt null zurück, wenn niemand gefunden wird.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @return Head-Knoten für diesen Strukturtyp oder null
+     */
+    @Override
+    public StructureNode findHead(StructureType typeId) {
+        if (typeId == null) {
+            return null;
+        }
+
+        // Für RING-Strukturen: Bidirektionale Traversierung zur Vermeidung von Endlos-Loops
+        if (typeId == StructureType.RING) {
+            Set<StructureNode> visited = new HashSet<>();
+            Queue<StructureNode> queue = new LinkedList<>();
+            queue.offer(this);
+
+            while (!queue.isEmpty()) {
+                StructureNode current = queue.poll();
+
+                if (visited.contains(current)) {
+                    continue; // Bereits besucht - verhindert Endlos-Loops in Ringen
+                }
+                visited.add(current);
+
+                // Prüfe, ob der aktuelle Knoten ein Head für RING ist
+                if (current.isHead(StructureType.RING)) {
+                    return current; // Head-Knoten gefunden
+                }
+
+                // Füge sowohl Parent als auch Kinder für bidirektionale Ring-Navigation hinzu
+                if (current.getParent() != null && !visited.contains(current.getParent())) {
+                    queue.offer(current.getParent());
+                }
+
+                // Für Ring-Strukturen: auch Kinder durchsuchen wegen zyklischer Natur
+                for (StructureNode child : current.getChildren(StructureType.RING)) {
+                    if (!visited.contains(child)) {
+                        queue.offer(child);
+                    }
+                }
+            }
+
+            // Kein HEAD für RING gefunden
+            return null;
+        }
+
+        // Für andere Strukturtypen: verwenden Sie die Standard-Implementierung
+        return super.findHead(typeId);
+    }
 
     /**
      * Findet den Head-Knoten der RING-Struktur.
