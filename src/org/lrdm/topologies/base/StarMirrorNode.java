@@ -20,7 +20,7 @@ import java.util.*;
  * für korrekte Koexistenz mit anderen Strukturtypen.
  * <p>
  * Maximierte Wiederverwendung der StructureNode/MirrorNode-Funktionalität:
- * - 85%+ der Traversierungs- und Validierungslogik wird wiederverwendet
+ * - 85 %+ der Traversierungs- und Validierungslogik wird wiederverwendet
  * - Fokussiert auf stern-spezifische Validierung und Navigation
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
@@ -124,7 +124,7 @@ public class StarMirrorNode extends MirrorNode {
 
         Set<StructureNode> structureNodes = head.getAllNodesInStructure(typeId, head);
 
-        // Ein Stern muss mindestens 3 Knoten haben
+        // Ein Stern muss mindestens 3 Knoten haben,
         // nach Entfernung müssen noch mindestens 3 Knoten übrig bleiben
         if (structureNodes.size() < 4) return false;
 
@@ -188,7 +188,7 @@ public class StarMirrorNode extends MirrorNode {
         }
 
         if (centerNode == null) return false; // Ein Zentrum muss vorhanden sein
-        if (centerNode != head) return false; // Zentrum muss das übergebene Head sein
+        if (centerNode != head) return false; // Zentrum muss der übergebene Head sein
 
         // Validiere stern-spezifische Eigenschaften
         for (StarMirrorNode starNode : starNodes) {

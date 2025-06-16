@@ -342,7 +342,7 @@ public class LineMirrorNode extends MirrorNode {
     /**
      * Findet den Head-Knoten für einen bestimmten Strukturtyp.
      * Überschreibt MirrorNode.findHead() für LINE-spezifische Optimierung.
-     * Sucht strikt nach Head-Knoten und gibt null zurück, wenn keiner gefunden wird.
+     * Sucht strikt nach Head-Knoten und gibt null zurück, wenn niemand gefunden wird.
      *
      * @param typeId Die Typ-ID der gewünschten Struktur
      * @return Head-Knoten für diesen Strukturtyp oder null
@@ -374,7 +374,7 @@ public class LineMirrorNode extends MirrorNode {
             return null;
         }
 
-        // Für andere Strukturtypen: verwende Sie die Standard-Implementierung
+        // Für andere Strukturtypen: verwenden Sie die Standard-Implementierung
         return super.findHead(typeId);
     }
 

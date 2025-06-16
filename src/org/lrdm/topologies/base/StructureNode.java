@@ -334,10 +334,10 @@ public class StructureNode {
         Set<StructureNode> visitedInCycle = new HashSet<>();
         StructureNode current = start;
 
-        // Folge der Kette bis wir entweder einen Zyklus finden oder die Menge verlassen
+        // Folge der Kette, bis wir entweder einen Zyklus finden oder die Menge verlassen
         do {
             if (visitedInCycle.contains(current)) {
-                // Zyklus gefunden - prüfe ob es ein vollständiger Zyklus ist
+                // Zyklus gefunden - prüfe, ob es ein vollständiger Zyklus ist
                 return current == start && visitedInCycle.size() == nodes.size();
             }
 
@@ -351,7 +351,7 @@ public class StructureNode {
 
             StructureNode child = children.iterator().next();
 
-            // Prüfe ob das Kind in der ursprünglichen Menge ist
+            // Prüfe, ob das Kind in der ursprünglichen Menge ist
             if (!nodes.contains(child)) {
                 return false; // Zyklus verlässt die Knotenmenge
             }
@@ -360,8 +360,8 @@ public class StructureNode {
 
         } while (!visitedInCycle.contains(current));
 
-        // Wenn wir hier ankommen, haben wir einen Zyklus gefunden
-        // Prüfe ob es ein vollständiger Zyklus zurück zum Start ist
+        // Wenn wir hier ankommen, haben wir einen Zyklus gefunden.
+        // Prüfe, ob es ein vollständiger Zyklus zurück zum Start ist
         return current == start && visitedInCycle.size() == nodes.size();
     }
 
@@ -554,7 +554,7 @@ public class StructureNode {
 
     /**
      * Findet den Head-Knoten für einen bestimmten Strukturtyp.
-     * Sucht strikt nach Head-Knoten und gibt null zurück, wenn keiner gefunden wird.
+     * Sucht strikt nach Head-Knoten und gibt null zurück, wenn niemand gefunden wird.
      * Verwendet Stack-basierte Traversierung für Ring-Sicherheit.
      *
      * @param typeId Die Typ-ID der gewünschten Struktur
@@ -580,7 +580,7 @@ public class StructureNode {
 
             // Prüfe, ob der aktuelle Knoten ein Head für den gewünschten Typ ist
             if (current.isHead(typeId)) {
-                return current; // Head-Knoten gefunden - gib Head-Knoten zurück, nicht dessen ID
+                return current; // Head-Knoten gefunden - gibt Head-Knoten zurück, nicht dessen ID
             }
 
             // Füge Parent hinzu (nicht Kinder - wir suchen nach oben zum Head)
@@ -589,7 +589,7 @@ public class StructureNode {
             }
         }
 
-        // Kein Head gefunden - gib null zurück anstatt nach Kindern zu suchen
+        // Kein Head gefunden - gibt null zurück, anstatt nach Kindern zu suchen
         return null;
     }
 
@@ -678,21 +678,31 @@ public class StructureNode {
         visited.add(head);
         parentMap.put(head, null);
 
-        boolean found = false;
-        while (!queue.isEmpty() && !found) {
+        while (!queue.isEmpty()) {
             StructureNode current = queue.poll();
 
             if (current == this) {
-                found = true;
-                break;
+                // Pfad rekonstruieren (rückwärts)
+                StructureNode pathNode = this;
+                while (pathNode != null) {
+                    stack.push(pathNode);
+                    pathNode = parentMap.get(pathNode);
+                }
+
+                // Stack umkehren für korrekten Pfad (Head -> ... -> this)
+                while (!stack.isEmpty()) {
+                    path.add(stack.pop());
+                }
+
+                return path;
             }
 
             // Nur strukturspezifische Nachbarn besuchen
             List<StructureNode> neighbors = new ArrayList<>();
 
-            // Parent nur wenn er zur gleichen Struktur gehört
+            // Parent, nur wenn er zur gleichen Struktur gehört
             if (current.parent != null) {
-                // Prüfe ob Parent zur selben Struktur gehört
+                // Prüfe, ob Parent zur selben Struktur gehört
                 Set<StructureNode> structureNodes = head.getAllNodesInStructure(typeId, head);
                 if (structureNodes.contains(current.parent)) {
                     neighbors.add(current.parent);
@@ -711,21 +721,8 @@ public class StructureNode {
             }
         }
 
-        if (found) {
-            // Pfad rekonstruieren (rückwärts)
-            StructureNode current = this;
-            while (current != null) {
-                stack.push(current);
-                current = parentMap.get(current);
-            }
-
-            // Stack umkehren für korrekten Pfad (Head -> ... -> this)
-            while (!stack.isEmpty()) {
-                path.add(stack.pop());
-            }
-        }
-
-        return path.isEmpty() ? List.of(this) : path;
+        // Kein Pfad gefunden - zurück zu diesem Knoten allein
+        return List.of(this);
     }
 
     /**

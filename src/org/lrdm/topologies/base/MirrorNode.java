@@ -250,7 +250,7 @@ public class MirrorNode extends StructureNode {
             ChildRecord thisRecord = this.getParent().findChildRecordById(this.getId());
             thisInStructure = thisRecord != null && thisRecord.belongsToStructure(typeId, headId);
         } else {
-            // Kein Parent - prüfe ob wir der Head sind
+            // Kein Parent - prüfe, ob wir der Head sind
             thisInStructure = this.isHead(typeId) && this.getId() == headId;
         }
 
@@ -260,7 +260,7 @@ public class MirrorNode extends StructureNode {
             ChildRecord otherRecord = other.getParent().findChildRecordById(other.getId());
             otherInStructure = otherRecord != null && otherRecord.belongsToStructure(typeId, headId);
         } else {
-            // Kein Parent - prüfe ob der andere der Head ist
+            // Kein Parent - prüfe, ob der andere der Head ist
             otherInStructure = other.isHead(typeId) && other.getId() == headId;
         }
 
@@ -269,7 +269,7 @@ public class MirrorNode extends StructureNode {
             return false;
         }
 
-        // Jetzt prüfe die implementierte Mirror-Verbindung
+        // Jetzt prüfe ich die implementierte Mirror-Verbindung
         return this.mirror.isLinkedWith(other.mirror);
     }
 
@@ -619,7 +619,6 @@ public class MirrorNode extends StructureNode {
     private boolean isValidMirrorInStructure(Mirror mirror, Set<Mirror> structureMirrors, Set<Link> structureLinks) {
         if (mirror == null) return false;
 
-        // ✅ KORRIGIERT: structureMirrors Parameter wird verwendet
         // Mirror muss in der Struktur enthalten sein
         if (!structureMirrors.contains(mirror)) {
             return false;
