@@ -50,7 +50,7 @@ class TreeMirrorNodeTest {
 
     /**
      * Erstellt eine Liste von Simulator-Mirrors, entweder aus der MirrorProbe
-     * oder als Fallback-Mirrors falls nicht genügend verfügbar sind.
+     * oder als Fallback-Mirrors, falls nicht genügend verfügbar ist.
      *
      * @param probe Die MirrorProbe zur Mirror-Beschaffung
      * @return Liste mit mindestens requiredCount Mirrors
@@ -188,7 +188,7 @@ class TreeMirrorNodeTest {
             MirrorProbe probe = getMirrorProbe();
             assertNotNull(probe);
 
-            // Verwende extrahierte Methode für Mirror-Beschaffung
+            // Verwende extrahierte Methoden für Mirror-Beschaffung
             List<Mirror> simMirrors = getSimMirrors(probe);
 
             // Erstelle komplexen Baum mit echten Simulator-Mirrors
@@ -318,11 +318,9 @@ class TreeMirrorNodeTest {
             Mirror rootMirror = new Mirror(101, 0, props);
             root.setMirror(rootMirror);
 
-            List<Mirror> childMirrors = new ArrayList<>();
             for (int i = 0; i < children.size(); i++) {
                 Mirror childMirror = new Mirror(102 + i, 0, props);
                 children.get(i).setMirror(childMirror);
-                childMirrors.add(childMirror);
 
                 // Erstelle interne Links
                 Link internalLink = new Link(i + 1, rootMirror, childMirror, 0, props);
@@ -336,7 +334,6 @@ class TreeMirrorNodeTest {
             rootMirror.addLink(edgeLink);
             externalMirror.addLink(edgeLink);
         }
-    }
 
     @Nested
     @DisplayName("TreeMirrorNode Baum-Navigation")
@@ -621,7 +618,7 @@ class TreeMirrorNodeTest {
 
             // Setup Mirrors und Links
             setupComplexTreeMirrorsAndLinks(root, Arrays.asList(child1, child2, child3),
-                    Arrays.asList(grandchild1, grandchild2), Arrays.asList(greatGrandchild));
+                    Arrays.asList(grandchild1, grandchild2), List.of(greatGrandchild));
 
             Set<StructureNode> treeNodes = Set.of(root, child1, child2, child3, grandchild1, grandchild2, greatGrandchild);
             assertTrue(root.isValidStructure(treeNodes));
@@ -631,7 +628,7 @@ class TreeMirrorNodeTest {
             int expectedLinks = nodeCount - 1;
 
             int actualInternalLinks = treeNodes.stream()
-                    .mapToInt(node -> node.getNumImplementedLinks())
+                    .mapToInt(node -> ((TreeMirrorNode) node).getNumImplementedLinks()) // Cast zu TreeMirrorNode
                     .sum() / 2; // Jeder Link wird von beiden Seiten gezählt
 
             // Abzüglich Edge-Links (nur Root hat Edge-Links)
@@ -768,13 +765,13 @@ class TreeMirrorNodeTest {
             MirrorNode externalParent = new MirrorNode(100);
 
             root.setHead(true);
-            root.setParent(externalParent); // Externer Parent OK
+            root.setParent(externalParent); // Externer Parent. OK
             root.addChild(child);
 
-            setupTreeMirrorsAndLinks(root, Arrays.asList(child));
+            setupTreeMirrorsAndLinks(root, List.of(child));
 
             Set<StructureNode> treeWithExternal = Set.of(root, child);
-            assertTrue(root.isValidStructure(treeWithExternal)); // Externer Parent OK
+            assertTrue(root.isValidStructure(treeWithExternal)); // Externer Parent. OK
 
             // Interner Parent für Root (ungültig)
             root.setParent(child); // Zyklus erstellen
