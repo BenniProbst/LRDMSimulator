@@ -11,11 +11,14 @@ import org.lrdm.probes.MirrorProbe;
 import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
 
-import static org.lrdm.TestProperties.loadProperties;
-import static org.lrdm.TestProperties.getProps;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.lrdm.TestProperties.getProps;
+import static org.lrdm.TestProperties.loadProperties;
 
 @DisplayName("StarMirrorNode spezifische Tests")
 class StarMirrorNodeTest {
@@ -473,6 +476,29 @@ class StarMirrorNodeTest {
             assertFalse(center.isValidStructure(invalidStar));
         }
 
+        /**
+         * Erstellt eine Liste von Simulator-Mirrors, entweder aus der MirrorProbe
+         * oder als Fallback-Mirrors, falls nicht genügend verfügbar sind.
+         *
+         * @param probe Die MirrorProbe zur Mirror-Beschaffung
+         * @return Liste mit mindestens requiredCount Mirrors
+         */
+        private List<Mirror> getSimMirrors(MirrorProbe probe) {
+            List<Mirror> simMirrors = probe.getMirrors();
+
+            // Fallback falls weniger als requiredCount Mirrors verfügbar
+            if (simMirrors.size() < 5) {
+                List<Mirror> fallbackMirrors = new ArrayList<>();
+                for (int i = 0; i < 5; i++) {
+                    Mirror mirror = new Mirror(201 + i, 0, props);
+                    fallbackMirrors.add(mirror);
+                }
+                return fallbackMirrors;
+            }
+
+            return simMirrors;
+        }
+
         @Test
         @DisplayName("Struktur-Validierung mit MirrorProbe Daten")
         void testStructureValidationWithMirrorProbeData() throws IOException {
@@ -480,16 +506,8 @@ class StarMirrorNodeTest {
             MirrorProbe probe = getMirrorProbe();
             assertNotNull(probe);
 
-            List<Mirror> simMirrors = probe.getMirrors();
-            // Fallback, falls weniger als 5 Mirrors verfügbar sind
-            if (simMirrors.size() < 5) {
-                Mirror mirror1 = new Mirror(201, 0, props);
-                Mirror mirror2 = new Mirror(202, 0, props);
-                Mirror mirror3 = new Mirror(203, 0, props);
-                Mirror mirror4 = new Mirror(204, 0, props);
-                Mirror mirror5 = new Mirror(205, 0, props);
-                simMirrors = List.of(mirror1, mirror2, mirror3, mirror4, mirror5);
-            }
+            // Extrahierte Methode für Mirror-Beschaffung
+            List<Mirror> simMirrors = getSimMirrors(probe);
 
             // Erstelle StarMirrorNodes mit echten Simulator-Mirrors
             StarMirrorNode center = new StarMirrorNode(1, simMirrors.get(0));
@@ -551,7 +569,7 @@ class StarMirrorNodeTest {
             assertTrue(childHeads.contains(childHead1));
             assertTrue(childHeads.contains(childHead2));
 
-            // Versuche Mirror-Integration
+            // Teste Mirror-Integration
             assertEquals(simMirrors.get(0), center.getMirror());
             assertEquals(simMirrors.get(1), leaf1.getMirror());
             assertEquals(simMirrors.get(2), leaf2.getMirror());
@@ -565,7 +583,7 @@ class StarMirrorNodeTest {
             assertEquals(1, childHead1.getNumImplementedLinks(), "Child-Head 1 sollte 1 Link haben");
             assertEquals(1, childHead2.getNumImplementedLinks(), "Child-Head 2 sollte 1 Link haben");
 
-            // Versuche MirrorProbe-Integration
+            // Teste MirrorProbe-Integration
             assertTrue(probe.getNumMirrors() >= 0, "MirrorProbe sollte valide Mirror-Anzahl liefern");
             assertTrue(probe.getNumTargetLinksPerMirror() >= 0,
                     "Target links per mirror sollte nicht negativ sein");
