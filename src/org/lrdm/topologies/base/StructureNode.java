@@ -653,14 +653,18 @@ public class StructureNode {
         return result;
     }
 
+    // Füge diese Methode zu StructureNode hinzu:
+
     /**
-     * Berechnet den Pfad von der Head-Node zu diesem Knoten.
+     * Berechnet den Pfad von einer spezifischen Head-Node zu diesem Knoten.
+     * Berücksichtigt Typ-ID und Head-ID für korrekte Multi-Type-Traversierung.
      * Verwendet BFS für den kürzesten Pfad in ungewichteten Strukturen.
      *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param head Die Head-Node der gewünschten Struktur
      * @return Liste der Knoten vom Head zu diesem Knoten (inklusive Head und this)
      */
-    public List<StructureNode> getPathFromHead() {
-        StructureNode head = findHead();
+    public List<StructureNode> getPathFromHead(StructureType typeId, StructureNode head) {
         if (head == null) return List.of(this);
 
         List<StructureNode> path = new ArrayList<>();
@@ -683,10 +687,20 @@ public class StructureNode {
                 break;
             }
 
-            // Alle Nachbarn besuchen (Parent und Kinder)
+            // Nur strukturspezifische Nachbarn besuchen
             List<StructureNode> neighbors = new ArrayList<>();
-            if (current.parent != null) neighbors.add(current.parent);
-            neighbors.addAll(current.getChildren());
+
+            // Parent nur wenn er zur gleichen Struktur gehört
+            if (current.parent != null) {
+                // Prüfe ob Parent zur selben Struktur gehört
+                Set<StructureNode> structureNodes = head.getAllNodesInStructure(typeId, head);
+                if (structureNodes.contains(current.parent)) {
+                    neighbors.add(current.parent);
+                }
+            }
+
+            // Nur Kinder der spezifischen Struktur
+            neighbors.addAll(current.getChildren(typeId, head.getId()));
 
             for (StructureNode neighbor : neighbors) {
                 if (!visited.contains(neighbor)) {
@@ -712,6 +726,22 @@ public class StructureNode {
         }
 
         return path.isEmpty() ? List.of(this) : path;
+    }
+
+    /**
+     * Berechnet den Pfad von der Head-Node zu diesem Knoten.
+     * Verwendet automatische Typ- und Head-Ermittlung.
+     * Verwendet BFS für den kürzesten Pfad in ungewichteten Strukturen.
+     *
+     * @return Liste der Knoten vom Head zu diesem Knoten (inklusive Head und this)
+     */
+    public List<StructureNode> getPathFromHead() {
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+
+        if (head == null) return List.of(this);
+
+        return getPathFromHead(typeId, head);
     }
 
 
