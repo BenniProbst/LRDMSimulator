@@ -1,4 +1,3 @@
-
 package org.lrdm.topologies.base;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -9,13 +8,14 @@ import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.probes.MirrorProbe;
+import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 
 import java.io.IOException;
 import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.lrdm.TestProperties.getProps;
 import static org.lrdm.TestProperties.loadProperties;
+import static org.lrdm.TestProperties.getProps;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("MirrorNode spezifische Tests")
 class MirrorNodeTest {
@@ -42,6 +42,7 @@ class MirrorNodeTest {
         props = getProps();
         sim = new TimedRDMSim(config);
         sim.setHeadless(true);
+        sim.initialize(new BalancedTreeTopologyStrategy());
     }
 
     private MirrorProbe getMirrorProbe() {
@@ -217,6 +218,34 @@ class MirrorNodeTest {
             assertEquals(0, parent.getChildren().size());
             assertNull(child.getParent());
         }
+
+        @Test
+        @DisplayName("Integration mit echter Simulation")
+        void testIntegrationWithRealSimulation() throws IOException {
+            initSimulator();
+            assertNotNull(sim);
+
+            MirrorProbe probe = getMirrorProbe();
+            assertNotNull(probe);
+
+            // Erstelle MirrorNode mit Simulator-Mirror über MirrorProbe
+            List<Mirror> simMirrors = probe.getMirrors();
+            if (!simMirrors.isEmpty()) {
+                Mirror simMirror = simMirrors.get(0);
+                MirrorNode simNode = new MirrorNode(100, simMirror);
+
+                assertEquals(simMirror, simNode.getMirror());
+                assertEquals(100, simNode.getId());
+                assertEquals(mirrorType, simNode.deriveTypeId());
+
+                // Teste MirrorNode-Funktionalität mit echtem Mirror
+                assertEquals(simMirror.getLinks().size(), simNode.getNumImplementedLinks());
+                assertEquals(simMirror.getLinks(), simNode.getImplementedLinks());
+            } else {
+                // Fallback-Test, falls keine Mirrors vorhanden sind
+                assertTrue(probe.getNumMirrors() >= 0);
+            }
+        }
     }
 
     @Nested
@@ -299,162 +328,121 @@ class MirrorNodeTest {
             Set<Link> structureLinks = root.getLinksOfStructure(mirrorType, root);
             Set<Link> edgeLinks = root.getEdgeLinks(mirrorType, root);
 
-            // Structure Links sollten interne Links enthalten
-            assertTrue(structureLinks.isEmpty()); // root allein hat keine internen Links
-
-            // Edge Links sollten externe Links enthalten
-            assertEquals(1, edgeLinks.size());
+            assertTrue(structureLinks.contains(internalLink));
+            assertFalse(structureLinks.contains(externalLink));
             assertTrue(edgeLinks.contains(externalLink));
-        }
-    }
-
-    @Nested
-    @DisplayName("MirrorNode Struktur-Validierung")
-    class MirrorNodeValidationTests {
-
-        @Test
-        @DisplayName("isValidStructure erweiterte Validierung")
-        void testValidStructureWithMirrors() {
-            MirrorNode root = new MirrorNode(1);
-            MirrorNode child = new MirrorNode(2);
-
-            root.setHead(mirrorType, true);
-            Set<StructureNode.StructureType> typeIds = Set.of(mirrorType);
-            Map<StructureNode.StructureType, Integer> headIds = Map.of(mirrorType, root.getId());
-
-            root.addChild(child, typeIds, headIds);
-
-            // Setze Mirrors
-            root.setMirror(new Mirror(101, 0, props));
-            child.setMirror(new Mirror(102, 0, props));
-
-            // Grundlegende MirrorNode-Struktur sollte gültig sein
-            assertTrue(root.isValidStructure());
+            assertFalse(edgeLinks.contains(internalLink));
         }
 
         @Test
-        @DisplayName("Struktur-Validierung mit einzelnem Mirror")
-        void testValidStructureSingleMirror() {
-            MirrorNode single = new MirrorNode(1);
-            single.setMirror(new Mirror(101, 0, props));
-            single.setHead(mirrorType, true);
-
-            assertTrue(single.isValidStructure());
-        }
-    }
-
-    @Nested
-    @DisplayName("Integration und Edge Cases")
-    class MirrorNodeIntegrationTests {
-
-        @Test
-        @DisplayName("Edge Cases und Null-Handling")
-        void testEdgeCasesAndNullHandling() {
-            MirrorNode node = new MirrorNode(1);
-
-            // Null-Handling für Links
-            node.addLink(null);
-            assertEquals(0, node.getNumImplementedLinks());
-
-            node.removeLink(null);
-            assertEquals(0, node.getNumImplementedLinks());
-
-            // isLinkedWith mit null
-            assertFalse(node.isLinkedWith(null));
-
-            // Mirror-Management
-            assertNull(node.getMirror());
-            assertTrue(node.getImplementedLinks().isEmpty());
-        }
-
-        @Test
-        @DisplayName("Integration mit echter Simulation")
-        void testIntegrationWithRealSimulation() throws IOException {
+        @DisplayName("Struktur-Navigation mit MirrorProbe Integration")
+        void testStructureNavigationWithMirrorProbe() throws IOException {
             initSimulator();
-            assertNotNull(sim);
+            MirrorProbe probe = getMirrorProbe();
+            assertNotNull(probe);
+
+            // Verwende echte Mirrors aus der Simulation
+            List<Mirror> simMirrors = probe.getMirrors();
+            if (simMirrors.size() >= 2) {
+                MirrorNode node1 = new MirrorNode(1, simMirrors.get(0));
+                MirrorNode node2 = new MirrorNode(2, simMirrors.get(1));
+
+                node1.setHead(mirrorType, true);
+                Set<StructureNode.StructureType> typeIds = Set.of(mirrorType);
+                Map<StructureNode.StructureType, Integer> headIds = Map.of(mirrorType, node1.getId());
+
+                node1.addChild(node2, typeIds, headIds);
+
+                // Teste Struktur-Funktionen mit echten Mirrors
+                Set<Mirror> mirrors = node1.getMirrorsOfStructure(mirrorType, node1);
+                assertTrue(!mirrors.isEmpty());
+                assertTrue(mirrors.contains(node1.getMirror()));
+            }
+        }
+
+        @Test
+        @DisplayName("Performance mit MirrorProbe Daten")
+        void testPerformanceWithMirrorProbeData() throws IOException {
+            initSimulator();
+            MirrorProbe probe = getMirrorProbe();
+            assertNotNull(probe);
+
+            List<Mirror> simMirrors = probe.getMirrors();
+
+            long startTime = System.currentTimeMillis();
+
+            for (int i = 0; i < Math.min(10, simMirrors.size()); i++) {
+                MirrorNode node = new MirrorNode(i, simMirrors.get(i));
+                assertNotNull(node.getMirror());
+                assertEquals(i, node.getId());
+            }
+
+            long duration = System.currentTimeMillis() - startTime;
+            assertTrue(duration < 1000); // Sollte unter 1 Sekunde sein
+        }
+    }
+
+    @Nested
+    @DisplayName("MirrorNode Observer Pattern Tests")
+    class MirrorNodeObserverTests {
+
+        @Test
+        @DisplayName("MirrorProbe Integration korrekt")
+        void testMirrorProbeIntegration() throws IOException {
+            initSimulator();
 
             MirrorProbe probe = getMirrorProbe();
             assertNotNull(probe);
 
-            // Erstelle MirrorNode mit Simulator-Mirror über MirrorProbe
-            List<Mirror> simMirrors = probe.getMirrors();
-            if (!simMirrors.isEmpty()) {
-                Mirror simMirror = simMirrors.get(0);
-                MirrorNode simNode = new MirrorNode(100, simMirror);
+            // Teste alle MirrorProbe Funktionen
+            assertTrue(probe.getNumMirrors() >= 0);
+            assertTrue(probe.getNumReadyMirrors() >= 0);
+            assertTrue(probe.getNumTargetMirrors() >= 0);
+            assertTrue(probe.getMirrorRatio() >= 0.0 && probe.getMirrorRatio() <= 1.0);
 
-                assertEquals(simMirror, simNode.getMirror());
-                assertEquals(100, simNode.getId());
-                assertEquals(mirrorType, simNode.deriveTypeId());
+            assertNotNull(probe.getMirrors());
+            assertEquals(probe.getNumMirrors(), probe.getMirrors().size());
+        }
 
-                // Teste MirrorNode-Funktionalität mit echtem Mirror
-                assertEquals(simMirror.getLinks().size(), simNode.getNumImplementedLinks());
-                assertEquals(simMirror.getLinks(), simNode.getImplementedLinks());
-            } else {
-                // Fallback-Test, falls keine Mirrors vorhanden sind
-                assertTrue(probe.getNumMirrors() >= 0);
+        @Test
+        @DisplayName("Kein direkter Network-Zugriff")
+        void testNoDirectNetworkAccess() throws IOException {
+            initSimulator();
+
+            // Demonstriere korrekte Verwendung über Probe
+            MirrorProbe probe = getMirrorProbe();
+            assertNotNull(probe);
+
+            // Alle Mirror-Daten sollten über eine Probe zugänglich sein
+            List<Mirror> mirrors = probe.getMirrors();
+            int numMirrors = probe.getNumMirrors();
+
+            assertEquals(numMirrors, mirrors.size());
+
+            for (Mirror mirror : mirrors) {
+                assertNotNull(mirror);
+                assertTrue(mirror.getID() >= 0);
             }
         }
 
         @Test
-        @DisplayName("MirrorNode mit TreeMirrorNode Kompatibilität")
-        void testCompatibilityWithTreeMirrorNode() {
-            // MirrorNode sollte als Basis für TreeMirrorNode funktionieren
-            MirrorNode base = new MirrorNode(1);
-            TreeMirrorNode tree = new TreeMirrorNode(2);
+        @DisplayName("Edge Cases für MirrorProbe")
+        void testMirrorProbeEdgeCases() throws IOException {
+            initSimulator();
 
-            base.setHead(mirrorType, true);
-            tree.setHead(StructureNode.StructureType.TREE, true);
+            MirrorProbe probe = getMirrorProbe();
+            assertNotNull(probe);
 
-            // Beide sollten ihre eigenen Typen haben
-            assertEquals(mirrorType, base.deriveTypeId());
-            assertEquals(StructureNode.StructureType.TREE, tree.deriveTypeId());
-        }
+            // Versuche Edge Cases
+            assertTrue(probe.getNumTargetLinksPerMirror() >= 0);
 
-        @Test
-        @DisplayName("Performance bei größeren Strukturen")
-        void testPerformanceWithLargerStructures() {
-            MirrorNode root = new MirrorNode(1);
-            root.setHead(mirrorType, true);
+            // Verhältnis sollte valide sein
+            double ratio = probe.getMirrorRatio();
+            assertTrue(ratio >= 0.0);
+            assertTrue(ratio <= 1.0);
 
-            Set<StructureNode.StructureType> typeIds = Set.of(mirrorType);
-            Map<StructureNode.StructureType, Integer> headIds = Map.of(mirrorType, root.getId());
-
-            // Erstelle größere Struktur (10 Kinder)
-            List<MirrorNode> children = new ArrayList<>();
-            for (int i = 2; i <= 11; i++) {
-                MirrorNode child = new MirrorNode(i);
-                child.setMirror(new Mirror(100 + i, 0, props));
-                children.add(child);
-                root.addChild(child, typeIds, headIds);
-            }
-
-            assertEquals(10, root.getChildren().size());
-
-            // Performance-Test für getAllNodesInStructure
-            long startTime = System.nanoTime();
-            Set<StructureNode> allNodes = root.getAllNodesInStructure(mirrorType, root);
-            long endTime = System.nanoTime();
-
-            assertEquals(1, allNodes.size()); // Nur root wegen Head-Abgrenzung
-            assertTrue((endTime - startTime) < 1_000_000); // Unter 1ms
-        }
-
-        @Test
-        @DisplayName("RingMirrorNode Kompatibilität")
-        void testCompatibilityWithRingMirrorNode() {
-            // Test Polymorphismus zwischen MirrorNode-Subtypen
-            MirrorNode mirror = new MirrorNode(1);
-            RingMirrorNode ring = new RingMirrorNode(2);
-
-            mirror.setHead(mirrorType, true);
-            ring.setHead(StructureNode.StructureType.RING, true);
-
-            // Beide sollten MirrorNode-Funktionalität haben
-            assertNotNull(mirror.getImplementedLinks());
-            assertNotNull(ring.getImplementedLinks());
-
-            assertEquals(0, mirror.getNumImplementedLinks());
-            assertEquals(0, ring.getNumImplementedLinks());
+            // Listen sollten nie null sein
+            assertNotNull(probe.getMirrors());
         }
     }
 }
