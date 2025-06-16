@@ -13,9 +13,9 @@ import org.lrdm.topologies.BalancedTreeTopologyStrategy;
 import java.io.IOException;
 import java.util.*;
 
-import static org.lrdm.TestProperties.loadProperties;
-import static org.lrdm.TestProperties.getProps;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.lrdm.TestProperties.getProps;
+import static org.lrdm.TestProperties.loadProperties;
 
 
 @DisplayName("TreeMirrorNode spezifische Tests")
@@ -334,6 +334,7 @@ class TreeMirrorNodeTest {
             rootMirror.addLink(edgeLink);
             externalMirror.addLink(edgeLink);
         }
+    }
 
     @Nested
     @DisplayName("TreeMirrorNode Baum-Navigation")
@@ -952,7 +953,7 @@ class TreeMirrorNodeTest {
             sim.initialize(new BalancedTreeTopologyStrategy());
             sim.getEffector().setMirrors(10, 0);
 
-            for(int t = 1; t <= 20; t++) {
+            for (int t = 1; t <= 20; t++) {
                 sim.runStep(t);
             }
 
