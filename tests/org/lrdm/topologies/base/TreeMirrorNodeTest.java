@@ -17,6 +17,7 @@ import static org.lrdm.TestProperties.loadProperties;
 import static org.lrdm.TestProperties.getProps;
 import static org.junit.jupiter.api.Assertions.*;
 
+
 @DisplayName("TreeMirrorNode spezifische Tests")
 class TreeMirrorNodeTest {
 
@@ -45,6 +46,29 @@ class TreeMirrorNodeTest {
 
     private MirrorProbe getMirrorProbe() {
         return sim.getMirrorProbe();
+    }
+
+    /**
+     * Erstellt eine Liste von Simulator-Mirrors, entweder aus der MirrorProbe
+     * oder als Fallback-Mirrors, falls nicht genügend verfügbar sind.
+     *
+     * @param probe Die MirrorProbe zur Mirror-Beschaffung
+     * @return Liste mit mindestens requiredCount Mirrors
+     */
+    private List<Mirror> getSimMirrors(MirrorProbe probe) {
+        List<Mirror> simMirrors = probe.getMirrors();
+
+        // Fallback falls weniger als requiredCount Mirrors verfügbar
+        if (simMirrors.size() < 5) {
+            List<Mirror> fallbackMirrors = new ArrayList<>();
+            for (int i = 0; i < 5; i++) {
+                Mirror mirror = new Mirror(201 + i, 0, props);
+                fallbackMirrors.add(mirror);
+            }
+            return fallbackMirrors;
+        }
+
+        return simMirrors;
     }
 
     @Nested
@@ -121,6 +145,107 @@ class TreeMirrorNodeTest {
             // Nach Entfernen eines Blatts wird Root zum Blatt und kann entfernt werden
             root.removeChild(child2);
             assertTrue(root.canBeRemovedFromStructure(root));
+        }
+
+        @Test
+        @DisplayName("Struktur-Validierung mit MirrorProbe Daten")
+        void testStructureValidationWithMirrorProbeData() throws IOException {
+            initSimulator();
+            MirrorProbe probe = getMirrorProbe();
+            assertNotNull(probe);
+
+            // Extrahierte Methode für Mirror-Beschaffung
+            List<Mirror> simMirrors = getSimMirrors(probe);
+
+            // Erstelle TreeMirrorNodes mit echten Simulator-Mirrors
+            TreeMirrorNode root = new TreeMirrorNode(1, simMirrors.get(0));
+            TreeMirrorNode child1 = new TreeMirrorNode(2, simMirrors.get(1));
+            TreeMirrorNode child2 = new TreeMirrorNode(3, simMirrors.get(2));
+            TreeMirrorNode grandchild1 = new TreeMirrorNode(4, simMirrors.get(3));
+            TreeMirrorNode grandchild2 = new TreeMirrorNode(5, simMirrors.get(4));
+
+            // Baue gültigen 5-Knoten-Baum auf
+            root.setHead(true);
+            root.addChild(child1);
+            root.addChild(child2);
+            child1.addChild(grandchild1);
+            child2.addChild(grandchild2);
+
+            // Erstelle echte Baum-Links zwischen den Mirrors (n-1 = 4 Links für 5 Knoten)
+            Link link1 = new Link(1, simMirrors.get(0), simMirrors.get(1), 0, props);
+            Link link2 = new Link(2, simMirrors.get(0), simMirrors.get(2), 0, props);
+            Link link3 = new Link(3, simMirrors.get(1), simMirrors.get(3), 0, props);
+            Link link4 = new Link(4, simMirrors.get(2), simMirrors.get(4), 0, props);
+
+            // Füge Links zu den Mirrors hinzu
+            simMirrors.get(0).addLink(link1);
+            simMirrors.get(1).addLink(link1);
+            simMirrors.get(0).addLink(link2);
+            simMirrors.get(2).addLink(link2);
+            simMirrors.get(1).addLink(link3);
+            simMirrors.get(3).addLink(link3);
+            simMirrors.get(2).addLink(link4);
+            simMirrors.get(4).addLink(link4);
+
+            // Erstelle Edge-Link für Root (zu externem Mirror)
+            Mirror externalMirror = new Mirror(300, 0, props);
+            Link edgeLink = new Link(5, simMirrors.get(0), externalMirror, 0, props);
+            simMirrors.get(0).addLink(edgeLink);
+            externalMirror.addLink(edgeLink);
+
+            // Teste Struktur-Validierung mit echten MirrorProbe-Daten
+            Set<StructureNode> treeNodes = Set.of(root, child1, child2, grandchild1, grandchild2);
+            assertTrue(root.isValidStructure(treeNodes),
+                    "Baum mit MirrorProbe-Daten sollte gültig sein");
+
+            // Teste TreeMirrorNode-spezifische Funktionen mit echten Daten
+            assertEquals(root, child1.getTreeRoot());
+            assertEquals(root, grandchild1.getTreeRoot());
+            assertEquals(root, grandchild2.getTreeRoot());
+
+            List<TreeMirrorNode> leaves = root.getTreeLeaves();
+            assertEquals(2, leaves.size());
+            assertTrue(leaves.contains(grandchild1));
+            assertTrue(leaves.contains(grandchild2));
+            assertFalse(leaves.contains(root));
+            assertFalse(leaves.contains(child1));
+            assertFalse(leaves.contains(child2));
+
+            // Teste Tiefen-Berechnung
+            assertEquals(0, root.getDepthInTree());
+            assertEquals(1, child1.getDepthInTree());
+            assertEquals(1, child2.getDepthInTree());
+            assertEquals(2, grandchild1.getDepthInTree());
+            assertEquals(2, grandchild2.getDepthInTree());
+
+            // Teste Baum-Eigenschaften
+            assertEquals(2, root.getMaxTreeDepth());
+            assertEquals(5, root.getTreeSize());
+            assertTrue(root.isBalanced());
+
+            // Versuche Mirror-Integration
+            assertEquals(simMirrors.get(0), root.getMirror());
+            assertEquals(simMirrors.get(1), child1.getMirror());
+            assertEquals(simMirrors.get(2), child2.getMirror());
+            assertEquals(simMirrors.get(3), grandchild1.getMirror());
+            assertEquals(simMirrors.get(4), grandchild2.getMirror());
+
+            // Teste Link-Zählung mit echten Daten
+            assertEquals(3, root.getNumImplementedLinks(), "Root sollte 3 Links haben (2 Baum + 1 Edge)");
+            assertEquals(2, child1.getNumImplementedLinks(), "Child1 sollte 2 Links haben (1 zu Root + 1 zu Grandchild)");
+            assertEquals(2, child2.getNumImplementedLinks(), "Child2 sollte 2 Links haben (1 zu Root + 1 zu Grandchild)");
+            assertEquals(1, grandchild1.getNumImplementedLinks(), "Grandchild1 sollte 1 Link haben");
+            assertEquals(1, grandchild2.getNumImplementedLinks(), "Grandchild2 sollte 1 Link haben");
+
+            // Versuche MirrorProbe-Integration
+            assertTrue(probe.getNumMirrors() >= 0, "MirrorProbe sollte valide Mirror-Anzahl liefern");
+            assertTrue(probe.getNumTargetLinksPerMirror() >= 0,
+                    "Target links per mirror sollte nicht negativ sein");
+
+            // Teste ungültige Struktur durch Root-Entfernung
+            Set<StructureNode> incompleteTreeNodes = Set.of(child1, child2, grandchild1, grandchild2);
+            assertFalse(root.isValidStructure(incompleteTreeNodes),
+                    "Baum ohne Root sollte ungültig sein");
         }
 
         private void setupValidTreeStructure(TreeMirrorNode root, TreeMirrorNode child) {

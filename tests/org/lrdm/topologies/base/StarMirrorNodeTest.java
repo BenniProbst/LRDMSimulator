@@ -478,7 +478,7 @@ class StarMirrorNodeTest {
 
         /**
          * Erstellt eine Liste von Simulator-Mirrors, entweder aus der MirrorProbe
-         * oder als Fallback-Mirrors, falls nicht genügend verfügbar sind.
+         * oder als Fallback-Mirrors, falls nicht genügend verfügbar ist.
          *
          * @param probe Die MirrorProbe zur Mirror-Beschaffung
          * @return Liste mit mindestens requiredCount Mirrors
@@ -569,7 +569,7 @@ class StarMirrorNodeTest {
             assertTrue(childHeads.contains(childHead1));
             assertTrue(childHeads.contains(childHead2));
 
-            // Teste Mirror-Integration
+            // Versuche Mirror-Integration
             assertEquals(simMirrors.get(0), center.getMirror());
             assertEquals(simMirrors.get(1), leaf1.getMirror());
             assertEquals(simMirrors.get(2), leaf2.getMirror());
@@ -583,7 +583,7 @@ class StarMirrorNodeTest {
             assertEquals(1, childHead1.getNumImplementedLinks(), "Child-Head 1 sollte 1 Link haben");
             assertEquals(1, childHead2.getNumImplementedLinks(), "Child-Head 2 sollte 1 Link haben");
 
-            // Teste MirrorProbe-Integration
+            // Versuche MirrorProbe-Integration
             assertTrue(probe.getNumMirrors() >= 0, "MirrorProbe sollte valide Mirror-Anzahl liefern");
             assertTrue(probe.getNumTargetLinksPerMirror() >= 0,
                     "Target links per mirror sollte nicht negativ sein");
