@@ -8,7 +8,6 @@ import org.lrdm.topologies.base.MirrorNode;
 import org.lrdm.topologies.base.StructureNode;
 import org.lrdm.util.IDGenerator;
 
-import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -44,7 +43,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     // ===== MIRRORNODE-BASIERTE SUBSTRUKTUR-VERWALTUNG (PRIVATE) =====
     private final Map<MirrorNode, BuildAsSubstructure> nodeToSubstructure = new HashMap<>();
     private final Set<MirrorNode> structureNodes = new HashSet<>();
-    private final MirrorNode currentStructureRoot; // FINAL - ändert sich nicht nach Initialisierung
+    private MirrorNode currentStructureRoot; // NICHT FINAL - Builder-kompatibel
 
     // ===== OBSERVER PATTERN (PRIVATE) =====
     private final List<StructureChangeObserver> observers = new ArrayList<>();
@@ -54,16 +53,14 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     public BuildAsSubstructure() {
         this.idGenerator = IDGenerator.getInstance();
         this.substructureId = idGenerator.getNextID();
-        this.currentStructureRoot = null; // Wird in initNetwork() gesetzt
     }
 
     public BuildAsSubstructure(IDGenerator idGenerator) {
         this.idGenerator = idGenerator;
         this.substructureId = idGenerator.getNextID();
-        this.currentStructureRoot = null; // Wird in initNetwork() gesetzt
     }
 
-    // ===== NEUE GETTER-METHODEN =====
+    // ===== NEUE GETTER UND SETTER (PROTECTED) =====
 
     /**
      * Gibt die eindeutige Substruktur-ID zurück.
@@ -76,7 +73,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Gibt die Root-Node der aktuellen Struktur zurück.
-     * Diese ist final und ändert sich nach der Initialisierung nicht mehr.
      *
      * @return Die Root-Node der Struktur oder null, wenn noch nicht initialisiert
      */
@@ -85,10 +81,23 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     }
 
     /**
+     * Setzt die Root-Node der aktuellen Struktur (für Builder).
+     * PROTECTED - nur für Builder und interne Nutzung.
+     *
+     * @param root Die neue Root-Node
+     */
+    protected final void setCurrentStructureRoot(MirrorNode root) {
+        this.currentStructureRoot = root;
+        if (root != null) {
+            addToStructureNodes(root);
+        }
+    }
+
+    /**
      * Gibt den Strukturtyp der aktuellen Substruktur zurück.
      * Ermittelt den Typ über die Root-Node.
      *
-     * @return Der StructureType der aktuellen Substruktur oder null, wenn nicht initialisiert
+     * @return Der StructureType der aktuellen Substruktur oder null, wenn nicht, initialisiert
      */
     public final StructureNode.StructureType getCurrentStructureType() {
         if (currentStructureRoot == null) {
@@ -100,12 +109,100 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     /**
      * Gibt alle aktuell verwalteten MirrorNodes der Struktur zurück.
      * Diese Collection wird aktiv gepflegt und ermöglicht die Auswahl spezifischer Knoten
-     * für das Anbau weiterer Substrukturen.
+     * für den Anbau weiterer Substrukturen.
      *
      * @return Unveränderliche Kopie aller MirrorNodes in der Struktur
      */
     public final Set<MirrorNode> getAllStructureNodes() {
         return Set.copyOf(structureNodes);
+    }
+
+    /**
+     * Gibt die Zuordnung von MirrorNode zu BuildAsSubstructure zurück.
+     * PROTECTED - ermöglicht Subklassen den Zugriff auf Substruktur-Zuordnungen.
+     *
+     * @return Unveränderliche Kopie der Node-zu-Substruktur-Zuordnung
+     */
+    protected final Map<MirrorNode, BuildAsSubstructure> getNodeToSubstructureMapping() {
+        return Map.copyOf(nodeToSubstructure);
+    }
+
+    /**
+     * Findet die Substruktur, zu der ein bestimmter MirrorNode gehört.
+     * PROTECTED - ermöglicht Subklassen die Identifikation von Substrukturen.
+     *
+     * @param node Der MirrorNode
+     * @return Die zugehörige BuildAsSubstructure oder null, wenn nicht gefunden
+     */
+    protected final BuildAsSubstructure findSubstructureForNode(MirrorNode node) {
+        return nodeToSubstructure.get(node);
+    }
+
+    /**
+     * Gibt alle Substruktur-Tupel zurück (MirrorNode, BuildAsSubstructure).
+     * PROTECTED - ermöglicht Iteration über alle Substruktur-Zuordnungen.
+     *
+     * @return Liste aller Substruktur-Tupel
+     */
+    protected final List<SubstructureTuple> getAllSubstructureTuples() {
+        return nodeToSubstructure.entrySet().stream()
+                .map(entry -> new SubstructureTuple(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Tupel-Klasse für MirrorNode-BuildAsSubstructure-Zuordnungen.
+     * Ermöglicht typsichere Rückgabe von Zuordnungspaaren.
+     */
+    public static record SubstructureTuple(MirrorNode node, BuildAsSubstructure substructure) {
+        public SubstructureTuple {
+            Objects.requireNonNull(node, "MirrorNode darf nicht null sein");
+            Objects.requireNonNull(substructure, "BuildAsSubstructure darf nicht null sein");
+        }
+
+        /**
+         * Gibt die ID des MirrorNodes zurück.
+         */
+        public int getNodeId() {
+            return node.getId();
+        }
+
+        /**
+         * Gibt die Substruktur-ID zurück.
+         */
+        public int getSubstructureId() {
+            return substructure.getSubstructureId();
+        }
+
+        /**
+         * Prüft, ob dieser Knoten zu einer bestimmten Substruktur-ID gehört.
+         */
+        public boolean belongsToSubstructure(int substructureId) {
+            return this.substructure.getSubstructureId() == substructureId;
+        }
+    }
+
+    /**
+     * Setzt eine Substruktur-Zuordnung.
+     * PROTECTED - ermöglicht Builder die Registrierung von Substruktur-Zuordnungen.
+     *
+     * @param node Die MirrorNode
+     * @param substructure Die zugehörige BuildAsSubstructure
+     */
+    protected final void setSubstructureForNode(MirrorNode node, BuildAsSubstructure substructure) {
+        if (node != null && substructure != null) {
+            nodeToSubstructure.put(node, substructure);
+        }
+    }
+
+    /**
+     * Entfernt eine Substruktur-Zuordnung.
+     * PROTECTED - ermöglicht Builder die Deregistrierung von Substruktur-Zuordnungen.
+     *
+     * @param node Die MirrorNode
+     */
+    protected final void removeSubstructureForNode(MirrorNode node) {
+        nodeToSubstructure.remove(node);
     }
 
     /**
@@ -344,28 +441,12 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     }
 
     /**
-     * Setzt die currentStructureRoot (einmalig, da final).
-     */
-    private void setCurrentStructureRoot(MirrorNode root) {
-        if (this.currentStructureRoot == null && root != null) {
-            try {
-                Field field = BuildAsSubstructure.class.getDeclaredField("currentStructureRoot");
-                field.setAccessible(true);
-                field.set(this, root);
-                addToStructureNodes(root);
-            } catch (Exception e) {
-                throw new RuntimeException("Fehler beim Setzen der currentStructureRoot", e);
-            }
-        }
-    }
-
-    /**
-     * Setzt den internen Zustand zurück (außer currentStructureRoot, da final).
+     * Setzt den internen Zustand zurück.
      */
     private void resetInternalState() {
         nodeToSubstructure.clear();
         structureNodes.clear();
-        // currentStructureRoot bleibt final und unverändert
+        currentStructureRoot = null; // JETZT möglich, da nicht final
     }
 
     // ===== ABSTRAKTE METHODEN FÜR LINK-ERSTELLUNG =====
