@@ -23,6 +23,7 @@ public class StructureNode {
     protected Set<StructureType> nodeTypes; // Welche Typen dieser Knoten selbst repräsentiert
     private int maxChildren = Integer.MAX_VALUE; // Standardmäßig unbegrenzt
 
+
     /**
      * Enum für Standard-Strukturtypen.
      * Ermöglicht die typsichere Verwendung verschiedener Strukturarten.
@@ -34,7 +35,8 @@ public class StructureNode {
         RING(3),
         LINE(4),
         STAR(5),
-        FULLY_CONNECTED(6);
+        FULLY_CONNECTED(6),
+        N_CONNECTED(7);  // Neu hinzugefügt für echte N-Connected-Unterstützung
 
         private final int id;
 

@@ -645,29 +645,18 @@ public class NConnectedMirrorNode extends MirrorNode {
     // ===== HILFSKLASSEN =====
 
     /**
-     * Hilfsklasse für eindeutige Link-Identifikation.
-     * Entspricht dem Pattern aus FullyConnectedMirrorNode.
-     */
-    private static class LinkPair {
-        private final int from;
-        private final int to;
-        
-        public LinkPair(int from, int to) {
-            this.from = from;
-            this.to = to;
-        }
-        
+         * Hilfsklasse für eindeutige Link-Identifikation.
+         * Entspricht dem Pattern aus FullyConnectedMirrorNode.
+         */
+        private record LinkPair(int from, int to) {
+
         @Override
-        public boolean equals(Object obj) {
-            if (this == obj) return true;
-            if (!(obj instanceof LinkPair other)) return false;
-            return from == other.from && to == other.to;
-        }
-        
-        @Override
-        public int hashCode() {
-            return Objects.hash(from, to);
-        }
+            public boolean equals(Object obj) {
+                if (this == obj) return true;
+                if (!(obj instanceof LinkPair other)) return false;
+                return from == other.from && to == other.to;
+            }
+
     }
 
     // ===== OBJECT-METHODEN =====
