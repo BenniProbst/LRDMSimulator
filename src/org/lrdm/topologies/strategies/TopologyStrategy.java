@@ -23,7 +23,7 @@ public abstract class TopologyStrategy {
 	}
 	public abstract void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime);
 
-	/**Remove the requested amount of links from the network.
+	/**Remove the requested number of links from the network.
 	 * The mirrors with the highest ID will be removed first.
 	 * Does not directly remove the mirrors, but calls {@link Mirror#shutdown(int)}.
 	 *
@@ -45,14 +45,14 @@ public abstract class TopologyStrategy {
 	 */
 	public abstract int getNumTargetLinks(Network n);
 
-	/**Is meant to return the expected number of total links in the network if the action would be executed.
+	/**Is meant to return the expected number of total links in the network if the action is executed.
 	 *
 	 * @param a the {@link Action} which might be executed
 	 * @return number of predicted total links
 	 */
 	public abstract int getPredictedNumTargetLinks(Action a);
 
-	/**Creates the given amount of mirrors and adds them to the network.
+	/**Creates the given number of mirrors and adds them to the network.
 	 *
 	 * @param numberOfMirrors the number of mirrors to add
 	 * @param simTime the current simulation time
