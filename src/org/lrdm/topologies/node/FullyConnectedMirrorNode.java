@@ -88,11 +88,13 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     public boolean canAcceptMoreChildren() {
         StructureType typeId = StructureType.FULLY_CONNECTED;
         StructureNode head = findHead(typeId);
+        final int headId = head != null ? head.getId() : this.getId();
 
         // Basis-Validierung und vollständig-vernetzte-spezifische Prüfungen
         return super.canAcceptMoreChildren() &&
-                isValidStructure(); // Struktur muss gültig bleiben
+                isValidStructure(getAllNodesInStructure(typeId, head != null ? head : this), typeId, head != null ? head : this);
     }
+
 
     /**
      * Prüft, ob dieser Knoten aus der Struktur entfernt werden kann.
@@ -100,7 +102,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
      * Vollständig-vernetzte-spezifische Logik:
      * - Ein vollständiges Netz muss mindestens 2 Knoten haben
      * - Nach Entfernung müssen noch mindestens 2 Knoten übrig bleiben
-     * - Head-Knoten können normalerweise nicht entfernt werden
+     * - Head-Knoten kann normalerweise nicht entfernt werden
      * - Entfernung erfordert Neuverkabelung aller anderen Knoten
      * <p>
      * Wiederverwendung:
@@ -126,7 +128,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
         // Nach Entfernung müssen noch mindestens 2 Knoten übrig bleiben
         if (structureNodes.size() < 3) return false;
 
-        // Head-Knoten können normalerweise nicht entfernt werden
+        // Head-Knoten kann normalerweise nicht entfernt werden
         if (isHead(typeId)) return false;
 
         return super.canBeRemovedFromStructure(structureRoot);
@@ -202,7 +204,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     }
 
     /**
-     * Überschreibt isValidStructure() für die automatische FULLY_CONNECTED-Typ-Ermittlung.
+     * Überschreibt isValidStructure() für automatische FULLY_CONNECTED-Typ-Ermittlung.
      * Wiederverwendung der automatischen Typ- und Head-Ermittlung aus StructureNode.
      *
      * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
@@ -217,15 +219,6 @@ public class FullyConnectedMirrorNode extends MirrorNode {
 
     /**
      * Convenience-Methode für Struktur-Validierung ohne Parameter.
-     * <p>
-     * Nutzt FULLY_CONNECTED-spezifische Strukturermittlung für automatische Validierung.
-     * Konsistenz mit anderen StructureNode-Validierungsmethoden.
-     * <p>
-     * Wiederverwendung:
-     * - findHead() für automatische Head-Ermittlung
-     * - getAllNodesInStructure() für automatische Strukturknotenbefüllung
-     *
-     * @return true, wenn die aktuelle vollständig-vernetzte-Struktur gültig ist
      */
     public boolean isValidStructure() {
         StructureType typeId = StructureType.FULLY_CONNECTED;
@@ -255,7 +248,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
      * @param totalNodes Gesamtanzahl der Knoten in der Struktur
      * @return true wenn der Knoten gültig ist
      */
-    private boolean isValidFullyConnectedNode(FullyConnectedMirrorNode fcNode, FullyConnectedMirrorNode headNode, 
+    private boolean isValidFullyConnectedNode(FullyConnectedMirrorNode fcNode, FullyConnectedMirrorNode headNode,
                                               StructureType typeId, int totalNodes) {
         final int headId = headNode.getId();
 
@@ -273,17 +266,16 @@ public class FullyConnectedMirrorNode extends MirrorNode {
         if (fcNode == headNode) {
             // Head-Node darf einen externen Parent haben
             if (parent != null) {
-                // Parent darf nicht Teil der vollständig-vernetzten-Struktur sein (extern)
                 return !structureNodes.contains(parent);
             }
         } else {
-            // Normale vollständig-vernetzte-Knoten: müssen Head als Parent haben.
-            // in vollständigen Netzen sind alle Nicht-Head-Knoten direkte Kinder des Heads
+            // Normale vollständig-vernetzte-Knoten: müssen Head als Parent haben
             return parent == headNode;
         }
 
         return true;
     }
+
 
     /**
      * Prüft symmetrische Verbindungen in der vollständig-vernetzten-Struktur.
@@ -326,7 +318,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     }
 
     /**
-     * Hilfsmethode: Prüft, ob nodeA mit nodeB verbunden ist.
+     * Hilfsmethode: Prüft ob nodeA mit nodeB verbunden ist.
      *
      * @param nodeA Startknoten
      * @param nodeB Zielknoten
@@ -336,7 +328,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
      */
     private boolean isConnectedTo(FullyConnectedMirrorNode nodeA, FullyConnectedMirrorNode nodeB,
                                   StructureType typeId, int headId) {
-        // Prüfe Parent-Child-Beziehungen in beide Richtungen
+        // Prüfe Parent-Child-Beziehung in beide Richtungen
         return nodeA.getChildren(typeId, headId).contains(nodeB) ||
                 nodeA.getParent() == nodeB;
     }
@@ -407,7 +399,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     /**
      * Sammelt alle vollständig-vernetzten-Knoten der Struktur.
      * <p>
-     * Nutzt FULLY_CONNECTED-spezifische Strukturermittlung für die typsichere Sammlung
+     * Nutzt FULLY_CONNECTED-spezifische Strukturermittlung für typsichere Sammlung
      * aller Knoten, die zur Struktur gehören.
      * <p>
      * Wiederverwendung:
@@ -483,7 +475,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     /**
      * Prüft, ob die aktuelle Struktur die optimale Anzahl Links hat.
      *
-     * @return true, wenn die Link-Anzahl der erwarteten Anzahl entspricht
+     * @return true wenn die Link-Anzahl der erwarteten Anzahl entspricht
      */
     public boolean hasOptimalLinkCount() {
         StructureType typeId = StructureType.FULLY_CONNECTED;
