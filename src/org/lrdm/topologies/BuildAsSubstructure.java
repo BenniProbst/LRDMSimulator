@@ -35,12 +35,12 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     // ===== EINDEUTIGE SUBSTRUKTUR-ID =====
     private final int substructureId;
 
-    // ===== STRUCTUREBUILDER-INTEGRATION (PROTECTED) =====
+    // ===== STRUCTURE BUILDER-INTEGRATION (PROTECTED) =====
     protected IDGenerator idGenerator;
     protected Network network;
     protected Iterator<Mirror> mirrorIterator;
 
-    // ===== MIRRORNODE-BASIERTE SUBSTRUKTUR-VERWALTUNG (PRIVATE) =====
+    // ===== MIRROR NODE-BASIERTE SUBSTRUKTUR-VERWALTUNG (PRIVATE) =====
     private final Map<MirrorNode, BuildAsSubstructure> nodeToSubstructure = new HashMap<>();
     private final Set<MirrorNode> structureNodes = new HashSet<>();
     private MirrorNode currentStructureRoot; // NICHT FINAL - Builder-kompatibel
@@ -152,7 +152,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Tupel-Klasse für MirrorNode-BuildAsSubstructure-Zuordnungen.
-     * Ermöglicht typsichere Rückgabe von Zuordnungspaaren.
+     * Ermöglicht die typsichere Rückgabe von Zuordnungspaaren.
      */
     public static record SubstructureTuple(MirrorNode node, BuildAsSubstructure substructure) {
         public SubstructureTuple {
@@ -209,7 +209,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Gibt alle verfügbaren Endpunkte (Terminal-Knoten) zurück, an die neue Substrukturen
      * angebaut werden können.
      *
-     * @return Set aller Terminal-MirrorNodes, die für Substruktur-Erweiterung geeignet sind
+     * @return Set aller Terminal-MirrorNodes, die für Substruktur-Erweiterungen geeignet sind
      */
     public final Set<MirrorNode> getAvailableConnectionPoints() {
         if (currentStructureRoot == null) {
@@ -242,7 +242,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Initialisiert das Netzwerk durch Aufbau der strukturspezifischen Topologie.
-     * Erstellt MirrorNode-Struktur und verknüpft alle Links.
+     * Erstellt eine MirrorNode-Struktur und verknüpft alle Links.
      *
      * @param n Das Netzwerk
      * @param props Simulation Properties
@@ -326,10 +326,10 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     public abstract int getNumTargetLinks(Network n);
 
     /**
-     * Gibt die vorhergesagte Anzahl Links zurück, falls die Action ausgeführt würde.
+     * Gibt die vorhergesagte Anzahl von Links zurück, falls die Action ausgeführt würde.
      * Muss von Subklassen implementiert werden.
      *
-     * @param a Die potentiell auszuführende Action
+     * @param a Die potenziell auszuführende Action
      * @return Vorhergesagte Anzahl Links
      */
     @Override
@@ -371,7 +371,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Factory-Methode für strukturspezifische MirrorNode-Erstellung.
      * Kann von Subklassen überschrieben werden.
      *
-     * @param mirror Der Mirror für den ein MirrorNode erstellt werden soll
+     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
      * @return Neuer strukturspezifischer MirrorNode
      */
     protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
