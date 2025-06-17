@@ -34,7 +34,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     // ===== EINDEUTIGE SUBSTRUKTUR-ID =====
     private final int substructureId;
-    private static final AtomicInteger SUBSTRUCTURE_ID_GENERATOR = new AtomicInteger(1);
 
     // ===== STRUCTUREBUILDER-INTEGRATION (PROTECTED) =====
     protected IDGenerator idGenerator;
@@ -52,8 +51,13 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     // ===== KONSTRUKTOR =====
 
     public BuildAsSubstructure() {
-        this.substructureId = SUBSTRUCTURE_ID_GENERATOR.getAndIncrement();
         this.idGenerator = IDGenerator.getInstance();
+        substructureId = idGenerator.getNextID();
+    }
+
+    public BuildAsSubstructure(IDGenerator idGenerator) {
+        this.idGenerator = idGenerator;
+        substructureId = idGenerator.getNextID();
     }
 
     // ===== TOPOLOGYSTRATEGY CONTRACT (PUBLIC API) =====
