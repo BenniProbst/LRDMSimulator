@@ -102,7 +102,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
      * Vollständig-vernetzte-spezifische Logik:
      * - Ein vollständiges Netz muss mindestens 2 Knoten haben
      * - Nach Entfernung müssen noch mindestens 2 Knoten übrig bleiben
-     * - Head-Knoten kann normalerweise nicht entfernt werden
+     * - Head-Knoten können normalerweise nicht entfernt werden
      * - Entfernung erfordert Neuverkabelung aller anderen Knoten
      * <p>
      * Wiederverwendung:
@@ -128,7 +128,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
         // Nach Entfernung müssen noch mindestens 2 Knoten übrig bleiben
         if (structureNodes.size() < 3) return false;
 
-        // Head-Knoten kann normalerweise nicht entfernt werden
+        // Head-Knoten können normalerweise nicht entfernt werden
         if (isHead(typeId)) return false;
 
         return super.canBeRemovedFromStructure(structureRoot);
@@ -204,7 +204,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     }
 
     /**
-     * Überschreibt isValidStructure() für automatische FULLY_CONNECTED-Typ-Ermittlung.
+     * Überschreibt isValidStructure() für die automatische FULLY_CONNECTED-Typ-Ermittlung.
      * Wiederverwendung der automatischen Typ- und Head-Ermittlung aus StructureNode.
      *
      * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
@@ -318,7 +318,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     }
 
     /**
-     * Hilfsmethode: Prüft ob nodeA mit nodeB verbunden ist.
+     * Hilfsmethode: Prüft, ob nodeA mit nodeB verbunden ist.
      *
      * @param nodeA Startknoten
      * @param nodeB Zielknoten
@@ -328,7 +328,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
      */
     private boolean isConnectedTo(FullyConnectedMirrorNode nodeA, FullyConnectedMirrorNode nodeB,
                                   StructureType typeId, int headId) {
-        // Prüfe Parent-Child-Beziehung in beide Richtungen
+        // Prüfe Parent-Child-Beziehungen in beide Richtungen
         return nodeA.getChildren(typeId, headId).contains(nodeB) ||
                 nodeA.getParent() == nodeB;
     }
@@ -399,7 +399,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     /**
      * Sammelt alle vollständig-vernetzten-Knoten der Struktur.
      * <p>
-     * Nutzt FULLY_CONNECTED-spezifische Strukturermittlung für typsichere Sammlung
+     * Nutzt FULLY_CONNECTED-spezifische Strukturermittlung für die typsichere Sammlung
      * aller Knoten, die zur Struktur gehören.
      * <p>
      * Wiederverwendung:
@@ -475,7 +475,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     /**
      * Prüft, ob die aktuelle Struktur die optimale Anzahl Links hat.
      *
-     * @return true wenn die Link-Anzahl der erwarteten Anzahl entspricht
+     * @return true, wenn die Link-Anzahl der erwarteten Anzahl entspricht
      */
     public boolean hasOptimalLinkCount() {
         StructureType typeId = StructureType.FULLY_CONNECTED;
