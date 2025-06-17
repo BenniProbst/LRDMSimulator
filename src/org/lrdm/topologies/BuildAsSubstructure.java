@@ -120,10 +120,11 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         }
 
         StructureNode.StructureType typeId = currentStructureRoot.deriveTypeId();
+        int headId = currentStructureRoot.getId();
+
         return structureNodes.stream()
-                .filter(StructureNode::canAcceptMoreChildren)
-                .filter(node -> node.isTerminal(typeId, currentStructureRoot.getId()) ||
-                        node.isHead(typeId))
+                .filter(node -> node.canAcceptMoreChildren(typeId, headId))
+                .filter(node -> node.isTerminal(typeId, headId) || node.isHead(typeId))
                 .collect(Collectors.toSet());
     }
 

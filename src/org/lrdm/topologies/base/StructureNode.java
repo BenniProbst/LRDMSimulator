@@ -1074,34 +1074,131 @@ public class StructureNode {
 
     // ===== GRUNDLEGENDE NODE-EIGENSCHAFTEN =====
 
+    // ===== KNOTEN-TYP-ERKENNUNG (MULTI-TYPE-SYSTEM) =====
+
+    /**
+     * Prüft, ob dieser Knoten ein Blatt ist (keine Kinder hat) für eine spezifische Struktur.
+     * Berücksichtigt Typ-ID und Head-ID für korrekte Multi-Type-Strukturerkennung.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param headId Die Head-ID der gewünschten Struktur
+     * @return true, wenn keine Kinder für diese spezifische Struktur vorhanden sind
+     */
+    public boolean isLeaf(StructureType typeId, int headId) {
+        return getChildren(typeId, headId).isEmpty();
+    }
+
     /**
      * Prüft, ob dieser Knoten ein Blatt ist (keine Kinder hat).
-     * Wichtig für Entfernungslogik und Struktur-Analyse.
+     * Verwendet automatische Typ- und Head-Ermittlung.
      *
      * @return true, wenn keine Kinder vorhanden sind
      */
     public boolean isLeaf() {
-        return children.isEmpty();
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        if (head == null) {
+            return children.isEmpty(); // Fallback auf globale Kinder-Prüfung
+        }
+        return isLeaf(typeId, head.getId());
+    }
+
+    /**
+     * Prüft, ob dieser Knoten terminal ist (genau eine Verbindung hat) für eine spezifische Struktur.
+     * Terminal-Knoten sind Endpunkte in Strukturen.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param headId Die Head-ID der gewünschten Struktur
+     * @return true, wenn genau eine Verbindung in dieser spezifischen Struktur vorhanden ist
+     */
+    public boolean isTerminal(StructureType typeId, int headId) {
+        return isEndpoint(this, typeId, headId);
     }
 
     /**
      * Prüft, ob dieser Knoten terminal ist (genau eine Verbindung hat).
+     * Verwendet automatische Typ- und Head-Ermittlung.
      * Terminal-Knoten sind Endpunkte in Strukturen.
      *
      * @return true, wenn genau eine Verbindung vorhanden ist
      */
     public boolean isTerminal() {
-        return (parent != null ? 1 : 0) + children.size() == 1;
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        if (head == null) {
+            // Fallback: Zähle Parent + Kinder
+            return (parent != null ? 1 : 0) + children.size() == 1;
+        }
+        return isTerminal(typeId, head.getId());
     }
 
     /**
-     * Prüft, ob dieser Knoten ein Root ist (keinen Parent hat).
+     * Prüft, ob dieser Knoten ein Root ist für eine spezifische Struktur.
+     * Root-Knoten sind sowohl Head-Knoten als auch haben keinen Parent in der Struktur.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @return true, wenn dieser Knoten Head und ohne Parent in der Struktur ist
+     */
+    public boolean isRoot(StructureType typeId) {
+        // Root = Head + kein Parent in dieser Strukturform
+        return isHead(typeId) && (parent == null || !hasParentInStructure(typeId));
+    }
+
+    /**
+     * Prüft, ob dieser Knoten ein Root ist (keinen Parent hat und Head ist).
+     * Verwendet automatische Typ-Ermittlung.
      * Root-Knoten sind Startpunkte für Traversierung.
      *
-     * @return true, wenn kein Parent vorhanden ist
+     * @return true, wenn kein Parent vorhanden ist und dieser Knoten Head ist
      */
     public boolean isRoot() {
-        return parent == null;
+        StructureType typeId = deriveTypeId();
+        return isRoot(typeId);
+    }
+
+    /**
+     * Hilfsmethode: Prüft, ob dieser Knoten einen Parent in einer spezifischen Struktur hat.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @return true, wenn ein Parent in dieser Struktur existiert
+     */
+    private boolean hasParentInStructure(StructureType typeId) {
+        if (parent == null) return false;
+
+        // Prüfe, ob der Parent diesen Knoten als Kind für die spezifische Struktur führt
+        StructureNode head = findHead(typeId);
+        if (head == null) return parent != null; // Fallback
+
+        Set<StructureNode> parentChildren = parent.getChildren(typeId, head.getId());
+        return parentChildren.contains(this);
+    }
+
+    /**
+     * Erweiterte canAcceptMoreChildren für spezifische Struktur.
+     * Berücksichtigt Typ-ID und Head-ID.
+     *
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param headId Die Head-ID der gewünschten Struktur
+     * @return true, wenn weitere Kinder für diese Struktur akzeptiert werden können
+     */
+    public boolean canAcceptMoreChildren(StructureType typeId, int headId) {
+        Set<StructureNode> currentChildren = getChildren(typeId, headId);
+        return currentChildren.size() < maxChildren;
+    }
+
+    /**
+     * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
+     * Verwendet automatische Typ- und Head-Ermittlung.
+     *
+     * @return true, wenn weitere Kinder akzeptiert werden können
+     */
+    public boolean canAcceptMoreChildren() {
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+        if (head == null) {
+            return children.size() < maxChildren; // Fallback
+        }
+        return canAcceptMoreChildren(typeId, head.getId());
     }
 
     /**
