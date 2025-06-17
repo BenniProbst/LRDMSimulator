@@ -1,15 +1,16 @@
-
 package org.lrdm.topologies;
 
 import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
-import org.lrdm.topologies.base.*;
+import org.lrdm.topologies.base.MirrorNode;
+import org.lrdm.topologies.base.StructureNode;
 import org.lrdm.util.IDGenerator;
 
+import java.lang.reflect.Field;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Abstrakte Basisklasse für hierarchische Substruktur-basierte TopologyStrategy.
@@ -43,7 +44,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     // ===== MIRRORNODE-BASIERTE SUBSTRUKTUR-VERWALTUNG (PRIVATE) =====
     private final Map<MirrorNode, BuildAsSubstructure> nodeToSubstructure = new HashMap<>();
     private final Set<MirrorNode> structureNodes = new HashSet<>();
-    private MirrorNode currentStructureRoot;
+    private final MirrorNode currentStructureRoot; // FINAL - ändert sich nicht nach Initialisierung
 
     // ===== OBSERVER PATTERN (PRIVATE) =====
     private final List<StructureChangeObserver> observers = new ArrayList<>();
@@ -52,12 +53,91 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     public BuildAsSubstructure() {
         this.idGenerator = IDGenerator.getInstance();
-        substructureId = idGenerator.getNextID();
+        this.substructureId = idGenerator.getNextID();
+        this.currentStructureRoot = null; // Wird in initNetwork() gesetzt
     }
 
     public BuildAsSubstructure(IDGenerator idGenerator) {
         this.idGenerator = idGenerator;
-        substructureId = idGenerator.getNextID();
+        this.substructureId = idGenerator.getNextID();
+        this.currentStructureRoot = null; // Wird in initNetwork() gesetzt
+    }
+
+    // ===== NEUE GETTER-METHODEN =====
+
+    /**
+     * Gibt die eindeutige Substruktur-ID zurück.
+     *
+     * @return Die eindeutige ID dieser Substruktur
+     */
+    public final int getSubstructureId() {
+        return substructureId;
+    }
+
+    /**
+     * Gibt die Root-Node der aktuellen Struktur zurück.
+     * Diese ist final und ändert sich nach der Initialisierung nicht mehr.
+     *
+     * @return Die Root-Node der Struktur oder null, wenn noch nicht initialisiert
+     */
+    public final MirrorNode getCurrentStructureRoot() {
+        return currentStructureRoot;
+    }
+
+    /**
+     * Gibt den Strukturtyp der aktuellen Substruktur zurück.
+     * Ermittelt den Typ über die Root-Node.
+     *
+     * @return Der StructureType der aktuellen Substruktur oder null, wenn nicht initialisiert
+     */
+    public final StructureNode.StructureType getCurrentStructureType() {
+        if (currentStructureRoot == null) {
+            return null;
+        }
+        return currentStructureRoot.deriveTypeId();
+    }
+
+    /**
+     * Gibt alle aktuell verwalteten MirrorNodes der Struktur zurück.
+     * Diese Collection wird aktiv gepflegt und ermöglicht die Auswahl spezifischer Knoten
+     * für das Anbau weiterer Substrukturen.
+     *
+     * @return Unveränderliche Kopie aller MirrorNodes in der Struktur
+     */
+    public final Set<MirrorNode> getAllStructureNodes() {
+        return Set.copyOf(structureNodes);
+    }
+
+    /**
+     * Gibt alle verfügbaren Endpunkte (Terminal-Knoten) zurück, an die neue Substrukturen
+     * angebaut werden können.
+     *
+     * @return Set aller Terminal-MirrorNodes, die für Substruktur-Erweiterung geeignet sind
+     */
+    public final Set<MirrorNode> getAvailableConnectionPoints() {
+        if (currentStructureRoot == null) {
+            return Set.of();
+        }
+
+        StructureNode.StructureType typeId = currentStructureRoot.deriveTypeId();
+        return structureNodes.stream()
+                .filter(StructureNode::canAcceptMoreChildren)
+                .filter(node -> node.isTerminal(typeId, currentStructureRoot.getId()) ||
+                        node.isHead(typeId))
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Sucht einen spezifischen MirrorNode anhand seiner ID.
+     *
+     * @param nodeId Die ID des gesuchten Knotens
+     * @return Der MirrorNode mit der angegebenen ID oder null, wenn nicht gefunden
+     */
+    public final MirrorNode findStructureNodeById(int nodeId) {
+        return structureNodes.stream()
+                .filter(node -> node.getId() == nodeId)
+                .findFirst()
+                .orElse(null);
     }
 
     // ===== TOPOLOGYSTRATEGY CONTRACT (PUBLIC API) =====
@@ -204,6 +284,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
      *
      * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
      */
@@ -213,7 +294,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             MirrorNode node = createMirrorNodeForMirror(mirror);
             if (node != null) {
                 node.setMirror(mirror);
-                structureNodes.add(node);
+                addToStructureNodes(node); // Aktiv hinzufügen
             }
             return node;
         }
@@ -221,267 +302,181 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     }
 
     /**
-     * Prüft, ob noch weitere Mirrors verfügbar sind.
-     */
-    protected final boolean hasMoreMirrors() {
-        return mirrorIterator != null && mirrorIterator.hasNext();
-    }
-
-    /**
-     * Validiert eine Struktur.
-     */
-    protected final boolean validateStructure(MirrorNode root) {
-        if (root == null) return false;
-        return root.isValidStructure();
-    }
-
-    // ===== REKURSIVE LINK-ERSTELLUNG (PROTECTED) =====
-
-    /**
-     * Erstellt und verknüpft alle Links für eine MirrorNode-Struktur rekursiv.
+     * Fügt einen MirrorNode zu den verwalteten Struktur-Knoten hinzu.
+     * Stellt sicher, dass structureNodes immer aktuell ist.
      *
-     * @param root Root-Knoten der Struktur
-     * @param props Simulation Properties
-     * @return Set aller erstellten Links
+     * @param node Der hinzuzufügende MirrorNode
      */
-    protected final Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
-        if (root == null) return new HashSet<>();
-
-        Set<Link> allLinks = new HashSet<>();
-        StructureNode.StructureType typeId = root.deriveTypeId();
-        StructureNode head = root.findHead(typeId);
-
-        if (head == null) head = root;
-
-        Set<StructureNode> allNodes = root.getAllNodesInStructure(typeId, head);
-
-        // Rekursiv durch alle Struktur-Knoten gehen
-        for (StructureNode node : allNodes) {
-            if (node instanceof MirrorNode mirrorNode) {
-                allLinks.addAll(createLinksForNode(mirrorNode, typeId, head, props));
-            }
+    protected final void addToStructureNodes(MirrorNode node) {
+        if (node != null) {
+            structureNodes.add(node);
+            nodeToSubstructure.put(node, this);
         }
-
-        return allLinks;
     }
 
     /**
-     * Erstellt Links für einen einzelnen MirrorNode.
+     * Entfernt einen MirrorNode aus den verwalteten Struktur-Knoten.
+     * Stellt sicher, dass structureNodes immer aktuell ist.
+     *
+     * @param node Der zu entfernende MirrorNode
      */
-    protected final Set<Link> createLinksForNode(MirrorNode node, StructureNode.StructureType typeId,
-                                                 StructureNode head, Properties props) {
-        Set<Link> nodeLinks = new HashSet<>();
-        Mirror nodeMirror = node.getMirror();
-
-        if (nodeMirror == null) return nodeLinks;
-
-        final int headId = head.getId();
-
-        // Links zu Kindern erstellen
-        Set<StructureNode> children = node.getChildren(typeId, headId);
-        for (StructureNode child : children) {
-            if (child instanceof MirrorNode childMirrorNode) {
-                Mirror childMirror = childMirrorNode.getMirror();
-                if (childMirror != null) {
-                    Link link = new Link(idGenerator.getNextID(), nodeMirror, childMirror, 0, props);
-                    nodeMirror.addLink(link);
-                    childMirror.addLink(link);
-                    nodeLinks.add(link);
-                }
-            }
-        }
-
-        return nodeLinks;
-    }
-
-    // ===== INTERNE ZUSTANDSVERWALTUNG (PRIVATE) =====
-
-    private void initializeInternalState(Network n) {
-        this.network = n;
-        if (n != null) {
-            this.mirrorIterator = n.getMirrors().iterator();
+    protected final void removeFromStructureNodes(MirrorNode node) {
+        if (node != null) {
+            structureNodes.remove(node);
+            nodeToSubstructure.remove(node);
         }
     }
 
-    private void resetInternalState() {
-        nodeToSubstructure.clear();
-        structureNodes.clear();
-        setCurrentStructureRoot(null);
-    }
-
-    private void setMirrorIterator(Iterator<Mirror> mirrorIterator) {
+    /**
+     * Setzt den Iterator für verfügbare Mirrors.
+     */
+    protected final void setMirrorIterator(Iterator<Mirror> mirrorIterator) {
         this.mirrorIterator = mirrorIterator;
     }
 
+    /**
+     * Initialisiert den internen Zustand für ein Netzwerk.
+     */
+    private void initializeInternalState(Network n) {
+        this.network = n;
+        this.mirrorIterator = n.getMirrors().iterator();
+    }
+
+    /**
+     * Setzt die currentStructureRoot (einmalig, da final).
+     */
     private void setCurrentStructureRoot(MirrorNode root) {
-        MirrorNode oldRoot = this.currentStructureRoot;
-        this.currentStructureRoot = root;
-
-        if (root != null) {
-            structureNodes.add(root);
-        }
-
-        // Observer-Event senden wenn sich der Root geändert hat
-        if (oldRoot != root) {
-            StructureChangeEvent event = new StructureChangeEvent(oldRoot, root, true);
-            notifyStructureChange(event);
-        }
-    }
-
-    private MirrorNode getCurrentStructureRoot() {
-        return currentStructureRoot;
-    }
-
-    // ===== OBSERVER PATTERN (PRIVATE) =====
-
-    private void notifyStructureChange(StructureChangeEvent event) {
-        handleStructureChange(event);
-
-        for (StructureChangeObserver observer : observers) {
-            observer.onStructureChanged(event);
-        }
-    }
-
-    /**
-     * Command Pattern: Verarbeitet spezifische Struktur-Änderungen.
-     * Kann von Subklassen überschrieben werden.
-     */
-    protected void handleStructureChange(StructureChangeEvent event) {
-        switch (event.getType()) {
-            case NODES_ADDED:
-                onNodesAdded(event.getAffectedNodes(), event.getHeadNode());
-                break;
-            case NODES_REMOVED:
-                onNodesRemoved(event.getAffectedNodes(), event.getHeadNode());
-                break;
-            case STRUCTURE_CONNECTED:
-                onStructureConnected(event.getSourceHead(), event.getTargetHead());
-                break;
-            case HEAD_CHANGED:
-                onHeadChanged(event.getOldHead(), event.getNewHead());
-                break;
-        }
-    }
-
-    protected void onNodesAdded(List<StructureNode> addedNodes, StructureNode headNode) {
-        for (StructureNode node : addedNodes) {
-            if (node instanceof MirrorNode mirrorNode) {
-                structureNodes.add(mirrorNode);
+        if (this.currentStructureRoot == null && root != null) {
+            try {
+                Field field = BuildAsSubstructure.class.getDeclaredField("currentStructureRoot");
+                field.setAccessible(true);
+                field.set(this, root);
+                addToStructureNodes(root);
+            } catch (Exception e) {
+                throw new RuntimeException("Fehler beim Setzen der currentStructureRoot", e);
             }
         }
     }
 
-    protected void onNodesRemoved(List<StructureNode> removedNodes, StructureNode headNode) {
-        for (StructureNode node : removedNodes) {
-            if (node instanceof MirrorNode mirrorNode) {
-                structureNodes.remove(mirrorNode);
-            }
-        }
-    }
-
-    protected void onStructureConnected(StructureNode sourceHead, StructureNode targetHead) {
-        // Standard: Verknüpfe Substrukturen wenn nötig
-    }
-
-    protected void onHeadChanged(StructureNode oldHead, StructureNode newHead) {
-        // Standard: Update interne Mappings
-        if (newHead instanceof MirrorNode newMirrorHead) {
-            setCurrentStructureRoot(newMirrorHead);
-        }
-    }
-
-    // ===== LEGACY-UNTERSTÜTZUNG =====
-
     /**
-     * Legacy-Methode für Substruktur-Initialisierung.
-     * Standardmäßig nicht implementiert - kann von Subklassen überschrieben werden.
+     * Setzt den internen Zustand zurück (außer currentStructureRoot, da final).
      */
-    public Set<Link> initNetworkSub(Network n, Mirror root, List<Mirror> mirrorsToConnect, int simTime, Properties props) {
-        return new HashSet<>();
+    private void resetInternalState() {
+        nodeToSubstructure.clear();
+        structureNodes.clear();
+        // currentStructureRoot bleibt final und unverändert
     }
 
-    // ===== HILFSDATENSTRUKTUREN =====
+    // ===== ABSTRAKTE METHODEN FÜR LINK-ERSTELLUNG =====
 
     /**
-     * Einfache Tuple-Klasse.
+     * Erstellt und verbindet alle Links für eine Struktur.
+     * Muss von Subklassen implementiert werden.
+     *
+     * @param root Die Root-Node der Struktur
+     * @param props Simulation Properties
+     * @return Set aller erstellten Links
      */
-    public static class Tuple<T, U> {
-        private final T first;
-        private final U second;
+    protected abstract Set<Link> buildAndConnectLinks(MirrorNode root, Properties props);
 
-        public Tuple(T first, U second) {
-            this.first = first;
-            this.second = second;
-        }
-
-        public T getFirst() { return first; }
-        public U getSecond() { return second; }
-
-        // Backward compatibility
-        public T getX() { return first; }
-        public U getY() { return second; }
-    }
+    // ===== OBSERVER PATTERN INTERFACES =====
 
     /**
-     * Observer Interface für Struktur-Änderungen.
+     * Interface für Observer von Struktur-Änderungen.
      */
     public interface StructureChangeObserver {
-        void onStructureChanged(StructureChangeEvent event);
+        void onNodesAdded(List<StructureNode> addedNodes, StructureNode headNode);
+        void onNodesRemoved(List<StructureNode> removedNodes, StructureNode headNode);
+        void onLinksCreated(Set<Link> newLinks, StructureNode headNode);
+        void onLinksRemoved(Set<Link> removedLinks, StructureNode headNode);
     }
 
     /**
-     * Event-Klasse für Struktur-Änderungen.
+     * Fügt einen Observer hinzu.
      */
-    public static class StructureChangeEvent {
-        public enum Type {
-            NODES_ADDED, NODES_REMOVED, STRUCTURE_CONNECTED, HEAD_CHANGED
+    public final void addObserver(StructureChangeObserver observer) {
+        if (observer != null) {
+            observers.add(observer);
+        }
+    }
+
+    /**
+     * Entfernt einen Observer.
+     */
+    public final void removeObserver(StructureChangeObserver observer) {
+        observers.remove(observer);
+    }
+
+    /**
+     * Benachrichtigt Observer über hinzugefügte Knoten.
+     */
+    protected final void notifyNodesAdded(List<StructureNode> addedNodes, StructureNode headNode) {
+        for (StructureChangeObserver observer : observers) {
+            observer.onNodesAdded(addedNodes, headNode);
         }
 
-        private final Type type;
-        private final List<StructureNode> affectedNodes;
-        private final StructureNode headNode;
-        private final StructureNode sourceHead;
-        private final StructureNode targetHead;
-        private final StructureNode oldHead;
-        private final StructureNode newHead;
+        // Automatische structureNodes-Aktualisierung
+        for (StructureNode node : addedNodes) {
+            if (node instanceof MirrorNode mirrorNode) {
+                addToStructureNodes(mirrorNode);
+            }
+        }
+    }
 
-        public StructureChangeEvent(Type type, List<StructureNode> affectedNodes, StructureNode headNode) {
-            this.type = type;
-            this.affectedNodes = affectedNodes;
-            this.headNode = headNode;
-            this.sourceHead = null;
-            this.targetHead = null;
-            this.oldHead = null;
-            this.newHead = null;
+    /**
+     * Benachrichtigt Observer über entfernte Knoten.
+     */
+    protected final void notifyNodesRemoved(List<StructureNode> removedNodes, StructureNode headNode) {
+        for (StructureChangeObserver observer : observers) {
+            observer.onNodesRemoved(removedNodes, headNode);
         }
 
-        public StructureChangeEvent(StructureNode sourceHead, StructureNode targetHead) {
-            this.type = Type.STRUCTURE_CONNECTED;
-            this.sourceHead = sourceHead;
-            this.targetHead = targetHead;
-            this.affectedNodes = null;
-            this.headNode = null;
-            this.oldHead = null;
-            this.newHead = null;
+        // Automatische structureNodes-Aktualisierung
+        for (StructureNode node : removedNodes) {
+            if (node instanceof MirrorNode mirrorNode) {
+                removeFromStructureNodes(mirrorNode);
+            }
         }
+    }
 
-        public StructureChangeEvent(StructureNode oldHead, StructureNode newHead, boolean headChange) {
-            this.type = Type.HEAD_CHANGED;
-            this.oldHead = oldHead;
-            this.newHead = newHead;
-            this.affectedNodes = null;
-            this.headNode = null;
-            this.sourceHead = null;
-            this.targetHead = null;
+    /**
+     * Benachrichtigt Observer über erstellte Links.
+     */
+    protected final void notifyLinksCreated(Set<Link> newLinks, StructureNode headNode) {
+        for (StructureChangeObserver observer : observers) {
+            observer.onLinksCreated(newLinks, headNode);
         }
+    }
 
-        // Getters
-        public Type getType() { return type; }
-        public List<StructureNode> getAffectedNodes() { return affectedNodes; }
-        public StructureNode getHeadNode() { return headNode; }
-        public StructureNode getSourceHead() { return sourceHead; }
-        public StructureNode getTargetHead() { return targetHead; }
-        public StructureNode getOldHead() { return oldHead; }
-        public StructureNode getNewHead() { return newHead; }
+    /**
+     * Benachrichtigt Observer über entfernte Links.
+     */
+    protected final void notifyLinksRemoved(Set<Link> removedLinks, StructureNode headNode) {
+        for (StructureChangeObserver observer : observers) {
+            observer.onLinksRemoved(removedLinks, headNode);
+        }
+    }
+
+    // ===== HILFSMETHODEN =====
+
+    /**
+     * Erstellt neue Mirror-Instanzen.
+     */
+    protected final List<Mirror> createMirrors(int count, int simTime, Properties props) {
+        List<Mirror> mirrors = new ArrayList<>();
+        for (int i = 0; i < count; i++) {
+            Mirror mirror = new Mirror(idGenerator.getNextID(), simTime, props);
+            mirrors.add(mirror);
+        }
+        return mirrors;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() +
+                "{substructureId=" + substructureId +
+                ", structureNodes=" + structureNodes.size() +
+                ", currentStructureRoot=" +
+                (currentStructureRoot != null ? currentStructureRoot.getId() : "null") + "}";
     }
 }
