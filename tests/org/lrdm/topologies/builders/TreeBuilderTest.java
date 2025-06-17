@@ -11,7 +11,7 @@ import org.lrdm.TimedRDMSim;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.BalancedTreeTopologyStrategy;
+import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StructureNode;
 

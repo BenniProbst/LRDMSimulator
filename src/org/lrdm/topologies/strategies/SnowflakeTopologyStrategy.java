@@ -1,4 +1,4 @@
-package org.lrdm.topologies;
+package org.lrdm.topologies.strategies;
 
 import org.graphstream.ui.swing.util.AttributeUtils;
 import org.lrdm.Link;

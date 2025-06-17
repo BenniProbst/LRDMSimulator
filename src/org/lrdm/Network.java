@@ -2,9 +2,9 @@ package org.lrdm;
 
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.BalancedTreeTopologyStrategy;
-import org.lrdm.topologies.FullyConnectedTopology;
-import org.lrdm.topologies.TopologyStrategy;
+import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
+import org.lrdm.topologies.strategies.FullyConnectedTopology;
+import org.lrdm.topologies.strategies.TopologyStrategy;
 
 import java.util.*;
 import java.util.logging.Level;

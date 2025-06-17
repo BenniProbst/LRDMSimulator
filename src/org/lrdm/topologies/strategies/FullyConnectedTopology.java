@@ -1,4 +1,4 @@
-package org.lrdm.topologies;
+package org.lrdm.topologies.strategies;
 
 import org.lrdm.Link;
 import org.lrdm.Mirror;

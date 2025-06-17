@@ -3,8 +3,8 @@ package org.lrdm.examples;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.BalancedTreeTopologyStrategy;
-import org.lrdm.topologies.FullyConnectedTopology;
+import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
+import org.lrdm.topologies.strategies.FullyConnectedTopology;
 
 import java.util.List;
 

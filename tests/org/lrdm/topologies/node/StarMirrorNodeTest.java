@@ -8,7 +8,7 @@ import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.probes.MirrorProbe;
-import org.lrdm.topologies.BalancedTreeTopologyStrategy;
+import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
 
 import java.io.IOException;
 import java.util.ArrayList;

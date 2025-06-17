@@ -4,8 +4,8 @@ import org.lrdm.effectors.Effector;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.BalancedTreeTopologyStrategy;
-import org.lrdm.topologies.TopologyStrategy;
+import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
+import org.lrdm.topologies.strategies.TopologyStrategy;
 
 import java.io.*;
 import java.util.ArrayList;

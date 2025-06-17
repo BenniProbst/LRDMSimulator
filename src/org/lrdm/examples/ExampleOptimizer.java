@@ -4,7 +4,7 @@ import org.lrdm.TimedRDMSim;
 import org.lrdm.effectors.Action;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
-import org.lrdm.topologies.NConnectedTopology;
+import org.lrdm.topologies.strategies.NConnectedTopology;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;

@@ -1,9 +1,9 @@
 package org.lrdm.effectors;
 
-import org.lrdm.topologies.BalancedTreeTopologyStrategy;
-import org.lrdm.topologies.FullyConnectedTopology;
-import org.lrdm.topologies.NConnectedTopology;
-import org.lrdm.topologies.TopologyStrategy;
+import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
+import org.lrdm.topologies.strategies.FullyConnectedTopology;
+import org.lrdm.topologies.strategies.NConnectedTopology;
+import org.lrdm.topologies.strategies.TopologyStrategy;
 
 import java.util.Properties;
 

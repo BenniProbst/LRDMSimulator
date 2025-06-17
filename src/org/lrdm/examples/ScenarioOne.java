@@ -1,7 +1,7 @@
 package org.lrdm.examples;
 
 import org.lrdm.TimedRDMSim;
-import org.lrdm.topologies.NConnectedTopology;
+import org.lrdm.topologies.strategies.NConnectedTopology;
 
 public class ScenarioOne {
     public static void main(String[] args) {

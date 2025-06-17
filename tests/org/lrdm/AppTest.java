@@ -6,10 +6,10 @@ import org.lrdm.examples.ExampleSimulation;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.BalancedTreeTopologyStrategy;
-import org.lrdm.topologies.FullyConnectedTopology;
+import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
+import org.lrdm.topologies.strategies.FullyConnectedTopology;
 import org.junit.jupiter.api.Test;
-import org.lrdm.topologies.NConnectedTopology;
+import org.lrdm.topologies.strategies.NConnectedTopology;
 
 import java.io.*;
 import java.nio.channels.FileChannel;

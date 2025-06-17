@@ -1,4 +1,4 @@
-package org.lrdm.topologies;
+package org.lrdm.topologies.builders;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
