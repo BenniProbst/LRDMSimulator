@@ -65,11 +65,10 @@ public class NConnectedMirrorNode extends MirrorNode {
 
     /**
      * Überschreibt die Typ-Ableitung für korrekte N-Connected-Identifikation.
-     * TODO: StructureType.N_CONNECTED verwenden, wenn verfügbar
      */
     @Override
     public StructureType deriveTypeId() {
-        return StructureType.FULLY_CONNECTED; // Temporärer Platzhalter
+        return StructureType.N_CONNECTED; // Temporärer Platzhalter
     }
 
     // ===== CONNECTIVITY-MANAGEMENT =====
