@@ -10,7 +10,7 @@ import java.util.Iterator;
 /**
  * Abstrakte Basisklasse für alle Structure-Builder.
  * Nutzt die polymorphe isValidStructure()-Methode der MirrorNodes.
- *
+ * <p>
  * Vereinfacht durch Nutzung von StructureNode-Funktionen:
  * - addNodes() und removeNodes() verwenden nur noch int-Parameter
  * - Struktur-Navigation über findHead() und getAllNodesInStructure()

@@ -59,7 +59,7 @@ public class TreeMirrorNode extends MirrorNode {
      * @return StructureType.TREE für eindeutige Baum-Identifikation
      */
     @Override
-    protected StructureType deriveTypeId() {
+    public StructureType deriveTypeId() {
         return StructureType.TREE;
     }
 

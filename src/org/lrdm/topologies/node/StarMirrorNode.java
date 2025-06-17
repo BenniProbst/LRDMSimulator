@@ -58,7 +58,7 @@ public class StarMirrorNode extends MirrorNode {
      * @return StructureType.STAR für eindeutige Stern-Identifikation
      */
     @Override
-    protected StructureType deriveTypeId() {
+    public StructureType deriveTypeId() {
         return StructureType.STAR;
     }
 

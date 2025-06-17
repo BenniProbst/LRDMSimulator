@@ -65,7 +65,7 @@ public class RingMirrorNode extends MirrorNode {
      * @return StructureType.RING für eindeutige Ring-Identifikation
      */
     @Override
-    protected StructureType deriveTypeId() {
+    public StructureType deriveTypeId() {
         return StructureType.RING;
     }
 

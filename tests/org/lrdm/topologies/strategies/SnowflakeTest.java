@@ -1,4 +1,4 @@
-package org.lrdm.topologies.builders;
+package org.lrdm.topologies.strategies;
 
 import org.junit.jupiter.api.Test;
 import org.lrdm.TimedRDMSim;
@@ -6,9 +6,6 @@ import org.lrdm.effectors.Action;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
-import org.lrdm.topologies.strategies.FullyConnectedTopology;
-import org.lrdm.topologies.strategies.SnowflakeTopologyStrategy;
 
 import java.io.IOException;
 

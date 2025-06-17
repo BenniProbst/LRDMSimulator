@@ -872,16 +872,6 @@ public class StructureNode {
         return this.isLeaf();
     }
 
-    /**
-     * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
-     * Basiert auf der maximalen Anzahl von Kindern.
-     *
-     * @return true wenn die aktuelle Kindanzahl kleiner als maxChildren ist
-     */
-    public boolean canAcceptMoreChildren() {
-        return children.size() < maxChildren;
-    }
-
     // ===== GRUNDLEGENDE STRUKTUR-VALIDIERUNG =====
 
     /**
@@ -1133,7 +1123,7 @@ public class StructureNode {
     }
 
     /**
-     * Prüft, ob dieser Knoten ein Root ist für eine spezifische Struktur.
+     * Prüft, ob dieser Knoten ein Root für eine spezifische Struktur ist.
      * Root-Knoten sind sowohl Head-Knoten als auch haben keinen Parent in der Struktur.
      *
      * @param typeId Die Typ-ID der gewünschten Struktur

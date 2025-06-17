@@ -318,7 +318,7 @@ class RingMirrorNodeTest {
             assertNotNull(probe);
 
             List<Mirror> simMirrors = probe.getMirrors();
-            // Fallback falls weniger als 4 Mirrors verfügbar ist
+            // Fallback, falls weniger als 4 Mirrors verfügbar sind
             if (simMirrors.size() < 4) {
                 Mirror mirror1 = new Mirror(201, 0, props);
                 Mirror mirror2 = new Mirror(202, 0, props);

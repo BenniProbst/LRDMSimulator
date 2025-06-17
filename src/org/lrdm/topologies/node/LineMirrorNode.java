@@ -58,7 +58,7 @@ public class LineMirrorNode extends MirrorNode {
      * @return StructureType.LINE für eindeutige Linien-Identifikation
      */
     @Override
-    protected StructureType deriveTypeId() {
+    public StructureType deriveTypeId() {
         return StructureType.LINE;
     }
 

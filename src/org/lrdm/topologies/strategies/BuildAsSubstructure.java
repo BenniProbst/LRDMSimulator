@@ -238,7 +238,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 .orElse(null);
     }
 
-    // ===== TOPOLOGYSTRATEGY CONTRACT (PUBLIC API) =====
+    // ===== TOPOLOGY STRATEGY CONTRACT (PUBLIC API) =====
 
     /**
      * Initialisiert das Netzwerk durch Aufbau der strukturspezifischen Topologie.
@@ -326,7 +326,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     public abstract int getNumTargetLinks(Network n);
 
     /**
-     * Gibt die vorhergesagte Anzahl von Links zurück, falls die Action ausgeführt würde.
+     * Gibt die vorhergesagte Anzahl von Links zurück, falls die Action ausgeführt wird.
      * Muss von Subklassen implementiert werden.
      *
      * @param a Die potenziell auszuführende Action
@@ -335,7 +335,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     @Override
     public abstract int getPredictedNumTargetLinks(Action a);
 
-    // ===== ABSTRAKTE STRUKTURBUILDER-METHODEN (PROTECTED) =====
+    // ===== ABSTRAKTE Strukturbuilder-METHODEN (PROTECTED) =====
 
     /**
      * Erstellt eine neue Struktur mit der angegebenen Anzahl von Knoten.
@@ -378,7 +378,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         return new MirrorNode(idGenerator.getNextID(), mirror);
     }
 
-    // ===== INTERNE STRUCTUREBUILDER-HILFSMETHODEN (PROTECTED) =====
+    // ===== INTERNE STRUCTURE BUILDER-HILFSMETHODEN (PROTECTED) =====
 
     /**
      * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
