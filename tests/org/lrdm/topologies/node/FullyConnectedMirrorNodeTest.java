@@ -775,7 +775,7 @@ class FullyConnectedMirrorNodeTest {
                 }
 
                 // Erstelle vollständig vernetzte Struktur
-                setupValidFullyConnectedStructure(largeHead, largePeers.subList(1, largePeers.size()));
+                setupValidFullyConnectedStructure2(largeHead, largePeers.subList(1, largePeers.size()));
 
                 // Performance-Messungen mit der largePeers-Collection
                 long networkCreationTime = System.currentTimeMillis() - startTime;
@@ -818,7 +818,7 @@ class FullyConnectedMirrorNodeTest {
             }
         }
 
-        private void setupValidFullyConnectedStructure(FullyConnectedMirrorNode head, List<FullyConnectedMirrorNode> peers) {
+        private void setupValidFullyConnectedStructure2(FullyConnectedMirrorNode head, List<FullyConnectedMirrorNode> peers) {
             head.setHead(StructureType.FULLY_CONNECTED, true);
 
             Set<StructureType> typeIds = Set.of(StructureType.FULLY_CONNECTED);
