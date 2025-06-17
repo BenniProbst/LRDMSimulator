@@ -1,5 +1,5 @@
 
-package org.lrdm.topologies.base;
+package org.lrdm.topologies.node;
 
 import org.junit.jupiter.api.*;
 

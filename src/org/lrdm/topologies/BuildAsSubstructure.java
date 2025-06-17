@@ -4,8 +4,8 @@ import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
-import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.StructureNode;
+import org.lrdm.topologies.node.MirrorNode;
+import org.lrdm.topologies.node.StructureNode;
 import org.lrdm.util.IDGenerator;
 
 import java.util.*;

@@ -2,9 +2,9 @@
 package org.lrdm.topologies.builders;
 
 import org.lrdm.Network;
-import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.RingMirrorNode;
-import org.lrdm.topologies.base.StructureNode;
+import org.lrdm.topologies.node.MirrorNode;
+import org.lrdm.topologies.node.RingMirrorNode;
+import org.lrdm.topologies.node.StructureNode;
 
 import java.util.*;
 

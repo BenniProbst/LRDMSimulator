@@ -2,7 +2,7 @@ package org.lrdm.topologies.builders;
 
 import org.lrdm.Network;
 import org.lrdm.Mirror;
-import org.lrdm.topologies.base.MirrorNode;
+import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.util.IDGenerator;
 
 import java.util.Iterator;
