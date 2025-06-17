@@ -64,7 +64,7 @@ public class NConnectedMirrorNode extends MirrorNode {
     // ===== TYP-SYSTEM INTEGRATION =====
 
     /**
-     * Überschreibt die Typ-Ableitung für korrekte N-Connected-Identifikation.
+     * Überschreibt die Typ-Ableitung für die korrekte N-Connected-Identifikation.
      */
     @Override
     public StructureType deriveTypeId() {
