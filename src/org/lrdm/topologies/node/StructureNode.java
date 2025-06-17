@@ -33,7 +33,8 @@ public class StructureNode {
         TREE(2),
         RING(3),
         LINE(4),
-        STAR(5);
+        STAR(5),
+        FULLY_CONNECTED(6);
 
         private final int id;
 
