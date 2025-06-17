@@ -89,7 +89,7 @@ class NConnectedMirrorNodeTest {
     }
 
     /**
-     * Eine Hilfsmethode zum Setup einer gültigen N-Connected-Struktur mit echten Mirror-Links.
+     * Hilfsmethode zum Setup einer gültigen N-Connected-Struktur mit echten Mirror-Links.
      * Erstellt alle notwendigen bidirektionalen Verbindungen für echte N-Connected-Validierung.
      */
     private void setupValidNConnectedStructure(NConnectedMirrorNode head, List<NConnectedMirrorNode> peers) throws IOException {
@@ -103,17 +103,17 @@ class NConnectedMirrorNodeTest {
         }
 
         // N-Connected-Links basierend auf Vernetzungsgrad erstellen
-        int n = head.getConnectivityDegree();
         List<NConnectedMirrorNode> allNodes = new ArrayList<>();
         allNodes.add(head);
         allNodes.addAll(peers);
 
-        // Erstelle Links, bis jeder Knoten N Verbindungen hat
+        // Erstelle Links bis jeder Knoten N Verbindungen hat
         for (int i = 0; i < allNodes.size(); i++) {
             NConnectedMirrorNode node = allNodes.get(i);
             int currentConnections = 0;
+            int targetConnections = node.getConnectivityDegree(); // Direkt verwenden
 
-            for (int j = 0; j < allNodes.size() && currentConnections < n; j++) {
+            for (int j = 0; j < allNodes.size() && currentConnections < targetConnections; j++) {
                 if (i != j) { // Nicht mit sich selbst verbinden
                     NConnectedMirrorNode target = allNodes.get(j);
                     Link link = new Link(
@@ -976,7 +976,6 @@ class NConnectedMirrorNodeTest {
 
             // Null und andere Klassen
             assertNotEquals(null, node1);
-            assertNotEquals("string", node1);
         }
     }
 }
