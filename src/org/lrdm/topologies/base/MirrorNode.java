@@ -47,7 +47,7 @@ public class MirrorNode extends StructureNode {
      * @return Der Standard-Strukturtyp für MirrorNodes
      */
     @Override
-    protected StructureType deriveTypeId() {
+    public StructureType deriveTypeId() {
         return StructureType.MIRROR;
     }
 
