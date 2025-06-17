@@ -857,21 +857,36 @@ class NConnectedMirrorNodeTest {
             assertTrue(duration < 100, "Performance test took too long: " + duration + "ms");
         }
 
+
         @Test
         @DisplayName("Memory-Effizienz bei wiederholten Operationen")
         void testMemoryEfficiency() {
             NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
 
+            // Sammle Rückgabewerte um sicherzustellen, dass die Operationen tatsächlich ausgeführt werden
+            int totalConnectivityDegree = 0;
+            int totalExpectedLinkCount = 0;
+            int totalNetworkSize = 0;
+            int totalConnectedNodes = 0;
+            int totalTypeIdChecks = 0;
+
             // Wiederholte Aufrufe sollten keine Memory-Leaks verursachen
             for (int i = 0; i < 1000; i++) {
-                head.getConnectivityDegree();
-                head.getExpectedLinkCount();
-                head.getNetworkSize();
-                head.getConnectedNodes();
-                head.deriveTypeId();
+                totalConnectivityDegree += head.getConnectivityDegree();
+                totalExpectedLinkCount += head.getExpectedLinkCount();
+                totalNetworkSize += head.getNetworkSize();
+                totalConnectedNodes += head.getConnectedNodes().size();
+                totalTypeIdChecks += head.deriveTypeId().getId();
             }
 
-            // Test erfolgreich wenn keine OutOfMemoryError
+            // Verifikation dass Operationen durchgeführt wurden
+            assertEquals(2000, totalConnectivityDegree); // 1000 * 2
+            assertEquals(0, totalExpectedLinkCount); // Einzelner Knoten ohne Netzwerk
+            assertEquals(1000, totalNetworkSize); // 1000 * 1 (einzelner Knoten)
+            assertEquals(0, totalConnectedNodes); // Keine verbundenen Knoten
+            assertEquals(7000, totalTypeIdChecks); // 1000 * 7 (N_CONNECTED.getId())
+
+            // Test erfolgreich wenn keine OutOfMemoryError und erwartete Werte
             assertTrue(true);
         }
     }
