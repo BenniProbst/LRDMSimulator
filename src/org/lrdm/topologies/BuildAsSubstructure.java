@@ -1,24 +1,32 @@
-
 package org.lrdm.topologies;
 
 import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
-import org.lrdm.topologies.base.MirrorNode;
-import org.lrdm.topologies.base.StructureNode;
+import org.lrdm.topologies.base.*;
+import org.lrdm.util.IDGenerator;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Abstrakte Basisklasse für hierarchische Substruktur-basierte TopologyStrategy.
- * Nutzt Observer/Command Pattern zur Reaktion auf StructureBuilder-Änderungen.
+ * Kombiniert Observer/Command Pattern mit StructureBuilder-Funktionalität.
  *
- * Jede Substruktur hat eine eindeutige ID und kann an Mirror-Ports weitere
- * Substrukturen anbinden. Die Struktur-Logik bleibt in MirrorNodes/StructureBuilder.
+ * Integriert die bewährte StructureBuilder-API und erweitert sie um:
+ * - MirrorNode-basierte Substruktur-Verwaltung
+ * - Observer Pattern für Struktur-Änderungen
+ * - Hierarchische Substruktur-Anbindung an Head-Nodes
+ * - Rekursive Link-Erstellung mit Mirror-Zuordnung
+ *
+ * Ersetzt die veralteten Builder-Klassen (LineBuilder, RingBuilder, etc.) und
+ * bietet eine einheitliche API für strukturbasierte Netzwerktopologien.
+ *
+ * Der mirrorIterator verwaltet verfügbare, noch nicht eingeschaltete Mirrors aus dem Netzwerk.
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
+ * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
 public abstract class BuildAsSubstructure extends TopologyStrategy {
 
@@ -26,59 +34,368 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     private final int substructureId;
     private static final AtomicInteger SUBSTRUCTURE_ID_GENERATOR = new AtomicInteger(1);
 
-    // ===== PORT-BASIERTE SUBSTRUKTUR-VERWALTUNG =====
-    private Map<Mirror, BuildAsSubstructure> mirrorToSubstructure = new HashMap<>();
-    private Set<Mirror> structureMirrors = new HashSet<>();
+    // ===== STRUCTUREBUILDER-INTEGRATION =====
+    protected IDGenerator idGenerator;
+    protected Network network;
+    protected Iterator<Mirror> mirrorIterator;
+
+    // ===== MIRRORNODE-BASIERTE SUBSTRUKTUR-VERWALTUNG =====
+    private final Map<MirrorNode, BuildAsSubstructure> nodeToSubstructure = new HashMap<>();
+    private final Set<MirrorNode> structureNodes = new HashSet<>();
+
+    // ===== STRUCTURE-ROOT TRACKING =====
+    private MirrorNode currentStructureRoot;
 
     // ===== OBSERVER PATTERN - STRUCTURE CHANGE EVENTS =====
-    private List<StructureChangeObserver> observers = new ArrayList<>();
+    private final List<StructureChangeObserver> observers = new ArrayList<>();
 
-    // ===== KONSTRUKTOR =====
+    // ===== KONSTRUKTOREN =====
 
     public BuildAsSubstructure() {
         this.substructureId = SUBSTRUCTURE_ID_GENERATOR.getAndIncrement();
+        this.idGenerator = IDGenerator.getInstance();
+    }
+
+    public BuildAsSubstructure(Network network) {
+        this();
+        this.network = network;
+        if (network != null) {
+            this.mirrorIterator = network.getMirrors().iterator();
+        }
+    }
+
+    public BuildAsSubstructure(Network network, Iterator<Mirror> mirrorIterator) {
+        this();
+        this.network = network;
+        this.mirrorIterator = mirrorIterator;
     }
 
     public int getSubstructureId() {
         return substructureId;
     }
 
-    // ===== PORT-VERWALTUNG (VEREINFACHT) =====
+    // ===== STRUCTUREBUILDER-API (INTEGRIERT) =====
 
     /**
-     * Registriert eine Substruktur an einem Mirror-Port (Head Node).
+     * Erstellt eine neue Struktur mit der angegebenen Anzahl von Knoten.
+     * Kernmethode der StructureBuilder-API, muss von Subklassen implementiert werden.
+     *
+     * @param totalNodes Anzahl der zu erstellenden Knoten
+     * @return Root-Knoten der erstellten Struktur
      */
-    public void attachSubstructure(Mirror headMirror, BuildAsSubstructure substructure) {
-        mirrorToSubstructure.put(headMirror, substructure);
-        structureMirrors.add(headMirror);
-        substructure.structureMirrors.add(headMirror);
+    public abstract MirrorNode build(int totalNodes);
+
+    /**
+     * Fügt Knoten zu einer bestehenden Struktur hinzu.
+     * Vereinfacht: Verwendet automatische Root-Ermittlung über findHead().
+     *
+     * @param nodesToAdd Anzahl der hinzuzufügenden Knoten
+     * @return Anzahl der tatsächlich hinzugefügten Knoten
+     */
+    public abstract int addNodes(int nodesToAdd);
+
+    /**
+     * Entfernt Knoten aus einer bestehenden Struktur.
+     * Verwendet automatische Root-Ermittlung über findHead().
+     *
+     * @param nodesToRemove Anzahl der zu entfernenden Knoten
+     * @return Anzahl der tatsächlich entfernten Knoten
+     */
+    public abstract int removeNodes(int nodesToRemove);
+
+    /**
+     * Allgemeine Struktur-Validierung - delegiert an die strukturspezifische
+     * isValidStructure()-Methode der jeweiligen MirrorNode-Implementierung.
+     * Nutzt Polymorphismus für saubere Architektur.
+     *
+     * @param root Der Root-Knoten der zu validierenden Struktur
+     * @return true, wenn die Struktur gültig ist
+     */
+    public final boolean validateStructure(MirrorNode root) {
+        if (root == null) return false;
+        return root.isValidStructure();
     }
 
     /**
-     * Gibt die an einem Mirror-Port registrierte Substruktur zurück.
+     * Hilfsmethode: Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * Kann von Subklassen überschrieben werden für spezifische MirrorNode-Typen.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null, wenn kein Mirror verfügbar
      */
-    public BuildAsSubstructure getAttachedSubstructure(Mirror headMirror) {
-        return mirrorToSubstructure.get(headMirror);
+    protected MirrorNode getMirrorNodeFromIterator() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            Mirror mirror = mirrorIterator.next();
+            MirrorNode node = createMirrorNodeForMirror(mirror);
+            if (node != null) {
+                node.setMirror(mirror);
+                structureNodes.add(node);
+            }
+            return node;
+        }
+        return null;
     }
 
     /**
-     * Entfernt eine Substruktur von einem Mirror-Port.
+     * Factory-Methode für strukturspezifische MirrorNode-Erstellung.
+     * Muss von Subklassen überschrieben werden für spezifische MirrorNode-Typen.
+     *
+     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
+     * @return Neuer strukturspezifischer MirrorNode
      */
-    public boolean detachSubstructure(Mirror headMirror) {
-        BuildAsSubstructure removed = mirrorToSubstructure.remove(headMirror);
+    protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
+        return new MirrorNode(idGenerator.getNextID(), mirror);
+    }
+
+    // ===== STRUCTUREBUILDER-HELPER METHODS =====
+
+    /**
+     * Getter für den ID-Generator.
+     *
+     * @return Der verwendete ID-Generator
+     */
+    protected IDGenerator getIdGenerator() {
+        return idGenerator;
+    }
+
+    /**
+     * Getter für das Netzwerk.
+     *
+     * @return Das verwendete Netzwerk
+     */
+    protected Network getNetwork() {
+        return network;
+    }
+
+    /**
+     * Setzt das Netzwerk und aktualisiert den Mirror-Iterator.
+     *
+     * @param network Das neue Netzwerk
+     */
+    public void setNetwork(Network network) {
+        this.network = network;
+        if (network != null) {
+            this.mirrorIterator = network.getMirrors().iterator();
+        }
+    }
+
+    /**
+     * Getter für den Mirror-Iterator.
+     *
+     * @return Der verwendete Mirror-Iterator
+     */
+    protected Iterator<Mirror> getMirrorIterator() {
+        return mirrorIterator;
+    }
+
+    /**
+     * Setzt den Mirror-Iterator.
+     * Nützlich für die Verarbeitung spezifischer Mirror-Subsets.
+     *
+     * @param mirrorIterator Der neue Mirror-Iterator
+     */
+    public void setMirrorIterator(Iterator<Mirror> mirrorIterator) {
+        this.mirrorIterator = mirrorIterator;
+    }
+
+    /**
+     * Prüft, ob noch weitere Mirrors verfügbar sind.
+     *
+     * @return true, wenn noch Mirrors im Iterator verfügbar sind
+     */
+    protected boolean hasMoreMirrors() {
+        return mirrorIterator != null && mirrorIterator.hasNext();
+    }
+
+    // ===== REKURSIVE LINK-ERSTELLUNG =====
+
+    /**
+     * Erstellt und verknüpft alle Links für eine MirrorNode-Struktur rekursiv.
+     * Diese Methode baut die tatsächlichen Mirror-Links basierend auf der
+     * MirrorNode-Struktur auf und verknüpft sie mit den zugeordneten Mirrors.
+     *
+     * @param root Root-Knoten der Struktur
+     * @param props Simulation Properties
+     * @return Set aller erstellten Links
+     */
+    public Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+        if (root == null) return new HashSet<>();
+
+        Set<Link> allLinks = new HashSet<>();
+        StructureNode.StructureType typeId = root.deriveTypeId();
+        StructureNode head = root.findHead(typeId);
+
+        if (head == null) head = root;
+
+        Set<StructureNode> allNodes = root.getAllNodesInStructure(typeId, head);
+
+        // Rekursiv durch alle Struktur-Knoten gehen
+        for (StructureNode node : allNodes) {
+            if (node instanceof MirrorNode mirrorNode) {
+                allLinks.addAll(createLinksForNode(mirrorNode, typeId, head, props));
+            }
+        }
+
+        return allLinks;
+    }
+
+    /**
+     * Erstellt Links für einen einzelnen MirrorNode basierend auf seinen
+     * strukturellen Beziehungen (Parent/Children).
+     *
+     * @param node Der MirrorNode für den Links erstellt werden sollen
+     * @param typeId Der Strukturtyp
+     * @param head Der Head-Knoten der Struktur
+     * @param props Simulation Properties
+     * @return Set der erstellten Links für diesen Knoten
+     */
+    protected Set<Link> createLinksForNode(MirrorNode node, StructureNode.StructureType typeId,
+                                           StructureNode head, Properties props) {
+        Set<Link> nodeLinks = new HashSet<>();
+        Mirror nodeMirror = node.getMirror();
+
+        if (nodeMirror == null) return nodeLinks;
+
+        final int headId = head.getId();
+
+        // Links zu Kindern erstellen
+        Set<StructureNode> children = node.getChildren(typeId, headId);
+        for (StructureNode child : children) {
+            if (child instanceof MirrorNode childMirrorNode) {
+                Mirror childMirror = childMirrorNode.getMirror();
+                if (childMirror != null) {
+                    Link link = new Link(idGenerator.getNextID(), nodeMirror, childMirror, 0, props);
+                    nodeMirror.addLink(link);
+                    childMirror.addLink(link);
+                    nodeLinks.add(link);
+                }
+            }
+        }
+
+        return nodeLinks;
+    }
+
+    // ===== SUBSTRUKTUR-VERWALTUNG (MIRRORNODE-BASIERT) =====
+
+    /**
+     * Registriert eine Substruktur an einem MirrorNode-Port (Head Node).
+     *
+     * @param headNode Der Head-MirrorNode als Verbindungspunkt
+     * @param substructure Die anzubindende Substruktur
+     */
+    public void attachSubstructure(MirrorNode headNode, BuildAsSubstructure substructure) {
+        nodeToSubstructure.put(headNode, substructure);
+        structureNodes.add(headNode);
+        substructure.structureNodes.add(headNode);
+
+        // Observer-Event senden
+        StructureChangeEvent event = new StructureChangeEvent(headNode, substructure.getCurrentStructureRoot());
+        notifyStructureChange(event);
+    }
+
+    /**
+     * Gibt die an einem MirrorNode-Port registrierte Substruktur zurück.
+     *
+     * @param headNode Der Head-MirrorNode
+     * @return Die registrierte Substruktur oder null
+     */
+    public BuildAsSubstructure getAttachedSubstructure(MirrorNode headNode) {
+        return nodeToSubstructure.get(headNode);
+    }
+
+    /**
+     * Entfernt eine Substruktur von einem MirrorNode-Port.
+     *
+     * @param headNode Der Head-MirrorNode
+     * @return true, wenn eine Substruktur entfernt wurde
+     */
+    public boolean detachSubstructure(MirrorNode headNode) {
+        BuildAsSubstructure removed = nodeToSubstructure.remove(headNode);
         if (removed != null) {
-            structureMirrors.remove(headMirror);
-            removed.structureMirrors.remove(headMirror);
+            structureNodes.remove(headNode);
+            removed.structureNodes.remove(headNode);
+
+            // Observer-Event senden
+            StructureChangeEvent event = new StructureChangeEvent(
+                    StructureChangeEvent.Type.STRUCTURE_CONNECTED,
+                    Arrays.asList(headNode), headNode
+            );
+            notifyStructureChange(event);
             return true;
         }
         return false;
     }
 
-    public Set<Mirror> getMirrors() {
-        return new HashSet<>(structureMirrors);
+    /**
+     * Gibt alle verwalteten MirrorNodes zurück.
+     *
+     * @return Set aller MirrorNodes in dieser Substruktur
+     */
+    public Set<MirrorNode> getMirrorNodes() {
+        return new HashSet<>(structureNodes);
     }
 
-    // ===== OBSERVER PATTERN FÜR STRUCTURE BUILDER EVENTS =====
+    /**
+     * Gibt alle Mirrors aus den verwalteten MirrorNodes zurück.
+     *
+     * @return Set aller Mirrors
+     */
+    public Set<Mirror> getMirrors() {
+        return structureNodes.stream()
+                .map(MirrorNode::getMirror)
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    // ===== STRUCTURE-ROOT MANAGEMENT =====
+
+    /**
+     * Setzt den aktuellen Struktur-Root.
+     *
+     * @param root Der neue Root-Knoten
+     */
+    protected void setCurrentStructureRoot(MirrorNode root) {
+        MirrorNode oldRoot = this.currentStructureRoot;
+        this.currentStructureRoot = root;
+
+        if (root != null) {
+            structureNodes.add(root);
+        }
+
+        // Observer-Event senden wenn sich der Root geändert hat
+        if (oldRoot != root) {
+            StructureChangeEvent event = new StructureChangeEvent(oldRoot, root, true);
+            notifyStructureChange(event);
+        }
+    }
+
+    /**
+     * Gibt den aktuellen Struktur-Root zurück.
+     *
+     * @return Der aktuelle Root-Knoten oder null
+     */
+    public MirrorNode getCurrentStructureRoot() {
+        return currentStructureRoot;
+    }
+
+    /**
+     * Findet den Root einer bestehenden Struktur.
+     * Verwendet die Head-Finding-Logik der MirrorNodes.
+     *
+     * @return Der gefundene Root-Knoten oder null
+     */
+    protected MirrorNode findExistingStructureRoot() {
+        if (currentStructureRoot != null) {
+            return currentStructureRoot;
+        }
+
+        // Suche Head-Knoten in bestehenden Strukturen
+        return structureNodes.stream()
+                .filter(node -> node.isHead(node.deriveTypeId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    // ===== OBSERVER PATTERN FÜR STRUCTURE CHANGE EVENTS =====
 
     public void addStructureChangeObserver(StructureChangeObserver observer) {
         observers.add(observer);
@@ -90,13 +407,13 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Notify-Methode für StructureBuilder-Änderungen.
-     * Wird von StructureBuilder aufgerufen, wenn Strukturen geändert werden.
+     * Wird bei Struktur-Änderungen aufgerufen.
+     *
+     * @param event Das Struktur-Änderungs-Event
      */
     public void notifyStructureChange(StructureChangeEvent event) {
-        // 1. Verarbeite die Änderung intern
         handleStructureChange(event);
 
-        // 2. Informiere alle Observer
         for (StructureChangeObserver observer : observers) {
             observer.onStructureChanged(event);
         }
@@ -104,7 +421,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Command Pattern: Verarbeitet spezifische Struktur-Änderungen.
-     * Wird von Subklassen überschrieben für strukturspezifische Logik.
+     * Kann von Subklassen überschrieben werden für strukturspezifische Logik.
+     *
+     * @param event Das zu verarbeitende Event
      */
     protected void handleStructureChange(StructureChangeEvent event) {
         switch (event.getType()) {
@@ -123,56 +442,106 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         }
     }
 
-    // ===== COMMAND PATTERN - STRUKTUR-ÄNDERUNGS-BEHANDLUNG =====
-
-    /**
-     * Wird aufgerufen, wenn neue Nodes zu einer Struktur hinzugefügt wurden.
-     */
     protected void onNodesAdded(List<StructureNode> addedNodes, StructureNode headNode) {
-        // Standard: Füge entsprechende Mirrors hinzu
         for (StructureNode node : addedNodes) {
-            if (node instanceof MirrorNode mirrorNode && mirrorNode.getMirror() != null) {
-                structureMirrors.add(mirrorNode.getMirror());
+            if (node instanceof MirrorNode mirrorNode) {
+                structureNodes.add(mirrorNode);
             }
         }
     }
 
-    /**
-     * Wird aufgerufen, wenn Nodes aus einer Struktur entfernt wurden.
-     */
     protected void onNodesRemoved(List<StructureNode> removedNodes, StructureNode headNode) {
-        // Standard: Entferne entsprechende Mirrors
         for (StructureNode node : removedNodes) {
-            if (node instanceof MirrorNode mirrorNode && mirrorNode.getMirror() != null) {
-                structureMirrors.remove(mirrorNode.getMirror());
+            if (node instanceof MirrorNode mirrorNode) {
+                structureNodes.remove(mirrorNode);
             }
         }
     }
 
-    /**
-     * Wird aufgerufen, wenn zwei Strukturen verbunden wurden.
-     */
     protected void onStructureConnected(StructureNode sourceHead, StructureNode targetHead) {
         // Standard: Verknüpfe Substrukturen wenn nötig
     }
 
-    /**
-     * Wird aufgerufen, wenn sich der Head einer Struktur geändert hat.
-     */
     protected void onHeadChanged(StructureNode oldHead, StructureNode newHead) {
         // Standard: Update interne Mappings
+        if (newHead instanceof MirrorNode newMirrorHead) {
+            setCurrentStructureRoot(newMirrorHead);
+        }
     }
 
-    // ===== BESTEHENDE METHODEN (MIT EIGENER TUPLE-KLASSE) =====
+    // ===== TOPOLOGYSTRATEGY IMPLEMENTIERUNG =====
 
-    public Set<Mirror> shutdownSubstructures(int simTime) {
-        Set<Mirror> removed = new HashSet<>(structureMirrors);
-        for (BuildAsSubstructure substructure : mirrorToSubstructure.values()) {
-            removed.addAll(substructure.shutdownSubstructures(simTime));
+    @Override
+    public Set<Link> initNetwork(Network n, Properties props) {
+        setNetwork(n);
+        setMirrorIterator(n.getMirrors().iterator());
+
+        MirrorNode root = build(n.getNumMirrors());
+        setCurrentStructureRoot(root);
+
+        if (root != null) {
+            return buildAndConnectLinks(root, props);
         }
-        for (Mirror mirror : structureMirrors) {
-            mirror.shutdown(simTime);
+
+        return new HashSet<>();
+    }
+
+    @Override
+    public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
+        // Erstelle neue Mirrors
+        List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
+        n.getMirrors().addAll(addedMirrors);
+
+        // Setze Iterator für neue Mirrors
+        setMirrorIterator(addedMirrors.iterator());
+
+        // Füge zu bestehender Struktur hinzu
+        int actuallyAdded = addNodes(newMirrors);
+
+        if (actuallyAdded > 0) {
+            // Rebuild Links für die gesamte Struktur
+            MirrorNode root = getCurrentStructureRoot();
+            if (root != null) {
+                Set<Link> newLinks = buildAndConnectLinks(root, props);
+                n.getLinks().addAll(newLinks);
+            }
+        } else {
+            // Fallback: Komplett neu aufbauen wenn Hinzufügen fehlschlägt
+            restartNetwork(n, props, simTime);
         }
+    }
+
+    @Override
+    public void restartNetwork(Network n, Properties props, int simTime) {
+        super.restartNetwork(n, props, simTime);
+
+        // Alle Substrukturen zurücksetzen
+        nodeToSubstructure.clear();
+        structureNodes.clear();
+        setCurrentStructureRoot(null);
+
+        // Komplett neu initialisieren
+        Set<Link> newLinks = initNetwork(n, props);
+        n.getLinks().addAll(newLinks);
+    }
+
+    // ===== LEGACY-UNTERSTÜTZUNG UND SUBSTRUKTUREN =====
+
+    public Set<MirrorNode> shutdownSubstructureNodes(int simTime) {
+        Set<MirrorNode> removed = new HashSet<>(structureNodes);
+
+        // Rekursiv alle angehängten Substrukturen herunterfahren
+        for (BuildAsSubstructure substructure : nodeToSubstructure.values()) {
+            removed.addAll(substructure.shutdownSubstructureNodes(simTime));
+        }
+
+        // Eigene Nodes herunterfahren
+        for (MirrorNode node : structureNodes) {
+            if (node.getMirror() != null) {
+                node.getMirror().shutdown(simTime);
+            }
+        }
+
         return removed;
     }
 
@@ -180,72 +549,31 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         Set<Link> links = new HashSet<>();
         Set<Mirror> mirrors = new HashSet<>();
 
-        for (BuildAsSubstructure substructure : mirrorToSubstructure.values()) {
+        // Rekursiv alle angehängten Substrukturen sammeln
+        for (BuildAsSubstructure substructure : nodeToSubstructure.values()) {
             Tuple<Set<Mirror>, Set<Link>> tuple = substructure.gatherAllSubstructures();
             mirrors.addAll(tuple.getFirst());
             links.addAll(tuple.getSecond());
         }
 
-        for (Mirror mirror : structureMirrors) {
-            links.addAll(mirror.getLinks());
-            mirrors.add(mirror);
+        // Eigene Mirrors und Links sammeln
+        for (MirrorNode node : structureNodes) {
+            Mirror mirror = node.getMirror();
+            if (mirror != null) {
+                links.addAll(mirror.getLinks());
+                mirrors.add(mirror);
+            }
         }
 
         return new Tuple<>(mirrors, links);
     }
 
-    public Set<Mirror> getEdgeMirrors() {
-        Set<Mirror> edgeMirrors = new HashSet<>();
-        Tuple<Set<Mirror>, Set<Link>> gathered = gatherAllSubstructures();
-        Set<Mirror> allMirrors = gathered.getFirst();
-
-        for (Mirror mirror : allMirrors) {
-            if (mirror.getLinks().stream().anyMatch(link ->
-                    !allMirrors.contains(link.getSource()) || !allMirrors.contains(link.getTarget()))) {
-                edgeMirrors.add(mirror);
-            }
-        }
-        return edgeMirrors;
-    }
-
-    // ===== TOPOLOGYSTRATEGY IMPLEMENTIERUNG =====
-
-    /**
-     * Standard-Implementierung für TopologyStrategy-Methoden.
-     * Kann von Subklassen überschrieben werden für spezifische Logik.
-     */
-    @Override
-    public void restartNetwork(Network n, Properties props, int simTime) {
-        super.restartNetwork(n, props, simTime);
-
-        // Restart nur interne Links, Edge-Links bleiben bestehen
-        Tuple<Set<Mirror>, Set<Link>> gathered = gatherAllSubstructures();
-        Set<Mirror> allMirrors = gathered.getFirst();
-        Set<Link> allLinks = gathered.getSecond();
-        Set<Mirror> edgeMirrors = getEdgeMirrors();
-
-        // Interne Links entfernen
-        for (Link link : allLinks) {
-            if (allMirrors.contains(link.getSource()) && allMirrors.contains(link.getTarget())) {
-                link.shutdown();
-            }
-        }
-
-        // Interne Mirror-Links säubern (externe bleiben)
-        for (Mirror mirror : allMirrors) {
-            if (!edgeMirrors.contains(mirror)) {
-                mirror.shutdown(simTime);
-            }
-            mirror.getLinks().removeIf(link ->
-                    allMirrors.contains(link.getSource()) && allMirrors.contains(link.getTarget()));
-        }
-
-        // Netzwerk neu initialisieren über initNetwork
-        n.getLinks().addAll(initNetwork(n, props));
-    }
-
     // ===== ABSTRAKTE METHODEN =====
 
+    /**
+     * Legacy-Methode für Substruktur-Initialisierung.
+     * Kann von Subklassen implementiert werden für spezifische Legacy-Unterstützung.
+     */
     public abstract Set<Link> initNetworkSub(Network n, Mirror root, List<Mirror> mirrorsToConnect, int simTime, Properties props);
 
     // ===== HILFSDATENSTRUKTUREN =====
@@ -293,7 +621,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         private final StructureNode oldHead;
         private final StructureNode newHead;
 
-        // Konstruktoren für verschiedene Event-Typen
         public StructureChangeEvent(Type type, List<StructureNode> affectedNodes, StructureNode headNode) {
             this.type = type;
             this.affectedNodes = affectedNodes;
