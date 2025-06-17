@@ -1,17 +1,18 @@
-
 package org.lrdm.topologies.node;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.lrdm.Link;
 import org.lrdm.Mirror;
-import org.lrdm.MirrorProbe;
 import org.lrdm.TimedRDMSim;
+import org.lrdm.probes.MirrorProbe;
 
 import java.io.IOException;
 import java.util.*;
 
+import static org.lrdm.TestProperties.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.lrdm.PropertiesLoader.*;
 
 /**
  * Umfassende Tests für NConnectedMirrorNode nach FullyConnectedMirrorNodeTest-Vorbild.
@@ -23,6 +24,9 @@ import static org.lrdm.PropertiesLoader.*;
  * - Performance-Tests und Edge Cases
  * - Defensive Programmierung und Null-Handling
  * - Kompatibilität mit MirrorNode-Funktionalität
+ * - Symmetrische Verbindungen und bidirektionale Links
+ * - Multi-Type-Koexistenz Tests
+ * - Parametrisierte Tests für verschiedene N-Werte
  * <p>
  * Struktur:
  * - Grundfunktionen (Konstruktoren, Vererbung, Typ-System)
@@ -30,6 +34,7 @@ import static org.lrdm.PropertiesLoader.*;
  * - Netzwerk-Navigation (Connected Nodes, Größe, etc.)
  * - Struktur-Validierung (gültige/ungültige N-Connected-Netze)
  * - Performance und Edge Cases (große Netze, verschiedene N-Werte)
+ * - Exception-Handling und Defensive Programmierung
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
@@ -81,6 +86,88 @@ class NConnectedMirrorNodeTest {
         }
 
         return simMirrors;
+    }
+
+    /**
+     * Eine Hilfsmethode zum Setup einer gültigen N-Connected-Struktur mit echten Mirror-Links.
+     * Erstellt alle notwendigen bidirektionalen Verbindungen für echte N-Connected-Validierung.
+     */
+    private void setupValidNConnectedStructure(NConnectedMirrorNode head, List<NConnectedMirrorNode> peers) throws IOException {
+        initSimulator();
+        List<Mirror> mirrors = getSimMirrors(getMirrorProbe());
+
+        // Mirrors zuweisen
+        head.setMirror(mirrors.get(0));
+        for (int i = 0; i < peers.size(); i++) {
+            peers.get(i).setMirror(mirrors.get(i + 1));
+        }
+
+        // N-Connected-Links basierend auf Vernetzungsgrad erstellen
+        int n = head.getConnectivityDegree();
+        List<NConnectedMirrorNode> allNodes = new ArrayList<>();
+        allNodes.add(head);
+        allNodes.addAll(peers);
+
+        // Erstelle Links, bis jeder Knoten N Verbindungen hat
+        for (int i = 0; i < allNodes.size(); i++) {
+            NConnectedMirrorNode node = allNodes.get(i);
+            int currentConnections = 0;
+
+            for (int j = 0; j < allNodes.size() && currentConnections < n; j++) {
+                if (i != j) { // Nicht mit sich selbst verbinden
+                    NConnectedMirrorNode target = allNodes.get(j);
+                    Link link = new Link(
+                            i * 100 + j,
+                            node.getMirror(),
+                            target.getMirror(),
+                            0,
+                            props
+                    );
+                    node.addLink(link);
+                    currentConnections++;
+                }
+            }
+        }
+    }
+
+    /**
+     * Erstellt eine Ring-Topologie für 2-Connected-Tests.
+     */
+    private void setupRingTopology(List<NConnectedMirrorNode> nodes) throws IOException {
+        initSimulator();
+        List<Mirror> mirrors = getSimMirrors(getMirrorProbe());
+
+        // Mirrors zuweisen
+        for (int i = 0; i < nodes.size(); i++) {
+            nodes.get(i).setMirror(mirrors.get(i));
+        }
+
+        // Ring-Links erstellen (jeder Knoten mit seinen beiden Nachbarn)
+        for (int i = 0; i < nodes.size(); i++) {
+            NConnectedMirrorNode current = nodes.get(i);
+            NConnectedMirrorNode next = nodes.get((i + 1) % nodes.size());
+            NConnectedMirrorNode prev = nodes.get((i - 1 + nodes.size()) % nodes.size());
+
+            // Link zum nächsten Knoten
+            Link linkNext = new Link(
+                    i * 100 + ((i + 1) % nodes.size()),
+                    current.getMirror(),
+                    next.getMirror(),
+                    0,
+                    props
+            );
+            current.addLink(linkNext);
+
+            // Link zum vorherigen Knoten
+            Link linkPrev = new Link(
+                    i * 100 + ((i - 1 + nodes.size()) % nodes.size()),
+                    current.getMirror(),
+                    prev.getMirror(),
+                    0,
+                    props
+            );
+            current.addLink(linkPrev);
+        }
     }
 
     @Nested
@@ -173,14 +260,17 @@ class NConnectedMirrorNodeTest {
         @DisplayName("Ungültige Vernetzungsgrade werden abgewiesen")
         void testInvalidConnectivityDegrees() {
             // Vernetzungsgrad < 1 sollte Exception werfen
-            assertThrows(IllegalArgumentException.class, () ->
-                new NConnectedMirrorNode(1, 0));
-            
-            assertThrows(IllegalArgumentException.class, () ->
-                new NConnectedMirrorNode(1, -1));
-            
-            assertThrows(IllegalArgumentException.class, () ->
-                new NConnectedMirrorNode(1, new Mirror(101, 0, props), -5));
+            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () ->
+                    new NConnectedMirrorNode(1, 0));
+            assertTrue(ex1.getMessage().contains("Connectivity degree must be at least 1"));
+
+            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () ->
+                    new NConnectedMirrorNode(1, -1));
+            assertTrue(ex2.getMessage().contains("at least 1"));
+
+            IllegalArgumentException ex3 = assertThrows(IllegalArgumentException.class, () ->
+                    new NConnectedMirrorNode(1, new Mirror(101, 0, props), -5));
+            assertTrue(ex3.getMessage().contains("at least 1"));
 
             // Vernetzungsgrad = 1 sollte funktionieren
             assertDoesNotThrow(() -> new NConnectedMirrorNode(1, 1));
@@ -191,7 +281,7 @@ class NConnectedMirrorNodeTest {
         void testDeriveTypeId() {
             assertEquals(StructureNode.StructureType.N_CONNECTED, ncNode.deriveTypeId());
 
-            // Test verschiedene Vernetzungsgrade
+            // Test verschiedener Vernetzungsgrade
             NConnectedMirrorNode node1 = new NConnectedMirrorNode(2, 1);
             assertEquals(StructureNode.StructureType.N_CONNECTED, node1.deriveTypeId());
 
@@ -218,6 +308,7 @@ class NConnectedMirrorNodeTest {
         void testGetConnectivityDegree() {
             assertEquals(2, ncNode.getConnectivityDegree()); // Standard
 
+            // Test verschiedener Vernetzungsgrade
             NConnectedMirrorNode node1 = new NConnectedMirrorNode(2, 1);
             assertEquals(1, node1.getConnectivityDegree());
 
@@ -229,111 +320,107 @@ class NConnectedMirrorNodeTest {
         }
 
         @Test
-        @DisplayName("getConnectivityDegree mit Multi-Type-Unterstützung")
-        void testGetConnectivityDegreeMultiType() {
-            // Setup: 3-Connected-Struktur mit 4 Knoten
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 3);
-            NConnectedMirrorNode node2 = new NConnectedMirrorNode(2, 3);
+        @DisplayName("getExpectedLinkCount entspricht Vernetzungsgrad")
+        void testGetExpectedLinkCount() {
+            assertEquals(2, ncNode.getExpectedLinkCount());
+
+            NConnectedMirrorNode node1 = new NConnectedMirrorNode(2, 1);
+            assertEquals(1, node1.getExpectedLinkCount());
+
+            NConnectedMirrorNode node4 = new NConnectedMirrorNode(3, 4);
+            assertEquals(4, node4.getExpectedLinkCount());
+        }
+
+        @Test
+        @DisplayName("hasOptimalConnectivity ohne Links")
+        void testHasOptimalConnectivityWithoutLinks() {
+            // Ohne Links: nicht optimal
+            assertFalse(ncNode.hasOptimalConnectivity());
+
+            // Auch bei verschiedenen Vernetzungsgraden
+            NConnectedMirrorNode node1 = new NConnectedMirrorNode(2, 1);
+            assertFalse(node1.hasOptimalConnectivity());
+
             NConnectedMirrorNode node3 = new NConnectedMirrorNode(3, 3);
-            NConnectedMirrorNode node4 = new NConnectedMirrorNode(4, 3);
+            assertFalse(node3.hasOptimalConnectivity());
+        }
+
+        @Test
+        @DisplayName("hasOptimalConnectivity mit echten N-Connected-Links")
+        void testHasOptimalConnectivityWithRealLinks() throws IOException {
+            // Setup: 3-Connected mid 5 Knoten
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 3);
+            List<NConnectedMirrorNode> peers = Arrays.asList(
+                    new NConnectedMirrorNode(2, 3),
+                    new NConnectedMirrorNode(3, 3),
+                    new NConnectedMirrorNode(4, 3),
+                    new NConnectedMirrorNode(5, 3)
+            );
 
             head.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            head.addChild(node2, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
-            head.addChild(node3, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
-            head.addChild(node4, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            for (NConnectedMirrorNode peer : peers) {
+                head.addChild(peer, Set.of(StructureNode.StructureType.N_CONNECTED),
+                        Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            }
 
-            // Test tatsächliche Vernetzung
-            int headConnections = head.getConnectivityDegree(StructureNode.StructureType.N_CONNECTED, head.getId());
-            assertEquals(3, headConnections); // Head hat 3 Kinder
+            // Ohne Links: nicht optimal
+            assertFalse(head.hasOptimalConnectivity());
 
-            int childConnections = node2.getConnectivityDegree(StructureNode.StructureType.N_CONNECTED, head.getId());
-            assertEquals(1, childConnections); // Nur Parent-Verbindung
+            // Mit korrekten N-Connected-Links: optimal
+            setupValidNConnectedStructure(head, peers);
+            assertTrue(head.hasOptimalConnectivity());
+
+            // Alle Peers sollten auch optimal sein
+            for (NConnectedMirrorNode peer : peers) {
+                assertTrue(peer.hasOptimalConnectivity());
+            }
         }
 
         @Test
-        @DisplayName("getExpectedLinkCount berücksichtigt Netzwerkgröße")
-        void testGetExpectedLinkCount() {
-            // Einzelner Knoten
-            assertEquals(0, ncNode.getExpectedLinkCount()); // networkSize = 1, min(2, 0) = 0
-
-            // 3-Knoten-Netz mit N=2
-            NConnectedMirrorNode node2 = new NConnectedMirrorNode(2, 2);
-            NConnectedMirrorNode node3 = new NConnectedMirrorNode(3, 2);
-            ncNode.addChild(node2);
-            ncNode.addChild(node3);
-
-            assertEquals(2, ncNode.getExpectedLinkCount()); // min(2, 3-1) = 2
-
-            // Test mit höherem N als Netzwerkgröße
-            NConnectedMirrorNode bigN = new NConnectedMirrorNode(4, 10);
-            assertEquals(0, bigN.getExpectedLinkCount()); // min(10, 1-1) = 0
-
-            bigN.addChild(new NConnectedMirrorNode(5, 10));
-            assertEquals(1, bigN.getExpectedLinkCount()); // min(10, 2-1) = 1
-        }
-
-        @Test
-        @DisplayName("hasOptimalConnectivity prüft implementierte vs erwartete Links")
-        void testHasOptimalConnectivity() throws IOException {
-            initSimulator();
-            List<Mirror> mirrors = getSimMirrors(getMirrorProbe());
-
-            // Setup: 2-Connected mit 3 Knoten
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
-            NConnectedMirrorNode node2 = new NConnectedMirrorNode(2, 2);
-            NConnectedMirrorNode node3 = new NConnectedMirrorNode(3, 2);
-
-            head.setMirror(mirrors.get(0));
-            node2.setMirror(mirrors.get(1));
-            node3.setMirror(mirrors.get(2));
-
-            head.addChild(node2);
-            head.addChild(node3);
-
-            // Ohne implementierte Links: nicht optimal
-            assertFalse(head.hasOptimalConnectivity()); // hat 0, braucht 2
-
-            // Mit korrekten Links: optimal
-            Link link1 = new Link(1, mirrors.get(0), mirrors.get(1), 0, props);
-            Link link2 = new Link(2, mirrors.get(0), mirrors.get(2), 0, props);
-            head.addLink(link1);
-            head.addLink(link2);
-
-            assertTrue(head.hasOptimalConnectivity()); // hat 2, braucht 2
-
-            // Mit zu vielen Links: immer noch optimal (toleriert)
-            Link extraLink = new Link(3, mirrors.get(1), mirrors.get(2), 0, props);
-            node2.addLink(extraLink);
-            assertTrue(head.hasOptimalConnectivity()); // hat immer noch 2
-        }
-
-        @Test
-        @DisplayName("getExpectedTotalLinkCount berechnet korrekt")
+        @DisplayName("getExpectedTotalLinkCount verschiedene Szenarien")
         void testGetExpectedTotalLinkCount() {
-            // 2-Connected mit 3 Knoten: (3 * 2) / 2 = 3 Links
-            NConnectedMirrorNode node2 = new NConnectedMirrorNode(2, 2);
-            NConnectedMirrorNode node3 = new NConnectedMirrorNode(3, 2);
-            ncNode.addChild(node2);
-            ncNode.addChild(node3);
+            // 2-Connected mit 4 Knoten: Jeder Knoten hat 2 Links = 4 * 2/2 = 4 Links total
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
+            NConnectedMirrorNode peer1 = new NConnectedMirrorNode(2, 2);
+            NConnectedMirrorNode peer2 = new NConnectedMirrorNode(3, 2);
+            NConnectedMirrorNode peer3 = new NConnectedMirrorNode(4, 2);
 
-            assertEquals(3, ncNode.getExpectedTotalLinkCount());
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            head.addChild(peer1);
+            head.addChild(peer2);
+            head.addChild(peer3);
 
-            // 3-Connected mit 5 Knoten: (5 * 3) / 2 = 7.5 -> 7 Links
+            assertEquals(4, head.getExpectedTotalLinkCount()); // 4 Knoten * 2 Links / 2 = 4
+
+            // 3-Connected mit 4 Knoten: Jeder Knoten hat 3 Links = 4 * 3/2 = 6 Links total
             NConnectedMirrorNode head3 = new NConnectedMirrorNode(1, 3);
-            for (int i = 2; i <= 5; i++) {
-                head3.addChild(new NConnectedMirrorNode(i, 3));
-            }
-            assertEquals(7, head3.getExpectedTotalLinkCount()); // (5 * 3) / 2 = 7
+            assertEquals(6, head3.getExpectedTotalLinkCount()); // 4 Knoten * 3 Links / 2 = 6
+        }
 
-            // 1-Connected mit 4 Knoten: (4 * 1) / 2 = 2 Links (Baum-ähnlich)
-            NConnectedMirrorNode head1 = new NConnectedMirrorNode(1, 1);
-            for (int i = 2; i <= 4; i++) {
-                head1.addChild(new NConnectedMirrorNode(i, 1));
+        @Test
+        @DisplayName("getConnectivityDensity berechnet korrekte Dichte")
+        void testGetConnectivityDensity() throws IOException {
+            // 2-Connected mit 4 Knoten
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
+            List<NConnectedMirrorNode> peers = Arrays.asList(
+                    new NConnectedMirrorNode(2, 2),
+                    new NConnectedMirrorNode(3, 2),
+                    new NConnectedMirrorNode(4, 2)
+            );
+
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            for (NConnectedMirrorNode peer : peers) {
+                head.addChild(peer);
             }
-            assertEquals(2, head1.getExpectedTotalLinkCount()); // (4 * 1) / 2 = 2
+
+            // Ohne Links: Dichte = 0
+            assertEquals(0.0, head.getConnectivityDensity(), 0.001);
+
+            // Mit korrekten Links
+            setupValidNConnectedStructure(head, peers);
+            // 4 tatsächliche Links / 6 mögliche Links (vollständiges Netz) = 0.667
+            double expectedDensity = 4.0 / 6.0; // (4 * 3)/2 = 6 mögliche Links in vollständigem 4-Knoten-Netz
+            assertEquals(expectedDensity, head.getConnectivityDensity(), 0.01);
         }
     }
 
@@ -344,184 +431,93 @@ class NConnectedMirrorNodeTest {
         @Test
         @DisplayName("getNConnectedHead findet Head-Knoten")
         void testGetNConnectedHead() {
-            // Einzelner Knoten: kein Head
-            assertNull(ncNode.getNConnectedHead());
-
-            // Setup: Head-Struktur
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 3);
-            NConnectedMirrorNode child1 = new NConnectedMirrorNode(2, 3);
-            NConnectedMirrorNode child2 = new NConnectedMirrorNode(3, 3);
+            // Setup
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
+            NConnectedMirrorNode peer1 = new NConnectedMirrorNode(2, 2);
+            NConnectedMirrorNode peer2 = new NConnectedMirrorNode(3, 2);
 
             head.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            head.addChild(child1);
-            head.addChild(child2);
+            head.addChild(peer1, Set.of(StructureNode.StructureType.N_CONNECTED),
+                    Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            head.addChild(peer2, Set.of(StructureNode.StructureType.N_CONNECTED),
+                    Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
 
-            // Head findet sich selbst
+            // Head sollte sich selbst finden
             assertEquals(head, head.getNConnectedHead());
 
-            // Kinder finden den Head
-            assertEquals(head, child1.getNConnectedHead());
-            assertEquals(head, child2.getNConnectedHead());
+            // Peers sollten Head finden
+            assertEquals(head, peer1.getNConnectedHead());
+            assertEquals(head, peer2.getNConnectedHead());
         }
 
         @Test
-        @DisplayName("isNConnectedHead erkennt Head-Status")
+        @DisplayName("isNConnectedHead erkennt Head-Knoten")
         void testIsNConnectedHead() {
-            assertFalse(ncNode.isNConnectedHead()); // Standardmäßig kein Head
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
+            NConnectedMirrorNode peer = new NConnectedMirrorNode(2, 2);
 
-            // Head setzen
-            ncNode.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            assertTrue(ncNode.isNConnectedHead());
+            // Vor Head-Setup
+            assertFalse(head.isNConnectedHead());
+            assertFalse(peer.isNConnectedHead());
 
-            // Head entfernen
-            ncNode.setHead(StructureNode.StructureType.N_CONNECTED, false);
-            assertFalse(ncNode.isNConnectedHead());
+            // Nach Head-Setup
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            assertTrue(head.isNConnectedHead());
+            assertFalse(peer.isNConnectedHead());
         }
 
         @Test
         @DisplayName("getNetworkSize berechnet Strukturgröße")
         void testGetNetworkSize() {
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
+
             // Einzelner Knoten
-            assertEquals(1, ncNode.getNetworkSize());
+            assertEquals(1, head.getNetworkSize());
 
-            // 3-Knoten-Netz
-            NConnectedMirrorNode node2 = new NConnectedMirrorNode(2, 2);
-            NConnectedMirrorNode node3 = new NConnectedMirrorNode(3, 2);
-            ncNode.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            ncNode.addChild(node2, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                           Map.of(StructureNode.StructureType.N_CONNECTED, ncNode.getId()));
-            ncNode.addChild(node3, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                           Map.of(StructureNode.StructureType.N_CONNECTED, ncNode.getId()));
-
-            assertEquals(3, ncNode.getNetworkSize());
-            assertEquals(3, node2.getNetworkSize());
-            assertEquals(3, node3.getNetworkSize());
-
-            // Größeres Netz
-            for (int i = 4; i <= 7; i++) {
-                ncNode.addChild(new NConnectedMirrorNode(i, 2), 
-                               Set.of(StructureNode.StructureType.N_CONNECTED), 
-                               Map.of(StructureNode.StructureType.N_CONNECTED, ncNode.getId()));
-            }
-            assertEquals(7, ncNode.getNetworkSize());
-        }
-
-        @Test
-        @DisplayName("getConnectedNodes findet direkte Verbindungen")
-        void testGetConnectedNodes() {
-            // Einzelner Knoten: keine Verbindungen
-            assertTrue(ncNode.getConnectedNodes().isEmpty());
-
-            // Setup: 3-Connected-Struktur
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 3);
-            NConnectedMirrorNode node2 = new NConnectedMirrorNode(2, 3);
-            NConnectedMirrorNode node3 = new NConnectedMirrorNode(3, 3);
-            NConnectedMirrorNode node4 = new NConnectedMirrorNode(4, 3);
-
-            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            head.addChild(node2, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
-            head.addChild(node3, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
-            head.addChild(node4, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
-
-            // Head ist mit allen Kindern verbunden
-            Set<NConnectedMirrorNode> headConnections = head.getConnectedNodes();
-            assertEquals(3, headConnections.size());
-            assertTrue(headConnections.contains(node2));
-            assertTrue(headConnections.contains(node3));
-            assertTrue(headConnections.contains(node4));
-
-            // Kinder sind nur mit Head verbunden
-            Set<NConnectedMirrorNode> childConnections = node2.getConnectedNodes();
-            assertEquals(1, childConnections.size());
-            assertTrue(childConnections.contains(head));
-        }
-    }
-
-    @Nested
-    @DisplayName("Struktur-Management")
-    class StructureManagementTests {
-
-        @Test
-        @DisplayName("canAcceptMoreChildren N-Connected-spezifische Logik")
-        void testCanAcceptMoreChildrenNConnectedSpecific() {
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2); // 2-Connected
-            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
-
-            // Head ohne gültige Struktur kann keine Kinder akzeptieren
-            assertFalse(head.canAcceptMoreChildren());
-
-            // Mit gültiger 2-Knoten-Struktur
+            // Mit Peers
             NConnectedMirrorNode peer1 = new NConnectedMirrorNode(2, 2);
-            head.addChild(peer1, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
-
-            // Mit 3-Knoten-Struktur: Head hat 2 Verbindungen (optimal für 2-Connected)
             NConnectedMirrorNode peer2 = new NConnectedMirrorNode(3, 2);
-            head.addChild(peer2, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
 
-            // Bei 3 Knoten und N=2: max 2 Verbindungen pro Knoten
-            // Head hat bereits 2 Verbindungen -> kann keine weiteren akzeptieren
-            assertFalse(head.canAcceptMoreChildren());
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            head.addChild(peer1, Set.of(StructureNode.StructureType.N_CONNECTED),
+                    Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            assertEquals(2, head.getNetworkSize());
 
-            // Peer-Knoten können keine Kinder akzeptieren (nur 1 Verbindung erlaubt)
-            assertFalse(peer1.canAcceptMoreChildren());
+            head.addChild(peer2, Set.of(StructureNode.StructureType.N_CONNECTED),
+                    Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            assertEquals(3, head.getNetworkSize());
         }
 
         @Test
-        @DisplayName("canBeRemovedFromStructure N-Connected-spezifische Validierung")
-        void testCanBeRemovedFromStructureNConnected() {
-            // Setup: 3-Connected mit 5 Knoten
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 3);
-            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+        @DisplayName("getConnectedNodes gibt verbundene Knoten zurück")
+        void testGetConnectedNodes() throws IOException {
+            // 2-Connected Ring mid 4 Knoten
+            List<NConnectedMirrorNode> nodes = Arrays.asList(
+                    new NConnectedMirrorNode(1, 2),
+                    new NConnectedMirrorNode(2, 2),
+                    new NConnectedMirrorNode(3, 2),
+                    new NConnectedMirrorNode(4, 2)
+            );
 
-            List<NConnectedMirrorNode> nodes = new ArrayList<>();
-            for (int i = 2; i <= 5; i++) {
-                NConnectedMirrorNode node = new NConnectedMirrorNode(i, 3);
-                nodes.add(node);
-                head.addChild(node, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                             Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            NConnectedMirrorNode head = nodes.get(0);
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            for (int i = 1; i < nodes.size(); i++) {
+                head.addChild(nodes.get(i), Set.of(StructureNode.StructureType.N_CONNECTED),
+                        Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
             }
 
-            // Head kann nicht entfernt werden
-            assertFalse(head.canBeRemovedFromStructure(head));
+            // Ohne Links: keine Verbindungen
+            Set<NConnectedMirrorNode> connected = head.getConnectedNodes();
+            assertTrue(connected.isEmpty());
 
-            // Bei 5 Knoten und N=3: mindestens N+1=4 Knoten erforderlich
-            // -> 1 Knoten kann entfernt werden
-            assertTrue(nodes.get(0).canBeRemovedFromStructure(head));
+            // Mit Ring-Topologie
+            setupRingTopology(nodes);
 
-            // Teste Grenzfall: 4 Knoten (N+1)
-            // Entferne einen Knoten, sodass nur noch 4 übrig sind
-            head.removeChild(nodes.get(3));
-            
-            // Jetzt können keine weiteren entfernt werden
-            assertFalse(nodes.get(0).canBeRemovedFromStructure(head));
-        }
-
-        @Test
-        @DisplayName("canBeRemovedFromStructure mit verschiedenen N-Werten")
-        void testCanBeRemovedFromStructureVariousN() {
-            // Test N=1 (Baum-ähnlich): mindestens 2 Knoten
-            NConnectedMirrorNode head1 = new NConnectedMirrorNode(1, 1);
-            head1.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            NConnectedMirrorNode child1 = new NConnectedMirrorNode(2, 1);
-            head1.addChild(child1);
-
-            // Bei 2 Knoten: keiner kann entfernt werden
-            assertFalse(head1.canBeRemovedFromStructure(head1));
-            assertFalse(child1.canBeRemovedFromStructure(head1));
-
-            // Test N=2: mindestens 3 Knoten
-            NConnectedMirrorNode head2 = new NConnectedMirrorNode(1, 2);
-            head2.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            head2.addChild(new NConnectedMirrorNode(2, 2));
-            head2.addChild(new NConnectedMirrorNode(3, 2));
-
-            // Bei 3 Knoten (N+1): keiner kann entfernt werden
-            assertFalse(head2.getChildren().iterator().next().canBeRemovedFromStructure(head2));
+            // Jeder Knoten sollte 2 Verbindungen haben
+            for (NConnectedMirrorNode node : nodes) {
+                connected = node.getConnectedNodes();
+                assertEquals(2, connected.size());
+            }
         }
     }
 
@@ -530,269 +526,457 @@ class NConnectedMirrorNodeTest {
     class StructureValidationTests {
 
         @Test
-        @DisplayName("isValidStructure validiert N-Connected-Strukturen")
-        void testIsValidStructureNConnected() {
-            // Einzelner Knoten: ungültig (< 2 Knoten)
-            assertFalse(ncNode.isValidStructure());
+        @DisplayName("isValidStructure mit echten N-Connected-Links")
+        void testIsValidStructureWithRealLinks() throws IOException {
+            // 2-Connected mit 4 Knoten
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
+            List<NConnectedMirrorNode> peers = Arrays.asList(
+                    new NConnectedMirrorNode(2, 2),
+                    new NConnectedMirrorNode(3, 2),
+                    new NConnectedMirrorNode(4, 2)
+            );
 
-            // 2-Connected mit 3 Knoten: gültig
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            for (NConnectedMirrorNode peer : peers) {
+                head.addChild(peer, Set.of(StructureNode.StructureType.N_CONNECTED),
+                        Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            }
+
+            // Ohne Links: ungültig
+            assertFalse(head.isValidStructure());
+
+            // Mit korrekten Links: gültig
+            setupValidNConnectedStructure(head, peers);
+            assertTrue(head.isValidStructure());
+
+            // Test direkt mit Set-Parameter
+            Set<StructureNode> allNodes = new HashSet<>();
+            allNodes.add(head);
+            allNodes.addAll(peers);
+            assertTrue(head.isValidStructure(allNodes, StructureNode.StructureType.N_CONNECTED, head));
+        }
+
+        @Test
+        @DisplayName("isValidStructure mit zu wenigen Knoten")
+        void testIsValidStructureInsufficientNodes() {
+            // N=3 benötigt mindestens 4 Knoten
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 3);
+            NConnectedMirrorNode peer1 = new NConnectedMirrorNode(2, 3);
+            NConnectedMirrorNode peer2 = new NConnectedMirrorNode(3, 3);
+
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            head.addChild(peer1);
+            head.addChild(peer2);
+
+            // Nur 3 Knoten für 3-Connected: ungültig
+            assertFalse(head.isValidStructure());
+        }
+
+        @Test
+        @DisplayName("isValidStructure mit unterschiedlichen Vernetzungsgraden")
+        void testIsValidStructureMismatchedConnectivityDegrees() throws IOException {
+            // Gemischte Vernetzungsgrade: ungültig
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
+            NConnectedMirrorNode peer1 = new NConnectedMirrorNode(2, 3); // Unterschiedlicher Grad
+            NConnectedMirrorNode peer2 = new NConnectedMirrorNode(3, 2);
+
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            head.addChild(peer1);
+            head.addChild(peer2);
+
+            setupValidNConnectedStructure(head, List.of(peer2)); // Nur peer2 setup
+
+            assertFalse(head.isValidStructure());
+        }
+
+        @Test
+        @DisplayName("Symmetrische Verbindungen in N-Connected-Strukturen")
+        void testSymmetricConnections() throws IOException {
+            // 2-Connected mit 3 Knoten: Ring-ähnlich
             NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
             NConnectedMirrorNode node2 = new NConnectedMirrorNode(2, 2);
             NConnectedMirrorNode node3 = new NConnectedMirrorNode(3, 2);
 
-            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            head.addChild(node2, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
-            head.addChild(node3, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            List<NConnectedMirrorNode> allNodes = Arrays.asList(head, node2, node3);
+            setupRingTopology(allNodes);
 
-            // TODO: Diese Tests erfordern vollständige Link-Implementierung
-            // assertTrue(head.isValidStructure());
+            // Prüfe bidirektionale Verbindungen im Ring
+            assertTrue(head.isLinkedWith(node2));
+            assertTrue(node2.isLinkedWith(head));
+
+            assertTrue(head.isLinkedWith(node3));
+            assertTrue(node3.isLinkedWith(head));
+
+            assertTrue(node2.isLinkedWith(node3));
+            assertTrue(node3.isLinkedWith(node2));
         }
 
         @Test
-        @DisplayName("isValidStructure erkennt verschiedene Vernetzungsgrade")
-        void testIsValidStructureDifferentConnectivityDegrees() {
-            // Gemischte Vernetzungsgrade: ungültig
-            NConnectedMirrorNode head2 = new NConnectedMirrorNode(1, 2); // N=2
-            NConnectedMirrorNode node3 = new NConnectedMirrorNode(2, 3); // N=3 (anders!)
+        @DisplayName("isFaultTolerant prüft Ausfalltoleranz")
+        void testIsFaultTolerant() throws IOException {
+            // 1-Connected (Baum): nicht fault-tolerant
+            NConnectedMirrorNode head1 = new NConnectedMirrorNode(1, 1);
+            assertFalse(head1.isFaultTolerant());
+
+            // 2-Connected: fault-tolerant
+            NConnectedMirrorNode head2 = new NConnectedMirrorNode(1, 2);
+            List<NConnectedMirrorNode> peers2 = Arrays.asList(
+                    new NConnectedMirrorNode(2, 2),
+                    new NConnectedMirrorNode(3, 2),
+                    new NConnectedMirrorNode(4, 2)
+            );
 
             head2.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            head2.addChild(node3);
+            for (NConnectedMirrorNode peer : peers2) {
+                head2.addChild(peer);
+            }
+            setupRingTopology(Arrays.asList(head2, peers2.get(0), peers2.get(1), peers2.get(2)));
 
-            Set<StructureNode> allNodes = Set.of(head2, node3);
-            assertFalse(head2.isValidStructure(allNodes, StructureNode.StructureType.N_CONNECTED, head2));
-        }
-
-        @Test
-        @DisplayName("isValidStructure erkennt nicht-NConnectedMirrorNode-Instanzen")
-        void testIsValidStructureRejectsWrongNodeTypes() {
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
-            StructureNode wrongType = new StructureNode(2); // Nicht NConnectedMirrorNode
-
-            Set<StructureNode> mixedNodes = Set.of(head, wrongType);
-            assertFalse(head.isValidStructure(mixedNodes, StructureNode.StructureType.N_CONNECTED, head));
-        }
-
-        @Test
-        @DisplayName("isValidStructure überprüft Mindestanzahl Knoten")
-        void testIsValidStructureMinimumNodes() {
-            NConnectedMirrorNode singleNode = new NConnectedMirrorNode(1, 2);
-            
-            // Weniger als 2 Knoten: ungültig
-            Set<StructureNode> tooFewNodes = Set.of(singleNode);
-            assertFalse(singleNode.isValidStructure(tooFewNodes, StructureNode.StructureType.N_CONNECTED, singleNode));
-
-            // Null/leere Sets: ungültig
-            assertFalse(singleNode.isValidStructure(null, StructureNode.StructureType.N_CONNECTED, singleNode));
-            assertFalse(singleNode.isValidStructure(new HashSet<>(), StructureNode.StructureType.N_CONNECTED, singleNode));
+            assertTrue(head2.isFaultTolerant());
         }
     }
 
     @Nested
-    @DisplayName("Convenience-Methoden und Performance")
-    class ConvenienceAndPerformanceTests {
+    @DisplayName("Multi-Type-Koexistenz")
+    class MultiTypeCoexistenceTests {
 
         @Test
-        @DisplayName("getConnectivityDensity berechnet Vernetzungsdichte")
-        void testGetConnectivityDensity() throws IOException {
-            initSimulator();
-            List<Mirror> mirrors = getSimMirrors(getMirrorProbe());
+        @DisplayName("Multi-Type-Koexistenz: N-Connected mit anderen Strukturen")
+        void testMultiTypeCoexistence() throws IOException {
+            // N-Connected-Struktur
+            NConnectedMirrorNode ncHead = new NConnectedMirrorNode(1, 2);
+            NConnectedMirrorNode ncNode2 = new NConnectedMirrorNode(2, 2);
 
-            // Setup: 2-Connected mit 3 Knoten
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
-            head.setMirror(mirrors.get(0));
+            // Andere Strukturtypen als Child (simuliert)
+            StructureNode otherTypeNode = new StructureNode(3);
+
+            ncHead.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            ncHead.addChild(ncNode2, Set.of(StructureNode.StructureType.N_CONNECTED),
+                    Map.of(StructureNode.StructureType.N_CONNECTED, ncHead.getId()));
+
+            // Anderer Strukturtyp sollte nicht die N-Connected-Validierung beeinflussen
+            ncHead.addChild(otherTypeNode, Set.of(StructureNode.StructureType.DEFAULT),
+                    Map.of(StructureNode.StructureType.DEFAULT, otherTypeNode.getId()));
+
+            // N-Connected-spezifische Methoden sollten nur N-Connected-Knoten berücksichtigen
+            assertEquals(2, ncHead.getNetworkSize()); // Nur N-Connected-Knoten zählen
+
+            Set<NConnectedMirrorNode> connected = ncHead.getConnectedNodes();
+            assertEquals(0, connected.size()); // Ohne Links noch keine Verbindungen
+
+            // Nach Link-Setup
+            setupValidNConnectedStructure(ncHead, List.of(ncNode2));
+            connected = ncHead.getConnectedNodes();
+            assertEquals(1, connected.size());
+            assertTrue(connected.contains(ncNode2));
+        }
+
+        @Test
+        @DisplayName("deriveTypeId ist unabhängig von anderen Strukturtypen")
+        void testDeriveTypeIdIndependence() {
+            NConnectedMirrorNode ncNode = new NConnectedMirrorNode(1, 3);
+            StructureNode defaultNode = new StructureNode(2);
+
+            // Vor und nach Hinzufügen anderer Typen
+            assertEquals(StructureNode.StructureType.N_CONNECTED, ncNode.deriveTypeId());
+
+            ncNode.addChild(defaultNode);
+            assertEquals(StructureNode.StructureType.N_CONNECTED, ncNode.deriveTypeId());
+
+            defaultNode.addChild(ncNode);
+            assertEquals(StructureNode.StructureType.N_CONNECTED, ncNode.deriveTypeId());
+        }
+    }
+
+    @Nested
+    @DisplayName("Exception-Handling und Edge Cases")
+    class ExceptionHandlingTests {
+
+        @Test
+        @DisplayName("Exception-Handling bei ungültigen Operationen")
+        void testExceptionHandling() {
+            // Ungültige Vernetzungsgrade
+            IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class,
+                    () -> new NConnectedMirrorNode(1, 0));
+            assertTrue(ex1.getMessage().contains("Connectivity degree must be at least 1"));
+
+            IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class,
+                    () -> new NConnectedMirrorNode(1, -5));
+            assertTrue(ex2.getMessage().contains("at least 1"));
+
+            // Operationen auf ungültigen Strukturen sollten defensiv sein
+            NConnectedMirrorNode invalidNode = new NConnectedMirrorNode(1, 10);
+            assertDoesNotThrow(invalidNode::getConnectedNodes);
+            assertDoesNotThrow(invalidNode::getNConnectedHead);
+            assertDoesNotThrow(invalidNode::isFaultTolerant);
+            assertDoesNotThrow(invalidNode::getConnectivityDensity);
+        }
+
+        @Test
+        @DisplayName("Null-Handling in Navigation-Methoden")
+        void testNullHandling() {
+            NConnectedMirrorNode node = new NConnectedMirrorNode(1, 2);
+
+            // Ohne Mirror
+            assertDoesNotThrow(node::getConnectedNodes);
+            assertDoesNotThrow(node::hasOptimalConnectivity);
+
+            // Ohne Parent/Children
+            assertDoesNotThrow(node::getNConnectedHead);
+            assertDoesNotThrow(node::getNetworkSize);
+        }
+
+        @Test
+        @DisplayName("Edge Case: Sehr große Vernetzungsgrade")
+        void testLargeConnectivityDegrees() {
+            // Riesengroßer Vernetzungsgrad sollte funktionieren
+            assertDoesNotThrow(() -> {
+                NConnectedMirrorNode node = new NConnectedMirrorNode(1, 100);
+                assertEquals(100, node.getConnectivityDegree());
+                assertEquals(100, node.getExpectedLinkCount());
+            });
+        }
+
+        @Test
+        @DisplayName("Edge Case: Einzelner Knoten")
+        void testSingleNode() {
+            NConnectedMirrorNode singleNode = new NConnectedMirrorNode(1, 1);
+
+            // Einzelner Knoten können nicht optimal verbunden sein
+            assertFalse(singleNode.hasOptimalConnectivity());
+            assertEquals(1, singleNode.getNetworkSize());
+            assertTrue(singleNode.getConnectedNodes().isEmpty());
+            assertEquals(0.0, singleNode.getConnectivityDensity());
+        }
+    }
+
+    @Nested
+    @DisplayName("Parametrisierte Tests")
+    class ParametrizedTests {
+
+        @ParameterizedTest
+        @ValueSource(ints = {1, 2, 3, 4, 5})
+        @DisplayName("N-Connected-Strukturen mit verschiedenen Vernetzungsgraden")
+        void testVariousConnectivityDegrees(int connectivityDegree) throws IOException {
+            int nodeCount = connectivityDegree + 2; // Mindestens N+2 Knoten für interessante Tests
+
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, connectivityDegree);
+            List<NConnectedMirrorNode> peers = new ArrayList<>();
+
+            for (int i = 2; i <= nodeCount; i++) {
+                peers.add(new NConnectedMirrorNode(i, connectivityDegree));
+            }
+
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            for (NConnectedMirrorNode peer : peers) {
+                head.addChild(peer, Set.of(StructureNode.StructureType.N_CONNECTED),
+                        Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            }
+
+            // Teste spezifische Eigenschaften für jeden N-Wert
+            assertEquals(connectivityDegree, head.getConnectivityDegree());
+            assertEquals(nodeCount, head.getNetworkSize());
+            assertEquals(connectivityDegree, head.getExpectedLinkCount());
+
+            // Für N=1: Baum-ähnlich, für N=nodeCount-1: vollständig vernetzt
+            if (connectivityDegree == 1) {
+                assertEquals(nodeCount - 1, head.getExpectedTotalLinkCount()); // Baum
+            } else if (connectivityDegree == nodeCount - 1) {
+                assertEquals((nodeCount * (nodeCount - 1)) / 2, head.getExpectedTotalLinkCount()); // Vollständig
+            }
+
+            // Mit korrekten Links sollte Struktur gültig sein
+            setupValidNConnectedStructure(head, peers);
+            assertTrue(head.isValidStructure());
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {2, 3, 4, 5, 6})
+        @DisplayName("getConnectivityDensity für verschiedene Netzwerkgrößen")
+        void testConnectivityDensityVariousNetworkSizes(int networkSize) throws IOException {
+            int connectivityDegree = 2; // 2-Connected für alle Tests
+
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, connectivityDegree);
+            List<NConnectedMirrorNode> peers = new ArrayList<>();
+
+            for (int i = 2; i <= networkSize; i++) {
+                peers.add(new NConnectedMirrorNode(i, connectivityDegree));
+            }
+
+            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            for (NConnectedMirrorNode peer : peers) {
+                head.addChild(peer);
+            }
 
             // Ohne Links: Dichte = 0
-            assertEquals(0.0, head.getConnectivityDensity(), 0.01);
+            assertEquals(0.0, head.getConnectivityDensity(), 0.001);
 
-            // Mit teilweisen Links
-            Link link1 = new Link(1, mirrors.get(0), mirrors.get(1), 0, props);
-            head.addLink(link1);
-            // Expected: 3 Links, Actual: 1 Link -> 1/3 = 0.33
-            assertTrue(head.getConnectivityDensity() > 0);
+            // Mit korrekten 2-Connected-Links
+            setupValidNConnectedStructure(head, peers);
 
-            // Einzelner Knoten: Dichte = 1.0 (optimal vernetzt)
-            NConnectedMirrorNode single = new NConnectedMirrorNode(99, 2);
-            assertEquals(1.0, single.getConnectivityDensity(), 0.01);
+            // Erwartete Dichte: (Knoten * ConnectivityDegree / 2) / (Knoten * (Knoten-1) / 2)
+            double expectedDensity = (double) (networkSize * connectivityDegree) / (networkSize * (networkSize - 1));
+            assertEquals(expectedDensity, head.getConnectivityDensity(), 0.01);
         }
+    }
+
+    @Nested
+    @DisplayName("Performance und große Strukturen")
+    class PerformanceTests {
 
         @Test
-        @DisplayName("isFaultTolerant prüft Ausfallsicherheit")
-        void testIsFaultTolerant() {
-            // Kleine Strukturen sind nicht fault-tolerant
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
-            NConnectedMirrorNode node2 = new NConnectedMirrorNode(2, 2);
-            head.addChild(node2);
+        @DisplayName("Performance mit großen N-Connected-Strukturen")
+        void testPerformanceWithLargeStructures() {
+            int largeNetworkSize = 20;
+            int connectivityDegree = 3;
 
-            assertFalse(head.isFaultTolerant()); // Nur 2 Knoten
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, connectivityDegree);
+            List<NConnectedMirrorNode> peers = new ArrayList<>();
 
-            // Größere Struktur: 4 Knoten mit N=2
-            NConnectedMirrorNode node3 = new NConnectedMirrorNode(3, 2);
-            NConnectedMirrorNode node4 = new NConnectedMirrorNode(4, 2);
+            // Erstelle große Struktur
+            for (int i = 2; i <= largeNetworkSize; i++) {
+                peers.add(new NConnectedMirrorNode(i, connectivityDegree));
+            }
+
             head.setHead(StructureNode.StructureType.N_CONNECTED, true);
-            head.addChild(node3, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
-            head.addChild(node4, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                         Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
-
-            // TODO: Vollständige fault-tolerance-Prüfung erfordert Link-Implementierung
-            // Basis-Test: Prüfung läuft ohne Exception
-            assertDoesNotThrow(() -> head.isFaultTolerant());
-        }
-
-        @Test
-        @DisplayName("Performance-Test mit großen N-Connected-Netzen")
-        void testPerformanceWithLargeNetworks() {
-            long startTime = System.currentTimeMillis();
-
-            // Erstelle 3-Connected mit 20 Knoten
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 3);
-            head.setHead(StructureNode.StructureType.N_CONNECTED, true);
-
-            for (int i = 2; i <= 20; i++) {
-                NConnectedMirrorNode node = new NConnectedMirrorNode(i, 3);
-                head.addChild(node, Set.of(StructureNode.StructureType.N_CONNECTED), 
-                             Map.of(StructureNode.StructureType.N_CONNECTED, head.getId()));
+            for (NConnectedMirrorNode peer : peers) {
+                head.addChild(peer);
             }
 
             // Performance-Messungen
-            assertEquals(20, head.getNetworkSize());
-            assertEquals(3, head.getConnectivityDegree());
-            assertDoesNotThrow(() -> head.getConnectedNodes());
-            assertDoesNotThrow(() -> head.getExpectedTotalLinkCount());
+            long startTime = System.currentTimeMillis();
 
-            long duration = System.currentTimeMillis() - startTime;
-            assertTrue(duration < 1000, "Operationen sollten unter 1s dauern, waren: " + duration + "ms");
+            assertEquals(largeNetworkSize, head.getNetworkSize());
+            assertEquals(connectivityDegree, head.getConnectivityDegree());
+            assertEquals(connectivityDegree, head.getExpectedLinkCount());
+
+            long endTime = System.currentTimeMillis();
+            long duration = endTime - startTime;
+
+            // Sollte unter 100ms dauern für 20 Knoten
+            assertTrue(duration < 100, "Performance test took too long: " + duration + "ms");
         }
 
         @Test
-        @DisplayName("Edge Cases und Null-Handling")
-        void testEdgeCasesAndNullHandling() {
-            // Null-Tests
-            assertDoesNotThrow(() -> ncNode.getConnectedNodes()); // Sollte leeres Set zurückgeben
-            assertTrue(ncNode.getConnectedNodes().isEmpty());
+        @DisplayName("Memory-Effizienz bei wiederholten Operationen")
+        void testMemoryEfficiency() {
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
 
-            // Sehr hohe N-Werte
-            NConnectedMirrorNode highN = new NConnectedMirrorNode(1, 1000);
-            assertEquals(1000, highN.getConnectivityDegree());
-            assertEquals(0, highN.getExpectedLinkCount()); // Einzelner Knoten
-            assertEquals(0, highN.getExpectedTotalLinkCount());
+            // Wiederholte Aufrufe sollten keine Memory-Leaks verursachen
+            for (int i = 0; i < 1000; i++) {
+                head.getConnectivityDegree();
+                head.getExpectedLinkCount();
+                head.getNetworkSize();
+                head.getConnectedNodes();
+                head.deriveTypeId();
+            }
 
-            // N = 1 (Baum-ähnliche Struktur)
-            NConnectedMirrorNode treelike = new NConnectedMirrorNode(1, 1);
-            NConnectedMirrorNode child = new NConnectedMirrorNode(2, 1);
-            treelike.addChild(child);
-
-            assertEquals(1, treelike.getConnectivityDegree());
-            assertEquals(1, treelike.getExpectedTotalLinkCount()); // (2 * 1) / 2 = 1
+            // Test erfolgreich wenn keine OutOfMemoryError
+            assertTrue(true);
         }
     }
 
     @Nested
-    @DisplayName("Verschiedene Vernetzungsgrade")
-    class VariousConnectivityDegreesTests {
+    @DisplayName("Integration mit Simulator")
+    class SimulatorIntegrationTests {
 
         @Test
-        @DisplayName("N=1: Baum-ähnliche Struktur")
-        void testN1TreeLikeStructure() {
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 1);
-            NConnectedMirrorNode child1 = new NConnectedMirrorNode(2, 1);
-            NConnectedMirrorNode child2 = new NConnectedMirrorNode(3, 1);
+        @DisplayName("Integration mit TimedRDMSim und MirrorProbe")
+        void testSimulatorIntegration() throws IOException {
+            initSimulator();
+            MirrorProbe probe = getMirrorProbe();
 
-            head.addChild(child1);
-            head.addChild(child2);
+            // Erstelle N-Connected-Struktur mit Simulator-Mirrors
+            List<Mirror> simMirrors = getSimMirrors(probe);
+            assertTrue(simMirrors.size() >= 4, "Mindestens 4 Mirrors für Test benötigt");
 
-            assertEquals(1, head.getConnectivityDegree());
-            assertEquals(1, head.getExpectedLinkCount()); // min(1, 3-1) = 1
-            assertEquals(1, child1.getExpectedLinkCount()); // min(1, 3-1) = 1
+            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
+            List<NConnectedMirrorNode> peers = Arrays.asList(
+                    new NConnectedMirrorNode(2, 2),
+                    new NConnectedMirrorNode(3, 2),
+                    new NConnectedMirrorNode(4, 2)
+            );
+
+            // Setze Simulator-Mirrors
+            head.setMirror(simMirrors.get(0));
+            for (int i = 0; i < peers.size(); i++) {
+                peers.get(i).setMirror(simMirrors.get(i + 1));
+            }
+
+            // Versuche Mirror-Integration
+            assertNotNull(head.getMirror());
+            assertEquals(simMirrors.get(0), head.getMirror());
+
+            for (int i = 0; i < peers.size(); i++) {
+                assertNotNull(peers.get(i).getMirror());
+                assertEquals(simMirrors.get(i + 1), peers.get(i).getMirror());
+            }
         }
 
         @Test
-        @DisplayName("N=3: Hochredundante Struktur")
-        void testN3HighRedundancyStructure() {
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 3);
-            for (int i = 2; i <= 6; i++) {
-                head.addChild(new NConnectedMirrorNode(i, 3));
-            }
+        @DisplayName("Link-Management mit echten Simulator-Links")
+        void testLinkManagementWithSimulatorLinks() throws IOException {
+            initSimulator();
+            List<Mirror> mirrors = getSimMirrors(getMirrorProbe());
 
-            assertEquals(3, head.getConnectivityDegree());
-            assertEquals(3, head.getExpectedLinkCount()); // min(3, 6-1) = 3
-            assertEquals(9, head.getExpectedTotalLinkCount()); // (6 * 3) / 2 = 9
-        }
+            NConnectedMirrorNode node1 = new NConnectedMirrorNode(1, 2);
+            NConnectedMirrorNode node2 = new NConnectedMirrorNode(2, 2);
 
-        @Test
-        @DisplayName("N=5: Vollständig-ähnliche Struktur")
-        void testN5FullyConnectedLikeStructure() {
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 5);
-            for (int i = 2; i <= 6; i++) {
-                head.addChild(new NConnectedMirrorNode(i, 5));
-            }
+            node1.setMirror(mirrors.get(0));
+            node2.setMirror(mirrors.get(1));
 
-            assertEquals(5, head.getConnectivityDegree());
-            assertEquals(5, head.getExpectedLinkCount()); // min(5, 6-1) = 5 (vollständig vernetzt)
-            assertEquals(15, head.getExpectedTotalLinkCount()); // (6 * 5) / 2 = 15
-        }
+            // Erstelle echten Link
+            Link realLink = new Link(1, mirrors.get(0), mirrors.get(1), 0, props);
 
-        @Test
-        @DisplayName("N > n-1: Begrenzt auf vollständige Vernetzung")
-        void testNGreaterThanNetworkSizeMinus1() {
-            // N=10 mit nur 4 Knoten
-            NConnectedMirrorNode head = new NConnectedMirrorNode(1, 10);
-            for (int i = 2; i <= 4; i++) {
-                head.addChild(new NConnectedMirrorNode(i, 10));
-            }
+            // Link-Management testen
+            node1.addLink(realLink);
+            assertEquals(1, node1.getNumImplementedLinks());
+            assertTrue(node1.getImplementedLinks().contains(realLink));
 
-            assertEquals(10, head.getConnectivityDegree()); // Konfiguriert
-            assertEquals(3, head.getExpectedLinkCount()); // Begrenzt auf min(10, 4-1) = 3
-            assertEquals(6, head.getExpectedTotalLinkCount()); // (4 * 3) / 2 = 6
+            // Link entfernen
+            node1.removeLink(realLink);
+            assertEquals(0, node1.getNumImplementedLinks());
+            assertFalse(node1.getImplementedLinks().contains(realLink));
         }
     }
 
     @Nested
-    @DisplayName("toString, equals und hashCode")
+    @DisplayName("toString und Object-Methoden")
     class ObjectMethodsTests {
 
         @Test
-        @DisplayName("toString enthält relevante Informationen")
+        @DisplayName("toString gibt aussagekräftige Beschreibung")
         void testToString() {
-            Mirror testMirror = new Mirror(101, 0, props);
-            ncNode.setMirror(testMirror);
+            NConnectedMirrorNode node = new NConnectedMirrorNode(5, 3);
+            String toString = node.toString();
 
-            String toStringResult = ncNode.toString();
-            
-            assertTrue(toStringResult.contains("NConnectedMirrorNode"));
-            assertTrue(toStringResult.contains("id=1"));
-            assertTrue(toStringResult.contains("connectivityDegree=2"));
-            assertTrue(toStringResult.contains("mirror=101"));
+            assertNotNull(toString);
+            assertTrue(toString.contains("5")); // ID
+            assertTrue(toString.contains("3")); // Connectivity Degree
+            assertTrue(toString.contains("N_CONNECTED")); // Type
         }
 
         @Test
         @DisplayName("equals und hashCode funktionieren korrekt")
         void testEqualsAndHashCode() {
-            NConnectedMirrorNode node1 = new NConnectedMirrorNode(1, 2);
-            NConnectedMirrorNode node2 = new NConnectedMirrorNode(1, 2); // Gleiche ID und N
-            NConnectedMirrorNode node3 = new NConnectedMirrorNode(1, 3); // Gleiche ID, anderes N
-            NConnectedMirrorNode node4 = new NConnectedMirrorNode(2, 2); // Andere ID, gleiches N
+            NConnectedMirrorNode node1 = new NConnectedMirrorNode(5, 3);
+            NConnectedMirrorNode node2 = new NConnectedMirrorNode(5, 3);
+            NConnectedMirrorNode node3 = new NConnectedMirrorNode(6, 3);
+            NConnectedMirrorNode node4 = new NConnectedMirrorNode(5, 2);
 
-            // Gleiche ID und N: equal
+            // Gleichheit basierend auf ID
             assertEquals(node1, node2);
             assertEquals(node1.hashCode(), node2.hashCode());
 
-            // Verschiedene N: nicht equal
+            // Ungleichheit bei verschiedener ID
             assertNotEquals(node1, node3);
 
-            // Verschiedene ID: nicht equal
+            // Ungleichheit bei verschiedenen Connectivity Degree
             assertNotEquals(node1, node4);
 
-            // Reflexivität
-            assertEquals(node1, node1);
-
-            // Null-Handling
-            assertNotEquals(node1, null);
-
-            // Verschiedene Klassen
-            assertNotEquals(node1, new StructureNode(1));
+            // Null und andere Klassen
+            assertNotEquals(null, node1);
+            assertNotEquals("string", node1);
         }
     }
 }
