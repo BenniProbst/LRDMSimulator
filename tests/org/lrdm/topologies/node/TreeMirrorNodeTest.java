@@ -9,6 +9,7 @@ import org.lrdm.Mirror;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
+import org.lrdm.topologies.node.StructureNode.StructureType;
 
 import java.io.IOException;
 import java.util.*;
@@ -333,6 +334,138 @@ class TreeMirrorNodeTest {
             Link edgeLink = new Link(100, rootMirror, externalMirror, 0, props);
             rootMirror.addLink(edgeLink);
             externalMirror.addLink(edgeLink);
+        }
+
+        @Test
+        @DisplayName("Automatische nodeType-Integration mit setMirror - alle StructureTypes")
+        void testAutomaticNodeTypeIntegrationAllStructureTypes() {
+            // Test Properties für Mirror-Erstellung
+            Properties testProps = props != null ? props : getProps();
+
+            // ===== FULLY_CONNECTED =====
+            FullyConnectedMirrorNode fcNode = new FullyConnectedMirrorNode(100);
+            assertTrue(fcNode.hasNodeType(StructureType.FULLY_CONNECTED));
+            assertFalse(fcNode.hasNodeType(StructureType.MIRROR));
+
+            fcNode.setMirror(new Mirror(200, 0, testProps));
+            assertTrue(fcNode.hasNodeType(StructureType.FULLY_CONNECTED));
+            assertTrue(fcNode.hasNodeType(StructureType.MIRROR));
+
+            // ===== TREE =====
+            TreeMirrorNode treeNode = new TreeMirrorNode(101);
+            assertTrue(treeNode.hasNodeType(StructureType.TREE));
+            assertFalse(treeNode.hasNodeType(StructureType.MIRROR));
+
+            treeNode.setMirror(new Mirror(201, 0, testProps));
+            assertTrue(treeNode.hasNodeType(StructureType.TREE));
+            assertTrue(treeNode.hasNodeType(StructureType.MIRROR));
+
+            // ===== RING =====
+            RingMirrorNode ringNode = new RingMirrorNode(102);
+            assertTrue(ringNode.hasNodeType(StructureType.RING));
+            assertFalse(ringNode.hasNodeType(StructureType.MIRROR));
+
+            ringNode.setMirror(new Mirror(202, 0, testProps));
+            assertTrue(ringNode.hasNodeType(StructureType.RING));
+            assertTrue(ringNode.hasNodeType(StructureType.MIRROR));
+
+            // ===== LINE =====
+            LineMirrorNode lineNode = new LineMirrorNode(103);
+            assertTrue(lineNode.hasNodeType(StructureType.LINE));
+            assertFalse(lineNode.hasNodeType(StructureType.MIRROR));
+
+            lineNode.setMirror(new Mirror(203, 0, testProps));
+            assertTrue(lineNode.hasNodeType(StructureType.LINE));
+            assertTrue(lineNode.hasNodeType(StructureType.MIRROR));
+
+            // ===== STAR =====
+            StarMirrorNode starNode = new StarMirrorNode(104);
+            assertTrue(starNode.hasNodeType(StructureType.STAR));
+            assertFalse(starNode.hasNodeType(StructureType.MIRROR));
+
+            starNode.setMirror(new Mirror(204, 0, testProps));
+            assertTrue(starNode.hasNodeType(StructureType.STAR));
+            assertTrue(starNode.hasNodeType(StructureType.MIRROR));
+
+            // ===== BASIS MIRROR NODE =====
+            MirrorNode baseMirrorNode = new MirrorNode(105);
+            assertTrue(baseMirrorNode.hasNodeType(StructureType.MIRROR));
+
+            baseMirrorNode.setMirror(new Mirror(205, 0, testProps));
+            assertTrue(baseMirrorNode.hasNodeType(StructureType.MIRROR));
+            // Sollte keine zusätzlichen Typen haben
+            assertEquals(1, baseMirrorNode.getNodeTypes().size());
+        }
+
+        @Test
+        @DisplayName("deriveTypeId Fallback-Logik funktioniert korrekt")
+        void testDeriveTypeIdFallbackLogic() {
+            Properties testProps = props != null ? props : getProps();
+
+            // Versuche verschiedene MirrorNode-Typen
+            FullyConnectedMirrorNode fcNode = new FullyConnectedMirrorNode(110);
+            TreeMirrorNode treeNode = new TreeMirrorNode(111);
+            RingMirrorNode ringNode = new RingMirrorNode(112);
+            LineMirrorNode lineNode = new LineMirrorNode(113);
+            StarMirrorNode starNode = new StarMirrorNode(114);
+
+            // Entferne alle Typen außer dem erwarteten (um Fallback zu testen)
+            fcNode.removeNodeType(StructureType.FULLY_CONNECTED);
+            treeNode.removeNodeType(StructureType.TREE);
+            ringNode.removeNodeType(StructureType.RING);
+            lineNode.removeNodeType(StructureType.LINE);
+            starNode.removeNodeType(StructureType.STAR);
+
+            // Nach setMirror sollten die korrekten Typen durch Fallback gesetzt werden
+            fcNode.setMirror(new Mirror(210, 0, testProps));
+            treeNode.setMirror(new Mirror(211, 0, testProps));
+            ringNode.setMirror(new Mirror(212, 0, testProps));
+            lineNode.setMirror(new Mirror(213, 0, testProps));
+            starNode.setMirror(new Mirror(214, 0, testProps));
+
+            // Prüfe, dass deriveTypeId()-Fallback funktioniert
+            assertTrue(fcNode.hasNodeType(StructureType.FULLY_CONNECTED));
+            assertTrue(treeNode.hasNodeType(StructureType.TREE));
+            assertTrue(ringNode.hasNodeType(StructureType.RING));
+            assertTrue(lineNode.hasNodeType(StructureType.LINE));
+            assertTrue(starNode.hasNodeType(StructureType.STAR));
+
+            // Alle sollten auch MIRROR-Typ haben
+            assertTrue(fcNode.hasNodeType(StructureType.MIRROR));
+            assertTrue(treeNode.hasNodeType(StructureType.MIRROR));
+            assertTrue(ringNode.hasNodeType(StructureType.MIRROR));
+            assertTrue(lineNode.hasNodeType(StructureType.MIRROR));
+            assertTrue(starNode.hasNodeType(StructureType.MIRROR));
+        }
+
+        @Test
+        @DisplayName("Keine doppelten nodeTypes durch mehrfache setMirror-Aufrufe")
+        void testNoDuplicateNodeTypesOnMultipleSetMirror() {
+            Properties testProps = props != null ? props : getProps();
+
+            FullyConnectedMirrorNode fcNode = new FullyConnectedMirrorNode(120);
+
+            // Erster setMirror-Aufruf
+            fcNode.setMirror(new Mirror(220, 0, testProps));
+            int initialTypeCount = fcNode.getNodeTypes().size();
+            assertTrue(fcNode.hasNodeType(StructureType.FULLY_CONNECTED));
+            assertTrue(fcNode.hasNodeType(StructureType.MIRROR));
+
+            // Zweiter setMirror-Aufruf mit anderem Mirror
+            fcNode.setMirror(new Mirror(221, 0, testProps));
+
+            // Sollte keine Typen hinzufügen
+            assertEquals(initialTypeCount, fcNode.getNodeTypes().size());
+            assertTrue(fcNode.hasNodeType(StructureType.FULLY_CONNECTED));
+            assertTrue(fcNode.hasNodeType(StructureType.MIRROR));
+
+            // Dritter setMirror-Aufruf mit null
+            fcNode.setMirror(null);
+
+            // nodeTypes sollten unverändert bleiben
+            assertEquals(initialTypeCount, fcNode.getNodeTypes().size());
+            assertTrue(fcNode.hasNodeType(StructureType.FULLY_CONNECTED));
+            assertTrue(fcNode.hasNodeType(StructureType.MIRROR));
         }
     }
 

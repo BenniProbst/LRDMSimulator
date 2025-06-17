@@ -158,6 +158,65 @@ public class StructureNode {
         return StructureType.DEFAULT;
     }
 
+    // ===== NODE TYPES MANAGEMENT =====
+
+    /**
+     * Gibt die Set von Strukturtypen zurück, die dieser Knoten repräsentiert.
+     * Ermöglicht es, zu prüfen, welche Strukturtypen ein Knoten unterstützt.
+     *
+     * @return Unveränderliche Kopie der Knotentypen
+     */
+    public Set<StructureType> getNodeTypes() {
+        return new HashSet<>(nodeTypes);
+    }
+
+    /**
+     * Setzt die Set von Strukturtypen für diesen Knoten.
+     * Überschreibt die aktuellen Knotentypen vollständig.
+     *
+     * @param nodeTypes Die neuen Knotentypen (darf nicht null sein)
+     */
+    public void setNodeTypes(Set<StructureType> nodeTypes) {
+        if (nodeTypes == null) {
+            throw new IllegalArgumentException("NodeTypes dürfen nicht null sein");
+        }
+        this.nodeTypes.clear();
+        this.nodeTypes.addAll(nodeTypes);
+    }
+
+    /**
+     * Fügt einen Strukturtyp zu diesem Knoten hinzu.
+     * Ergänzt die bereits vorhandenen Knotentypen.
+     *
+     * @param nodeType Der hinzuzufügende Strukturtyp (darf nicht null sein)
+     */
+    public void addNodeType(StructureType nodeType) {
+        if (nodeType == null) {
+            throw new IllegalArgumentException("NodeType darf nicht null sein");
+        }
+        this.nodeTypes.add(nodeType);
+    }
+
+    /**
+     * Entfernt einen Strukturtyp von diesem Knoten.
+     * Behält andere vorhandene Knotentypen bei.
+     *
+     * @param nodeType Der zu entfernende Strukturtyp
+     */
+    public void removeNodeType(StructureType nodeType) {
+        this.nodeTypes.remove(nodeType);
+    }
+
+    /**
+     * Prüft, ob dieser Knoten einen bestimmten Strukturtyp unterstützt.
+     *
+     * @param nodeType Der zu prüfende Strukturtyp
+     * @return true, wenn der Knoten diesen Typ unterstützt
+     */
+    public boolean hasNodeType(StructureType nodeType) {
+        return nodeTypes.contains(nodeType);
+    }
+
     // ===== MULTI-TYPE TRAVERSIERUNG =====
 
     /**

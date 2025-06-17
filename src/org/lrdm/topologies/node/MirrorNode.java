@@ -55,12 +55,61 @@ public class MirrorNode extends StructureNode {
 
     /**
      * Setzt den Mirror für diesen Knoten.
-     * Sollte nur über Builder (TreeBuilder/RingBuilder) gesetzt werden, nicht direkt.
+     * Automatische Integration mit nodeTypes basierend auf der aktuellen MirrorNode-Instanz.
+     * Sollte nur über Builder (TreeBuilder/RingBuilder/etc.) gesetzt werden, nicht direkt.
+     *
+     * Unterstützt alle verfügbaren StructureTypes:
+     * - FullyConnectedMirrorNode -> FULLY_CONNECTED
+     * - TreeMirrorNode -> TREE
+     * - RingMirrorNode -> RING
+     * - LineMirrorNode -> LINE
+     * - StarMirrorNode -> STAR
+     * - MirrorNode (Basis) -> MIRROR
      *
      * @param mirror Der zu setzende Mirror
      */
     public void setMirror(Mirror mirror) {
         this.mirror = mirror;
+
+        // Automatische nodeType-Integration basierend auf der aktuellen Instanz
+        if (mirror != null) {
+            // ===== SPEZIALISIERTE MIRRORNODE-TYPEN =====
+
+            // FullyConnectedMirrorNode - vollständig vernetzte Strukturen
+            if (this instanceof FullyConnectedMirrorNode && !hasNodeType(StructureType.FULLY_CONNECTED)) {
+                addNodeType(StructureType.FULLY_CONNECTED);
+            }
+            // TreeMirrorNode - Baum-Strukturen
+            else if (this instanceof TreeMirrorNode && !hasNodeType(StructureType.TREE)) {
+                addNodeType(StructureType.TREE);
+            }
+            // RingMirrorNode - Ring-Strukturen
+            else if (this instanceof RingMirrorNode && !hasNodeType(StructureType.RING)) {
+                addNodeType(StructureType.RING);
+            }
+            // LineMirrorNode - Linien-Strukturen
+            else if (this instanceof LineMirrorNode && !hasNodeType(StructureType.LINE)) {
+                addNodeType(StructureType.LINE);
+            }
+            // StarMirrorNode - Stern-Strukturen
+            else if (this instanceof StarMirrorNode && !hasNodeType(StructureType.STAR)) {
+                addNodeType(StructureType.STAR);
+            }
+
+            // ===== BASIS-MIRRORNODE-TYP =====
+            // MIRROR-Typ sollte immer gesetzt sein für alle MirrorNode-Instanzen
+            if (!hasNodeType(StructureType.MIRROR)) {
+                addNodeType(StructureType.MIRROR);
+            }
+
+            // ===== ZUSÄTZLICHE SICHERHEITSLOGIK =====
+            // Falls neue MirrorNode-Subklassen hinzugefügt werden, ohne dass deriveTypeId() korrekt überschrieben wurde,
+            // verwende deriveTypeId() als Fallback
+            StructureType derivedType = deriveTypeId();
+            if (derivedType != null && derivedType != StructureType.DEFAULT && !hasNodeType(derivedType)) {
+                addNodeType(derivedType);
+            }
+        }
     }
 
     /**
