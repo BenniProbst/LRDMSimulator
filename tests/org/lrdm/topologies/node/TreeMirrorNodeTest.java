@@ -1191,4 +1191,569 @@ class TreeMirrorNodeTest {
             return root;
         }
     }
+
+    @Nested
+    @DisplayName("BalancedTreeMirrorNode Tests")
+    class BalancedTreeMirrorNodeTests {
+
+        @Test
+        @DisplayName("BalancedTreeMirrorNode Konstruktoren")
+        void testBalancedTreeConstructors() {
+            // Standard Konstruktor
+            BalancedTreeMirrorNode node1 = new BalancedTreeMirrorNode(1);
+            assertEquals(1, node1.getId());
+            assertEquals(2, node1.getTargetLinksPerNode());
+            assertEquals(StructureNode.StructureType.BALANCED_TREE, node1.deriveTypeId());
+
+            // Konstruktor mit targetLinksPerNode
+            BalancedTreeMirrorNode node2 = new BalancedTreeMirrorNode(2, 3);
+            assertEquals(3, node2.getTargetLinksPerNode());
+
+            // Konstruktor mit Mirror
+            Mirror mirror = new Mirror(101, 0, props);
+            BalancedTreeMirrorNode node3 = new BalancedTreeMirrorNode(3, mirror, 4);
+            assertEquals(mirror, node3.getMirror());
+            assertEquals(4, node3.getTargetLinksPerNode());
+        }
+
+        @Test
+        @DisplayName("calculateTreeBalance berechnet Balance korrekt")
+        void testCalculateTreeBalance() {
+            BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(1, 2);
+            root.setHead(true);
+
+            // Einzelner Knoten hat Balance 0
+            assertEquals(0.0, root.calculateTreeBalance(), 0.01);
+
+            // Perfekt balancierter Baum
+            BalancedTreeMirrorNode child1 = new BalancedTreeMirrorNode(2, 2);
+            BalancedTreeMirrorNode child2 = new BalancedTreeMirrorNode(3, 2);
+            root.addChild(child1);
+            root.addChild(child2);
+
+            // Sollte niedrige Balance haben (beide Kinder auf gleicher Tiefe)
+            double balance = root.calculateTreeBalance();
+            assertTrue(balance >= 0.0, "Balance sollte nicht negativ sein");
+            assertTrue(balance < 1.0, "Perfekt balancierter Baum sollte niedrige Balance haben");
+
+            // Unbalancierter Baum
+            BalancedTreeMirrorNode grandchild = new BalancedTreeMirrorNode(4, 2);
+            child1.addChild(grandchild);
+
+            double unbalancedBalance = root.calculateTreeBalance();
+            assertTrue(unbalancedBalance > balance, "Unbalancierter Baum sollte höhere Balance haben");
+        }
+
+        @Test
+        @DisplayName("isBalanced prüft Balance-Kriterien")
+        void testIsBalanced() {
+            BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(1, 2);
+            root.setHead(true);
+
+            // Einzelner Knoten ist immer balanciert
+            assertTrue(root.isBalanced(1.0));
+
+            // Füge symmetrische Struktur hinzu
+            BalancedTreeMirrorNode child1 = new BalancedTreeMirrorNode(2, 2);
+            BalancedTreeMirrorNode child2 = new BalancedTreeMirrorNode(3, 2);
+            root.addChild(child1);
+            root.addChild(child2);
+
+            assertTrue(root.isBalanced(1.0), "Symmetrischer Baum sollte balanciert sein");
+
+            // Mache unbalanciert
+            BalancedTreeMirrorNode grandchild1 = new BalancedTreeMirrorNode(4, 2);
+            BalancedTreeMirrorNode grandchild2 = new BalancedTreeMirrorNode(5, 2);
+            BalancedTreeMirrorNode grandchild3 = new BalancedTreeMirrorNode(6, 2);
+            child1.addChild(grandchild1);
+            child1.addChild(grandchild2);
+            child1.addChild(grandchild3);
+
+            // Sehr strenger Schwellwert sollte fehlschlagen
+            assertFalse(root.isBalanced(0.1), "Unbalancierter Baum sollte strenge Kriterien nicht erfüllen");
+            // Lockerer Schwellwert sollte bestehen
+            assertTrue(root.isBalanced(5.0), "Unbalancierter Baum sollte lockere Kriterien erfüllen");
+        }
+
+        @Test
+        @DisplayName("findBalancedInsertionCandidates findet optimale Einfügepunkte")
+        void testFindBalancedInsertionCandidates() {
+            BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(1, 2);
+            root.setHead(true);
+
+            // Root ohne Kinder ist einziger Kandidat
+            List<BalancedTreeMirrorNode> candidates = root.findBalancedInsertionCandidates();
+            assertEquals(1, candidates.size());
+            assertEquals(root, candidates.get(0));
+
+            // Füge ein Kind hinzu
+            BalancedTreeMirrorNode child1 = new BalancedTreeMirrorNode(2, 2);
+            root.addChild(child1);
+
+            candidates = root.findBalancedInsertionCandidates();
+            assertEquals(2, candidates.size());
+            // Root sollte zuerst kommen (niedrigere Tiefe)
+            assertEquals(root, candidates.get(0));
+            assertEquals(child1, candidates.get(1));
+
+            // Füge zweites Kind hinzu - root sollte voll sein
+            BalancedTreeMirrorNode child2 = new BalancedTreeMirrorNode(3, 2);
+            root.addChild(child2);
+
+            candidates = root.findBalancedInsertionCandidates();
+            assertEquals(2, candidates.size());
+            assertTrue(candidates.contains(child1));
+            assertTrue(candidates.contains(child2));
+            assertFalse(candidates.contains(root));
+        }
+
+        @Test
+        @DisplayName("calculateOptimalChildren berechnet optimale Kinderanzahl")
+        void testCalculateOptimalChildren() {
+            BalancedTreeMirrorNode node = new BalancedTreeMirrorNode(1, 3);
+
+            // Keine verbleibenden Knoten
+            assertEquals(0, node.calculateOptimalChildren(0, 5));
+
+            // Weniger Knoten als targetLinks
+            assertEquals(2, node.calculateOptimalChildren(2, 1));
+
+            // Mehr Knoten als targetLinks
+            assertEquals(3, node.calculateOptimalChildren(10, 1));
+
+            // Verteilung auf mehrere Parents
+            assertEquals(2, node.calculateOptimalChildren(10, 5));
+        }
+
+        @Test
+        @DisplayName("validateBalancedStructure validiert Struktur-Eigenschaften")
+        void testValidateBalancedStructure() {
+            BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(1, 2);
+            root.setHead(true);
+
+            // Einzelner Knoten ist gültig
+            assertTrue(root.validateBalancedStructure());
+
+            // Füge Kinder innerhalb der Grenzen hinzu
+            BalancedTreeMirrorNode child1 = new BalancedTreeMirrorNode(2, 2);
+            BalancedTreeMirrorNode child2 = new BalancedTreeMirrorNode(3, 2);
+            root.addChild(child1);
+            root.addChild(child2);
+
+            assertTrue(root.validateBalancedStructure());
+
+            // Überschreite targetLinksPerNode durch direktes Hinzufügen
+            BalancedTreeMirrorNode child3 = new BalancedTreeMirrorNode(4, 2);
+            root.addChild(child3);
+
+            assertFalse(root.validateBalancedStructure(),
+                    "Struktur mit zu vielen Kindern sollte Validierung fehlschlagen");
+        }
+
+        @Test
+        @DisplayName("getNodesByDepth führt Breadth-First-Traversierung durch")
+        void testGetNodesByDepth() {
+            BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(1, 2);
+            root.setHead(true);
+
+            BalancedTreeMirrorNode child1 = new BalancedTreeMirrorNode(2, 2);
+            BalancedTreeMirrorNode child2 = new BalancedTreeMirrorNode(3, 2);
+            BalancedTreeMirrorNode grandchild1 = new BalancedTreeMirrorNode(4, 2);
+
+            root.addChild(child1);
+            root.addChild(child2);
+            child1.addChild(grandchild1);
+
+            Map<Integer, List<BalancedTreeMirrorNode>> nodesByDepth = root.getNodesByDepth();
+
+            assertEquals(3, nodesByDepth.size());
+            assertEquals(1, nodesByDepth.get(0).size());
+            assertEquals(root, nodesByDepth.get(0).get(0));
+            assertEquals(2, nodesByDepth.get(1).size());
+            assertTrue(nodesByDepth.get(1).contains(child1));
+            assertTrue(nodesByDepth.get(1).contains(child2));
+            assertEquals(1, nodesByDepth.get(2).size());
+            assertEquals(grandchild1, nodesByDepth.get(2).get(0));
+        }
+
+        @Test
+        @DisplayName("getAverageChildrenPerDepth berechnet Durchschnitte korrekt")
+        void testGetAverageChildrenPerDepth() {
+            BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(1, 3);
+            root.setHead(true);
+
+            BalancedTreeMirrorNode child1 = new BalancedTreeMirrorNode(2, 3);
+            BalancedTreeMirrorNode child2 = new BalancedTreeMirrorNode(3, 3);
+            root.addChild(child1);
+            root.addChild(child2);
+
+            BalancedTreeMirrorNode grandchild1 = new BalancedTreeMirrorNode(4, 3);
+            child1.addChild(grandchild1);
+
+            Map<Integer, Double> avgByDepth = root.getAverageChildrenPerDepth();
+
+            assertEquals(3, avgByDepth.size());
+            assertEquals(2.0, avgByDepth.get(0), 0.01); // Root hat 2 Kinder
+            assertEquals(0.5, avgByDepth.get(1), 0.01); // Durchschnitt: (1+0)/2 = 0.5
+            assertEquals(0.0, avgByDepth.get(2), 0.01); // Grandchild hat keine Kinder
+        }
+
+        @Test
+        @DisplayName("getEffectiveMaxDepth gibt unbegrenzte Tiefe zurück")
+        void testGetEffectiveMaxDepth() {
+            BalancedTreeMirrorNode node = new BalancedTreeMirrorNode(1, 2);
+            assertEquals(Integer.MAX_VALUE, node.getEffectiveMaxDepth());
+        }
+    }
+
+    @Nested
+    @DisplayName("DepthLimitedTreeMirrorNode Tests")
+    class DepthLimitedTreeMirrorNodeTests {
+
+        @Test
+        @DisplayName("DepthLimitedTreeMirrorNode Konstruktoren")
+        void testDepthLimitedTreeConstructors() {
+            // Standard Konstruktor
+            DepthLimitedTreeMirrorNode node1 = new DepthLimitedTreeMirrorNode(1, 3);
+            assertEquals(1, node1.getId());
+            assertEquals(3, node1.getMaxDepth());
+            assertEquals(StructureNode.StructureType.DEPTH_LIMIT_TREE, node1.deriveTypeId());
+
+            // Konstruktor mit Mirror
+            Mirror mirror = new Mirror(101, 0, props);
+            DepthLimitedTreeMirrorNode node2 = new DepthLimitedTreeMirrorNode(2, mirror, 4);
+            assertEquals(mirror, node2.getMirror());
+            assertEquals(4, node2.getMaxDepth());
+
+            // Minimale Tiefe sollte 1 sein
+            DepthLimitedTreeMirrorNode node3 = new DepthLimitedTreeMirrorNode(3, 0);
+            assertEquals(1, node3.getMaxDepth());
+        }
+
+        @Test
+        @DisplayName("isWithinDepthLimit prüft Tiefenbeschränkung")
+        void testIsWithinDepthLimit() {
+            DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(1, 3);
+            root.setHead(true);
+
+            // Root ist immer innerhalb der Beschränkung
+            assertTrue(root.isWithinDepthLimit());
+
+            DepthLimitedTreeMirrorNode child = new DepthLimitedTreeMirrorNode(2, 3);
+            DepthLimitedTreeMirrorNode grandchild = new DepthLimitedTreeMirrorNode(3, 3);
+
+            root.addChild(child);
+            child.addChild(grandchild);
+
+            assertTrue(child.isWithinDepthLimit());
+            assertTrue(grandchild.isWithinDepthLimit()); // Tiefe 2, Maximum 3
+
+            // Teste an der Grenze
+            DepthLimitedTreeMirrorNode greatGrandchild = new DepthLimitedTreeMirrorNode(4, 3);
+            grandchild.addChild(greatGrandchild);
+
+            // Tiefe 3 sollte nicht innerhalb der Beschränkung sein (Maximum ist 3, also 0,1,2 erlaubt)
+            assertFalse(greatGrandchild.isWithinDepthLimit());
+        }
+
+        @Test
+        @DisplayName("canAddChildren prüft Tiefenbeschränkung für neue Kinder")
+        void testCanAddChildren() {
+            DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(1, 3);
+            root.setHead(true);
+
+            // Root kann Kinder hinzufügen (Tiefe 0, Maximum 3)
+            assertTrue(root.canAddChildren());
+
+            DepthLimitedTreeMirrorNode child = new DepthLimitedTreeMirrorNode(2, 3);
+            root.addChild(child);
+
+            // Child kann Kinder hinzufügen (Tiefe 1, Maximum 3)
+            assertTrue(child.canAddChildren());
+
+            DepthLimitedTreeMirrorNode grandchild = new DepthLimitedTreeMirrorNode(3, 3);
+            child.addChild(grandchild);
+
+            // Grandchild kann keine Kinder hinzufügen (Tiefe 2, Maximum 3)
+            assertFalse(grandchild.canAddChildren());
+        }
+
+        @Test
+        @DisplayName("getRemainingDepth berechnet verbleibende Tiefe korrekt")
+        void testGetRemainingDepth() {
+            DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(1, 4);
+            root.setHead(true);
+
+            assertEquals(3, root.getRemainingDepth()); // Tiefe 0, kann bis Tiefe 3
+
+            DepthLimitedTreeMirrorNode child = new DepthLimitedTreeMirrorNode(2, 4);
+            root.addChild(child);
+
+            assertEquals(2, child.getRemainingDepth()); // Tiefe 1, kann bis Tiefe 3
+
+            DepthLimitedTreeMirrorNode grandchild = new DepthLimitedTreeMirrorNode(3, 4);
+            child.addChild(grandchild);
+
+            assertEquals(1, grandchild.getRemainingDepth()); // Tiefe 2, kann bis Tiefe 3
+
+            DepthLimitedTreeMirrorNode greatGrandchild = new DepthLimitedTreeMirrorNode(4, 4);
+            grandchild.addChild(greatGrandchild);
+
+            assertEquals(0, greatGrandchild.getRemainingDepth()); // Tiefe 3, Maximum erreicht
+        }
+
+        @Test
+        @DisplayName("findBestInsertionPoint findet optimalen Depth-First-Punkt")
+        void testFindBestInsertionPoint() {
+            DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(1, 4);
+            root.setHead(true);
+
+            // Root ist einziger Kandidat
+            assertEquals(root, root.findBestInsertionPoint());
+
+            // Erstelle asymmetrische Struktur
+            DepthLimitedTreeMirrorNode child1 = new DepthLimitedTreeMirrorNode(2, 4);
+            DepthLimitedTreeMirrorNode child2 = new DepthLimitedTreeMirrorNode(3, 4);
+            root.addChild(child1);
+            root.addChild(child2);
+
+            DepthLimitedTreeMirrorNode grandchild1 = new DepthLimitedTreeMirrorNode(4, 4);
+            child1.addChild(grandchild1);
+
+            // Sollte den tiefsten Knoten mit den wenigsten Kindern bevorzugen
+            DepthLimitedTreeMirrorNode bestPoint = root.findBestInsertionPoint();
+            assertEquals(grandchild1, bestPoint); // Tiefster verfügbarer Punkt
+
+            // Fülle grandchild1, dann sollte child2 gewählt werden
+            DepthLimitedTreeMirrorNode greatGrandchild = new DepthLimitedTreeMirrorNode(5, 4);
+            grandchild1.addChild(greatGrandchild);
+
+            bestPoint = root.findBestInsertionPoint();
+            assertEquals(child2, bestPoint); // Nächst-tiefster verfügbarer Punkt
+        }
+
+        @Test
+        @DisplayName("getNodesAtMaxDepth sammelt Knoten an maximaler Tiefe")
+        void testGetNodesAtMaxDepth() {
+            DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(1, 3);
+            root.setHead(true);
+
+            DepthLimitedTreeMirrorNode child1 = new DepthLimitedTreeMirrorNode(2, 3);
+            DepthLimitedTreeMirrorNode child2 = new DepthLimitedTreeMirrorNode(3, 3);
+            root.addChild(child1);
+            root.addChild(child2);
+
+            DepthLimitedTreeMirrorNode grandchild1 = new DepthLimitedTreeMirrorNode(4, 3);
+            DepthLimitedTreeMirrorNode grandchild2 = new DepthLimitedTreeMirrorNode(5, 3);
+            child1.addChild(grandchild1);
+            child2.addChild(grandchild2);
+
+            List<DepthLimitedTreeMirrorNode> maxDepthNodes = root.getNodesAtMaxDepth();
+
+            assertEquals(2, maxDepthNodes.size());
+            assertTrue(maxDepthNodes.contains(grandchild1));
+            assertTrue(maxDepthNodes.contains(grandchild2));
+            assertFalse(maxDepthNodes.contains(root));
+            assertFalse(maxDepthNodes.contains(child1));
+            assertFalse(maxDepthNodes.contains(child2));
+        }
+
+        @Test
+        @DisplayName("calculateDepthUtilization berechnet Tiefenauslastung")
+        void testCalculateDepthUtilization() {
+            DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(1, 4);
+            root.setHead(true);
+
+            // Einzelner Knoten: 1/4 = 0.25
+            assertEquals(0.25, root.calculateDepthUtilization(), 0.01);
+
+            DepthLimitedTreeMirrorNode child = new DepthLimitedTreeMirrorNode(2, 4);
+            root.addChild(child);
+
+            // Zwei Ebenen: 2/4 = 0.5
+            assertEquals(0.5, root.calculateDepthUtilization(), 0.01);
+
+            DepthLimitedTreeMirrorNode grandchild = new DepthLimitedTreeMirrorNode(3, 4);
+            child.addChild(grandchild);
+
+            // Drei Ebenen: 3/4 = 0.75
+            assertEquals(0.75, root.calculateDepthUtilization(), 0.01);
+
+            DepthLimitedTreeMirrorNode greatGrandchild = new DepthLimitedTreeMirrorNode(4, 4);
+            grandchild.addChild(greatGrandchild);
+
+            // Vier Ebenen: 4/4 = 1.0 (vollständige Auslastung)
+            assertEquals(1.0, root.calculateDepthUtilization(), 0.01);
+        }
+
+        @Test
+        @DisplayName("validateDepthConstraints validiert Tiefenbeschränkungen")
+        void testValidateDepthConstraints() {
+            DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(1, 3);
+            root.setHead(true);
+
+            // Einzelner Knoten ist gültig
+            assertTrue(root.validateDepthConstraints());
+
+            // Füge gültige Struktur hinzu
+            DepthLimitedTreeMirrorNode child = new DepthLimitedTreeMirrorNode(2, 3);
+            DepthLimitedTreeMirrorNode grandchild = new DepthLimitedTreeMirrorNode(3, 3);
+            root.addChild(child);
+            child.addChild(grandchild);
+
+            assertTrue(root.validateDepthConstraints());
+
+            // Überschreite Tiefenbeschränkung
+            DepthLimitedTreeMirrorNode greatGrandchild = new DepthLimitedTreeMirrorNode(4, 3);
+            grandchild.addChild(greatGrandchild);
+
+            assertFalse(root.validateDepthConstraints(),
+                    "Struktur die Tiefenbeschränkung überschreitet sollte Validierung fehlschlagen");
+        }
+
+        @Test
+        @DisplayName("getNodesByDepthDFS führt Depth-First-Traversierung durch")
+        void testGetNodesByDepthDFS() {
+            DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(1, 4);
+            root.setHead(true);
+
+            DepthLimitedTreeMirrorNode child1 = new DepthLimitedTreeMirrorNode(2, 4);
+            DepthLimitedTreeMirrorNode child2 = new DepthLimitedTreeMirrorNode(3, 4);
+            DepthLimitedTreeMirrorNode grandchild1 = new DepthLimitedTreeMirrorNode(4, 4);
+
+            root.addChild(child1);
+            root.addChild(child2);
+            child1.addChild(grandchild1);
+
+            Map<Integer, List<DepthLimitedTreeMirrorNode>> nodesByDepth = root.getNodesByDepthDFS();
+
+            assertEquals(3, nodesByDepth.size());
+            assertEquals(1, nodesByDepth.get(0).size());
+            assertEquals(root, nodesByDepth.get(0).get(0));
+            assertEquals(2, nodesByDepth.get(1).size());
+            assertEquals(1, nodesByDepth.get(2).size());
+            assertEquals(grandchild1, nodesByDepth.get(2).get(0));
+        }
+
+        @Test
+        @DisplayName("getInsertionPointsByDepth berechnet verfügbare Einfügepunkte")
+        void testGetInsertionPointsByDepth() {
+            DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(1, 3);
+            root.setHead(true);
+
+            DepthLimitedTreeMirrorNode child1 = new DepthLimitedTreeMirrorNode(2, 3);
+            DepthLimitedTreeMirrorNode child2 = new DepthLimitedTreeMirrorNode(3, 3);
+            root.addChild(child1);
+            root.addChild(child2);
+
+            Map<Integer, Integer> insertionPoints = root.getInsertionPointsByDepth();
+
+            assertEquals(2, insertionPoints.size());
+            assertEquals(1, insertionPoints.get(0).intValue()); // Root kann noch hinzufügen
+            assertEquals(2, insertionPoints.get(1).intValue()); // Beide Kinder können noch hinzufügen
+
+            // Füge Grandchild hinzu (Tiefe 2, kann nicht mehr hinzufügen)
+            DepthLimitedTreeMirrorNode grandchild = new DepthLimitedTreeMirrorNode(4, 3);
+            child1.addChild(grandchild);
+
+            insertionPoints = root.getInsertionPointsByDepth();
+            assertEquals(3, insertionPoints.size());
+            assertEquals(1, insertionPoints.get(0).intValue()); // Root
+            assertEquals(1, insertionPoints.get(1).intValue()); // Nur child2 kann noch hinzufügen
+            assertEquals(0, insertionPoints.get(2).intValue()); // Grandchild kann nicht hinzufügen
+        }
+
+        @Test
+        @DisplayName("getEffectiveMaxDepth gibt konfigurierte Tiefenbeschränkung zurück")
+        void testGetEffectiveMaxDepth() {
+            DepthLimitedTreeMirrorNode node = new DepthLimitedTreeMirrorNode(1, 5);
+            assertEquals(5, node.getEffectiveMaxDepth());
+        }
+
+        @Test
+        @DisplayName("setMaxDepth validiert minimale Tiefe")
+        void testSetMaxDepth() {
+            DepthLimitedTreeMirrorNode node = new DepthLimitedTreeMirrorNode(1, 3);
+
+            node.setMaxDepth(5);
+            assertEquals(5, node.getMaxDepth());
+
+            // Negative Werte sollten auf 1 gesetzt werden
+            node.setMaxDepth(-1);
+            assertEquals(1, node.getMaxDepth());
+
+            node.setMaxDepth(0);
+            assertEquals(1, node.getMaxDepth());
+        }
+    }
+
+    @Nested
+    @DisplayName("Vergleichstests zwischen den Implementierungen")
+    class ComparisonTests {
+
+        @Test
+        @DisplayName("Alle Tree-Implementierungen haben unterschiedliche TypeIds")
+        void testDifferentTypeIds() {
+            TreeMirrorNode basicTree = new TreeMirrorNode(1);
+            BalancedTreeMirrorNode balancedTree = new BalancedTreeMirrorNode(2);
+            DepthLimitedTreeMirrorNode depthTree = new DepthLimitedTreeMirrorNode(3, 4);
+
+            assertNotEquals(basicTree.deriveTypeId(), balancedTree.deriveTypeId());
+            assertNotEquals(basicTree.deriveTypeId(), depthTree.deriveTypeId());
+            assertNotEquals(balancedTree.deriveTypeId(), depthTree.deriveTypeId());
+        }
+
+        @Test
+        @DisplayName("Effektive Tiefenbeschränkungen unterscheiden sich korrekt")
+        void testEffectiveMaxDepthDifferences() {
+            BalancedTreeMirrorNode balancedTree = new BalancedTreeMirrorNode(2);
+            DepthLimitedTreeMirrorNode depthTree = new DepthLimitedTreeMirrorNode(3, 5);
+
+            // BalancedTree hat keine Tiefenbeschränkung
+            assertEquals(Integer.MAX_VALUE, balancedTree.getEffectiveMaxDepth());
+
+            // DepthLimitedTree hat konfigurierte Beschränkung
+            assertEquals(5, depthTree.getEffectiveMaxDepth());
+
+            // Unterschiedliche Beschränkungen sollten verschiedene Werte haben
+            assertNotEquals(balancedTree.getEffectiveMaxDepth(), depthTree.getEffectiveMaxDepth());
+        }
+
+        @Test
+        @DisplayName("Alle Implementierungen erben TreeMirrorNode-Funktionalität")
+        void testTreeMirrorNodeInheritance() {
+            BalancedTreeMirrorNode balancedTree = new BalancedTreeMirrorNode(1);
+            DepthLimitedTreeMirrorNode depthTree = new DepthLimitedTreeMirrorNode(2, 3);
+
+            balancedTree.setHead(true);
+            depthTree.setHead(true);
+
+            // Beide sollten TreeMirrorNode-Methoden haben
+            assertEquals(0, balancedTree.getDepthInTree());
+            assertEquals(0, depthTree.getDepthInTree());
+
+            assertTrue(balancedTree.isHead(balancedTree.deriveTypeId()));
+            assertTrue(depthTree.isHead(depthTree.deriveTypeId()));
+        }
+
+        @Test
+        @DisplayName("toString-Methoden liefern unterschiedliche Ausgaben")
+        void testToStringDifferences() {
+            BalancedTreeMirrorNode balancedTree = new BalancedTreeMirrorNode(1, 3);
+            DepthLimitedTreeMirrorNode depthTree = new DepthLimitedTreeMirrorNode(2, 4);
+
+            String balancedString = balancedTree.toString();
+            String depthString = depthTree.toString();
+
+            assertTrue(balancedString.contains("BalancedTreeMirrorNode"));
+            assertTrue(balancedString.contains("targetLinks=3"));
+            assertTrue(balancedString.contains("balance="));
+
+            assertTrue(depthString.contains("DepthLimitedTreeMirrorNode"));
+            assertTrue(depthString.contains("maxDepth=4"));
+            assertTrue(depthString.contains("utilization="));
+
+            assertNotEquals(balancedString, depthString);
+        }
+    }
 }
