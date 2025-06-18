@@ -218,22 +218,42 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         return buildAndConnectLinks(root, props);
     }
 
+
     /**
-     * Closes all current links and creates new links between all mirrors.
+     * Startet das Netzwerk komplett neu mit der aktuellen Topologie.
+     * Löscht alle bestehenden Verbindungen und baut sie neu auf.
+     * Stellt sicher, dass Network.links und Mirror.links synchronisiert bleiben.
      *
-     * @param n the {@link Network}
-     * @param props {@link Properties} of the simulation
-     * @param simTime current simulation time
+     * @param n Das Netzwerk
+     * @param props Simulation Properties
+     * @param simTime Aktuelle Simulationszeit
      */
     @Override
     public void restartNetwork(Network n, Properties props, int simTime) {
-        // 1. TopologyStrategy macht Network.links.clear() und Mirror.links.clear()
+        // 1. ERST alle Links aus Network.links sammeln, die zu unseren MirrorNodes gehören
+        Set<Link> linksToRemove = new HashSet<>();
+        for (MirrorNode node : getAllStructureNodes()) {
+            Mirror mirror = node.getMirror();
+            if (mirror != null) {
+                // Sammle alle Links dieses Mirrors, die auch im Network sind
+                for (Link link : mirror.getLinks()) {
+                    if (n.getLinks().contains(link)) {
+                        linksToRemove.add(link);
+                    }
+                }
+            }
+        }
+
+        // 2. Links aus Network.links entfernen
+        n.getLinks().removeAll(linksToRemove);
+
+        // 3. TopologyStrategy macht den Rest: Mirror.links.clear() für ALLE Mirrors
         super.restartNetwork(n, props, simTime);
 
-        // 2. ZUSÄTZLICH: StructureNode-Staat zurücksetzen (Mirror-Links sind schon gelöscht)
+        // 4. StructureNode-Struktur zurücksetzen
         resetInternalStateStructureOnly();
 
-        // 3. Neu aufbauen
+        // 5. Neu aufbauen
         this.network = n;
         this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
 
