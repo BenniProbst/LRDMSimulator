@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
  * - getNumTargetLinks(), getPredictedNumTargetLinks()
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
- * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
 public abstract class BuildAsSubstructure extends TopologyStrategy {
 
