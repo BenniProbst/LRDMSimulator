@@ -88,7 +88,6 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     public boolean canAcceptMoreChildren() {
         StructureType typeId = StructureType.FULLY_CONNECTED;
         StructureNode head = findHead(typeId);
-        final int headId = head != null ? head.getId() : this.getId();
 
         // Basis-Validierung und vollständig-vernetzte-spezifische Prüfungen
         return super.canAcceptMoreChildren() &&

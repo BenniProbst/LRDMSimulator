@@ -227,8 +227,13 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      */
     @Override
     public void restartNetwork(Network n, Properties props, int simTime) {
+        // 1. TopologyStrategy macht Network.links.clear() und Mirror.links.clear()
         super.restartNetwork(n, props, simTime);
 
+        // 2. ZUSÄTZLICH: StructureNode-Staat zurücksetzen (Mirror-Links sind schon gelöscht)
+        resetInternalStateStructureOnly();
+
+        // 3. Neu aufbauen
         this.network = n;
         this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
 

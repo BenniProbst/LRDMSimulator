@@ -378,37 +378,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         return 0;
     }
 
-    /**
-     * Factory-Methode für strukturspezifische MirrorNode-Erstellung.
-     * Kann von Subklassen überschrieben werden.
-     *
-     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
-     * @return Neuer strukturspezifischer MirrorNode
-     */
-    protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
-        return new MirrorNode(idGenerator.getNextID(), mirror);
-    }
-
     // ===== INTERNE STRUCTURE BUILDER-HILFSMETHODEN (PROTECTED) =====
-
-    /**
-     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
-     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
-     *
-     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
-     */
-    protected final MirrorNode getMirrorNodeFromIterator() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            Mirror mirror = mirrorIterator.next();
-            MirrorNode node = createMirrorNodeForMirror(mirror);
-            if (node != null) {
-                node.setMirror(mirror);
-                addToStructureNodes(node); // Aktiv hinzufügen
-            }
-            return node;
-        }
-        return null;
-    }
 
     /**
      * Fügt einen MirrorNode zu den verwalteten Struktur-Knoten hinzu.
@@ -452,12 +422,34 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     }
 
     /**
-     * Setzt den internen Zustand zurück.
+     * Setzt nur die StructureNode-Struktur zurück, nicht die Mirror-Links.
+     * Wird verwendet, wenn die Mirror-Links bereits durch TopologyStrategy.restartNetwork() gelöscht wurden.
      */
-    private void resetInternalState() {
+    protected void resetInternalStateStructureOnly() {
         nodeToSubstructure.clear();
         structureNodes.clear();
-        currentStructureRoot = null; // JETZT möglich, da nicht final
+        currentStructureRoot = null;
+    }
+
+
+    /**
+     * Vollständiger Reset des internen Zustands UND aller Mirror-Links.
+     * Muss vor dem Neuaufbau der Struktur aufgerufen werden.
+     */
+    protected void resetInternalState() {
+        // 1. ERST alle Mirror-Links aus allen MirrorNodes entfernen
+        for (MirrorNode node : structureNodes) {
+            Mirror mirror = node.getMirror();
+            if (mirror != null) {
+                // Alle Links des Mirrors löschen
+                mirror.getLinks().clear();
+            }
+        }
+
+        // 2. DANN die StructureNode-Struktur zurücksetzen
+        nodeToSubstructure.clear();
+        structureNodes.clear();
+        currentStructureRoot = null;
     }
 
     // ===== ABSTRAKTE METHODEN FÜR LINK-ERSTELLUNG =====
@@ -584,6 +576,36 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     protected final boolean hasNextMirror() {
         return mirrorIterator != null && mirrorIterator.hasNext();
+    }
+
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    protected final MirrorNode getMirrorNodeFromIterator() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            Mirror mirror = mirrorIterator.next();
+            MirrorNode node = createMirrorNodeForMirror(mirror);
+            if (node != null) {
+                node.setMirror(mirror);
+                addToStructureNodes(node); // Aktiv hinzufügen
+            }
+            return node;
+        }
+        return null;
+    }
+
+    /**
+     * Factory-Methode für strukturspezifische MirrorNode-Erstellung.
+     * Kann von Subklassen überschrieben werden.
+     *
+     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
+     * @return Neuer strukturspezifischer MirrorNode
+     */
+    protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
+        return new MirrorNode(idGenerator.getNextID(), mirror);
     }
 
     @Override
