@@ -36,7 +36,9 @@ public class StructureNode {
         LINE(4),
         STAR(5),
         FULLY_CONNECTED(6),
-        N_CONNECTED(7);  // Neu hinzugefügt für echte N-Connected-Unterstützung
+        N_CONNECTED(7),
+        BALANCED_TREE(8),
+        DEPTH_LIMIT_TREE(9);
 
         private final int id;
 
@@ -163,7 +165,7 @@ public class StructureNode {
     // ===== NODE TYPES MANAGEMENT =====
 
     /**
-     * Gibt die Set von Strukturtypen zurück, die dieser Knoten repräsentiert.
+     * Gibt das Set von Strukturtypen zurück, die dieser Knoten repräsentiert.
      * Ermöglicht es, zu prüfen, welche Strukturtypen ein Knoten unterstützt.
      *
      * @return Unveränderliche Kopie der Knotentypen
@@ -173,10 +175,10 @@ public class StructureNode {
     }
 
     /**
-     * Setzt die Set von Strukturtypen für diesen Knoten.
+     * Setzt das Set von Strukturtypen für diesen Knoten.
      * Überschreibt die aktuellen Knotentypen vollständig.
      *
-     * @param nodeTypes Die neuen Knotentypen (darf nicht null sein)
+     * @param nodeTypes Die neuen Knotentypen (dürfen nicht null sein)
      */
     public void setNodeTypes(Set<StructureType> nodeTypes) {
         if (nodeTypes == null) {
