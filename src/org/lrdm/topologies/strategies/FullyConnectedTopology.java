@@ -303,7 +303,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
         Network network = a.getNetwork();
         int currentMirrors = network.getNumMirrors();
-        int currentLinksPerMirror = network.getNumTargetLinksPerMirror();
 
         // 1. MirrorChange: Ändert die Anzahl der Mirrors
         if (a instanceof MirrorChange mc) {
