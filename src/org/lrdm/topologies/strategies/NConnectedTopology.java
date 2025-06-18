@@ -444,49 +444,70 @@ public class NConnectedTopology extends BuildAsSubstructure {
      * If the number of mirrors is less than twice the number of links per mirror, we compute this like for the fully connected topology.
      * For a fully connected network this can be computed as (n * (n -1)) / 2, where n is the number of mirrors.
      * Else, the number of links can be simply computed by multiplying the number of links per mirror with the number of mirrors.
+     * Berechnet die erwartete Anzahl der Links im aktuellen Netzwerk.
      *
-     * @param n the {@link Network}
-     * @return the number of links the network is expected to have
+     * @param n Das Netzwerk
+     * @return Anzahl der erwarteten Links
      */
     @Override
     public int getNumTargetLinks(Network n) {
-        int numMirrors = n.getNumMirrors();
-        int linksPerMirror = n.getNumTargetLinksPerMirror();
-
-        if (numMirrors <= 2 * linksPerMirror) {
-            // Bei wenigen Mirrors: vollständige Vernetzung
-            return (numMirrors * (numMirrors - 1)) / 2;
-        } else {
-            // Bei vielen Mirrors: N Links pro Mirror (geteilt durch 2 wegen bidirektionaler Links)
-            return (numMirrors * linksPerMirror) / 2;
-        }
+        return calculateNConnectedLinks(n.getNumMirrors(), n.getNumTargetLinksPerMirror());
     }
 
     /**
      * Berechnet die erwartete Anzahl der Links, wenn die gegebene Aktion ausgeführt wird.
+     * Berücksichtigt die drei Action-Typen und die N-Connected-Grenzfälle.
      *
      * @param a Die Action, deren Auswirkungen berechnet werden sollen
      * @return Anzahl der erwarteten Links nach Ausführung der Action
      */
     @Override
     public int getPredictedNumTargetLinks(Action a) {
-        int m = a.getNetwork().getNumMirrors();
-        int lpm = a.getNetwork().getNumTargetLinksPerMirror();
+        Network network = a.getNetwork();
+        int currentMirrors = network.getNumMirrors();
+        int currentLinksPerMirror = network.getNumTargetLinksPerMirror();
+
+        // Neue Werte nach Action berechnen
+        int newMirrors = currentMirrors;
+        int newLinksPerMirror = currentLinksPerMirror;
 
         if (a instanceof MirrorChange mc) {
-            m += mc.getNewMirrors();
+            // MirrorChange: getNewMirrors() ist die NEUE Gesamtanzahl, nicht die Differenz
+            newMirrors = mc.getNewMirrors();
         } else if (a instanceof TargetLinkChange tlc) {
-            lpm += tlc.getNewLinksPerMirror();
+            // TargetLinkChange: getNewLinksPerMirror() ist der NEUE Wert pro Mirror
+            newLinksPerMirror = tlc.getNewLinksPerMirror();
         } else if (a instanceof TopologyChange tc) {
-            // KORREKTUR: getNewTopology() statt getNewStrategy()
+            // TopologyChange: Delegiere an die neue Topologie-Strategie
             return tc.getNewTopology().getPredictedNumTargetLinks(a);
         }
 
-        if (m <= 2 * lpm) {
-            return (m * (m - 1)) / 2;
-        } else {
-            return (m * lpm) / 2;
+        // Berechne N-Connected Links mit den neuen Werten
+        return calculateNConnectedLinks(newMirrors, newLinksPerMirror);
+    }
+
+    /**
+     * Berechnet die Anzahl der Links für eine N-Connected-Topologie.
+     * Berücksichtigt den Grenzfall, dass nicht genügend Mirrors für die gewünschten Links vorhanden sind.
+     *
+     * @param numMirrors Anzahl der Mirrors
+     * @param linksPerMirror Gewünschte Links pro Mirror
+     * @return Tatsächliche Anzahl der möglichen Links
+     */
+    private int calculateNConnectedLinks(int numMirrors, int linksPerMirror) {
+        if (numMirrors <= 0 || linksPerMirror <= 0) {
+            return 0;
         }
+
+        // Maximale mögliche Links in einem vollständig vernetzten Graph: n*(n-1)/2
+        int maxPossibleLinks = (numMirrors * (numMirrors - 1)) / 2;
+
+        // Gewünschte Links basierend auf linksPerMirror: (n * linksPerMirror) / 2
+        // Division durch 2, da jeder Link zwei Mirrors verbindet
+        int desiredLinks = (numMirrors * linksPerMirror) / 2;
+
+        // Rückgabe des Minimums: Was ist realistisch erreichbar?
+        return Math.min(desiredLinks, maxPossibleLinks);
     }
 
     @Override
