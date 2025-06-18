@@ -602,7 +602,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     /**
      * Bereinigt die StructureNode-Verwaltung für entfernte Knoten.
      */
-    private void cleanupStructureNodes(List<MirrorNode> nodesToRemove) {
+    void cleanupStructureNodes(List<MirrorNode> nodesToRemove) {
         for (MirrorNode nodeToRemove : nodesToRemove) {
             structureNodes.remove(nodeToRemove);
             removeSubstructureForNode(nodeToRemove);

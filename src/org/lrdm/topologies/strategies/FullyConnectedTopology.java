@@ -139,12 +139,73 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
     }
 
     /**
+     * Entfernt Knoten aus einer bestehenden vollständig vernetzten Struktur.
+     * Da in einer vollständigen Vernetzung alle Knoten gleich wichtig sind,
+     * können beliebige Knoten entfernt werden (außer der Root).
+     *
      * @param nodesToRemove Anzahl der zu entfernenden Knoten
-     * @return
+     * @return Anzahl der tatsächlich entfernten Knoten
      */
     @Override
     protected int removeNodesFromStructure(int nodesToRemove) {
-        return 0;
+        if (nodesToRemove <= 0 || getAllStructureNodes().isEmpty()) {
+            return 0;
+        }
+
+        // Sammle alle Knoten außer Root für die Entfernung
+        List<FullyConnectedMirrorNode> candidatesForRemoval = new ArrayList<>();
+
+        for (MirrorNode node : getAllStructureNodes()) {
+            // Root-Node nie entfernen, alle anderen sind gleichwertige Kandidaten
+            if (node != getCurrentStructureRoot() && node instanceof FullyConnectedMirrorNode fcNode) {
+                candidatesForRemoval.add(fcNode);
+            }
+        }
+
+        // Begrenze auf verfügbare Anzahl
+        int actualRemovalCount = Math.min(nodesToRemove, candidatesForRemoval.size());
+
+        if (actualRemovalCount == 0) {
+            return 0;
+        }
+
+        // Sortiere nach ID (höchste zuerst) für deterministische Entfernung
+        candidatesForRemoval.sort((node1, node2) -> Integer.compare(node2.getId(), node1.getId()));
+
+        // Entferne die ersten N Kandidaten
+        List<MirrorNode> nodesToRemoveList = new ArrayList<>();
+        for (int i = 0; i < actualRemovalCount; i++) {
+            FullyConnectedMirrorNode nodeToRemove = candidatesForRemoval.get(i);
+
+            // Entferne alle StructureNode-Verbindungen zu diesem Knoten
+            removeNodeFromFullyConnectedStructure(nodeToRemove);
+
+            nodesToRemoveList.add(nodeToRemove);
+        }
+
+        // Bereinige die StructureNode-Verwaltung
+        cleanupStructureNodes(nodesToRemoveList);
+
+        return actualRemovalCount;
+    }
+
+    /**
+     * Entfernt einen Knoten vollständig aus der vollständig vernetzten Struktur.
+     * Bereinigt alle bidirektionalen Verbindungen zu anderen Knoten.
+     *
+     * @param nodeToRemove Der zu entfernende FullyConnectedMirrorNode
+     */
+    private void removeNodeFromFullyConnectedStructure(FullyConnectedMirrorNode nodeToRemove) {
+        // Sammle alle verbundenen Knoten
+        Set<FullyConnectedMirrorNode> connectedNodes = nodeToRemove.getConnectedNodes();
+
+        // Entferne bidirektionale Verbindungen
+        for (FullyConnectedMirrorNode connectedNode : connectedNodes) {
+            // Entferne nodeToRemove aus den Kindern von connectedNode
+            connectedNode.removeChild(nodeToRemove);
+            // Entferne connectedNode aus den Kindern von nodeToRemove
+            nodeToRemove.removeChild(connectedNode);
+        }
     }
 
     /**
@@ -231,7 +292,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
     /**
      * Startet das Netzwerk komplett neu mit der aktuellen Topologie.
      * Löscht alle bestehenden Verbindungen und baut sie neu auf.
-     * Stellt sicher, dass Network.links und Mirror.links synchronisiert bleiben.
+     * Stellt sicher, dass Network. links und Mirror. links synchronisiert bleiben.
      *
      * @param n Das Netzwerk
      * @param props Simulation Properties
