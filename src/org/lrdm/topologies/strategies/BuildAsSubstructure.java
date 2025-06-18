@@ -251,7 +251,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     public Set<Link> initNetwork(Network n, Properties props) {
         initializeInternalState(n);
 
-        MirrorNode root = buildStructure(n.getNumMirrors());
+        MirrorNode root = buildStructure(n.getNumMirrors(), props);
         if (root != null) {
             setCurrentStructureRoot(root);
             return buildAndConnectLinks(root, props);
@@ -341,10 +341,11 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Backwards-Kompatibilität: Ruft buildStructure(totalNodes, 0) auf.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
+     * @param props
      * @return Root-Knoten der erstellten Struktur
      */
-    protected final MirrorNode buildStructure(int totalNodes) {
-        return buildStructure(totalNodes, 0);
+    protected final MirrorNode buildStructure(int totalNodes, Properties props) {
+        return buildStructure(totalNodes, 0, props);
     }
 
     /**
@@ -352,10 +353,11 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Muss von Subklassen für spezifische Strukturtypen implementiert werden.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
+     * @param simTime    Aktuelle Simulationszeit für Link-Erstellung
+     * @param props
      * @return Root-Knoten der erstellten Struktur
      */
-    protected abstract MirrorNode buildStructure(int totalNodes, int simTime);
+    protected abstract MirrorNode buildStructure(int totalNodes, int simTime, Properties props);
 
     /**
      * Fügt Knoten zu einer bestehenden Struktur hinzu.

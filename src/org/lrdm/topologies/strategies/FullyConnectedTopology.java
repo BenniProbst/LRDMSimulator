@@ -29,11 +29,12 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      * Jeder Knoten wird mit jedem anderen Knoten verbunden (vollständiger Graph).
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
+     * @param simTime    Aktuelle Simulationszeit für Link-Erstellung
+     * @param props
      * @return Die Root-Node der erstellten Struktur
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, int simTime) {
+    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
         if (totalNodes <= 0) {
             return null;
         }
@@ -278,7 +279,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         }
 
         // Baue die Struktur mit allen verfügbaren Mirrors auf - simTime = 0 bei Initialisierung
-        MirrorNode root = buildStructure(n.getMirrors().size(), 0);
+        MirrorNode root = buildStructure(n.getMirrors().size(), 0, props);
 
         if (root == null) {
             return new HashSet<>();
@@ -328,7 +329,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
 
         if (!n.getMirrors().isEmpty()) {
-            MirrorNode root = buildStructure(n.getMirrors().size(), simTime);
+            MirrorNode root = buildStructure(n.getMirrors().size(), simTime, props);
             if (root != null) {
                 Set<Link> newLinks = buildAndConnectLinks(root, props);
                 n.getLinks().addAll(newLinks);
