@@ -248,7 +248,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @return Set aller erstellten Links
      */
     @Override
-    public final Set<Link> initNetwork(Network n, Properties props) {
+    public Set<Link> initNetwork(Network n, Properties props) {
         initializeInternalState(n);
 
         MirrorNode root = buildStructure(n.getNumMirrors());
@@ -269,7 +269,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @param simTime Aktuelle Simulationszeit
      */
     @Override
-    public final void restartNetwork(Network n, Properties props, int simTime) {
+    public void restartNetwork(Network n, Properties props, int simTime) {
         super.restartNetwork(n, props, simTime);
 
         // Alle internen Strukturen zurücksetzen
@@ -290,7 +290,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @param simTime Aktuelle Simulationszeit
      */
     @Override
-    public final void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
+    public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
         // Neue Mirrors erstellen
         List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
         n.getMirrors().addAll(addedMirrors);
@@ -338,12 +338,24 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Erstellt eine neue Struktur mit der angegebenen Anzahl von Knoten.
-     * Muss von Subklassen für spezifische Strukturtypen implementiert werden.
+     * Backwards-Kompatibilität: Ruft buildStructure(totalNodes, 0) auf.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
      * @return Root-Knoten der erstellten Struktur
      */
-    protected abstract MirrorNode buildStructure(int totalNodes);
+    protected final MirrorNode buildStructure(int totalNodes) {
+        return buildStructure(totalNodes, 0);
+    }
+
+    /**
+     * Erstellt eine neue Struktur mit der angegebenen Anzahl von Knoten.
+     * Muss von Subklassen für spezifische Strukturtypen implementiert werden.
+     *
+     * @param totalNodes Anzahl der zu erstellenden Knoten
+     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
+     * @return Root-Knoten der erstellten Struktur
+     */
+    protected abstract MirrorNode buildStructure(int totalNodes, int simTime);
 
     /**
      * Fügt Knoten zu einer bestehenden Struktur hinzu.
@@ -550,6 +562,28 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             mirrors.add(mirror);
         }
         return mirrors;
+    }
+
+    /**
+     * Gibt den nächsten verfügbaren Mirror aus dem Iterator zurück.
+     * Vereinfacht die Interface-Trennung zwischen BuildAsSubstructure und Topology-Implementierungen.
+     *
+     * @return Der nächste verfügbare Mirror oder null, wenn kein Mirror verfügbar ist
+     */
+    protected final Mirror getNextMirror() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            return mirrorIterator.next();
+        }
+        return null;
+    }
+
+    /**
+     * Prüft, ob weitere Mirrors im Iterator verfügbar sind.
+     *
+     * @return true, wenn weitere Mirrors verfügbar sind
+     */
+    protected final boolean hasNextMirror() {
+        return mirrorIterator != null && mirrorIterator.hasNext();
     }
 
     @Override

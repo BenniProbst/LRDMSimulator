@@ -3,19 +3,196 @@ package org.lrdm.topologies.strategies;
 import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
-import org.lrdm.effectors.Action;
-import org.lrdm.effectors.MirrorChange;
-import org.lrdm.util.IDGenerator;
+import org.lrdm.effectors.*;
+import org.lrdm.topologies.node.FullyConnectedMirrorNode;
+import org.lrdm.topologies.node.MirrorNode;
+import org.lrdm.topologies.node.StructureNode.StructureType;
 
 import java.util.*;
 
-/**A {@link TopologyStrategy} which links each {@link Mirror} of the {@link Network} with each other mirror.
+/**
+ * A {@link TopologyStrategy} which links each {@link Mirror} of the {@link Network} with each other mirror.
  * Links are considered undirected, i.e., there will be exactly one link between each pair of mirrors of the network.
+ * <p>
+ * Verwendet {@link FullyConnectedMirrorNode} für Struktur-Management und -Validierung.
+ * Erweitert {@link BuildAsSubstructure} für konsistente StructureBuilder-Integration.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
+ * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
-public class FullyConnectedTopology extends BuildAsSubstructure{
-    /**Initializes the network by connecting all mirrors to one another.
+public class FullyConnectedTopology extends BuildAsSubstructure {
+
+    // ===== BUILD SUBSTRUCTURE IMPLEMENTATION =====
+
+    /**
+     * Baut eine vollständig vernetzte Struktur mit der angegebenen Anzahl von Knoten auf.
+     * Jeder Knoten wird mit jedem anderen Knoten verbunden (vollständiger Graph).
+     *
+     * @param totalNodes Anzahl der zu erstellenden Knoten
+     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
+     * @return Die Root-Node der erstellten Struktur
+     */
+    @Override
+    protected MirrorNode buildStructure(int totalNodes, int simTime) {
+        if (totalNodes <= 0) {
+            return null;
+        }
+
+        List<FullyConnectedMirrorNode> fcNodes = new ArrayList<>();
+
+        // Erstelle FullyConnectedMirrorNodes - Verwende das saubere Interface
+        for (int i = 0; i < totalNodes && hasNextMirror(); i++) {
+            Mirror mirror = getNextMirror();
+            assert mirror != null;
+            FullyConnectedMirrorNode fcNode = new FullyConnectedMirrorNode(mirror.getID(), mirror);
+            fcNodes.add(fcNode);
+            addToStructureNodes(fcNode);
+        }
+
+        if (fcNodes.isEmpty()) {
+            return null;
+        }
+
+        // Setze den ersten Knoten als Head und Root
+        FullyConnectedMirrorNode root = fcNodes.get(0);
+        root.setHead(true);
+        setCurrentStructureRoot(root);
+
+        // Verknüpfe alle Knoten miteinander in der StructureNode-Ebene.
+        // In einem vollständig vernetzten Graph ist jeder Knoten mit jedem anderen verbunden
+        for (int i = 0; i < fcNodes.size(); i++) {
+            FullyConnectedMirrorNode node1 = fcNodes.get(i);
+            for (int j = i + 1; j < fcNodes.size(); j++) {
+                FullyConnectedMirrorNode node2 = fcNodes.get(j);
+
+                // Füge bidirektionale StructureNode-Verbindungen hinzu.
+                // Dies erstellt die Planungsebene der vollständigen Vernetzung
+                node1.addChild(node2);
+                node2.addChild(node1);
+            }
+        }
+
+        // Validiere die erstellte Struktur
+        if (!root.isValidStructure()) {
+            throw new IllegalStateException("Created FullyConnected structure is invalid");
+        }
+
+        return root;
+    }
+
+    /**
+     * Fügt neue Knoten zur bestehenden vollständig vernetzten Struktur hinzu.
+     * Jeder neue Knoten wird mit allen bestehenden Knoten verbunden.
+     *
+     * @param nodesToAdd Anzahl der hinzuzufügenden Knoten
+     * @return Tatsächliche Anzahl der hinzugefügten Knoten
+     */
+    @Override
+    protected int addNodesToStructure(int nodesToAdd) {
+        if (nodesToAdd <= 0 || getCurrentStructureRoot() == null) {
+            return 0;
+        }
+
+        List<FullyConnectedMirrorNode> existingNodes = getAllStructureNodes().stream()
+                .filter(node -> node instanceof FullyConnectedMirrorNode)
+                .map(node -> (FullyConnectedMirrorNode) node)
+                .toList();
+
+        List<FullyConnectedMirrorNode> newNodes = new ArrayList<>();
+        int actuallyAdded = 0;
+
+        // Erstelle neue FullyConnectedMirrorNodes - Verwende das saubere Interface
+        for (int i = 0; i < nodesToAdd && hasNextMirror(); i++) {
+            Mirror mirror = getNextMirror();
+            assert mirror != null;
+            FullyConnectedMirrorNode newNode = new FullyConnectedMirrorNode(mirror.getID(), mirror);
+            newNodes.add(newNode);
+            addToStructureNodes(newNode);
+            actuallyAdded++;
+        }
+
+        // Verbinde jeden neuen Knoten mit allen bestehenden Knoten
+        for (FullyConnectedMirrorNode newNode : newNodes) {
+            for (FullyConnectedMirrorNode existingNode : existingNodes) {
+                // Bidirektionale StructureNode-Verbindungen
+                newNode.addChild(existingNode);
+                existingNode.addChild(newNode);
+            }
+
+            // Verbinde neue Knoten auch untereinander
+            for (FullyConnectedMirrorNode otherNewNode : newNodes) {
+                if (!newNode.equals(otherNewNode)) {
+                    newNode.addChild(otherNewNode);
+                    otherNewNode.addChild(newNode);
+                }
+            }
+        }
+
+        // Validiere die erweiterte Struktur
+        if (getCurrentStructureRoot() instanceof FullyConnectedMirrorNode fcRoot) {
+            if (!fcRoot.isValidStructure()) {
+                throw new IllegalStateException("FullyConnected structure became invalid after adding nodes");
+            }
+        }
+
+        return actuallyAdded;
+    }
+
+    /**
+     * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
+     * Erstellt für jede StructureNode-Verbindung einen entsprechenden Mirror-Link.
+     *
+     * @param root Die Root-Node der Struktur
+     * @param props Simulation Properties
+     * @return Set aller erstellten Links
+     */
+    @Override
+    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+        Set<Link> allLinks = new HashSet<>();
+
+        if (!(root instanceof FullyConnectedMirrorNode fcRoot)) {
+            return allLinks;
+        }
+
+        // Sammle alle Knoten in der Struktur
+
+        // Erstelle Links zwischen allen Paaren von Knoten
+        List<FullyConnectedMirrorNode> nodeList = fcRoot.getAllNodesInStructure(StructureType.FULLY_CONNECTED, fcRoot)
+                .stream()
+                .filter(node -> node instanceof FullyConnectedMirrorNode)
+                .map(node -> (FullyConnectedMirrorNode) node).distinct().toList();
+        for (int i = 0; i < nodeList.size(); i++) {
+            FullyConnectedMirrorNode node1 = nodeList.get(i);
+            Mirror mirror1 = node1.getMirror();
+
+            if (mirror1 == null) {
+                continue; // Überspringe Knoten ohne Mirror
+            }
+
+            for (int j = i + 1; j < nodeList.size(); j++) {
+                FullyConnectedMirrorNode node2 = nodeList.get(j);
+                Mirror mirror2 = node2.getMirror();
+
+                if (mirror2 == null) {
+                    continue; // Überspringe Knoten ohne Mirror
+                }
+
+                // Prüfe, ob die Mirrors bereits verbunden sind
+                if (!connected(mirror1, mirror2)) {
+                    Link link = new Link(idGenerator.getNextID(), mirror1, mirror2,
+                            0, props);
+                    mirror1.addLink(link);
+                    mirror2.addLink(link);
+                    allLinks.add(link);
+                }
+            }
+        }
+
+        return allLinks;
+    }
+
+    /**
+     * Initializes the network by connecting all mirrors to one another.
      *
      * @param n the {@link Network}
      * @param props {@link Properties} of the simulation
@@ -23,25 +200,26 @@ public class FullyConnectedTopology extends BuildAsSubstructure{
      */
     @Override
     public Set<Link> initNetwork(Network n, Properties props) {
-        Set<Link> ret = new HashSet<>();
-        for (Mirror m1 : n.getMirrors()) {
-            ret.addAll(connectMirrorToAllOthers(n, props, 0, m1));
+        this.network = n;
+        this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
+
+        if (n.getMirrors().isEmpty()) {
+            return new HashSet<>();
         }
-        return ret;
+
+        // Baue die Struktur mit allen verfügbaren Mirrors auf - simTime = 0 bei Initialisierung
+        MirrorNode root = buildStructure(n.getMirrors().size(), 0);
+
+        if (root == null) {
+            return new HashSet<>();
+        }
+
+        // Erstelle die tatsächlichen Links
+        return buildAndConnectLinks(root, props);
     }
 
-    /**Checks if two mirrors are connected or not.
-     * Mirrors are connected of there is a link in either direction between them.
-     *
-     * @param m1 the first {@link Mirror}
-     * @param m2 the second {@link Mirror}
-     * @return true if there is a link between the two mirrors, false if not
-     */
-    private boolean connected(Mirror m1, Mirror m2) {
-        return m1.getLinks().stream().filter(l -> (l.getSource().equals(m1) && l.getTarget().equals(m2)) || (l.getSource().equals(m2) && l.getTarget().equals(m1))).count() == 1;
-    }
-
-    /**Closes all current links and creates new links between all mirrors.
+    /**
+     * Closes all current links and creates new links between all mirrors.
      *
      * @param n the {@link Network}
      * @param props {@link Properties} of the simulation
@@ -50,15 +228,21 @@ public class FullyConnectedTopology extends BuildAsSubstructure{
     @Override
     public void restartNetwork(Network n, Properties props, int simTime) {
         super.restartNetwork(n, props, simTime);
-        Set<Link> ret = new HashSet<>();
-        for(Mirror m : n.getMirrors()) {
-            List<Link> newLinks = connectMirrorToAllOthers(n, props, simTime, m);
-            ret.addAll(newLinks);
+
+        this.network = n;
+        this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
+
+        if (!n.getMirrors().isEmpty()) {
+            MirrorNode root = buildStructure(n.getMirrors().size(), simTime);
+            if (root != null) {
+                Set<Link> newLinks = buildAndConnectLinks(root, props);
+                n.getLinks().addAll(newLinks);
+            }
         }
-        n.getLinks().addAll(ret);
     }
 
-    /**Adds the requested amount of mirrors to the network and connects them accordingly.
+    /**
+     * Adds the requested number of mirrors to the network and connects them accordingly.
      *
      * @param n the {@link Network}
      * @param newMirrors number of mirrors to add
@@ -67,52 +251,149 @@ public class FullyConnectedTopology extends BuildAsSubstructure{
      */
     @Override
     public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
+        this.network = n;
+
+        // Verwende das offizielle Interface von TopologyStrategy
         List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
         n.getMirrors().addAll(addedMirrors);
-        for(Mirror m : addedMirrors) {
-            List<Link> links = connectMirrorToAllOthers(n, props, simTime, m);
-            n.getLinks().addAll(links);
+
+        // Setze Iterator für die neuen Mirrors - BuildAsSubstructure erwartet diesen
+        this.mirrorIterator = addedMirrors.iterator();
+
+        // Füge die neuen Knoten zur Struktur hinzu
+        int actuallyAdded = addNodesToStructure(newMirrors);
+
+        if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
+            // Baue nur die neuen Links auf
+            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props);
+            n.getLinks().addAll(newLinks);
         }
     }
 
-    /**Connects a {@link Mirror} to all other mirrors of the {@link Network}.
-     *
-     * @param n the {@link Network}
-     * @param props {@link Properties} of the simulation
-     * @param simTime current simulation time
-     * @param m the {@link Mirror} which shall be connected to all other mirrors
-     * @return a {@link List} of all {@link Link}s created
-     */
-    private List<Link> connectMirrorToAllOthers(Network n, Properties props, int simTime, Mirror m) {
-        List<Link> links = new ArrayList<>();
-        for(Mirror target : n.getMirrors()) {
-            if (!connected(m, target) && !m.equals(target)) {
-                Link l = new Link(IDGenerator.getInstance().getNextID(), m, target, simTime, props);
-                m.addLink(l);
-                target.addLink(l);
-                links.add(l);
-            }
-        }
-        return links;
-    }
+    // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
 
-    /**Returns the number of links expected for the overall network according to this strategy.
-     * For a fully connected network this can be computed as (n * (n -1)) / 2, where n is the number of mirrors.
+    /**
+     * Returns the expected number of total links in the network according to the fully connected topology.
+     * For n mirrors, the number of links is n*(n-1)/2.
      *
-     * @param n the {@link Network}
-     * @return the number of links the network is expected to have
+     * @param n {@link Network} the network
+     * @return number of total links expected for the network
      */
     @Override
     public int getNumTargetLinks(Network n) {
-        return (n.getNumMirrors() * (n.getNumMirrors() - 1)) / 2;
+        int numMirrors = n.getNumMirrors();
+        return numMirrors * (numMirrors - 1) / 2;
+    }
+
+    /**
+     * Berechnet die erwartete Anzahl der Links, wenn die gegebene Aktion ausgeführt wird.
+     * Behandelt drei verschiedene Action-Typen:
+     * 1. MirrorChange: Berechnet Links für neue Mirror-Anzahl (verwendet getNewMirrors(), nicht getNewMirrors())
+     * 2. TargetLinkChange: Berechnet Links basierend auf neuen Links pro Mirror
+     * 3. TopologyChange: Delegiert an neue Topology-Strategie
+     *
+     * @param a Die Action, deren Auswirkungen berechnet werden sollen
+     * @return Anzahl der erwarteten Links nach Ausführung der Action
+     */
+    @Override
+    public int getPredictedNumTargetLinks(Action a) {
+        if (a == null || a.getNetwork() == null) {
+            return 0;
+        }
+
+        Network network = a.getNetwork();
+        int currentMirrors = network.getNumMirrors();
+        int currentLinksPerMirror = network.getNumTargetLinksPerMirror();
+
+        // 1. MirrorChange: Ändert die Anzahl der Mirrors
+        if (a instanceof MirrorChange mc) {
+            // Bei MirrorChange wird die NEUE GESAMTANZAHL gesetzt, nicht hinzugefügt
+            int newMirrorCount = mc.getNewMirrors();
+
+            // Bei FullyConnectedTopology: n * (n-1) / 2 Links für n Mirrors
+            return newMirrorCount * (newMirrorCount - 1) / 2;
+        }
+
+        // 2. TargetLinkChange: Ändert die Links pro Mirror
+        else if (a instanceof TargetLinkChange tlc) {
+            // Bei TargetLinkChange werden die Links pro Mirror geändert
+            int newLinksPerMirror = tlc.getNewLinksPerMirror();
+
+            // Behalte aktuelle Mirror-Anzahl, aber berechne mit neuen Links pro Mirror.
+            // Für FullyConnected: Falls newLinksPerMirror >= (n-1), vollständig vernetzt,
+            // sonst begrenzt durch Links pro Mirror
+            if (newLinksPerMirror >= currentMirrors - 1) {
+                // Vollständige Vernetzung möglich
+                return currentMirrors * (currentMirrors - 1) / 2;
+            } else {
+                // Begrenzt durch Links pro Mirror
+                return currentMirrors * newLinksPerMirror / 2;
+            }
+        }
+
+        // 3. TopologyChange: Ändert die Topology-Strategie
+        else if (a instanceof TopologyChange tc) {
+            TopologyStrategy newTopology = tc.getNewTopology();
+
+            // Delegiere an die neue Topology-Strategie mit aktueller Mirror-Anzahl
+            return newTopology.getNumTargetLinks(network);
+        }
+
+        // Fallback: Unbekannter Action-Typ - verwende aktuellen Zustand
+        return getNumTargetLinks(network);
+    }
+
+    /**
+     * Berechnet die erwartete Link-Anzahl für eine gegebene Knotenzahl.
+     * Für vollständige Vernetzung: n * (n-1) / 2 Links für n Knoten.
+     *
+     * @param nodeCount Anzahl der Knoten
+     * @return Erwartete Anzahl der Links für vollständige Vernetzung
+     */
+    public static int calculateExpectedLinks(int nodeCount) {
+        if (nodeCount <= 0) {
+            return 0;
+        }
+        return nodeCount * (nodeCount - 1) / 2;
+    }
+
+
+    // ===== HILFSMETHODEN =====
+
+    /**
+     * Checks if two mirrors are connected or not.
+     * Mirrors are connected if there is a link in either direction between them.
+     *
+     * @param m1 the first {@link Mirror}
+     * @param m2 the second {@link Mirror}
+     * @return true if there is a link between the two mirrors, false if not
+     */
+    private boolean connected(Mirror m1, Mirror m2) {
+        return m1.getLinks().stream()
+                .anyMatch(l -> (l.getSource().equals(m1) && l.getTarget().equals(m2)) ||
+                        (l.getSource().equals(m2) && l.getTarget().equals(m1)));
+    }
+
+    /**
+     * Validiert die aktuelle vollständig vernetzte Struktur.
+     *
+     * @return true, wenn die Struktur gültig ist
+     */
+    public boolean validateTopology() {
+        MirrorNode root = getCurrentStructureRoot();
+        if (root instanceof FullyConnectedMirrorNode fcRoot) {
+            return fcRoot.isValidStructure();
+        }
+        return false;
     }
 
     @Override
-    public int getPredictedNumTargetLinks(Action a) {
-        int m = a.getNetwork().getNumMirrors() ;
-        if(a instanceof MirrorChange mc) {
-            m += mc.getNewMirrors();
-        }
-        return (m*(m-1))/2;
+    public String toString() {
+        int nodeCount = getAllStructureNodes().size();
+        int expectedLinks = calculateExpectedLinks(nodeCount);
+        boolean isValid = validateTopology();
+
+        return String.format("FullyConnectedTopology{nodes=%d, expectedLinks=%d, valid=%s, substructureId=%d}",
+                nodeCount, expectedLinks, isValid, getSubstructureId());
     }
 }
