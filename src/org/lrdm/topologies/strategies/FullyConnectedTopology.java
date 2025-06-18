@@ -27,58 +27,95 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
     /**
      * Baut eine vollständig vernetzte Struktur mit der angegebenen Anzahl von Knoten auf.
      * Jeder Knoten wird mit jedem anderen Knoten verbunden (vollständiger Graph).
+     * Erstellt sowohl StructureNode-Verbindungen als auch echte Mirror-Links.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param simTime    Aktuelle Simulationszeit für Link-Erstellung
-     * @param props
+     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
+     * @param props Properties der Simulation
      * @return Die Root-Node der erstellten Struktur
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
-        if (totalNodes <= 0) {
+        if (totalNodes <= 0 || network == null) {
             return null;
         }
 
-        List<FullyConnectedMirrorNode> fcNodes = new ArrayList<>();
+        List<FullyConnectedMirrorNode> nodes = new ArrayList<>();
 
-        // Erstelle FullyConnectedMirrorNodes - Verwende das saubere Interface
+        // 1. Erstelle FullyConnectedMirrorNodes mit Mirror-Zuordnung
         for (int i = 0; i < totalNodes && hasNextMirror(); i++) {
             Mirror mirror = getNextMirror();
-            assert mirror != null;
-            FullyConnectedMirrorNode fcNode = new FullyConnectedMirrorNode(mirror.getID(), mirror);
-            fcNodes.add(fcNode);
-            addToStructureNodes(fcNode);
-        }
-
-        if (fcNodes.isEmpty()) {
-            return null;
-        }
-
-        // Setze den ersten Knoten als Head und Root
-        FullyConnectedMirrorNode root = fcNodes.get(0);
-        root.setHead(true);
-        setCurrentStructureRoot(root);
-
-        // Verknüpfe alle Knoten miteinander in der StructureNode-Ebene.
-        // In einem vollständig vernetzten Graph ist jeder Knoten mit jedem anderen verbunden
-        for (int i = 0; i < fcNodes.size(); i++) {
-            FullyConnectedMirrorNode node1 = fcNodes.get(i);
-            for (int j = i + 1; j < fcNodes.size(); j++) {
-                FullyConnectedMirrorNode node2 = fcNodes.get(j);
-
-                // Füge bidirektionale StructureNode-Verbindungen hinzu.
-                // Dies erstellt die Planungsebene der vollständigen Vernetzung
-                node1.addChild(node2);
-                node2.addChild(node1);
+            if (mirror != null) {
+                FullyConnectedMirrorNode node = new FullyConnectedMirrorNode(mirror.getID(), mirror);
+                nodes.add(node);
+                addToStructureNodes(node); // Registriere bei BuildAsSubstructure
             }
         }
 
-        // Validiere die erstellte Struktur
-        if (!root.isValidStructure()) {
-            throw new IllegalStateException("Created FullyConnected structure is invalid");
+        if (nodes.isEmpty()) {
+            return null;
         }
 
+        // 2. Setze den ersten Knoten als Head und Root
+        FullyConnectedMirrorNode root = nodes.get(0);
+        root.setHead(true);
+        setCurrentStructureRoot(root);
+
+        // 3. Baue vollständige Vernetzung: StructureNode-Verbindungen UND echte Mirror-Links
+        Set<Link> createdLinks = buildFullyConnectedStructureWithLinks(nodes, simTime, props);
+
+        // 4. Registriere alle Links im Network
+        network.getLinks().addAll(createdLinks);
+
         return root;
+    }
+
+    /**
+     * Erstellt die vollständig vernetzte Struktur zwischen den Knoten mit echten Mirror-Links.
+     * Jeder Knoten wird mit jedem anderen Knoten verbunden.
+     * Erstellt sowohl StructureNode-Verbindungen als auch echte Mirror-Links.
+     *
+     * @param nodes Liste der FullyConnectedMirrorNodes
+     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
+     * @param props Properties der Simulation
+     * @return Set aller erstellten Links
+     */
+    private Set<Link> buildFullyConnectedStructureWithLinks(List<FullyConnectedMirrorNode> nodes, int simTime, Properties props) {
+        Set<Link> createdLinks = new HashSet<>();
+
+        // Vollständige Vernetzung: Jeder mit jedem (außer sich selbst)
+        for (int i = 0; i < nodes.size(); i++) {
+            FullyConnectedMirrorNode sourceNode = nodes.get(i);
+            Mirror sourceMirror = sourceNode.getMirror();
+
+            for (int j = i + 1; j < nodes.size(); j++) {
+                FullyConnectedMirrorNode targetNode = nodes.get(j);
+                Mirror targetMirror = targetNode.getMirror();
+
+                if (sourceMirror != null && targetMirror != null) {
+                    // Erstelle echten Mirror-Link mit korrektem Konstruktor
+                    Link link = new Link(
+                            idGenerator != null ? idGenerator.getNextID() : (int)(Math.random() * 100000),
+                            sourceMirror,
+                            targetMirror,
+                            simTime,
+                            props
+                    );
+
+                    // Füge Link zu beiden Mirrors hinzu
+                    sourceMirror.addLink(link);
+                    targetMirror.addLink(link);
+
+                    // Füge bidirektionale StructureNode-Verbindung hinzu
+                    sourceNode.addChild(targetNode);
+                    targetNode.addChild(sourceNode);
+
+                    createdLinks.add(link);
+                }
+            }
+        }
+
+        return createdLinks;
     }
 
     /**
