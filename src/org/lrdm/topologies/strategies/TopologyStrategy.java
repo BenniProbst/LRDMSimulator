@@ -67,4 +67,6 @@ public abstract class TopologyStrategy {
 		}
 		return addedMirrors;
 	}
+
+	public abstract String toString();
 }

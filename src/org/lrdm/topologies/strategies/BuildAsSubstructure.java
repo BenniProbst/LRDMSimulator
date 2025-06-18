@@ -373,10 +373,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @param nodesToRemove Anzahl der zu entfernenden Knoten
      * @return Anzahl der tatsächlich entfernten Knoten
      */
-    protected int removeNodesFromStructure(int nodesToRemove) {
-        // Standard-Implementierung: Nicht unterstützt
-        return 0;
-    }
+    protected abstract int removeNodesFromStructure(int nodesToRemove);
 
     // ===== INTERNE STRUCTURE BUILDER-HILFSMETHODEN (PROTECTED) =====
 
@@ -405,6 +402,131 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             nodeToSubstructure.remove(node);
         }
     }
+
+
+    /**
+     * Erweiterte handleRemoveMirrors-Implementierung für BuildAsSubstructure.
+     * Ergänzt die Standard-TopologyStrategy-Funktionalität um StructureNode-Management.
+     *
+     * @param n Das Netzwerk
+     * @param removeMirrors Anzahl der zu entfernenden Mirrors
+     * @param props Simulation Properties
+     * @param simTime Aktuelle Simulationszeit
+     */
+    @Override
+    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+        // 1. Sammle die MirrorNodes, die entfernt werden sollen (vor dem Mirror-Shutdown)
+        List<MirrorNode> nodesToRemove = new ArrayList<>();
+        List<Mirror> sortedMirrors = n.getMirrorsSortedById();
+
+        for (int i = 0; i < removeMirrors && i < sortedMirrors.size(); i++) {
+            Mirror mirrorToRemove = sortedMirrors.get(sortedMirrors.size() - 1 - i);
+            MirrorNode nodeToRemove = findMirrorNodeForMirror(mirrorToRemove);
+            if (nodeToRemove != null) {
+                nodesToRemove.add(nodeToRemove);
+            }
+        }
+
+        // 2. Standard-Mirror-Shutdown (behandelt Links automatisch)
+        super.handleRemoveMirrors(n, removeMirrors, props, simTime);
+
+        // 3. StructureNode-Verwaltung bereinigen - verwendet die bestehende Methode
+        cleanupStructureNodes(nodesToRemove);
+    }
+
+    /**
+     * Hilfsmethode: Findet den MirrorNode für einen gegebenen Mirror.
+     *
+     * @param mirror Der Mirror, für den der MirrorNode gesucht wird
+     * @return Der zugehörige MirrorNode oder null, wenn nicht gefunden
+     */
+    private MirrorNode findMirrorNodeForMirror(Mirror mirror) {
+        if (mirror == null) return null;
+
+        for (MirrorNode node : structureNodes) {
+            if (node.getMirror() != null && node.getMirror().getID() == mirror.getID()) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Bereinigt Parent-Child-Beziehungen für einen entfernten Knoten.
+     *
+     * @param nodeToRemove Der zu entfernende Knoten
+     */
+    private void cleanupNodeRelationships(MirrorNode nodeToRemove) {
+        // Parent-Verbindung bereinigen
+        if (nodeToRemove.getParent() != null) {
+            nodeToRemove.getParent().removeChild(nodeToRemove);
+        }
+
+        // Kinder-Verbindungen bereinigen
+        List<StructureNode> children = new ArrayList<>(nodeToRemove.getChildren());
+        for (StructureNode child : children) {
+            nodeToRemove.removeChild(child);
+
+            // Kinder an Parent weiterreichen oder als neue Roots behandeln
+            if (nodeToRemove.getParent() != null) {
+                nodeToRemove.getParent().addChild(child);
+            }
+        }
+    }
+
+    /**
+     * Aktualisiert die Root-Node, falls die aktuelle Root entfernt wurde.
+     *
+     * @param nodeToRemove Der zu entfernende Knoten
+     */
+    private void updateRootIfNecessary(MirrorNode nodeToRemove) {
+        if (getCurrentStructureRoot() == nodeToRemove) {
+            // Finde neue Root aus verbleibenden Knoten
+            MirrorNode newRoot = structureNodes.isEmpty() ? null : structureNodes.iterator().next();
+            setCurrentStructureRoot(newRoot);
+        }
+    }
+
+    /**
+     * Findet eine neue Root-Node aus den verbleibenden StructureNodes.
+     * PRIVATE - interne Strukturverwaltung.
+     *
+     * @return Neue Root-Node oder null, wenn keine Knoten mehr vorhanden
+     */
+    private MirrorNode findNewRoot() {
+        if (structureNodes.isEmpty()) {
+            return null;
+        }
+
+        // Strategie: Wähle den Knoten mit den wenigsten Parents
+        return structureNodes.stream()
+                .min(Comparator.comparingInt(node ->
+                        node.getParent() != null ? 1 : 0))
+                .orElse(null);
+    }
+
+    /**
+     * Registriert einen Observer für Strukturänderungen.
+     * PUBLIC - ermöglicht externe Observer-Registrierung.
+     *
+     * @param observer Der zu registrierende Observer
+     */
+    public final void addStructureChangeObserver(StructureChangeObserver observer) {
+        if (observer != null && !observers.contains(observer)) {
+            observers.add(observer);
+        }
+    }
+
+    /**
+     * Entfernt einen Observer für Strukturänderungen.
+     * PUBLIC - ermöglicht externe Observer-Deregistrierung.
+     *
+     * @param observer Der zu entfernende Observer
+     */
+    public final void removeStructureChangeObserver(StructureChangeObserver observer) {
+        observers.remove(observer);
+    }
+
 
     /**
      * Setzt den Iterator für verfügbare Mirrors.
@@ -474,6 +596,20 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         void onNodesRemoved(List<StructureNode> removedNodes, StructureNode headNode);
         void onLinksCreated(Set<Link> newLinks, StructureNode headNode);
         void onLinksRemoved(Set<Link> removedLinks, StructureNode headNode);
+        void onStructureChanged(BuildAsSubstructure structure);
+    }
+
+    /**
+     * Bereinigt die StructureNode-Verwaltung für entfernte Knoten.
+     */
+    private void cleanupStructureNodes(List<MirrorNode> nodesToRemove) {
+        for (MirrorNode nodeToRemove : nodesToRemove) {
+            structureNodes.remove(nodeToRemove);
+            removeSubstructureForNode(nodeToRemove);
+            cleanupNodeRelationships(nodeToRemove);
+            updateRootIfNecessary(nodeToRemove);
+        }
+        // Observer-Benachrichtigung entfernt
     }
 
     /**
@@ -541,6 +677,19 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             observer.onLinksRemoved(removedLinks, headNode);
         }
     }
+
+    /**
+     * Benachrichtigt alle Observer über Strukturänderungen.
+     * PROTECTED - für Subklassen-Zugriff verfügbar.
+     */
+    protected final void notifyStructureChanged() {
+        // Einfache Implementation ohne Observer Pattern - falls nicht benötigt
+        // kann diese Methode leer bleiben oder entfernt werden
+        for (StructureChangeObserver observer : observers) {
+            observer.onStructureChanged(this);
+        }
+    }
+
 
     // ===== HILFSMETHODEN =====
 

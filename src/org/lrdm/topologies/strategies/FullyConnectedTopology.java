@@ -139,6 +139,15 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
     }
 
     /**
+     * @param nodesToRemove Anzahl der zu entfernenden Knoten
+     * @return
+     */
+    @Override
+    protected int removeNodesFromStructure(int nodesToRemove) {
+        return 0;
+    }
+
+    /**
      * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
      * Erstellt für jede StructureNode-Verbindung einen entsprechenden Mirror-Link.
      *
@@ -403,7 +412,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      *
      * @return true, wenn die Struktur gültig ist
      */
-    public boolean validateTopology() {
+    protected boolean validateTopology() {
         MirrorNode root = getCurrentStructureRoot();
         if (root instanceof FullyConnectedMirrorNode fcRoot) {
             return fcRoot.isValidStructure();
