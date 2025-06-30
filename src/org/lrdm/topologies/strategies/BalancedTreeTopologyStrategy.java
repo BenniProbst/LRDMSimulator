@@ -1,246 +1,545 @@
+
 package org.lrdm.topologies.strategies;
 
 import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
-import org.lrdm.effectors.Action;
-import org.lrdm.effectors.MirrorChange;
+import org.lrdm.effectors.*;
+import org.lrdm.topologies.node.*;
 import org.lrdm.util.IDGenerator;
 
 import java.util.*;
 
-/**A {@link TopologyStrategy} which links the mirrors of the {@link Network} as a balanced tree with a
- * single root {@link Mirror}. Each Mirror will have at most {@link Network#getNumTargetLinksPerMirror()} children.
- * The strategy aims to create a tree structure where each branch has the same number of ancestors (if possible).
+/**
+ * Eine {@link TopologyStrategy}, die Mirrors als balancierten Baum mit einer
+ * einzelnen Root verknüpft. Jeder Mirror hat maximal {@link Network#getNumTargetLinksPerMirror()} Kinder.
+ * Die Strategie zielt darauf ab, eine Baumstruktur zu erstellen, bei der jeder Zweig
+ * die gleiche Anzahl von Vorgängern hat (soweit möglich).
+ * <p>
+ * Verwendet {@link BalancedTreeMirrorNode} für Struktur-Management mit Balance-Optimierung
+ * und erweitert {@link BuildAsSubstructure} für konsistente StructureBuilder-Integration.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
+ * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class BalancedTreeTopologyStrategy extends BuildAsSubstructure {
 
-    /**Creates a new subtree structure starting with the root mirror.
+    // ===== ZUSTANDSVARIABLEN FÜR SIM TIME UND PROPS =====
+    private int currentSimTime = 0;
+    private Properties currentProps;
+
+    // ===== BUILD SUBSTRUCTURE IMPLEMENTATION =====
+
+    /**
+     * Baut eine balancierte Baum-Struktur mit der angegebenen Anzahl von Knoten auf.
+     * Erstellt eine hierarchische Struktur mit optimaler Balance und n-1 Links.
+     * Verwendet einen Breadth-First-Ansatz für optimale Balancierung.
      *
-     * @param n {@link Network} the network
-     * @param root {@link Mirror} the root mirror
-     * @param props {@link Properties} of the simulation
-     * @param numChilds number of children a node in this tree shall have
-     * @param remainingMirrors {@link List} of {@link Mirror}s to be put into the current subtree
-     * @param ret {@link Set} of {@link Link}s created
-     * @param numMirrorsLeft number of mirrors still to be put into the tree
+     * @param totalNodes Anzahl der zu erstellenden Knoten
+     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
+     * @param props Properties der Simulation
+     * @return Die Root-Node der erstellten balancierten Struktur
      */
-    private void createAndLinkChildren(Network n, Mirror root, Properties props, int numChilds, List<Mirror> remainingMirrors, int simTime, Set<Link> ret, int numMirrorsLeft) {
-        List<Mirror> children = new ArrayList<>();
-        for(int i = 0; i < numChilds; i++) {
-            Mirror m = connect(root, remainingMirrors, ret, simTime, props);
-            if(m != null)
-                children.add(m);
-        }
-        int i = 0;
-        for(Mirror m : children) {
-            //split the children to get a balanced tree
-            int lower = i*Math.round((numMirrorsLeft - numChilds)/(float) numChilds);
-            int upper = (i+1)*Math.round((numMirrorsLeft - numChilds)/(float) numChilds);
-            if(remainingMirrors.size() == 1) upper = 1;
-            if(i == children.size()-1) upper = remainingMirrors.size();
-            if(upper > remainingMirrors.size()) continue;
-            List<Mirror> currentPartition = remainingMirrors.subList(lower,upper);
-            if(m != null && !remainingMirrors.isEmpty()) {
-                ret.addAll(createTree(n, m, currentPartition, simTime, props));
-            }
-            i++;
-        }
-    }
+    @Override
+    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
+        this.currentSimTime = simTime;
+        this.currentProps = props;
 
-    /**Creates a link between a root node and the first mirror of a list of mirrors.
-     * Updates the links parameter and removes the newly connected mirror from mirrors parameter.
-     *
-     * @param root the root {@link Mirror}
-     * @param mirrors the {@link List} of {@link Mirror}s of which the first is to be linked to the root
-     * @param links the {@link Set} of {@link Link}s to which the newly created link is added
-     * @param props {@link Properties} of the simulation
-     * @return the child {@link Mirror} which was connected to the root
-     */
-    private Mirror connect(Mirror root, List<Mirror> mirrors, Set<Link> links, int simTime, Properties props) {
-        super.addPortObjectMirror(root);
-        if(mirrors.isEmpty()) return null;
-        Mirror child = mirrors.get(0);
-        mirrors.remove(child);
-        super.addPortObjectMirror(child);
-        Link l = new Link(IDGenerator.getInstance().getNextID(), root, child, simTime, props);
-        root.addLink(l);
-        child.addLink(l);
-        links.add(l);
-        return child;
-    }
+        if (totalNodes <= 0 || !mirrorIterator.hasNext()) return null;
 
-    /**Creates the links for a tree structure starting with the root node for all mirrors to be connected.
-     *
-     * @param n {@link Network} the network
-     * @param root {@link Mirror} the root mirror
-     * @param mirrorsToConnect {@link List} of {@link Mirror}s to be put into the tree structure
-     * @param props {@link Properties} of the simulation
-     * @return {@link Set} of links of the tree structure
-     */
-    private Set<Link> createTree(Network n, Mirror root, List<Mirror> mirrorsToConnect, int simTime, Properties props) {
-        Set<Link> ret = new HashSet<>();
+        // Bestimme Links pro Node basierend auf Network-Einstellungen
+        int linksPerNode = (network != null) ? network.getNumTargetLinksPerMirror() : 2;
 
-        List<Mirror> remainingMirrors = new ArrayList<>(mirrorsToConnect);
-        int numMirrorsLeft = remainingMirrors.size();
-        int numChilds = n.getNumTargetLinksPerMirror();
+        // Erstelle Root-Node mit erstem Mirror
+        Mirror rootMirror = mirrorIterator.next();
+        BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(
+                idGenerator.getNextID(), rootMirror, linksPerNode);
 
-        if(remainingMirrors.size() > numChilds) {
-            //create children and subdivide remaining mirrors among them
-            createAndLinkChildren(n, root, props, numChilds, remainingMirrors, simTime, ret, numMirrorsLeft);
-        } else {
-            //end recursion, just link the children
-            for(int i = 0; i < numMirrorsLeft; i++) {
-                connect(root, remainingMirrors, ret, simTime, props);
-            }
-        }
+        // Setze Root als Head - nur der Head gibt den Strukturtyp vor
+        root.setHead(true);
 
-        return ret;
+        // Erstelle balancierte Baum-Struktur rekursiv
+        buildBalancedTreeRecursive(root, totalNodes - 1, linksPerNode, simTime, props);
+
+        return root;
     }
 
     /**
-     * @param n
-     * @param root
-     * @param mirrorsToConnect
-     * @param props
-     * @return
+     * Baut die balancierte Baum-Struktur rekursiv mit Stack-basierter Navigation auf.
+     * Verwendet einen Breadth-First-Ansatz für optimale Balance-Verteilung.
+     *
+     * @param root Root-Node der Struktur
+     * @param remainingNodes Anzahl noch zu erstellender Knoten
+     * @param linksPerNode Maximale Anzahl Kinder pro Knoten
+     * @param simTime Aktuelle Simulationszeit
+     * @param props Properties der Simulation
+     */
+    private void buildBalancedTreeRecursive(BalancedTreeMirrorNode root, int remainingNodes,
+                                            int linksPerNode, int simTime, Properties props) {
+        if (remainingNodes <= 0 || !mirrorIterator.hasNext()) return;
+
+        // Stack für Parent-Knoten (Breadth-First mit Stack-Simulation)
+        Stack<BalancedTreeMirrorNode> parentStack = new Stack<>();
+        parentStack.push(root);
+
+        while (remainingNodes > 0 && !parentStack.isEmpty() && mirrorIterator.hasNext()) {
+            BalancedTreeMirrorNode currentParent = parentStack.pop();
+
+            // Berechne optimale Kindanzahl für diesen Parent
+            int childrenToAdd = Math.min(
+                    calculateOptimalChildrenForParent(currentParent, remainingNodes, linksPerNode),
+                    remainingNodes
+            );
+
+            // Füge Kinder zu diesem Parent hinzu
+            for (int i = 0; i < childrenToAdd && mirrorIterator.hasNext(); i++) {
+                Mirror childMirror = mirrorIterator.next();
+                BalancedTreeMirrorNode child = new BalancedTreeMirrorNode(
+                        idGenerator.getNextID(), childMirror, linksPerNode);
+
+                // Erstelle StructureNode-Verbindung (nur Head hat Typ-Kennzeichnung)
+                currentParent.addChild(child);
+                child.setParent(currentParent);
+
+                // Erstelle echten Mirror-Link
+                createMirrorLink(currentParent, child, simTime, props);
+
+                // Füge Kind für nächste Ebene zu Stack hinzu
+                parentStack.push(child);
+                remainingNodes--;
+            }
+        }
+    }
+
+    /**
+     * Berechnet die optimale Anzahl Kinder für einen Parent-Knoten zur Balance-Erhaltung.
+     *
+     * @param parent Der Parent-Knoten
+     * @param remainingNodes Anzahl noch zu verteilender Knoten
+     * @param maxLinksPerNode Maximale Links pro Knoten
+     * @return Optimale Anzahl Kinder für diesen Parent
+     */
+    private int calculateOptimalChildrenForParent(BalancedTreeMirrorNode parent,
+                                                  int remainingNodes, int maxLinksPerNode) {
+        if (remainingNodes <= 0) return 0;
+
+        // Verwende die Balance-Logik der BalancedTreeMirrorNode falls verfügbar
+        if (parent != null) {
+            return Math.min(remainingNodes, maxLinksPerNode);
+        }
+
+        // Fallback: Gleichmäßige Verteilung
+        return Math.min(maxLinksPerNode, Math.min(remainingNodes, 2));
+    }
+
+    /**
+     * Erstellt einen Mirror-Link zwischen Parent und Child.
+     */
+    private void createMirrorLink(BalancedTreeMirrorNode parent, BalancedTreeMirrorNode child,
+                                  int simTime, Properties props) {
+        Link link = new Link(idGenerator.getNextID(),
+                parent.getMirror(), child.getMirror(), simTime, props);
+        parent.getMirror().addLink(link);
+        child.getMirror().addLink(link);
+    }
+
+    /**
+     * Fügt neue Knoten zur bestehenden balancierten Baum-Struktur hinzu.
+     * Neue Knoten werden an den optimalen Stellen eingefügt, um die Balance zu bewahren.
+     *
+     * @param nodesToAdd Anzahl der hinzuzufügenden Knoten
+     * @return Tatsächliche Anzahl der hinzugefügten Knoten
      */
     @Override
-    public Set<Link> initNetworkSub(Network n, Mirror root, List<Mirror> mirrorsToConnect, int simTime, Properties props) {
-        return new HashSet<>(createTree(n, root, mirrorsToConnect, simTime, props));
+    protected int addNodesToStructure(int nodesToAdd) {
+        if (nodesToAdd <= 0 || getCurrentStructureRoot() == null) return 0;
+
+        BalancedTreeMirrorNode root = (BalancedTreeMirrorNode) getCurrentStructureRoot();
+        int actuallyAdded = 0;
+
+        while (actuallyAdded < nodesToAdd && mirrorIterator.hasNext()) {
+            // Finde besten einfüge Punkt mit rekursiver Navigation
+            BalancedTreeMirrorNode bestParent = findBestInsertionParentRecursive(root);
+            if (bestParent == null) break;
+
+            // Erstelle neuen Knoten
+            Mirror mirror = mirrorIterator.next();
+            BalancedTreeMirrorNode newNode = new BalancedTreeMirrorNode(
+                    idGenerator.getNextID(), mirror, root.getTargetLinksPerNode());
+
+            // Füge zur Struktur hinzu (ohne Typ-Angabe bei Kindern)
+            bestParent.addChild(newNode);
+            newNode.setParent(bestParent);
+
+            // Erstelle Mirror-Link
+            createMirrorLink(bestParent, newNode, currentSimTime, currentProps);
+
+            actuallyAdded++;
+        }
+
+        return actuallyAdded;
     }
-    /**Initializes the network already having the amount of mirrors as specified in the properties and
-     * connects these mirrors forming a balanced tree.
+
+    /**
+     * Findet den besten Parent für das Einfügen eines neuen Knotens mit rekursiver Navigation.
+     * Verwendet Stack-basierte Traversierung zur Balance-Erhaltung.
+     */
+    private BalancedTreeMirrorNode findBestInsertionParentRecursive(BalancedTreeMirrorNode root) {
+        Stack<BalancedTreeMirrorNode> candidateStack = new Stack<>();
+        BalancedTreeMirrorNode bestCandidate = null;
+        int lowestDepth = Integer.MAX_VALUE;
+        int fewestChildren = Integer.MAX_VALUE;
+
+        // Stack-basierte Traversierung aller Knoten
+        candidateStack.push(root);
+
+        while (!candidateStack.isEmpty()) {
+            BalancedTreeMirrorNode current = candidateStack.pop();
+
+            // Prüfe, ob dieser Knoten weitere Kinder akzeptieren kann
+            if (current.canAcceptMoreChildren()) {
+                int currentDepth = calculateNodeDepth(current);
+                int currentChildren = current.getChildren().size();
+
+                // Bevorzuge niedrigere Tiefe, dann weniger Kinder
+                if (currentDepth < lowestDepth ||
+                        (currentDepth == lowestDepth && currentChildren < fewestChildren)) {
+                    bestCandidate = current;
+                    lowestDepth = currentDepth;
+                    fewestChildren = currentChildren;
+                }
+            }
+
+            // Füge Kinder zum Stack für weitere Exploration hinzu
+            for (StructureNode child : current.getChildren()) {
+                if (child instanceof BalancedTreeMirrorNode balancedChild) {
+                    candidateStack.push(balancedChild);
+                }
+            }
+        }
+
+        return bestCandidate;
+    }
+
+    /**
+     * Berechnet die Tiefe eines Knotens durch rekursive Parent-Navigation.
+     */
+    private int calculateNodeDepth(StructureNode node) {
+        int depth = 0;
+        StructureNode current = node;
+
+        while (current.getParent() != null) {
+            depth++;
+            current = current.getParent();
+        }
+
+        return depth;
+    }
+
+    /**
+     * Entfernt Knoten aus einer bestehenden balancierten Baum-Struktur.
+     * Bevorzugt Blatt-Knoten für die Entfernung, um die Balance zu erhalten.
      *
-     * @param n ({@link Network}) the network to initialize
-     * @param props ({@link Properties}) the properties of the simulation
-     * @return the set of {@link Link}s created (the Network passed as parameter is changed accordingly)
+     * @param nodesToRemove Anzahl der zu entfernenden Knoten
+     * @return Anzahl der tatsächlich entfernten Knoten
+     */
+    @Override
+    protected int removeNodesFromStructure(int nodesToRemove) {
+        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) return 0;
+
+        BalancedTreeMirrorNode root = (BalancedTreeMirrorNode) getCurrentStructureRoot();
+        int actuallyRemoved = 0;
+
+        while (actuallyRemoved < nodesToRemove) {
+            // Finde Blatt-Knoten mit höchster Tiefe (außer Root)
+            BalancedTreeMirrorNode leafToRemove = findDeepestLeafNodeRecursive(root);
+            if (leafToRemove == null || leafToRemove == root) break;
+
+            removeNodeFromBalancedTreeStructure(leafToRemove);
+            actuallyRemoved++;
+        }
+
+        return actuallyRemoved;
+    }
+
+    /**
+     * Findet den tiefsten Blatt-Knoten mit rekursiver Stack-Navigation.
+     */
+    private BalancedTreeMirrorNode findDeepestLeafNodeRecursive(BalancedTreeMirrorNode root) {
+        Stack<BalancedTreeMirrorNode> nodeStack = new Stack<>();
+        BalancedTreeMirrorNode deepestLeaf = null;
+        int maxDepth = -1;
+
+        nodeStack.push(root);
+
+        while (!nodeStack.isEmpty()) {
+            BalancedTreeMirrorNode current = nodeStack.pop();
+
+            // Prüfe, ob dies ein Blatt-Knoten ist (keine Kinder)
+            if (current.getChildren().isEmpty() && current != root) {
+                int currentDepth = calculateNodeDepth(current);
+                if (currentDepth > maxDepth) {
+                    deepestLeaf = current;
+                    maxDepth = currentDepth;
+                }
+            }
+
+            // Füge Kinder zum Stack hinzu
+            for (StructureNode child : current.getChildren()) {
+                if (child instanceof BalancedTreeMirrorNode balancedChild) {
+                    nodeStack.push(balancedChild);
+                }
+            }
+        }
+
+        return deepestLeaf;
+    }
+
+    /**
+     * Entfernt einen Knoten vollständig aus der balancierten Baum-Struktur.
+     * Bereinigt die Parent-Child-Beziehungen und Mirror-Links.
+     */
+    private void removeNodeFromBalancedTreeStructure(BalancedTreeMirrorNode nodeToRemove) {
+        // Entferne Mirror-Links durch Mirror-Shutdown
+        Mirror mirror = nodeToRemove.getMirror();
+        if (mirror != null) {
+            mirror.shutdown(currentSimTime);
+        }
+
+        // Bereinige StructureNode-Beziehungen
+        StructureNode parent = nodeToRemove.getParent();
+        if (parent != null) {
+            parent.removeChild(nodeToRemove);
+        }
+    }
+
+    /**
+     * Sammelt alle Links aus der Struktur durch rekursive Navigation.
+     * Durchläuft alle Knoten und sammelt deren Mirror-Links.
+     */
+    private Set<Link> collectAllLinksFromStructureRecursive(MirrorNode root) {
+        Set<Link> allLinks = new HashSet<>();
+        Stack<MirrorNode> nodeStack = new Stack<>();
+        Set<MirrorNode> visited = new HashSet<>();
+
+        nodeStack.push(root);
+
+        while (!nodeStack.isEmpty()) {
+            MirrorNode current = nodeStack.pop();
+            if (visited.contains(current)) continue;
+            visited.add(current);
+
+            // Sammle Links von diesem Knoten
+            if (current.getMirror() != null) {
+                allLinks.addAll(current.getMirror().getLinks());
+            }
+
+            // Füge Kinder zum Stack hinzu
+            for (StructureNode child : current.getChildren()) {
+                if (child instanceof MirrorNode mirrorChild) {
+                    nodeStack.push(mirrorChild);
+                }
+            }
+        }
+
+        return allLinks;
+    }
+
+    /**
+     * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
+     * Erstellt für jede Parent-Child-Beziehung einen entsprechenden Mirror-Link.
+     *
+     * @param root Die Root-Node der Struktur
+     * @param props Simulation Properties
+     * @return Set aller erstellten Links
+     */
+    @Override
+    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+        Set<Link> links = new HashSet<>();
+        Stack<MirrorNode> nodeStack = new Stack<>();
+        Set<MirrorNode> visited = new HashSet<>();
+
+        nodeStack.push(root);
+
+        while (!nodeStack.isEmpty()) {
+            MirrorNode current = nodeStack.pop();
+            if (visited.contains(current)) continue;
+            visited.add(current);
+
+            // Erstelle Links zu allen Kindern
+            for (StructureNode child : current.getChildren()) {
+                if (child instanceof BalancedTreeMirrorNode balancedChild &&
+                        !visited.contains(balancedChild)) {
+
+                    // Erstelle Mirror-Link falls noch nicht vorhanden
+                    if (!isAlreadyLinked(current, balancedChild)) {
+                        Link link = new Link(idGenerator.getNextID(),
+                                current.getMirror(), balancedChild.getMirror(),
+                                currentSimTime, currentProps);
+
+                        current.getMirror().addLink(link);
+                        balancedChild.getMirror().addLink(link);
+                        links.add(link);
+                    }
+
+                    nodeStack.push(balancedChild);
+                }
+            }
+        }
+
+        return links;
+    }
+
+    /**
+     * Prüft, ob zwei MirrorNodes bereits über Mirror-Links verbunden sind.
+     */
+    private boolean isAlreadyLinked(MirrorNode node1, MirrorNode node2) {
+        if (node1.getMirror() == null || node2.getMirror() == null) return false;
+
+        for (Link link : node1.getMirror().getLinks()) {
+            Mirror source = link.getSource();
+            Mirror target = link.getTarget();
+
+            if ((source == node1.getMirror() && target == node2.getMirror()) ||
+                    (source == node2.getMirror() && target == node1.getMirror())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
+
+    /**
+     * Initialisiert das Netzwerk mit der angegebenen Anzahl von Mirrors als balancierter Baum.
+     *
+     * @param n Das zu initialisierende {@link Network}
+     * @param props {@link Properties} der Simulation
+     * @return Set aller erstellten {@link Link}s
      */
     @Override
     public Set<Link> initNetwork(Network n, Properties props) {
-        Mirror root = n.getMirrors().get(0);
-        List<Mirror> mirrors = new ArrayList<>(n.getMirrors());
-        return initNetworkSub(n, root, mirrors,0, props);
+        // Initialisiere Builder-Funktionalität
+        this.network = n;
+        this.idGenerator = IDGenerator.getInstance();
+        this.mirrorIterator = n.getMirrors().iterator();
+        this.currentProps = props;
+
+        int totalMirrors = n.getNumMirrors();
+        MirrorNode root = buildStructure(totalMirrors, 0, props);
+
+        if (root != null) {
+            setCurrentStructureRoot(root);
+            return collectAllLinksFromStructureRecursive(root);
+        }
+
+        return new HashSet<>();
     }
 
-    /**Recreates all links between the mirrors of the network to adhere to the balanced tree topology.
-     * First calls {@link Link#shutdown()} on all existing links and then recreates the links according to the balanced tree topology.
+    /**
+     * Startet das Netzwerk neu und erstellt die balancierten Baum-Verbindungen erneut.
      *
-     * @param n the {@link Network}
-     * @param props {@link Properties} of the simulation
-     * @param simTime current simulation time
+     * @param n Das {@link Network}
+     * @param props {@link Properties} der Simulation
+     * @param simTime Aktuelle Simulationszeit
      */
     @Override
     public void restartNetwork(Network n, Properties props, int simTime) {
-        Mirror root = getPortObjectMirrors().iterator().next();
-        super.restartNetworkSub(n, root, props, simTime);
+        super.restartNetwork(n, props, simTime);
+        this.currentSimTime = simTime;
+        this.currentProps = props;
+
+        if (getCurrentStructureRoot() != null) {
+            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props);
+            n.getLinks().addAll(newLinks);
+        }
     }
 
-    /**Creates the respective number of mirrors to be added and links them according to the balanced tree topology.
-     * For this, the mirrors are traversed in ascending order of their IDs. Each mirror which still has less links than
-     * expected by {@link Network#getNumTargetLinksPerMirror()} will be "filled up".
-     * <br/>
-     * <i>Current restriction:</i> you should not add more mirrors than can be added to existing mirrors as children.
+    /**
+     * Fügt neue Mirrors zum Netzwerk hinzu und verbindet sie gemäß der balancierten Baum-Topologie.
+     * Verwendet die geerbte createMirrors-Funktionalität für simTime und Props.
      *
-     * @param n the {@link Network}
-     * @param newMirrors number of mirrors to be added
-     * @param props {@link Properties} of the simulation
-     * @param simTime current simulation time
+     * @param n Das {@link Network}
+     * @param newMirrors Anzahl der hinzuzufügenden Mirrors
+     * @param props {@link Properties} der Simulation
+     * @param simTime Aktuelle Simulationszeit
      */
     @Override
     public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
-        //TODO: redo this function to find the root and structure to be able to add balanced new mirrors
-        List<Mirror> mirrorsToAdd = createMirrors(newMirrors, simTime, props);
-        //add links by filling up existing nodes with less than the max amount of links per node
-        //TODO: fix design fault: no analysis of tree to keep structure extendable
-        List<Link> linksToAdd = new ArrayList<>();
-        List<Mirror> mirrorsToLink = new ArrayList<>(mirrorsToAdd);
-        for(Mirror m : n.getMirrorsSortedById()) {
-            if(m.getOutLinks().size() < n.getNumTargetLinksPerMirror()) {
-                if(mirrorsToLink.isEmpty()) break;
-                Mirror target = mirrorsToLink.remove(0);
-                linksToAdd.add(new Link(IDGenerator.getInstance().getNextID(), m,target, simTime, props));
-            }
+        this.currentSimTime = simTime;
+        this.currentProps = props;
+
+        // Verwende TopologyStrategy.createMirrors für korrekte simTime/Props-Behandlung
+        List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
+        n.getMirrors().addAll(addedMirrors);
+
+        // Erstelle neuen Iterator mit hinzugefügten Mirrors
+        this.mirrorIterator = addedMirrors.iterator();
+
+        // Füge zur bestehenden Struktur hinzu
+        int actuallyAdded = addNodesToStructure(newMirrors);
+
+        // Aktualisiere Network-Links
+        if (getCurrentStructureRoot() != null) {
+            Set<Link> allLinks = collectAllLinksFromStructureRecursive(getCurrentStructureRoot());
+            n.getLinks().clear();
+            n.getLinks().addAll(allLinks);
         }
-        //what if there are still mirrors left to add? this is the case if all leafs are filled up
-        n.getMirrors().addAll(mirrorsToAdd);
-        n.getLinks().addAll(linksToAdd);
     }
 
-    /**Removes the requested amount of mirrors from the network. The mirrors with the largest ID will be removed.
+    /**
+     * Entfernt Mirrors aus dem Netzwerk unter Beibehaltung der balancierten Baum-Struktur.
      *
-     * @param n the {@link Network}
-     * @param removeMirrors number of mirrors to be removed
-     * @param props {@link Properties} of the simulation
-     * @param simTime current simulation time
+     * @param n Das {@link Network}
+     * @param removeMirrors Anzahl der zu entfernenden Mirrors
+     * @param props {@link Properties} der Simulation
+     * @param simTime Aktuelle Simulationszeit
      */
     @Override
     public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        //TODO: find largest branch and delete mirrors for largest branch each single
-        //just remove the last n mirrors
-        List<Mirror> mirrors = n.getMirrorsSortedById();
-        for(int i = 0; i < removeMirrors; i++) {
-            mirrors.get(mirrors.size() - 1 - i).shutdown(simTime);
+        this.currentSimTime = simTime;
+        this.currentProps = props;
+
+        int actuallyRemoved = removeNodesFromStructure(removeMirrors);
+
+        // Aktualisiere Network-Links
+        if (getCurrentStructureRoot() != null) {
+            Set<Link> allLinks = collectAllLinksFromStructureRecursive(getCurrentStructureRoot());
+            n.getLinks().clear();
+            n.getLinks().addAll(allLinks);
         }
     }
 
-    /**Returns the number of links the network should have. For a minimum spanning tree the links per mirror property is not used,
-     * because the goal is to connect all mirrors with as few links as possible. The minimum number of links achievable is N-1.
+    /**
+     * Gibt die Anzahl der Ziel-Links für das Netzwerk zurück.
+     * Für einen Baum ist dies immer N-1 (N = Anzahl Mirrors).
      *
-     * @param n ({@link Network}) the Network of mirrors
-     * @return the number of links for the network
+     * @param n Das {@link Network}
+     * @return Anzahl der Ziel-Links (N-1)
      */
     @Override
     public int getNumTargetLinks(Network n) {
-        return n.getMirrors().size() - 1;
+        return Math.max(0, n.getNumMirrors() - 1);
     }
 
+    /**
+     * Gibt die vorhergesagte Anzahl der Ziel-Links zurück, wenn die Aktion ausgeführt wird.
+     *
+     * @param a Die {@link Action}, die möglicherweise ausgeführt wird
+     * @return Vorhergesagte Anzahl der Ziel-Links
+     */
     @Override
     public int getPredictedNumTargetLinks(Action a) {
-        int m = a.getNetwork().getNumMirrors();
-        if(a instanceof MirrorChange mc) m += mc.getNewMirrors();
-        return m - 1;
+        int mirrors = a.getNetwork().getNumMirrors();
+        if (a instanceof MirrorChange mc) {
+            mirrors += mc.getNewMirrors();
+        }
+        return Math.max(0, mirrors - 1);
     }
 
-    /**
-     * @param n
-     * @param newMirrors
-     * @param props
-     * @param simTime
-     */
     @Override
-    public void handleAddNewMirrorsSub(Network n, int newMirrors, Properties props, int simTime) {
-
-    }
-
-    /**
-     * @param n
-     * @param removeMirrors
-     * @param props
-     * @param simTime
-     */
-    @Override
-    public void handleRemoveMirrorsSub(Network n, int removeMirrors, Properties props, int simTime) {
-
-    }
-
-    /**
-     * @param n
-     * @return
-     */
-    @Override
-    public int getNumTargetLinksSub(Network n) {
-        return 0;
-    }
-
-    /**
-     * @param a
-     * @return
-     */
-    @Override
-    public int getPredictedNumTargetLinksSub(Action a) {
-        return 0;
+    public String toString() {
+        return "BalancedTreeTopology{substructureId=" + getSubstructureId() + "}";
     }
 }
