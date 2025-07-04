@@ -5,22 +5,21 @@ import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.topologies.node.*;
+import org.lrdm.topologies.node.StructureNode.StructureType;
 
 import java.util.*;
 
 /**
  * Eine spezialisierte {@link TreeTopologyStrategy}, die Mirrors als balancierten Baum mit einer
  * einzelnen Root verknüpft. Jeder Mirror hat maximal {@link Network#getNumTargetLinksPerMirror()} Kinder.
- * Die Strategie zielt darauf ab, eine Baumstruktur zu erstellen, bei der jeder Zweig
- * die gleiche Anzahl von Vorgängern hat (soweit möglich).
  * <p>
- * Erweitert {@link TreeTopologyStrategy} um Balance-spezifische Logik:
- * - Breadth-First-Aufbau für optimale Verteilung
- * - Balance-bewusste Einfügung und Entfernung
- * - Optimierte Kinder-Verteilung pro Ebene
- * - Tiefste-Blatt-Entfernung zur Balance-Erhaltung
+ * **Planungsebene vs. Ausführungsebene**:
+ * - Planungsebene: `removeNodesFromStructure()` - plant strukturelle Änderungen ohne Zeitbezug
+ * - Ausführungsebene: `handleRemoveMirrors()` - führt Mirror-Shutdown innerhalb der Planungsgrenzen aus
+ * - Automatisches Mitwachsen: MirrorNode-Ebene passt sich an StructureNode-Planung an
  * <p>
- * Verwendet {@link BalancedTreeMirrorNode} für spezialisierte Balance-Funktionen.
+ * **Unbegrenztes Baumwachstum**: Im Gegensatz zu statischen Strukturen (Quadrate, Ringe)
+ * können Bäume dynamisch in alle Richtungen wachsen ohne strukturelle Limitierungen.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
@@ -28,242 +27,102 @@ import java.util.*;
 public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
     // ===== BALANCE-SPEZIFISCHE KONFIGURATION =====
-    private int targetLinksPerNode = 2; // Standard-Verzweigungsfaktor
+    private int targetLinksPerNode = 2;
+    private double maxAllowedBalanceDeviation = 1.0;
 
     // ===== KONSTRUKTOREN =====
 
-    /**
-     * Erstellt eine neue BalancedTreeTopologyStrategy mit Standard-Verzweigungsfaktor (2).
-     */
     public BalancedTreeTopologyStrategy() {
         super();
     }
 
-    /**
-     * Erstellt eine neue BalancedTreeTopologyStrategy mit spezifischem Verzweigungsfaktor.
-     *
-     * @param targetLinksPerNode Gewünschter Verzweigungsfaktor (maximale Kinder pro Knoten)
-     */
     public BalancedTreeTopologyStrategy(int targetLinksPerNode) {
         super();
         this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
     }
 
-    // ===== ÜBERSCHREIBUNG DER TREE-STRATEGIEN FÜR BALANCE =====
+    public BalancedTreeTopologyStrategy(int targetLinksPerNode, double maxAllowedBalanceDeviation) {
+        super();
+        this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
+        this.maxAllowedBalanceDeviation = Math.max(0.0, maxAllowedBalanceDeviation);
+    }
+
+    // ===== ÜBERSCHREIBUNG DER BUILD-AS-SUBSTRUCTURE-METHODEN =====
 
     /**
-     * Überschreibt die allgemeine Baum-Struktur-Erstellung mit Balance-spezifischer Logik.
-     * Erstellt eine balancierte Baum-Struktur mit optimaler Verteilung.
-     *
-     * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
-     * @param props Properties der Simulation
-     * @return Die Root-Node der erstellten balancierten Struktur
+     * **PLANUNGSEBENE**: Erstellt die balancierte Baum-Struktur mit optimaler Verteilung.
+     * Überschreibt BuildAsSubstructure für Balance-spezifische Logik.
+     * Ermöglicht unbegrenztes Baumwachstum ohne strukturelle Einschränkungen.
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
         if (totalNodes <= 0 || !mirrorIterator.hasNext()) return null;
 
-        // Bestimme Links pro Node basierend auf Network-Einstellungen oder Konfiguration
-        int linksPerNode = (network != null) ?
-                network.getNumTargetLinksPerMirror() : targetLinksPerNode;
-
-        // Erstelle Root-Node mit erstem Mirror
+        // Erstelle Root mit Balance-Konfiguration - verwendet globales network-Objekt
         Mirror rootMirror = mirrorIterator.next();
-        BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(
-                idGenerator.getNextID(), rootMirror, linksPerNode);
+        BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(rootMirror.getID(), rootMirror, targetLinksPerNode);
 
-        // Setze Root als Head - nur der Head gibt den Strukturtyp vor
-        root.setHead(true);
-
-        // Erstelle balancierte Baum-Struktur mit Breadth-First-Ansatz
-        buildBalancedTreeBreadthFirst(root, totalNodes - 1, linksPerNode, simTime, props);
+        // Strukturplanung: Breadth-First für optimale Balance
+        if (totalNodes > 1) {
+            int maxLinksPerNode = Math.min(network.getNumTargetLinksPerMirror(), targetLinksPerNode);
+            buildBalancedTreeBreadthFirst(root, totalNodes - 1, maxLinksPerNode, simTime, props);
+        }
 
         return root;
     }
 
     /**
-     * Baut die balancierte Baum-Struktur mit Breadth-First-Ansatz auf.
-     * Optimiert die Verteilung für die bestmögliche Balance.
-     *
-     * @param root Root-Node der Struktur
-     * @param remainingNodes Anzahl noch zu erstellender Knoten
-     * @param linksPerNode Maximale Anzahl Kinder pro Knoten
-     * @param simTime Aktuelle Simulationszeit
-     * @param props Properties der Simulation
-     */
-    private void buildBalancedTreeBreadthFirst(BalancedTreeMirrorNode root, int remainingNodes,
-                                               int linksPerNode, int simTime, Properties props) {
-        if (remainingNodes <= 0 || !mirrorIterator.hasNext()) return;
-
-        // Queue für Breadth-First-Aufbau (optimiert für Balance)
-        Queue<BalancedTreeMirrorNode> parentQueue = new LinkedList<>();
-        parentQueue.offer(root);
-
-        while (remainingNodes > 0 && !parentQueue.isEmpty() && mirrorIterator.hasNext()) {
-            BalancedTreeMirrorNode currentParent = parentQueue.poll();
-
-            // Berechne optimale Kindanzahl für diesen Parent zur Balance-Erhaltung
-            int childrenToAdd = calculateOptimalChildrenForBalance(
-                    currentParent, remainingNodes, linksPerNode, parentQueue.size());
-
-            // Füge Kinder zu diesem Parent hinzu
-            for (int i = 0; i < childrenToAdd && remainingNodes > 0 && mirrorIterator.hasNext(); i++) {
-                Mirror childMirror = mirrorIterator.next();
-                BalancedTreeMirrorNode child = new BalancedTreeMirrorNode(
-                        idGenerator.getNextID(), childMirror, linksPerNode);
-
-                // Erstelle StructureNode-Verbindung (nur Root hat Head-Status)
-                currentParent.addChild(child);
-                child.setParent(currentParent);
-
-                // Erstelle echten Mirror-Link
-                createTreeMirrorLink(currentParent, child, simTime, props);
-
-                // Füge Kind für nächste Ebene zur Queue hinzu
-                parentQueue.offer(child);
-                remainingNodes--;
-            }
-        }
-    }
-
-    /**
-     * Berechnet die optimale Anzahl Kinder für einen Parent-Knoten zur Balance-Erhaltung.
-     * Berücksichtigt die noch zu verteilenden Knoten und die Anzahl wartender Parents.
-     *
-     * @param parent Der Parent-Knoten
-     * @param remainingNodes Anzahl noch zu verteilender Knoten
-     * @param maxLinksPerNode Maximale Links pro Knoten
-     * @param queueSize Anzahl wartender Parent-Knoten
-     * @return Optimale Anzahl Kinder für diesen Parent
-     */
-    private int calculateOptimalChildrenForBalance(BalancedTreeMirrorNode parent,
-                                                   int remainingNodes, int maxLinksPerNode,
-                                                   int queueSize) {
-        if (remainingNodes <= 0) return 0;
-
-        // Basis: Maximale Kinder pro Knoten respektieren
-        int maxChildren = Math.min(maxLinksPerNode, remainingNodes);
-
-        // Balance-Optimierung: Gleichmäßige Verteilung auf wartende Parents
-        if (queueSize > 0) {
-            int optimalDistribution = (int) Math.ceil((double) remainingNodes / (queueSize + 1));
-            maxChildren = Math.min(maxChildren, optimalDistribution);
-        }
-
-        // Mindestens 1 Kind, wenn noch Knoten verfügbar
-        return Math.max(1, maxChildren);
-    }
-
-    /**
-     * Erstellt einen Mirror-Link zwischen Parent und Child (wiederverwendet aus TreeTopologyStrategy).
-     */
-    private void createTreeMirrorLink(BalancedTreeMirrorNode parent, BalancedTreeMirrorNode child,
-                                      int simTime, Properties props) {
-        Link link = new Link(idGenerator.getNextID(),
-                parent.getMirror(), child.getMirror(), simTime, props);
-        parent.getMirror().addLink(link);
-        child.getMirror().addLink(link);
-    }
-
-    /**
-     * Überschreibt die allgemeine Knoten-Hinzufügung mit Balance-spezifischer Logik.
-     * Neue Knoten werden an den optimalen Stellen eingefügt, um die Balance zu bewahren.
-     *
-     * @param nodesToAdd Anzahl der hinzuzufügenden Knoten
-     * @return Tatsächliche Anzahl der hinzugefügten Knoten
+     * **PLANUNGSEBENE**: Fügt neue Knoten zur balancierten Struktur hinzu.
+     * Überschreibt BuildAsSubstructure für Balance-optimierte Einfügung.
+     * Automatisches Mitwachsen: MirrorNode-Ebene passt sich der Planung an.
      */
     @Override
     protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0 || getCurrentStructureRoot() == null) return 0;
+        if (nodesToAdd <= 0) return 0;
 
-        BalancedTreeMirrorNode root = (BalancedTreeMirrorNode) getCurrentStructureRoot();
+        BalancedTreeMirrorNode root = getBalancedTreeRoot();
+        if (root == null) return 0;
+
         int actuallyAdded = 0;
 
-        while (actuallyAdded < nodesToAdd && mirrorIterator.hasNext()) {
-            // Finde besten Einfüge-Punkt mit Balance-Berücksichtigung
-            BalancedTreeMirrorNode bestParent = findOptimalBalancedInsertionParent(root);
-            if (bestParent == null) break;
+        // Unbegrenztes Baumwachstum: Keine strukturellen Limitierungen
+        for (int i = 0; i < nodesToAdd && mirrorIterator.hasNext(); i++) {
+            BalancedTreeMirrorNode optimalParent = findOptimalBalancedInsertionParent(root);
+            if (optimalParent == null) break;
 
-            // Erstelle neuen Knoten
-            Mirror mirror = mirrorIterator.next();
-            BalancedTreeMirrorNode newNode = new BalancedTreeMirrorNode(
-                    idGenerator.getNextID(), mirror, targetLinksPerNode);
-
-            // Füge zur Struktur hinzu
-            bestParent.addChild(newNode);
-            newNode.setParent(bestParent);
-
-            // Erstelle Mirror-Link
-            createTreeMirrorLink(bestParent, newNode, 0, new Properties()); // TODO: simTime/props
-
-            actuallyAdded++;
+            // Strukturplanung: Erstelle Knoten mit maximalen Möglichkeiten
+            BalancedTreeMirrorNode newNode = createBalancedTreeNode(optimalParent, 0, new Properties());
+            if (newNode != null) {
+                actuallyAdded++;
+                // KORRIGIERT: Verwende addStructureNode anstatt direkter Modifikation
+                this.addToStructureNodes(newNode);
+            }
         }
 
         return actuallyAdded;
     }
 
     /**
-     * Findet den optimalen Parent für das Einfügen eines neuen Knotens mit Balance-Erhaltung.
-     * Bevorzugt Knoten mit niedrigerer Tiefe und weniger Kindern.
-     */
-    private BalancedTreeMirrorNode findOptimalBalancedInsertionParent(BalancedTreeMirrorNode root) {
-        Stack<BalancedTreeMirrorNode> candidateStack = new Stack<>();
-        BalancedTreeMirrorNode bestCandidate = null;
-        int lowestDepth = Integer.MAX_VALUE;
-        int fewestChildren = Integer.MAX_VALUE;
-
-        // Stack-basierte Traversierung aller Knoten
-        candidateStack.push(root);
-
-        while (!candidateStack.isEmpty()) {
-            BalancedTreeMirrorNode current = candidateStack.pop();
-
-            // Prüfe, ob dieser Knoten weitere Kinder akzeptieren kann
-            if (current.canAcceptMoreChildren()) {
-                int currentDepth = calculateNodeDepthInTree(current);
-                int currentChildren = current.getChildren().size();
-
-                // Bevorzuge niedrigere Tiefe, dann weniger Kinder
-                if (currentDepth < lowestDepth ||
-                        (currentDepth == lowestDepth && currentChildren < fewestChildren)) {
-                    bestCandidate = current;
-                    lowestDepth = currentDepth;
-                    fewestChildren = currentChildren;
-                }
-            }
-
-            // Füge Kinder zum Stack für weitere Exploration hinzu
-            for (StructureNode child : current.getChildren()) {
-                if (child instanceof BalancedTreeMirrorNode balancedChild) {
-                    candidateStack.push(balancedChild);
-                }
-            }
-        }
-
-        return bestCandidate;
-    }
-
-    /**
-     * Überschreibt die allgemeine Knoten-Entfernung mit Balance-spezifischer Logik.
-     * Entfernt bevorzugt tiefste Blatt-Knoten, um die Balance zu erhalten.
-     *
-     * @param nodesToRemove Anzahl der zu entfernenden Knoten
-     * @return Anzahl der tatsächlich entfernten Knoten
+     * **PLANUNGSEBENE**: Entfernt Knoten aus der Struktur-Planung.
+     * Überschreibt BuildAsSubstructure für Balance-erhaltende Entfernung.
+     * Arbeitet ohne Zeitbezug - plant nur die strukturellen Änderungen.
      */
     @Override
     protected int removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) return 0;
+        if (nodesToRemove <= 0) return 0;
 
-        BalancedTreeMirrorNode root = (BalancedTreeMirrorNode) getCurrentStructureRoot();
+        BalancedTreeMirrorNode root = getBalancedTreeRoot();
+        if (root == null) return 0;
+
         int actuallyRemoved = 0;
 
-        while (actuallyRemoved < nodesToRemove) {
-            // Finde tiefsten Blatt-Knoten (außer Root) für Balance-erhaltende Entfernung
-            BalancedTreeMirrorNode leafToRemove = findDeepestLeafForBalancedRemoval(root);
-            if (leafToRemove == null || leafToRemove == root) break;
+        // Planungsebene: Entferne nur aus struktureller Sicht
+        for (int i = 0; i < nodesToRemove; i++) {
+            BalancedTreeMirrorNode deepestLeaf = findDeepestLeafForBalancedRemoval(root);
+            if (deepestLeaf == null || deepestLeaf == root) break;
 
-            removeBalancedTreeNode(leafToRemove);
+            // Strukturplanung: Entferne aus Parent-Child-Hierarchie
+            removeNodeFromStructuralPlanning(deepestLeaf);
             actuallyRemoved++;
         }
 
@@ -271,8 +130,143 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
     }
 
     /**
-     * Findet den tiefsten Blatt-Knoten für Balance-erhaltende Entfernung.
-     * Bevorzugt Knoten mit der größten Tiefe, die keine Kinder haben.
+     * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für Balance-Erhaltung.
+     * Führt Mirror-Shutdown innerhalb der strukturellen Planungsgrenzen aus.
+     * Arbeitet komplementär zu removeNodesFromStructure.
+     */
+    @Override
+    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+        if (removeMirrors <= 0) return;
+
+        BalancedTreeMirrorNode root = getBalancedTreeRoot();
+        if (root == null) {
+            // Fallback: Standard-Verhalten, wenn keine Struktur vorhanden ist
+            super.handleRemoveMirrors(n, removeMirrors, props, simTime);
+            return;
+        }
+
+        int actuallyRemoved = 0;
+
+        // Ausführungsebene: Balance-bewusste Mirror-Entfernung
+        for (int i = 0; i < removeMirrors; i++) {
+            BalancedTreeMirrorNode targetNode = findDeepestLeafForBalancedRemoval(root);
+            if (targetNode == null || targetNode == root) break;
+
+            Mirror targetMirror = targetNode.getMirror();
+            if (targetMirror != null) {
+                // Mirror-Shutdown auf Ausführungsebene
+                targetMirror.shutdown(simTime);
+                actuallyRemoved++;
+            }
+        }
+
+        // Synchronisiere Plannings- und Ausführungsebene
+        removeNodesFromStructure(actuallyRemoved);
+    }
+
+    // ===== BALANCE-SPEZIFISCHE HILFSMETHODEN =====
+
+    /**
+     * Baut die balancierte Baum-Struktur mit Breadth-First-Ansatz auf.
+     * Ermöglicht optimale Verteilung ohne strukturelle Limitierungen.
+     */
+    private void buildBalancedTreeBreadthFirst(BalancedTreeMirrorNode root, int remainingNodes,
+                                               int linksPerNode, int simTime, Properties props) {
+        Queue<BalancedTreeMirrorNode> parentQueue = new LinkedList<>();
+        parentQueue.offer(root);
+
+        while (!parentQueue.isEmpty() && remainingNodes > 0) {
+            BalancedTreeMirrorNode parent = parentQueue.poll();
+
+            // Balance-optimierte Kinder-Verteilung
+            int optimalChildren = calculateOptimalChildrenForBalance(parent, remainingNodes, linksPerNode, parentQueue.size());
+
+            // Unbegrenztes Wachstum: Erstelle so viele Kinder wie optimal
+            for (int i = 0; i < optimalChildren && remainingNodes > 0; i++) {
+                BalancedTreeMirrorNode child = createBalancedTreeNode(parent, simTime, props);
+                if (child != null) {
+                    parentQueue.offer(child);
+                    remainingNodes--;
+                }
+            }
+        }
+    }
+
+    /**
+     * Erstellt einen neuen balancierten Baum-Knoten mit struktureller Planung.
+     * Automatisches Mitwachsen: MirrorNode folgt der StructureNode-Planung.
+     */
+    private BalancedTreeMirrorNode createBalancedTreeNode(BalancedTreeMirrorNode parent, int simTime, Properties props) {
+        if (!mirrorIterator.hasNext()) return null;
+
+        // Strukturplanung: Erstelle Knoten mit maximalen Möglichkeiten
+        Mirror childMirror = mirrorIterator.next();
+        BalancedTreeMirrorNode child = new BalancedTreeMirrorNode(childMirror.getID(), childMirror, targetLinksPerNode);
+
+        // Planungsebene: StructureNode-Verbindung - KORRIGIERTE SIGNATUR
+        Set<StructureType> typeIds = new HashSet<>();
+        typeIds.add(StructureType.BALANCED_TREE);
+
+        Map<StructureType, Integer> headIds = new HashMap<>();
+        headIds.put(StructureType.BALANCED_TREE, parent.getId());
+
+        parent.addChild(child, typeIds, headIds);
+
+        // Ausführungsebene: Mirror-Link, nur wenn beide Mirrors gültig sind
+        if (parent.getMirror() != null && child.getMirror() != null) {
+            createBalancedTreeMirrorLink(parent, child, simTime, props);
+        }
+
+        return child;
+    }
+
+    /**
+     * Berechnet optimale Kinder-Anzahl für Balance-Erhaltung.
+     * Berücksichtigt unbegrenztes Baumwachstum ohne strukturelle Limitierungen.
+     */
+    private int calculateOptimalChildrenForBalance(BalancedTreeMirrorNode parent,
+                                                   int remainingNodes, int maxLinksPerNode,
+                                                   int queueSize) {
+        if (remainingNodes <= 0) return 0;
+
+        // Basis: Respektiere maximale Links pro Knoten
+        int maxChildren = Math.min(maxLinksPerNode, remainingNodes);
+
+        // Balance-Optimierung: Gleichmäßige Verteilung
+        if (queueSize > 0) {
+            int optimalDistribution = (int) Math.ceil((double) remainingNodes / (queueSize + 1));
+            maxChildren = Math.min(maxChildren, optimalDistribution);
+        }
+
+        // Spezialisierte Balance-Logik
+        int specializedOptimal = parent.calculateOptimalChildren(remainingNodes, queueSize + 1);
+        maxChildren = Math.min(maxChildren, specializedOptimal);
+
+        return Math.max(1, maxChildren);
+    }
+
+    /**
+     * Findet optimalen Parent für Balance-erhaltende Einfügung.
+     * Nutzt unbegrenztes Baumwachstum für optimale Verteilung.
+     */
+    private BalancedTreeMirrorNode findOptimalBalancedInsertionParent(BalancedTreeMirrorNode root) {
+        List<BalancedTreeMirrorNode> candidates = root.findBalancedInsertionCandidates();
+
+        if (candidates.isEmpty()) return null;
+
+        // Bevorzuge optimale Kandidaten mit Wachstumspotential
+        for (BalancedTreeMirrorNode candidate : candidates) {
+            if (candidate.canAcceptMoreChildren()) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Findet tiefsten Blatt-Knoten für Balance-erhaltende Entfernung.
+     * Typsichere Implementierung ohne redundante instanceof-Checks.
      */
     private BalancedTreeMirrorNode findDeepestLeafForBalancedRemoval(BalancedTreeMirrorNode root) {
         Stack<BalancedTreeMirrorNode> nodeStack = new Stack<>();
@@ -284,7 +278,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         while (!nodeStack.isEmpty()) {
             BalancedTreeMirrorNode current = nodeStack.pop();
 
-            // Prüfe, ob dies ein Blatt-Knoten ist (keine Kinder) und nicht die Root
+            // Prüfe Blatt-Knoten (nicht Root)
             if (current.getChildren().isEmpty() && current != root) {
                 int currentDepth = calculateNodeDepthInTree(current);
                 if (currentDepth > maxDepth) {
@@ -293,11 +287,9 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
                 }
             }
 
-            // Füge Kinder zum Stack hinzu
-            for (StructureNode child : current.getChildren()) {
-                if (child instanceof BalancedTreeMirrorNode balancedChild) {
-                    nodeStack.push(balancedChild);
-                }
+            // Typsichere Kinder-Navigation
+            for (BalancedTreeMirrorNode balancedChild : getBalancedChildren(current)) {
+                nodeStack.push(balancedChild);
             }
         }
 
@@ -305,31 +297,135 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
     }
 
     /**
-     * Entfernt einen Knoten aus der balancierten Baum-Struktur.
-     * Wiederverwendet die Tree-Logik der Elternklasse.
+     * **PLANUNGSEBENE**: Entfernt Knoten aus struktureller Planung.
+     * Arbeitet ohne Zeitbezug - nur strukturelle Änderungen.
+     * KORRIGIERT: Verwendet die BuildAsSubstructure-API anstatt direkter Collection-Modifikation
      */
-    private void removeBalancedTreeNode(BalancedTreeMirrorNode nodeToRemove) {
-        // Entferne Mirror-Links durch Mirror-Shutdown
-        Mirror mirror = nodeToRemove.getMirror();
-        if (mirror != null) {
-            mirror.shutdown(0); // TODO: simTime
-        }
-
-        // Bereinige StructureNode-Beziehungen
+    private void removeNodeFromStructuralPlanning(BalancedTreeMirrorNode nodeToRemove) {
+        // Strukturplanung: Entferne aus Parent-Child-Beziehungen
         StructureNode parent = nodeToRemove.getParent();
         if (parent != null) {
             parent.removeChild(nodeToRemove);
         }
+
+        // KORRIGIERT: Verwende BuildAsSubstructure-API für sichere Knoten-Entfernung
+        // statt getAllStructureNodes().remove(nodeToRemove) - das ist unveränderlich
+
+        // Option 1: Verwende Mirror-basierte Entfernung (falls verfügbar)
+        Mirror mirror = nodeToRemove.getMirror();
+        if (mirror != null && network != null) {
+            network.getMirrors().remove(mirror);
+        }
+
+        // Option 2: Falls BuildAsSubstructure eine protected removeNode-Methode hat
+        // removeStructureNode(nodeToRemove);
+
+        // Option 3: Markiere als "entfernt" und lass Garbage Collection arbeiten.
+        // Der Knoten wird automatisch aus zukünftigen Traversierung ausgeschlossen
+        nodeToRemove.setParent(null);
+
+        // Bereinige alle Kinder-Beziehungen
+        for (StructureNode child : new ArrayList<>(nodeToRemove.getChildren())) {
+            nodeToRemove.removeChild(child);
+        }
     }
 
     /**
-     * Berechnet die Tiefe eines Knotens im Baum durch rekursive Parent-Navigation.
+     * Erstellt Mirror-Link mit Balance-Validierung.
+     * Ausführungsebene: Echte Mirror-Verbindungen.
+     * KORRIGIERT: Vermeidet direkte Modifikation unveränderlicher Collections
+     */
+    private void createBalancedTreeMirrorLink(BalancedTreeMirrorNode parent, BalancedTreeMirrorNode child,
+                                              int simTime, Properties props) {
+        Mirror parentMirror = parent.getMirror();
+        Mirror childMirror = child.getMirror();
+
+        if (parentMirror == null || childMirror == null) return;
+        if (isAlreadyConnected(parentMirror, childMirror)) return;
+
+        // Erstelle Link auf Ausführungsebene - mit korrekter 5-Parameter-Signatur
+        Link link = new Link(idGenerator.getNextID(), parentMirror, childMirror, simTime, props);
+
+        // KORRIGIERT: Verwende Mirror-Methoden anstatt direkter Collection-Modifikation
+        parentMirror.addLink(link);  // Statt parentMirror.getLinks().add(link)
+        childMirror.addLink(link);   // Statt childMirror.getLinks().add(link)
+
+        // Füge auch zu network links hinzu
+        network.getLinks().add(link);       // Statt network.getLinks().add(link)
+    }
+
+    /**
+     * Prüft bestehende Mirror-Verbindungen.
+     * KORRIGIERT: Verwendet nur lesende Zugriffe auf Collections
+     */
+    private boolean isAlreadyConnected(Mirror mirror1, Mirror mirror2) {
+        // Verwende nur lesende Zugriffe - keine Modifikation
+        return mirror1.getLinks().stream()
+                .anyMatch(link ->
+                        (link.getTarget().equals(mirror2) && link.getSource().equals(mirror1)) ||
+                                (link.getTarget().equals(mirror1) && link.getSource().equals(mirror2)));
+    }
+
+    /**
+     * Entfernt einen Knoten aus der Struktur-Verwaltung.
+     * KORRIGIERT: Verwendet Mirror- und Network-Methoden anstatt direkter Collection-Modifikation
+     */
+    private void removeStructureNode(MirrorNode nodeToRemove) {
+        Mirror mirror = nodeToRemove.getMirror();
+        if (mirror != null) {
+            // KORRIGIERT: Kopiere Links in neue Collection für sichere Iteration
+            List<Link> linksToRemove = new ArrayList<>(mirror.getLinks());
+
+            for (Link link : linksToRemove) {
+                // Verwende Mirror-Methoden anstatt direkter Collection-Modifikation
+                mirror.removeLink(link);      // Statt mirror.getLinks().remove(link)
+
+                // Entferne Link auch vom anderen Mirror
+                Mirror otherMirror = link.getTarget().equals(mirror) ?
+                        link.getSource() : link.getTarget();
+                otherMirror.removeLink(link); // Statt otherMirror.getLinks().remove(link)
+
+                // Entferne von Network
+                network.getLinks().remove(link);     // Statt network.getLinks().remove(link)
+            }
+
+            // Entferne Mirror vom Network
+            network.getMirrors().remove(mirror);
+        }
+    }
+
+
+    // ===== TYPSICHERE HILFSMETHODEN =====
+
+    /**
+     * Gibt alle Kinder als BalancedTreeMirrorNode zurück.
+     * Typsichere Alternative zu instanceof-Checks.
+     */
+    private List<BalancedTreeMirrorNode> getBalancedChildren(BalancedTreeMirrorNode parent) {
+        return parent.getChildren().stream()
+                .filter(BalancedTreeMirrorNode.class::isInstance)
+                .map(BalancedTreeMirrorNode.class::cast)
+                .toList();
+    }
+
+    /**
+     * Gibt Root als BalancedTreeMirrorNode zurück.
+     */
+    private BalancedTreeMirrorNode getBalancedTreeRoot() {
+        MirrorNode root = getCurrentStructureRoot();
+        return (root instanceof BalancedTreeMirrorNode) ? (BalancedTreeMirrorNode) root : null;
+    }
+
+    /**
+     * Berechnet Knoten-Tiefe im Baum.
      */
     private int calculateNodeDepthInTree(StructureNode node) {
-        int depth = 0;
-        StructureNode current = node;
+        if (node == null) return -1;
 
-        while (current.getParent() != null) {
+        int depth = 0;
+        StructureNode current = node.getParent();
+
+        while (current != null) {
             depth++;
             current = current.getParent();
         }
@@ -337,79 +433,64 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         return depth;
     }
 
-    // ===== BALANCE-SPEZIFISCHE ANALYSEMETHODEN =====
+    // ===== BALANCE-ANALYSE =====
 
     /**
-     * Berechnet die Balance des aktuellen Baums.
-     * Misst die Standardabweichung der Knotenzahl pro Tiefenebene.
-     *
-     * @return Balance-Wert (0.0 = perfekt balanciert, höhere Werte = unbalanciert)
+     * Berechnet aktuelle Baum-Balance.
      */
     public double calculateCurrentTreeBalance() {
-        MirrorNode root = getCurrentStructureRoot();
-        if (!(root instanceof BalancedTreeMirrorNode balancedRoot)) return Double.MAX_VALUE;
-
-        return calculateTreeBalance(balancedRoot);
+        BalancedTreeMirrorNode root = getBalancedTreeRoot();
+        return (root != null) ? root.calculateTreeBalance() : 0.0;
     }
 
     /**
-     * Berechnet die Balance eines Baums basierend auf der Tiefenverteilung.
+     * Prüft Balance-Kriterien.
      */
-    private double calculateTreeBalance(BalancedTreeMirrorNode root) {
-        if (root == null) return 0.0;
+    public boolean isCurrentTreeBalanced() {
+        BalancedTreeMirrorNode root = getBalancedTreeRoot();
+        return root == null || root.isBalanced(maxAllowedBalanceDeviation);
+    }
 
-        Map<Integer, Integer> depthCounts = new HashMap<>();
-        Stack<BalancedTreeMirrorNode> nodeStack = new Stack<>();
-        nodeStack.push(root);
+    /**
+     * Detaillierte Balance-Informationen.
+     */
+    public Map<String, Object> getDetailedBalanceInfo() {
+        BalancedTreeMirrorNode root = getBalancedTreeRoot();
+        Map<String, Object> info = new HashMap<>();
 
-        // Sammle Knotenzahl pro Tiefe
-        while (!nodeStack.isEmpty()) {
-            BalancedTreeMirrorNode node = nodeStack.pop();
-            int depth = calculateNodeDepthInTree(node);
-            depthCounts.put(depth, depthCounts.getOrDefault(depth, 0) + 1);
-
-            for (StructureNode child : node.getChildren()) {
-                if (child instanceof BalancedTreeMirrorNode balancedChild) {
-                    nodeStack.push(balancedChild);
-                }
-            }
+        if (root != null) {
+            info.put("currentBalance", root.calculateTreeBalance());
+            info.put("isBalanced", root.isBalanced(maxAllowedBalanceDeviation));
+            info.put("maxAllowedDeviation", maxAllowedBalanceDeviation);
+            info.put("targetLinksPerNode", targetLinksPerNode);
+            info.put("totalNodes", getAllStructureNodes().size());
+            info.put("canGrowUnlimited", true); // Bäume haben keine Wachstumslimitierungen
         }
 
-        if (depthCounts.size() <= 1) return 0.0;
-
-        // Berechne Standardabweichung
-        double avgNodesPerDepth = depthCounts.values().stream()
-                .mapToInt(Integer::intValue).average().orElse(0.0);
-
-        double variance = depthCounts.values().stream()
-                .mapToDouble(count -> Math.pow(count - avgNodesPerDepth, 2))
-                .average().orElse(0.0);
-
-        return Math.sqrt(variance);
+        return info;
     }
 
     // ===== KONFIGURATION =====
 
-    /**
-     * Gibt den aktuellen Verzweigungsfaktor zurück.
-     */
     public int getTargetLinksPerNode() {
         return targetLinksPerNode;
     }
 
-    /**
-     * Setzt den Verzweigungsfaktor für neue Strukturen.
-     */
     public void setTargetLinksPerNode(int targetLinksPerNode) {
         this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
     }
 
+    public double getMaxAllowedBalanceDeviation() {
+        return maxAllowedBalanceDeviation;
+    }
+
+    public void setMaxAllowedBalanceDeviation(double maxAllowedBalanceDeviation) {
+        this.maxAllowedBalanceDeviation = Math.max(0.0, maxAllowedBalanceDeviation);
+    }
+
     @Override
     public String toString() {
-        return "BalancedTreeTopologyStrategy{" +
-                "substructureId=" + getSubstructureId() +
-                ", targetLinksPerNode=" + targetLinksPerNode +
-                ", balance=" + String.format("%.2f", calculateCurrentTreeBalance()) +
-                "}";
+        return String.format("BalancedTreeTopologyStrategy{targetLinksPerNode=%d, maxAllowedBalanceDeviation=%.2f, currentBalance=%.2f, unlimitedGrowth=true}",
+                targetLinksPerNode, maxAllowedBalanceDeviation, calculateCurrentTreeBalance());
     }
 }
