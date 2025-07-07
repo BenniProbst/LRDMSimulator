@@ -29,10 +29,6 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
     private final int BRIDGE_TO_EXTERN_STAR_DISTANCE = 1; //must be at least 0
     private final double EXTERN_STAR_RATIO = 0.3; //must be between 0 and 1
 
-    //ratios (auto)
-    private final double INTERN_ALL_RINGS_MIRRORS_RATIO = 1.0 - EXTERN_STAR_RATIO;
-    private final double EACH_INNER_RING_MIRRORS_RATIO = INTERN_ALL_RINGS_MIRRORS_RATIO / MAX_RING_LAYERS;
-
     /**
      * Validiert alle Konstanten bei der Initialisierung
      */
@@ -68,6 +64,9 @@ public class SnowflakeTopologyStrategy extends TopologyStrategy {
             throw new InvalidMirrorDistributionException(numMirrors, 0, 0, "Gesamtanzahl der Mirrors muss positiv sein");
         }
 
+        //ratios (auto)
+        double INTERN_ALL_RINGS_MIRRORS_RATIO = 1.0 - EXTERN_STAR_RATIO;
+        double EACH_INNER_RING_MIRRORS_RATIO = INTERN_ALL_RINGS_MIRRORS_RATIO / MAX_RING_LAYERS;
         int numMirrorsOnRings = (int) Math.floor(numMirrors * EACH_INNER_RING_MIRRORS_RATIO);
         int numMirrorsOnExternStars = (int) Math.floor(numMirrors * EXTERN_STAR_RATIO);
         //in case of not satisfying mirror count, add a star node

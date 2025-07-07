@@ -282,7 +282,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         Mirror leafMirror = leaf.getMirror();
 
         if (centerMirror != null && leafMirror != null) {
-            if (!isAlreadyConnected(centerMirror, leafMirror)) {
+            if (isAlreadyConnected(centerMirror, leafMirror)) {
                 Link newLink = new Link(IDGenerator.getInstance().getNextID(), centerMirror, leafMirror, simTime, props);
                 // Links werden über das Network verwaltet
                 if (network != null) {
@@ -296,15 +296,15 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      * Prüft bestehende Mirror-Verbindungen.
      */
     private boolean isAlreadyConnected(Mirror mirror1, Mirror mirror2) {
-        if (mirror1 == null || mirror2 == null) return false;
+        if (mirror1 == null || mirror2 == null) return true;
 
         for (Link link : mirror1.getLinks()) {
             if ((link.getSource().equals(mirror1) && link.getTarget().equals(mirror2)) ||
                 (link.getSource().equals(mirror2) && link.getTarget().equals(mirror1))) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     /**
@@ -558,7 +558,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
                     if (child instanceof StarMirrorNode leaf) {
                         Mirror leafMirror = leaf.getMirror();
                         
-                        if (leafMirror != null && !isAlreadyConnected(centerMirror, leafMirror)) {
+                        if (leafMirror != null && isAlreadyConnected(centerMirror, leafMirror)) {
                             Link newLink = new Link(IDGenerator.getInstance().getNextID(), centerMirror, leafMirror, 0, props);
                             network.getLinks().add(newLink);
                             createdLinks.add(newLink);
