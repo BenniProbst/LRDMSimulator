@@ -61,6 +61,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         // Erstelle Root mit Balance-Konfiguration - verwendet globales network-Objekt
         Mirror rootMirror = mirrorIterator.next();
         BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(rootMirror.getID(), rootMirror, targetLinksPerNode);
+        root.setHead(StructureType.BALANCED_TREE,true);
 
         // Strukturplanung: Breadth-First für optimale Balance
         if (totalNodes > 1) {
@@ -203,14 +204,8 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         Mirror childMirror = mirrorIterator.next();
         BalancedTreeMirrorNode child = new BalancedTreeMirrorNode(childMirror.getID(), childMirror, targetLinksPerNode);
 
-        // Planungsebene: StructureNode-Verbindung - KORRIGIERTE SIGNATUR
-        Set<StructureType> typeIds = new HashSet<>();
-        typeIds.add(StructureType.BALANCED_TREE);
-
-        Map<StructureType, Integer> headIds = new HashMap<>();
-        headIds.put(StructureType.BALANCED_TREE, parent.getId());
-
-        parent.addChild(child, typeIds, headIds);
+        //set connection
+        parent.addChild(child);
 
         // Ausführungsebene: Mirror-Link, nur wenn beide Mirrors gültig sind
         if (parent.getMirror() != null && child.getMirror() != null) {
@@ -341,7 +336,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         Mirror childMirror = child.getMirror();
 
         if (parentMirror == null || childMirror == null) return;
-        if (isAlreadyConnected(parentMirror, childMirror)) return;
+        if (parentMirror.isAlreadyConnected(childMirror)) return;
 
         // Erstelle Link auf Ausführungsebene - mit korrekter 5-Parameter-Signatur
         Link link = new Link(idGenerator.getNextID(), parentMirror, childMirror, simTime, props);
@@ -352,18 +347,6 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
         // Füge auch zu network links hinzu
         network.getLinks().add(link);       // Statt network.getLinks().add(link)
-    }
-
-    /**
-     * Prüft bestehende Mirror-Verbindungen.
-     * KORRIGIERT: Verwendet nur lesende Zugriffe auf Collections
-     */
-    private boolean isAlreadyConnected(Mirror mirror1, Mirror mirror2) {
-        // Verwende nur lesende Zugriffe - keine Modifikation
-        return mirror1.getLinks().stream()
-                .anyMatch(link ->
-                        (link.getTarget().equals(mirror2) && link.getSource().equals(mirror1)) ||
-                                (link.getTarget().equals(mirror1) && link.getSource().equals(mirror2)));
     }
 
     /**

@@ -110,7 +110,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 MINIMAL_RING_MIRROR_COUNT, MAX_RING_LAYERS
         );
 
-        // 2. Erstelle Kern-Ring-Struktur mit parametrisierten Brücken
+        // 2. Erstelle eine Kern-Ring-Struktur mit parametrisierten Brücken
         MirrorNode rootNode = buildCoreRingStructure(mirrorsForRings, simTime, props);
 
         // 3. Erstelle externe DepthLimitedTreeTopologyStrategy-Strukturen
@@ -135,7 +135,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         for (currentRingLayer = 0; currentRingLayer < MAX_RING_LAYERS && remainingMirrors >= MINIMAL_RING_MIRROR_COUNT; currentRingLayer++) {
             int mirrorsForThisRing = Math.min(mirrorsPerRing, remainingMirrors);
 
-            // Erstelle Ring-Substruktur direkt mit BuildAsSubstructure-Pattern
+            // Erstelle eine Ring-Substruktur direkt mit BuildAsSubstructure-Pattern
             RingTopologyStrategy ringStrategy = new RingTopologyStrategy(MINIMAL_RING_MIRROR_COUNT);
 
             // Setze verfügbare Mirrors für Ring-Strategie
@@ -175,7 +175,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
     /**
      * Erstellt Bridge-Verbindungen zwischen Ring-Schichten mit RING_BRIDGE_STEP_ON_RING-Modulierung.
-     * Jede Bridge ist eine LineTopologyStrategy mit RING_BRIDGE_MIRROR_NUM_HEIGHT-Länge.
+     * Jede Brücke ist eine LineTopologyStrategy mit RING_BRIDGE_MIRROR_NUM_HEIGHT-Länge.
      */
     private void createBridgeConnectionsBetweenRings(List<MirrorNode> ringRoots, int simTime, Properties props) {
         for (int i = 0; i < ringRoots.size() - 1; i++) {
@@ -265,7 +265,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
             int mirrorsForThisTree = Math.min(mirrorsPerTree, remainingMirrors);
 
-            // Erstelle Brücke zu externer Struktur (falls BRIDGE_TO_EXTERN_STAR_DISTANCE > 0)
+            // Erstelle eine Brücke zu externer Struktur (falls BRIDGE_TO_EXTERN_STAR_DISTANCE > 0)
             MirrorNode connectionPoint = bridgeNode;
             if (BRIDGE_TO_EXTERN_STAR_DISTANCE > 0) {
                 connectionPoint = createExternalBridgeWithLineStrategy(bridgeNode, simTime, props);
@@ -304,7 +304,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
     }
 
     /**
-     * Erstellt eine Bridge zu einer externen Struktur mit LineTopologyStrategy.
+     * Erstellt eine Brücke zu einer externen Struktur mit LineTopologyStrategy.
      * Bridge-Länge wird durch BRIDGE_TO_EXTERN_STAR_DISTANCE bestimmt.
      */
     private MirrorNode createExternalBridgeWithLineStrategy(MirrorNode startNode, int simTime, Properties props) {
@@ -332,7 +332,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 this.setSubstructureForNode(bridgeNode, bridgeStrategy);
             }
 
-            // Verbinde Start-Knoten mit Bridge-Anfang und gib Bridge-Ende zurück
+            // Verbinde Start-Knoten mit Bridge-Anfang und gibt Bridge-Ende zurück
             if (bridgeRoot != null) {
                 createConnectionLink(startNode, bridgeRoot, simTime, props);
 
@@ -344,7 +344,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                     }
                 }
 
-                // Fallback: Nutze Bridge-Root als Connection-Point
+                // Fallback: Nutze Bridge-Root as Connection-Point
                 return bridgeRoot;
             }
         }
@@ -362,7 +362,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
     }
 
     /**
-     * Findet Bridge-Knoten in einem Ring basierend auf RING_BRIDGE_STEP_ON_RING-Modulierung mit Offset.
+     * Findet Bridge-Knoten in einem Ring basierend auf RING_BRIDGE_STEP_ON_RING-Modulierung mid Offset.
      */
     private List<MirrorNode> findBridgeNodesInRing(MirrorNode ringRoot, int step, int offset) {
         List<MirrorNode> bridgeNodes = new ArrayList<>();
@@ -674,7 +674,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
     }
 
     /**
-     * Prüft, ob ein Link eine Bridge zwischen verschiedenen Substrukturen darstellt.
+     * Prüft, ob ein Link eine Brücke zwischen verschiedenen Substrukturen darstellt.
      *
      * @param source Quell-Mirror
      * @param target Ziel-Mirror
@@ -809,7 +809,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
             int requestedTotalLinks = targetLinkChange.getNewLinksPerMirror() * network.getNumMirrors();
 
             // Schneeflocke kann nur in bestimmten Grenzen angepasst werden
-            return Math.min(requestedTotalLinks, currentLinks + (currentLinks / 4)); // Max 25% Erhöhung
+            return Math.min(requestedTotalLinks, currentLinks + (currentLinks / 4)); // Max. 25 % Erhöhung
         }
 
         if (a instanceof TopologyChange topologyChange) {

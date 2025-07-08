@@ -22,13 +22,13 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
     public BalancedTreeMirrorNode(int id, int targetLinksPerNode) {
         super(id);
         this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
-        addNodeType(StructureType.TREE);
+        addNodeType(StructureType.BALANCED_TREE);
     }
 
     public BalancedTreeMirrorNode(int id, Mirror mirror, int targetLinksPerNode) {
         super(id, mirror);
         this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
-        addNodeType(StructureType.TREE);
+        addNodeType(StructureType.BALANCED_TREE);
     }
 
     @Override

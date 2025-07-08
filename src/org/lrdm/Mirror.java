@@ -210,6 +210,22 @@ public class Mirror {
 		links.forEach(Link::shutdown);
 	}
 
+	/**
+	 * Prüft bestehende Mirror-Verbindungen.
+	 * KORRIGIERT: Verwendet nur lesende Zugriffe auf Collections
+	 */
+	public boolean isAlreadyConnected(Mirror mirror1, Mirror mirror2) {
+		// Verwende nur lesende Zugriffe - keine Modifikation
+		return mirror1.getLinks().stream()
+				.anyMatch(link ->
+						(link.getTarget().equals(mirror2) && link.getSource().equals(mirror1)) ||
+								(link.getTarget().equals(mirror1) && link.getSource().equals(mirror2)));
+	}
+
+	public boolean isAlreadyConnected(Mirror target) {
+		return isAlreadyConnected(this, target);
+	}
+
 	@Override
 	public String toString() {
 		return id + " {" + state + "}";
