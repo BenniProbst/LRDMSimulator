@@ -62,6 +62,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         Mirror rootMirror = mirrorIterator.next();
         BalancedTreeMirrorNode root = new BalancedTreeMirrorNode(rootMirror.getID(), rootMirror, targetLinksPerNode);
         root.setHead(StructureType.BALANCED_TREE,true);
+        setCurrentStructureRoot(root);
 
         // Strukturplanung: Breadth-First für optimale Balance
         if (totalNodes > 1) {
@@ -188,6 +189,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
                 if (child != null) {
                     parentQueue.offer(child);
                     remainingNodes--;
+                    addToStructureNodes(child);
                 }
             }
         }
@@ -307,13 +309,13 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         // statt getAllStructureNodes().remove(nodeToRemove) - das ist unveränderlich
 
         // Option 1: Verwende Mirror-basierte Entfernung (falls verfügbar)
-        Mirror mirror = nodeToRemove.getMirror();
-        if (mirror != null && network != null) {
-            network.getMirrors().remove(mirror);
-        }
+        // Mirror mirror = nodeToRemove.getMirror();
+        // if (mirror != null && network != null) {
+        //     network.getMirrors().remove(mirror);
+        //}
 
         // Option 2: Falls BuildAsSubstructure eine protected removeNode-Methode hat
-        // removeStructureNode(nodeToRemove);
+        removeStructureNode(nodeToRemove);
 
         // Option 3: Markiere als "entfernt" und lass Garbage Collection arbeiten.
         // Der Knoten wird automatisch aus zukünftigen Traversierung ausgeschlossen

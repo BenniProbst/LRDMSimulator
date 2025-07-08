@@ -306,7 +306,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
                 }
 
                 // Prüfe, ob die Mirrors bereits verbunden sind
-                if (!connected(nodeMirror, childMirror)) {
+                if (!nodeMirror.isAlreadyConnected(childMirror)) {
                     Link link = new Link(idGenerator.getNextID(), nodeMirror, childMirror,
                             0, props);
                     nodeMirror.addLink(link);
@@ -471,19 +471,6 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
     }
 
     // ===== HILFSMETHODEN =====
-
-    /**
-     * Checks if two mirrors are connected or not.
-     *
-     * @param m1 the first {@link Mirror}
-     * @param m2 the second {@link Mirror}
-     * @return true if there is a link between the two mirrors, false if not
-     */
-    private boolean connected(Mirror m1, Mirror m2) {
-        return m1.getLinks().stream()
-                .anyMatch(l -> (l.getSource().equals(m1) && l.getTarget().equals(m2)) ||
-                        (l.getSource().equals(m2) && l.getTarget().equals(m1)));
-    }
 
     /**
      * Berechnet die erwartete Link-Anzahl für eine gegebene Knotenzahl.

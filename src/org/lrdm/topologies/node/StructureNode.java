@@ -1013,6 +1013,7 @@ public class StructureNode {
     public void setHead(StructureType typeId, boolean isHead) {
         if (isHead) {
             headStatus.put(typeId, true);
+
         } else {
             headStatus.remove(typeId);
         }
