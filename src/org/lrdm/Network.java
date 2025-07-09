@@ -152,6 +152,9 @@ public class Network {
 		if(timeStep == 0)
 			this.strategy = strategy;
 		else {
+			// when switching strategy, we need to check the MirrorNode Structure/the StructureNodes of the Strategy
+			// to reset all underlying Mirrors and Links indirectly. Substructures need to be handled recursively
+
 			this.strategy = strategy;
 			this.strategy.restartNetwork(this, props, timeStep);
 		}

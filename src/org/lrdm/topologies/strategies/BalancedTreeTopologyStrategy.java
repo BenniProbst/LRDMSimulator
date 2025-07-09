@@ -131,39 +131,132 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         return actuallyRemoved;
     }
 
+
     /**
-     * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für Balance-Erhaltung.
-     * Führt Mirror-Shutdown innerhalb der strukturellen Planungsgrenzen aus.
-     * Arbeitet komplementär zu removeNodesFromStructure.
+     * **AUSFÜHRUNGSEBENE**: Topologie-spezifische Mirror-Entfernung ohne Shutdown.
+     * Entfernt Knoten in umgekehrter Reihenfolge zum Breadth-First-Aufbau.
+     * Dadurch bleibt die Balance automatisch erhalten ohne zusätzliche Rebalancierung.
      */
     @Override
-    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        if (removeMirrors <= 0) return;
+    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+        if (removeMirrors <= 0) return new HashSet<>();
 
         BalancedTreeMirrorNode root = getBalancedTreeRoot();
         if (root == null) {
-            // Fallback: Standard-Verhalten, wenn keine Struktur vorhanden ist
-            super.handleRemoveMirrors(n, removeMirrors, props, simTime);
-            return;
+            // Fallback: Verwende die BuildAsSubstructure-Implementierung
+            return super.handleRemoveMirrors(n, removeMirrors, props, simTime);
         }
 
-        int actuallyRemoved = 0;
+        Set<Mirror> cleanedMirrors = new HashSet<>();
 
-        // Ausführungsebene: Balance-bewusste Mirror-Entfernung
+        // Entferne Knoten in umgekehrter Breadth-First-Reihenfolge
         for (int i = 0; i < removeMirrors; i++) {
-            BalancedTreeMirrorNode targetNode = findDeepestLeafForBalancedRemoval(root);
-            if (targetNode == null || targetNode == root) break;
+            BalancedTreeMirrorNode nodeToRemove = findRightmostDeepestLeaf(root);
+            if (nodeToRemove == null || nodeToRemove == root) {
+                break; // Keine weiteren Blätter oder nur Root übrig
+            }
 
-            Mirror targetMirror = targetNode.getMirror();
-            if (targetMirror != null) {
-                // Mirror-Shutdown auf Ausführungsebene
-                targetMirror.shutdown(simTime);
-                actuallyRemoved++;
+            Mirror mirrorToRemove = nodeToRemove.getMirror();
+            if (mirrorToRemove != null) {
+                // Entferne alle Links (aber schalte Mirror NICHT aus)
+                Set<Link> linksToRemove = new HashSet<>(mirrorToRemove.getLinks());
+                for (Link link : linksToRemove) {
+                    link.getSource().removeLink(link);
+                    link.getTarget().removeLink(link);
+                    n.getLinks().remove(link);
+                }
+
+                // Entferne Mirror vom Netzwerk
+                n.getMirrors().remove(mirrorToRemove);
+                cleanedMirrors.add(mirrorToRemove);
+            }
+
+            // Entferne Knoten aus der Struktur
+            removeNodeFromStructure(nodeToRemove);
+        }
+
+        return cleanedMirrors;
+    }
+
+    /**
+     * Findet das rechteste Blatt der tiefsten Ebene.
+     * Dies ist genau das Gegenteil der Breadth-First-Einfügung.
+     */
+    private BalancedTreeMirrorNode findRightmostDeepestLeaf(BalancedTreeMirrorNode root) {
+        if (root == null) return null;
+
+        // Sammle alle Blätter und finde das rechteste auf der tiefsten Ebene
+        List<BalancedTreeMirrorNode> leaves = new ArrayList<>();
+        collectLeaves(root, leaves);
+
+        if (leaves.isEmpty()) return null;
+
+        // Finde die maximale Tiefe
+        int maxDepth = -1;
+        for (BalancedTreeMirrorNode leaf : leaves) {
+            int depth = calculateNodeDepthInTree(leaf);
+            if (depth > maxDepth) {
+                maxDepth = depth;
             }
         }
 
-        // Synchronisiere Plannings- und Ausführungsebene
-        removeNodesFromStructure(actuallyRemoved);
+        // Sammle alle Blätter auf der tiefsten Ebene
+        List<BalancedTreeMirrorNode> deepestLeaves = new ArrayList<>();
+        for (BalancedTreeMirrorNode leaf : leaves) {
+            if (calculateNodeDepthInTree(leaf) == maxDepth) {
+                deepestLeaves.add(leaf);
+            }
+        }
+
+        // Finde das rechteste Blatt (= das mit der höchsten ID oder dem rechtesten Index)
+        return findRightmostLeaf(deepestLeaves);
+    }
+
+    /**
+     * Sammelt alle Blätter des Baums.
+     */
+    private void collectLeaves(BalancedTreeMirrorNode node, List<BalancedTreeMirrorNode> leaves) {
+        if (node == null) return;
+
+        if (node.getChildren().isEmpty()) {
+            leaves.add(node);
+        } else {
+            for (BalancedTreeMirrorNode child : getBalancedChildren(node)) {
+                collectLeaves(child, leaves);
+            }
+        }
+    }
+
+    /**
+     * Findet das rechteste Blatt aus einer Liste von Blättern.
+     * Das rechteste Blatt ist dasjenige, das am spätesten in der Breadth-First-Reihenfolge hinzugefügt wurde.
+     */
+    private BalancedTreeMirrorNode findRightmostLeaf(List<BalancedTreeMirrorNode> leaves) {
+        if (leaves.isEmpty()) return null;
+
+        // Sortiere nach ID (höchste ID = zuletzt hinzugefügt = rechtestes)
+        return leaves.stream()
+                .max(Comparator.comparing(BalancedTreeMirrorNode::getId))
+                .orElse(null);
+    }
+
+    /**
+     * Entfernt einen Knoten aus der Struktur (ohne Mirror-Shutdown).
+     */
+    private void removeNodeFromStructure(BalancedTreeMirrorNode nodeToRemove) {
+        // Entferne aus Parent-Child-Beziehungen
+        StructureNode parent = nodeToRemove.getParent();
+        if (parent != null) {
+            parent.removeChild(nodeToRemove);
+        }
+
+        // Bereinige Kinder-Beziehungen
+        for (StructureNode child : new ArrayList<>(nodeToRemove.getChildren())) {
+            nodeToRemove.removeChild(child);
+        }
+
+        // Markiere als entfernt
+        nodeToRemove.setParent(null);
     }
 
     // ===== BALANCE-SPEZIFISCHE HILFSMETHODEN =====

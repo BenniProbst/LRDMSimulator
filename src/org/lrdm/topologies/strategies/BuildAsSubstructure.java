@@ -109,11 +109,38 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Gibt alle aktuell verwalteten MirrorNodes der Struktur zurück.
      * Diese Collection wird aktiv gepflegt und ermöglicht die Auswahl spezifischer Knoten
      * für den Anbau weiterer Substrukturen.
+     * <p>
+     * REKURSIV: Berücksichtigt auch alle Knoten der untergeordneten Substrukturen.
      *
-     * @return Unveränderliche Kopie aller MirrorNodes in der Struktur
+     * @return Unveränderliche Kopie aller MirrorNodes in der Struktur und allen Substrukturen
      */
     public final Set<MirrorNode> getAllStructureNodes() {
-        return Set.copyOf(structureNodes);
+        return Set.copyOf(getAllStructureNodesRecursive(new HashSet<>()));
+    }
+
+    /**
+     * Sammelt rekursiv alle MirrorNodes aus dieser Struktur und allen Substrukturen.
+     * Verhindert zirkuläre Referenzen durch visited-Set.
+     *
+     * @param visited Set zur Vermeidung zirkulärer Referenzen
+     * @return Alle MirrorNodes in der Struktur-Hierarchie
+     */
+    private Set<MirrorNode> getAllStructureNodesRecursive(Set<BuildAsSubstructure> visited) {
+        if (visited.contains(this)) {
+            return Set.of(); // Zirkuläre Referenz erkannt
+        }
+
+        visited.add(this);
+        Set<MirrorNode> allNodes = new HashSet<>(structureNodes);
+
+        // Rekursiv alle Knoten der Substrukturen sammeln
+        for (BuildAsSubstructure substructure : nodeToSubstructure.values()) {
+            if (substructure != this) {
+                allNodes.addAll(substructure.getAllStructureNodesRecursive(visited));
+            }
+        }
+
+        return allNodes;
     }
 
     /**
@@ -196,45 +223,83 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Entfernt eine Substruktur-Zuordnung.
-     * PROTECTED - ermöglicht Builder die Deregistrierung von Substruktur-Zuordnungen.
+     * ERWEITERT: Bereinigt auch rekursiv alle Substrukturen des entfernten Knotens.
      *
      * @param node Die MirrorNode
      */
     protected final void removeSubstructureForNode(MirrorNode node) {
-        nodeToSubstructure.remove(node);
+        BuildAsSubstructure removedSubstructure = nodeToSubstructure.remove(node);
+
+        if (removedSubstructure != null && removedSubstructure != this) {
+            // Alle Knoten der entfernten Substruktur ebenfalls aus der Zuordnung entfernen
+            Set<MirrorNode> substructureNodes = removedSubstructure.getAllStructureNodes();
+            for (MirrorNode subNode : substructureNodes) {
+                nodeToSubstructure.remove(subNode);
+            }
+        }
     }
+
 
     /**
      * Gibt alle verfügbaren Endpunkte (Terminal-Knoten) zurück, an die neue Substrukturen
      * angebaut werden können.
+     * REKURSIV: Berücksichtigt auch Terminal-Knoten aus Substrukturen.
      *
      * @return Set aller Terminal-MirrorNodes, die für Substruktur-Erweiterungen geeignet sind
      */
     public final Set<MirrorNode> getAvailableConnectionPoints() {
-        if (currentStructureRoot == null) {
-            return Set.of();
+        Set<MirrorNode> connectionPoints = new HashSet<>();
+
+        // Lokale Connection Points sammeln
+        if (currentStructureRoot != null) {
+            StructureNode.StructureType typeId = currentStructureRoot.deriveTypeId();
+            int headId = currentStructureRoot.getId();
+
+            connectionPoints.addAll(structureNodes.stream()
+                    .filter(node -> node.canAcceptMoreChildren(typeId, headId))
+                    .filter(node -> node.isTerminal(typeId, headId) || node.isHead(typeId))
+                    .collect(Collectors.toSet()));
         }
 
-        StructureNode.StructureType typeId = currentStructureRoot.deriveTypeId();
-        int headId = currentStructureRoot.getId();
+        // Rekursiv Connection Points aus Substrukturen sammeln
+        for (BuildAsSubstructure substructure : nodeToSubstructure.values()) {
+            if (substructure != this) {
+                connectionPoints.addAll(substructure.getAvailableConnectionPoints());
+            }
+        }
 
-        return structureNodes.stream()
-                .filter(node -> node.canAcceptMoreChildren(typeId, headId))
-                .filter(node -> node.isTerminal(typeId, headId) || node.isHead(typeId))
-                .collect(Collectors.toSet());
+        return connectionPoints;
     }
 
     /**
      * Sucht einen spezifischen MirrorNode anhand seiner ID.
+     * REKURSIV: Sucht auch in allen Substrukturen.
      *
      * @param nodeId Die ID des gesuchten Knotens
      * @return Der MirrorNode mit der angegebenen ID oder null, wenn nicht gefunden
      */
     public final MirrorNode findStructureNodeById(int nodeId) {
-        return structureNodes.stream()
+        // Lokale Suche
+        MirrorNode found = structureNodes.stream()
                 .filter(node -> node.getId() == nodeId)
                 .findFirst()
                 .orElse(null);
+
+        if (found != null) {
+            return found;
+        }
+
+        // Rekursive Suche in Substrukturen
+        for (BuildAsSubstructure substructure : nodeToSubstructure.values()) {
+            if (substructure != this) {
+                found = substructure.findStructureNodeById(nodeId);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+
+        return null;
     }
 
     // ===== TOPOLOGY STRATEGY CONTRACT (PUBLIC API) =====
@@ -408,49 +473,144 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Erweiterte handleRemoveMirrors-Implementierung für BuildAsSubstructure.
-     * Ergänzt die Standard-TopologyStrategy-Funktionalität um StructureNode-Management.
+     * WICHTIG: Ruft NICHT super.handleRemoveMirrors() auf, da dies die Mirrors ausschalten würde.
+     * Stattdessen werden nur die Links entfernt und die Topologie neu strukturiert.
+     * Die Mirrors bleiben am Leben und werden nur neu verkabelt.
      *
      * @param n Das Netzwerk
      * @param removeMirrors Anzahl der zu entfernenden Mirrors
      * @param props Simulation Properties
      * @param simTime Aktuelle Simulationszeit
+     * @return Set von bereinigten Mirrors für Neuverteilung
      */
     @Override
-    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        // 1. Sammle die MirrorNodes, die entfernt werden sollen (vor dem Mirror-Shutdown)
-        List<MirrorNode> nodesToRemove = new ArrayList<>();
+    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+        if (removeMirrors <= 0) return new HashSet<>();
+
+        // 1. Identifiziere die Mirrors mit den höchsten IDs (wie in der Standard-Implementierung)
         List<Mirror> sortedMirrors = n.getMirrorsSortedById();
+        Set<Mirror> mirrorsToRemove = new LinkedHashSet<>();
 
         for (int i = 0; i < removeMirrors && i < sortedMirrors.size(); i++) {
             Mirror mirrorToRemove = sortedMirrors.get(sortedMirrors.size() - 1 - i);
-            MirrorNode nodeToRemove = findMirrorNodeForMirror(mirrorToRemove);
-            if (nodeToRemove != null) {
-                nodesToRemove.add(nodeToRemove);
+            mirrorsToRemove.add(mirrorToRemove);
+        }
+
+        // 2. Sammle die entsprechenden MirrorNodes vor der Strukturänderung
+        List<MirrorNode> nodesToRemove = new ArrayList<>();
+        for (Mirror mirror : mirrorsToRemove) {
+            MirrorNode node = findMirrorNodeForMirror(mirror);
+            if (node != null) {
+                nodesToRemove.add(node);
             }
         }
 
-        // 2. Standard-Mirror-Shutdown (behandelt Links automatisch)
-        super.handleRemoveMirrors(n, removeMirrors, props, simTime);
+        // 3. Entferne alle Links der betroffenen Mirrors (ohne sie auszuschalten)
+        Set<Link> linksToRemove = new HashSet<>();
+        for (Mirror mirror : mirrorsToRemove) {
+            linksToRemove.addAll(new ArrayList<>(mirror.getLinks())); // Kopie für sichere Iteration
+        }
 
-        // 3. StructureNode-Verwaltung bereinigen - verwendet die bestehende Methode
-        cleanupStructureNodes(nodesToRemove);
+        for (Link link : linksToRemove) {
+            // Entferne Link von beiden Mirrors
+            link.getSource().removeLink(link);
+            link.getTarget().removeLink(link);
+            // Entferne Link vom Netzwerk
+            n.getLinks().remove(link);
+        }
+
+        // 4. Entferne die Mirrors vom Netzwerk (aber schalte sie NICHT aus)
+        for (Mirror mirror : mirrorsToRemove) {
+            n.getMirrors().remove(mirror);
+        }
+
+        // 5. StructureNode-Verwaltung bereinigen
+
+        return cleanupStructureNodes(nodesToRemove);
     }
 
     /**
-     * Hilfsmethode: Findet den MirrorNode für einen gegebenen Mirror.
+     * Hilfsmethode zur Suche des MirrorNodes für einen Mirror.
      *
-     * @param mirror Der Mirror, für den der MirrorNode gesucht wird
-     * @return Der zugehörige MirrorNode oder null, wenn nicht gefunden
+     * @param mirror Der zu suchende Mirror
+     * @return Der zugehörige MirrorNode oder null
      */
     private MirrorNode findMirrorNodeForMirror(Mirror mirror) {
-        if (mirror == null) return null;
+        return getAllStructureNodes().stream()
+                .filter(node -> node.getMirror() == mirror)
+                .findFirst()
+                .orElse(null);
+    }
 
-        for (MirrorNode node : structureNodes) {
-            if (node.getMirror() != null && node.getMirror().getID() == mirror.getID()) {
-                return node;
+    /**
+     * Bereinigt Links nur innerhalb der eigenen Struktur-Hierarchie.
+     * Verwendet MirrorNode-Interfaces und bereinigt auch das Network.
+     *
+     * @param nodeToRemove Der zu entfernende Knoten
+     * @param validNodes Alle gültigen Knoten der Struktur-Hierarchie
+     */
+    private void cleanupLinksInHierarchy(MirrorNode nodeToRemove, Set<MirrorNode> validNodes) {
+        if (nodeToRemove.getMirror() == null) return;
+
+        // Alle implementierten Links des Knotens sammeln
+        Set<Link> implementedLinks = new HashSet<>(nodeToRemove.getImplementedLinks());
+
+        for (Link link : implementedLinks) {
+            Mirror otherMirror = getOtherMirror(link, nodeToRemove.getMirror());
+            if (otherMirror != null) {
+                // Prüfen, ob der andere Mirror zu einem Knoten in unserer Hierarchie gehört
+                MirrorNode otherNode = findNodeForMirror(otherMirror, validNodes);
+                if (otherNode != null) {
+                    // Link aus beiden MirrorNodes entfernen (über MirrorNode-Interface)
+                    nodeToRemove.removeLink(link);
+                    otherNode.removeLink(link);
+
+                    // Link aus dem Network entfernen
+                    if (network != null) {
+                        network.getLinks().remove(link);
+                    }
+                }
             }
         }
+    }
+
+    /**
+     * Findet den MirrorNode für einen gegebenen Mirror innerhalb der gültigen Knoten.
+     *
+     * @param mirror Der zu suchende Mirror
+     * @param validNodes Set der gültigen Knoten
+     * @return Der zugehörige MirrorNode oder null
+     */
+    private MirrorNode findNodeForMirror(Mirror mirror, Set<MirrorNode> validNodes) {
+        return validNodes.stream()
+                .filter(node -> node.getMirror() == mirror)
+                .findFirst()
+                .orElse(null);
+    }
+
+
+    /**
+     * Ermittelt den anderen Mirror eines Links.
+     *
+     * @param link Der Link
+     * @param currentMirror Der aktuelle Mirror
+     * @return Der andere Mirror des Links
+     */
+    private Mirror getOtherMirror(Link link, Mirror currentMirror) {
+        if (link.getSource() == currentMirror) {
+            return link.getTarget();
+        } else if (link.getTarget() == currentMirror) {
+            return link.getSource();
+        }
         return null;
+    }
+
+    /**
+     * Prüft, ob ein Mirror zu einem Knoten in unserer Struktur-Hierarchie gehört.
+     */
+    private boolean isMirrorInHierarchy(Mirror mirror, Set<MirrorNode> validNodes) {
+        return validNodes.stream()
+                .anyMatch(node -> node.getMirror() == mirror);
     }
 
     /**
@@ -601,17 +761,67 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         void onStructureChanged(BuildAsSubstructure structure);
     }
 
+
     /**
      * Bereinigt die StructureNode-Verwaltung für entfernte Knoten.
+     * REKURSIV: Berücksichtigt Substrukturen und prüft, ob Links/Mirrors nur innerhalb
+     * der eigenen Struktur-Hierarchie aufgelöst werden dürfen.
+     *
+     * @param nodesToRemove Liste der zu entfernenden MirrorNodes
+     * @return Set von Mirrors, die bereinigt wurden und für Neuverteilung verfügbar sind
      */
-    void cleanupStructureNodes(List<MirrorNode> nodesToRemove) {
+    Set<Mirror> cleanupStructureNodes(List<MirrorNode> nodesToRemove) {
+        Set<MirrorNode> allValidNodes = getAllStructureNodesRecursive(new HashSet<>());
+        Set<Mirror> cleanedMirrors = new HashSet<>();
+
         for (MirrorNode nodeToRemove : nodesToRemove) {
-            structureNodes.remove(nodeToRemove);
-            removeSubstructureForNode(nodeToRemove);
-            cleanupNodeRelationships(nodeToRemove);
-            updateRootIfNecessary(nodeToRemove);
+            // Nur bereinigen, wenn der Knoten tatsächlich zu dieser Struktur-Hierarchie gehört
+            if (allValidNodes.contains(nodeToRemove)) {
+                Mirror cleanedMirror = cleanupNodeInHierarchy(nodeToRemove, allValidNodes);
+                if (cleanedMirror != null) {
+                    cleanedMirrors.add(cleanedMirror);
+                }
+            }
         }
-        // Observer-Benachrichtigung entfernt
+
+        return cleanedMirrors;
+    }
+
+    /**
+     * Bereinigt einen einzelnen Knoten innerhalb der Struktur-Hierarchie.
+     *
+     * @param nodeToRemove Der zu entfernende Knoten
+     * @param validNodes Alle gültigen Knoten der Struktur-Hierarchie
+     * @return Der bereinigte Mirror oder null, wenn kein Mirror zugeordnet war
+     */
+    private Mirror cleanupNodeInHierarchy(MirrorNode nodeToRemove, Set<MirrorNode> validNodes) {
+        Mirror mirror = nodeToRemove.getMirror();
+
+        // 1. Aus lokalen structureNodes entfernen
+        structureNodes.remove(nodeToRemove);
+
+        // 2. Substruktur-Zuordnung bereinigen
+        BuildAsSubstructure owningSubstructure = nodeToSubstructure.get(nodeToRemove);
+        if (owningSubstructure != null) {
+            owningSubstructure.removeSubstructureForNode(nodeToRemove);
+        }
+
+        // 3. Links innerhalb der Hierarchie bereinigen (über MirrorNode-Interface)
+        cleanupLinksInHierarchy(nodeToRemove, validNodes);
+
+        // 4. Node-Beziehungen bereinigen
+        cleanupNodeRelationships(nodeToRemove);
+
+        // 5. Root-Update falls nötig
+        updateRootIfNecessary(nodeToRemove);
+
+        // 6. Mirror für Neuverteilung vorbereiten
+        if (mirror != null) {
+            mirror.setRoot(false); // Root-Flag zurücksetzen
+            return mirror;
+        }
+
+        return null;
     }
 
     /**

@@ -6,10 +6,7 @@ import org.lrdm.Network;
 import org.lrdm.effectors.Action;
 import org.lrdm.util.IDGenerator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 /**Interface to be used by all Topology strategies. Specifies methods to be used for initializing a network, handling added and removed mirrors as well as to compute the number of target links.
  *
@@ -32,10 +29,14 @@ public abstract class TopologyStrategy {
 	 * @param props {@link Properties} of the simulation
 	 * @param simTime current simulation time
 	 */
-	public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+	public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+		Set<Mirror> cleanedMirrors = new HashSet<>();
 		for(int i = 0; i < removeMirrors; i++) {
-			n.getMirrorsSortedById().get(n.getNumMirrors()-1-i).shutdown(simTime);
+			Mirror m = n.getMirrorsSortedById().get(n.getNumMirrors()-1-i);
+			m.shutdown(simTime);
+			cleanedMirrors.add(m);
 		}
+		return cleanedMirrors;
 	}
 
 	/**Is meant to return the expected number of total links in the network according to the respective topology.
