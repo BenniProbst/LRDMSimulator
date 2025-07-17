@@ -160,21 +160,27 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         return actuallyRemoved;
     }
 
+
     /**
      * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für Linien-Erhaltung.
      * Führt Mirror-Shutdown innerhalb der strukturellen Linien-Planungsgrenzen aus.
      * Arbeitet komplementär zu removeNodesFromStructure.
      */
     @Override
-    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        if (removeMirrors <= 0) return;
+    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+        if (removeMirrors <= 0) {
+            return new HashSet<>();
+        }
 
         List<LineMirrorNode> lineNodes = getAllLineNodes();
         if (lineNodes.size() - removeMirrors < minLineSize) {
             removeMirrors = lineNodes.size() - minLineSize;
         }
-        if (removeMirrors <= 0) return;
+        if (removeMirrors <= 0) {
+            return new HashSet<>();
+        }
 
+        Set<Mirror> cleanedMirrors = new HashSet<>();
         int actuallyRemoved = 0;
 
         // Ausführungsebene: Linien-bewusste Mirror-Entfernung
@@ -185,6 +191,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
                 if (targetMirror != null) {
                     // Mirror-Shutdown auf Ausführungsebene
                     targetMirror.shutdown(simTime);
+                    cleanedMirrors.add(targetMirror);
                     actuallyRemoved++;
                     lineNodes.remove(targetNode);
                 }
@@ -193,6 +200,8 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
 
         // Synchronisiere Plannings- und Ausführungsebene
         removeNodesFromStructure(actuallyRemoved);
+
+        return cleanedMirrors;
     }
 
     // ===== LINIEN-SPEZIFISCHE HILFSMETHODEN =====

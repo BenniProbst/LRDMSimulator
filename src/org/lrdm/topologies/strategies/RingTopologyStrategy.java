@@ -15,7 +15,7 @@ import java.util.*;
 
 /**
  * Eine spezialisierte {@link TopologyStrategy}, die Mirrors als Ring-Topologie mit einer
- * geschlossenen Schleife verknüpft. Diese Strategie ist eine Portierung der {@link org.lrdm.topologies.builders.RingBuilder} Klasse.
+ * geschlossenen Schleife verknüpft. Diese Strategie ist eine Portierung der {@link org.lrdm.topologies.strategies.RingTopologyStrategy} Klasse.
  * <p>
  * **Ring-Topologie-Eigenschaften**:
  * - Jeder Mirror ist mit genau zwei anderen Mirrors verbunden (Vorgänger und Nachfolger)
@@ -171,15 +171,20 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
      * Arbeitet komplementär zu removeNodesFromStructure.
      */
     @Override
-    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        if (removeMirrors <= 0) return;
+    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+        if (removeMirrors <= 0) {
+            return new HashSet<>();
+        }
 
         List<RingMirrorNode> ringNodes = getAllRingNodes();
         if (ringNodes.size() - removeMirrors < minRingSize) {
             removeMirrors = ringNodes.size() - minRingSize;
         }
-        if (removeMirrors <= 0) return;
+        if (removeMirrors <= 0) {
+            return new HashSet<>();
+        }
 
+        Set<Mirror> cleanedMirrors = new HashSet<>();
         int actuallyRemoved = 0;
 
         // Ausführungsebene: Ring-bewusste Mirror-Entfernung
@@ -190,6 +195,7 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
                 if (targetMirror != null) {
                     // Mirror-Shutdown auf Ausführungsebene
                     targetMirror.shutdown(simTime);
+                    cleanedMirrors.add(targetMirror);
                     actuallyRemoved++;
                     ringNodes.remove(targetNode);
                 }
@@ -198,6 +204,8 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
 
         // Synchronisiere Plannings- und Ausführungsebene
         removeNodesFromStructure(actuallyRemoved);
+
+        return cleanedMirrors;
     }
 
     // ===== RING-SPEZIFISCHE HILFSMETHODEN =====
@@ -310,9 +318,7 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
         // Bereinige alle Verbindungen des entfernten Knotens.
         // Verwende die einzelnen Methoden statt removeAllChildren()
         Set<StructureNode> childrenToRemove = new HashSet<>();
-        for (StructureNode child : nodeToRemove.getChildren()) {
-            childrenToRemove.add(child);
-        }
+        childrenToRemove.addAll(nodeToRemove.getChildren());
 
         for (StructureNode child : childrenToRemove) {
             nodeToRemove.removeChild(child);
