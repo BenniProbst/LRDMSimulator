@@ -7,7 +7,6 @@ import org.lrdm.Network;
 import org.lrdm.effectors.*;
 import org.lrdm.topologies.node.*;
 import org.lrdm.topologies.node.StructureNode.StructureType;
-import org.lrdm.util.IDGenerator;
 
 import java.util.*;
 import java.util.stream.Collectors;
