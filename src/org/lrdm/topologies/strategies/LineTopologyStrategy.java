@@ -13,7 +13,7 @@ import java.util.*;
 
 /**
  * Eine spezialisierte {@link TopologyStrategy}, die Mirrors als Linien-Topologie mit zwei
- * Endpunkten verknüpft. Diese Strategie ist eine Portierung der {@link org.lrdm.topologies.builders.LineBuilder} Klasse.
+ * Endpunkten verknüpft. Diese Strategie ist eine Portierung der {@link org.lrdm.topologies.strategies.LineTopologyStrategy} Klasse.
  * <p>
  * **Linien-Topologie-Eigenschaften**:
  * - Jeder Mirror (außer den Endpunkten) ist mit genau zwei anderen Mirrors verbunden
