@@ -137,14 +137,7 @@ public class Network {
 		if (newMirrors > mirrors.size()) { // create new mirrors
 			strategy.handleAddNewMirrors(this, newMirrors - mirrors.size(), props, simTime);
 		} else if (newMirrors < mirrors.size()) { // send shutdown signal to mirrors being too much
-			List<Mirror> stoppedMirrors = new ArrayList<>();
-			for (Mirror mirror : strategy.handleRemoveMirrors(this, mirrors.size() - newMirrors, props, simTime)){
-				if(mirror.getLinks().isEmpty()){
-					mirror.shutdown(simTime);
-					stoppedMirrors.add(mirror);
-				}
-			}
-			mirrors.removeAll(stoppedMirrors);
+			strategy.handleRemoveMirrors(this, mirrors.size() - newMirrors, props, simTime);
 		}
 		numTargetMirrors = newMirrors;
 	}
