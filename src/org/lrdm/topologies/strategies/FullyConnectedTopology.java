@@ -57,7 +57,15 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         }
 
         // 2. Setze den ersten Knoten als Head und Root
-        FullyConnectedMirrorNode root = nodes.get(0);
+        FullyConnectedMirrorNode root = nodes.stream()
+                .filter(node -> node.getMirror() != null && node.getMirror().isRoot())
+                .findFirst()
+                .orElse(null);
+
+        if (root == null) {
+            throw new IllegalStateException("No root node found in FullyConnected structure");
+        }
+
         root.setHead(true);
         setCurrentStructureRoot(root);
 
@@ -87,31 +95,32 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         for (int i = 0; i < nodes.size(); i++) {
             FullyConnectedMirrorNode sourceNode = nodes.get(i);
             Mirror sourceMirror = sourceNode.getMirror();
+            if(!sourceMirror.isUsableForNetwork())continue;
 
             for (int j = i + 1; j < nodes.size(); j++) {
+                if (i == j) continue;
                 FullyConnectedMirrorNode targetNode = nodes.get(j);
                 Mirror targetMirror = targetNode.getMirror();
+                if(!targetMirror.isUsableForNetwork())continue;
 
-                if (sourceMirror != null && targetMirror != null) {
-                    // Erstelle echten Mirror-Link mit korrektem Konstruktor
-                    Link link = new Link(
-                            idGenerator != null ? idGenerator.getNextID() : (int)(Math.random() * 100000),
-                            sourceMirror,
-                            targetMirror,
-                            simTime,
-                            props
-                    );
+                // Erstelle echten Mirror-Link mit korrektem Konstruktor
+                Link link = new Link(
+                        idGenerator.getNextID(),
+                        sourceMirror,
+                        targetMirror,
+                        simTime,
+                        props
+                );
 
-                    // Füge Link zu beiden Mirrors hinzu
-                    sourceMirror.addLink(link);
-                    targetMirror.addLink(link);
+                // Füge Link zu beiden Mirrors hinzu
+                sourceMirror.addLink(link);
+                targetMirror.addLink(link);
 
-                    // Füge bidirektionale StructureNode-Verbindung hinzu
-                    sourceNode.addChild(targetNode);
-                    targetNode.addChild(sourceNode);
+                // Füge bidirektionale StructureNode-Verbindung hinzu
+                sourceNode.addChild(targetNode);
+                targetNode.addChild(sourceNode);
 
-                    createdLinks.add(link);
-                }
+                createdLinks.add(link);
             }
         }
 
@@ -315,8 +324,10 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
             return new HashSet<>();
         }
 
+        int usableMirrors = Math.toIntExact(n.getMirrors().stream().filter(Mirror::isUsableForNetwork).count());
+
         // Baue die Struktur mit allen verfügbaren Mirrors auf - simTime = 0 bei Initialisierung
-        MirrorNode root = buildStructure(n.getMirrors().size(), 0, props);
+        MirrorNode root = buildStructure(usableMirrors, 0, props);
 
         if (root == null) {
             return new HashSet<>();
@@ -338,6 +349,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      */
     @Override
     public void restartNetwork(Network n, Properties props, int simTime) {
+        super.restartNetwork(n, props, simTime);
         // 1. ERST alle Links aus Network.links sammeln, die zu unseren MirrorNodes gehören
         Set<Link> linksToRemove = new HashSet<>();
         for (MirrorNode node : getAllStructureNodes()) {

@@ -1,5 +1,6 @@
 package org.lrdm.topologies.strategies;
 
+import org.lrdm.DataPackage;
 import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
@@ -15,8 +16,11 @@ import java.util.*;
 public abstract class TopologyStrategy {
 	public abstract Set<Link> initNetwork(Network n, Properties props);
 	public void restartNetwork(Network n, Properties props, int simTime) {
-		n.getLinks().clear();
-		n.getMirrors().forEach(m -> m.getLinks().clear());
+		n.getLinks().forEach(Link::shutdown);
+		for(Mirror m:n.getMirrors()){
+			if(!m.isRoot())m.shutdown(simTime);
+		}
+		n.getMirrors().addAll(createMirrors(n.getNumMirrors()-1, simTime, props));
 	}
 	public abstract void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime);
 

@@ -548,15 +548,16 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     public void restartNetwork(Network n, Properties props, int simTime) {
-        // Bereinige alle bestehenden Links
-        n.getLinks().clear();
+        super.initNetwork(n, props);
 
         // Initialisiere den internen Zustand neu
         this.network = n;
         this.mirrorIterator = n.getMirrors().iterator();
 
+        int usableMirrors = Math.toIntExact(n.getMirrors().stream().filter(Mirror::isUsableForNetwork).count());
+
         // Baue neue Stern-Struktur mit aktueller Simulationszeit
-        MirrorNode root = buildStructure(n.getMirrors().size(), simTime, props);
+        MirrorNode root = buildStructure(usableMirrors, simTime, props);
 
         // Erstelle alle Links neu
         buildAndConnectLinks(root, props);

@@ -172,6 +172,10 @@ public class Mirror {
 		handleDataTransfer(currentSimTime);
 	}
 
+	public boolean isUsableForNetwork(){
+		return state != State.STOPPING && state != State.STOPPED;
+	}
+
 	private void handleDataTransfer(int currentSimTime) {
 		if(state == State.READY && (data == null || !data.isLoaded())) {
 			//try to fetch data from linked mirrors if necessary

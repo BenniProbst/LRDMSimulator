@@ -160,16 +160,6 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
             if (mirrorToRemove != null) {
                 // Schalte Mirror und dessen Links aus
                 mirrorToRemove.shutdown(simTime);
-                // Entferne alle Links
-                Set<Link> linksToRemove = new HashSet<>(mirrorToRemove.getLinks());
-                for (Link link : linksToRemove) {
-                    link.getSource().removeLink(link);
-                    link.getTarget().removeLink(link);
-                    n.getLinks().remove(link);
-                }
-
-                // Entferne Mirror vom Netzwerk
-                n.getMirrors().remove(mirrorToRemove);
                 cleanedMirrors.add(mirrorToRemove);
             }
 

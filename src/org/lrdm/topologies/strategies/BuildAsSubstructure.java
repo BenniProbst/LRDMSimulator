@@ -42,7 +42,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     // ===== MIRROR NODE-BASIERTE SUBSTRUKTUR-VERWALTUNG (PRIVATE) =====
     private final Map<MirrorNode, BuildAsSubstructure> nodeToSubstructure = new HashMap<>();
     private final Set<MirrorNode> structureNodes = new HashSet<>();
-    private MirrorNode currentStructureRoot; // NICHT FINAL - Builder-kompatibel
+    private MirrorNode currentStructureRoot;
 
     // ===== OBSERVER PATTERN (PRIVATE) =====
     private final List<StructureChangeObserver> observers = new ArrayList<>();
@@ -322,7 +322,52 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             return buildAndConnectLinks(root, props);
         }
 
-        return new HashSet<>();
+        return getAllLinksRecursive();
+    }
+
+
+    /**
+     * Sammelt rekursiv alle Links aus dieser Struktur und allen Substrukturen.
+     * Verwendet einen Stack-basierten Ansatz zur Traversierung der Struktur-Hierarchie.
+     * Verhindert zirkuläre Referenzen durch visited-Set.
+     *
+     * @return Set aller Links in der Struktur-Hierarchie
+     */
+    protected final Set<Link> getAllLinksRecursive() {
+        Set<Link> allLinks = new HashSet<>();
+        Set<BuildAsSubstructure> visitedSubstructures = new HashSet<>();
+        Stack<BuildAsSubstructure> substructureStack = new Stack<>();
+
+        // Start mit dieser Substruktur
+        substructureStack.push(this);
+
+        while (!substructureStack.isEmpty()) {
+            BuildAsSubstructure currentSubstructure = substructureStack.pop();
+
+            // Zirkuläre Referenzen vermeiden
+            if (visitedSubstructures.contains(currentSubstructure)) {
+                continue;
+            }
+
+            visitedSubstructures.add(currentSubstructure);
+
+            // Links aus allen StructureNodes der aktuellen Substruktur sammeln
+            for (MirrorNode node : currentSubstructure.structureNodes) {
+                Mirror mirror = node.getMirror();
+                if (mirror != null) {
+                    allLinks.addAll(mirror.getLinks());
+                }
+            }
+
+            // Alle Substrukturen auf den Stack legen
+            for (BuildAsSubstructure substructure : currentSubstructure.nodeToSubstructure.values()) {
+                if (substructure != currentSubstructure && !visitedSubstructures.contains(substructure)) {
+                    substructureStack.push(substructure);
+                }
+            }
+        }
+
+        return allLinks;
     }
 
     /**
@@ -335,10 +380,8 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     @Override
     public void restartNetwork(Network n, Properties props, int simTime) {
-        super.restartNetwork(n, props, simTime);
 
-        // Alle internen Strukturen zurücksetzen
-        resetInternalState();
+        super.restartNetwork(n, props, simTime);
 
         // Komplett neu initialisieren
         Set<Link> newLinks = initNetwork(n, props);
@@ -710,27 +753,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Wird verwendet, wenn die Mirror-Links bereits durch TopologyStrategy.restartNetwork() gelöscht wurden.
      */
     protected void resetInternalStateStructureOnly() {
-        nodeToSubstructure.clear();
-        structureNodes.clear();
-        currentStructureRoot = null;
-    }
-
-
-    /**
-     * Vollständiger Reset des internen Zustands UND aller Mirror-Links.
-     * Muss vor dem Neuaufbau der Struktur aufgerufen werden.
-     */
-    protected void resetInternalState() {
-        // 1. ERST alle Mirror-Links aus allen MirrorNodes entfernen
-        for (MirrorNode node : structureNodes) {
-            Mirror mirror = node.getMirror();
-            if (mirror != null) {
-                // Alle Links des Mirrors löschen
-                mirror.getLinks().clear();
-            }
-        }
-
-        // 2. DANN die StructureNode-Struktur zurücksetzen
         nodeToSubstructure.clear();
         structureNodes.clear();
         currentStructureRoot = null;
