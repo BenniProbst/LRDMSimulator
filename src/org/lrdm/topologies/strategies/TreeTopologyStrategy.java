@@ -269,12 +269,13 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
      * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
      * Erstellt für jede Parent-Child-Beziehung einen entsprechenden Mirror-Link.
      *
-     * @param root Die Root-Node der Struktur
-     * @param props Simulation Properties
+     * @param root    Die Root-Node der Struktur
+     * @param props   Simulation Properties
+     * @param simTime
      * @return Set aller erstellten Links
      */
     @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
         Set<Link> allLinks = new HashSet<>();
 
         if (!(root instanceof TreeMirrorNode treeRoot)) {
@@ -345,7 +346,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         }
 
         // Erstelle die tatsächlichen Links
-        return buildAndConnectLinks(root, props);
+        return buildAndConnectLinks(root, props, 0);
     }
 
     /**
@@ -386,7 +387,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         if (!n.getMirrors().isEmpty()) {
             MirrorNode root = buildStructure(n.getMirrors().size(), simTime, props);
             if (root != null) {
-                Set<Link> newLinks = buildAndConnectLinks(root, props);
+                Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
                 n.getLinks().addAll(newLinks);
             }
         }
@@ -416,7 +417,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
-            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props);
+            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props, 0);
             n.getLinks().addAll(newLinks);
         }
     }

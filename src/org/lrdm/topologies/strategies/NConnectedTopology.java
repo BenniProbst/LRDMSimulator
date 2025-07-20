@@ -296,12 +296,13 @@ public class NConnectedTopology extends BuildAsSubstructure {
     /**
      * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
      *
-     * @param root Die Root-Node der Struktur
-     * @param props Simulation Properties
+     * @param root    Die Root-Node der Struktur
+     * @param props   Simulation Properties
+     * @param simTime
      * @return Set aller erstellten Links
      */
     @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
         Set<Link> links = new HashSet<>();
         Set<String> processedConnections = new HashSet<>();
 
@@ -372,7 +373,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
             return new HashSet<>();
         }
 
-        return buildAndConnectLinks(root, props);
+        return buildAndConnectLinks(root, props, 0);
     }
 
 
@@ -416,7 +417,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
             initializeInternalState(n);
             MirrorNode root = buildStructure(n.getNumMirrors(), simTime, props);
             if (root != null) {
-                Set<Link> newLinks = buildAndConnectLinks(root, props);
+                Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
                 n.getLinks().addAll(newLinks);
             }
         } else {
@@ -426,7 +427,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
 
             if (actualAdded > 0) {
                 // Erstelle Links für neue Verbindungen
-                Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props);
+                Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props, 0);
                 n.getLinks().addAll(newLinks);
             }
         }

@@ -304,7 +304,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
         }
 
         // Erstelle die tatsächlichen Links
-        return buildAndConnectLinks(root, props);
+        return buildAndConnectLinks(root, props, 0);
     }
 
     /**
@@ -346,7 +346,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
         if (!n.getMirrors().isEmpty()) {
             MirrorNode root = buildStructure(n.getMirrors().size(), simTime, props);
             if (root != null) {
-                Set<Link> newLinks = buildAndConnectLinks(root, props);
+                Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
                 n.getLinks().addAll(newLinks);
             }
         }
@@ -377,7 +377,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
-            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props);
+            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props, 0);
             n.getLinks().addAll(newLinks);
         }
     }

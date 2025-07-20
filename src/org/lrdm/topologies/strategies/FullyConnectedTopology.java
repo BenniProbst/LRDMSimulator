@@ -49,6 +49,10 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
                 FullyConnectedMirrorNode node = new FullyConnectedMirrorNode(mirror.getID(), mirror);
                 nodes.add(node);
                 addToStructureNodes(node); // Registriere bei BuildAsSubstructure
+                if(mirror.isRoot()) {
+                    setCurrentStructureRoot(node);
+                    node.setHead(true);
+                }
             }
         }
 
@@ -58,7 +62,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
         // 2. Setze den ersten Knoten als Head und Root
         FullyConnectedMirrorNode root = nodes.stream()
-                .filter(node -> node.getMirror() != null && node.getMirror().isRoot())
+                .filter(node -> node.getMirror() != null && node.isRoot())
                 .findFirst()
                 .orElse(null);
 
@@ -66,65 +70,22 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
             throw new IllegalStateException("No root node found in FullyConnected structure");
         }
 
-        root.setHead(true);
-        setCurrentStructureRoot(root);
-
-        // 3. Baue vollständige Vernetzung: StructureNode-Verbindungen UND echte Mirror-Links
-        Set<Link> createdLinks = buildFullyConnectedStructureWithLinks(nodes, simTime, props);
-
-        // 4. Registriere alle Links im Network
-        network.getLinks().addAll(createdLinks);
-
-        return root;
-    }
-
-    /**
-     * Erstellt die vollständig vernetzte Struktur zwischen den Knoten mit echten Mirror-Links.
-     * Jeder Knoten wird mit jedem anderen Knoten verbunden.
-     * Erstellt sowohl StructureNode-Verbindungen als auch echte Mirror-Links.
-     *
-     * @param nodes Liste der FullyConnectedMirrorNodes
-     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
-     * @param props Properties der Simulation
-     * @return Set aller erstellten Links
-     */
-    private Set<Link> buildFullyConnectedStructureWithLinks(List<FullyConnectedMirrorNode> nodes, int simTime, Properties props) {
-        Set<Link> createdLinks = new HashSet<>();
-
+        // 3. Plane Strukturebene
         // Vollständige Vernetzung: Jeder mit jedem (außer sich selbst)
         for (int i = 0; i < nodes.size(); i++) {
             FullyConnectedMirrorNode sourceNode = nodes.get(i);
-            Mirror sourceMirror = sourceNode.getMirror();
-            if(!sourceMirror.isUsableForNetwork())continue;
 
             for (int j = i + 1; j < nodes.size(); j++) {
                 if (i == j) continue;
                 FullyConnectedMirrorNode targetNode = nodes.get(j);
-                Mirror targetMirror = targetNode.getMirror();
-                if(!targetMirror.isUsableForNetwork())continue;
-
-                // Erstelle echten Mirror-Link mit korrektem Konstruktor
-                Link link = new Link(
-                        idGenerator.getNextID(),
-                        sourceMirror,
-                        targetMirror,
-                        simTime,
-                        props
-                );
-
-                // Füge Link zu beiden Mirrors hinzu
-                sourceMirror.addLink(link);
-                targetMirror.addLink(link);
 
                 // Füge bidirektionale StructureNode-Verbindung hinzu
                 sourceNode.addChild(targetNode);
                 targetNode.addChild(sourceNode);
-
-                createdLinks.add(link);
             }
         }
 
-        return createdLinks;
+        return root;
     }
 
     /**
@@ -259,12 +220,13 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
      * Erstellt für jede StructureNode-Verbindung einen entsprechenden Mirror-Link.
      *
-     * @param root Die Root-Node der Struktur
-     * @param props Simulation Properties
+     * @param root    Die Root-Node der Struktur
+     * @param props   Simulation Properties
+     * @param simTime Zeitpunkt der Simulation
      * @return Set aller erstellten Links
      */
     @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
         Set<Link> allLinks = new HashSet<>();
 
         if (!(root instanceof FullyConnectedMirrorNode fcRoot)) {
@@ -297,7 +259,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
                 // Prüfe, ob die Mirrors bereits verbunden sind
                 if (!connected(mirror1, mirror2)) {
                     Link link = new Link(idGenerator.getNextID(), mirror1, mirror2,
-                            0, props);
+                            simTime, props);
                     mirror1.addLink(link);
                     mirror2.addLink(link);
                     allLinks.add(link);
@@ -333,8 +295,14 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
             return new HashSet<>();
         }
 
+        // 4. Baue vollständige Vernetzung: StructureNode-Verbindungen UND echte Mirror-Links
+        Set<Link> createdLinks = buildAndConnectLinks(root, props, 0);
+
+        // 5. Registriere alle Links im Network
+        network.getLinks().addAll(createdLinks);
+
         // Erstelle die tatsächlichen Links
-        return buildAndConnectLinks(root, props);
+        return createdLinks;
     }
 
 
@@ -380,7 +348,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         if (!n.getMirrors().isEmpty()) {
             MirrorNode root = buildStructure(n.getMirrors().size(), simTime, props);
             if (root != null) {
-                Set<Link> newLinks = buildAndConnectLinks(root, props);
+                Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
                 n.getLinks().addAll(newLinks);
             }
         }
@@ -410,7 +378,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
-            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props);
+            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props, 0);
             n.getLinks().addAll(newLinks);
         }
     }

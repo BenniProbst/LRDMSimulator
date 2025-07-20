@@ -533,7 +533,7 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
         MirrorNode root = buildStructure(totalMirrors, 0, props);
         setCurrentStructureRoot(root);
 
-        return buildAndConnectLinks(root, props);
+        return buildAndConnectLinks(root, props, 0);
     }
 
     /**
@@ -561,7 +561,7 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
         // Erstelle neue Links
         MirrorNode root = getCurrentStructureRoot();
         if (root != null) {
-            buildAndConnectLinks(root, props);
+            buildAndConnectLinks(root, props, 0);
         }
     }
 
@@ -581,12 +581,13 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
     /**
      * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
      *
-     * @param root Die Root-Node der Struktur
-     * @param props Simulation Properties
+     * @param root    Die Root-Node der Struktur
+     * @param props   Simulation Properties
+     * @param simTime
      * @return Set aller erstellten Links
      */
     @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
         Set<Link> allLinks = new HashSet<>();
 
         if (root == null) return allLinks;

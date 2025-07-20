@@ -604,12 +604,13 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      * Erstellt und verbindet alle Links für die Schneeflocken-Struktur.
      * Sammelt Links aus allen Substrukturen (Ringe, Lines, Trees) und fügt sie zum Netzwerk hinzu.
      *
-     * @param root Die Root-Node der Struktur
-     * @param props Simulation Properties
+     * @param root    Die Root-Node der Struktur
+     * @param props   Simulation Properties
+     * @param simTime
      * @return Set aller erstellten Links
      */
     @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
         Set<Link> allLinks = new HashSet<>();
 
         if (root == null || network == null) {
@@ -625,7 +626,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
             // Sammle Links aus jeder Substruktur
             if (subRoot != null) {
-                Set<Link> substructureLinks = substructure.buildAndConnectLinks(subRoot, props);
+                Set<Link> substructureLinks = substructure.buildAndConnectLinks(subRoot, props, 0);
                 allLinks.addAll(substructureLinks);
             }
         }
@@ -732,7 +733,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         if (root != null) {
             setCurrentStructureRoot(root);
-            return buildAndConnectLinks(root, props);
+            return buildAndConnectLinks(root, props, 0);
         }
 
         return new HashSet<>();
@@ -761,7 +762,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         MirrorNode root = getCurrentStructureRoot();
         if (root != null) {
-            buildAndConnectLinks(root, props);
+            buildAndConnectLinks(root, props, 0);
         }
     }
 

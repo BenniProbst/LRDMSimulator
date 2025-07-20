@@ -535,7 +535,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         MirrorNode root = buildStructure(n.getMirrors().size(), 0, props);
 
         // Erstelle und verbinde alle Links
-        return buildAndConnectLinks(root, props);
+        return buildAndConnectLinks(root, props, 0);
     }
 
     /**
@@ -560,7 +560,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         MirrorNode root = buildStructure(usableMirrors, simTime, props);
 
         // Erstelle alle Links neu
-        buildAndConnectLinks(root, props);
+        buildAndConnectLinks(root, props, 0);
     }
 
     /**
@@ -589,7 +589,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         // Erstelle neue Links falls Knoten hinzugefügt wurden
         if (actuallyAdded > 0) {
             MirrorNode root = getCurrentStructureRoot();
-            buildAndConnectLinks(root, props);
+            buildAndConnectLinks(root, props, 0);
         }
     }
 
@@ -638,12 +638,13 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
      * Stern-spezifische Implementierung: Verbindet das Zentrum mit allen Blättern.
      *
-     * @param root Die Root-Node der Struktur (sollte das Zentrum sein)
-     * @param props Properties der Simulation
+     * @param root    Die Root-Node der Struktur (sollte das Zentrum sein)
+     * @param props   Properties der Simulation
+     * @param simTime
      * @return Set aller erstellten Links
      */
     @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
         Set<Link> createdLinks = new HashSet<>();
 
         if (root == null) {

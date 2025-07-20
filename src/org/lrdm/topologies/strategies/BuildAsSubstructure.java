@@ -319,7 +319,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         MirrorNode root = buildStructure(n.getNumMirrors(), props);
         if (root != null) {
             setCurrentStructureRoot(root);
-            return buildAndConnectLinks(root, props);
+            return buildAndConnectLinks(root, props, 0);
         }
 
         return getAllLinksRecursive();
@@ -413,7 +413,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             // Links für die gesamte Struktur neu aufbauen
             MirrorNode root = getCurrentStructureRoot();
             if (root != null) {
-                Set<Link> newLinks = buildAndConnectLinks(root, props);
+                Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
                 n.getLinks().addAll(newLinks);
             }
         } else {
@@ -764,11 +764,12 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Erstellt und verbindet alle Links für eine Struktur.
      * Muss von Subklassen implementiert werden.
      *
-     * @param root Die Root-Node der Struktur
-     * @param props Simulation Properties
+     * @param root    Die Root-Node der Struktur
+     * @param props   Simulation Properties
+     * @param simTime Zeitpunkt an dem die Links tatsächlich erstellt werden
      * @return Set aller erstellten Links
      */
-    protected abstract Set<Link> buildAndConnectLinks(MirrorNode root, Properties props);
+    protected abstract Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime);
 
     // ===== OBSERVER PATTERN INTERFACES =====
 
@@ -947,7 +948,10 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     protected final Mirror getNextMirror() {
         if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            return mirrorIterator.next();
+            while (mirrorIterator.hasNext()) {
+                Mirror mirror = mirrorIterator.next();
+                if(mirror.isUsableForNetwork())return mirror;
+            }
         }
         return null;
     }

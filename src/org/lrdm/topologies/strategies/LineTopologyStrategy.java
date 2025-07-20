@@ -470,7 +470,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         
         if (root != null) {
             setCurrentStructureRoot(root);
-            return buildAndConnectLinks(root, props);
+            return buildAndConnectLinks(root, props, 0);
         }
         
         return new HashSet<>();
@@ -519,7 +519,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         // Erstelle Links für die neue Struktur
         MirrorNode root = getCurrentStructureRoot();
         if (root != null) {
-            buildAndConnectLinks(root, props);
+            buildAndConnectLinks(root, props, 0);
         }
     }
 
@@ -599,12 +599,13 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
     /**
      * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
      *
-     * @param root Die Root-Node der Struktur
-     * @param props Simulation Properties
+     * @param root    Die Root-Node der Struktur
+     * @param props   Simulation Properties
+     * @param simTime
      * @return Set aller erstellten Links
      */
     @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props) {
+    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
         Set<Link> createdLinks = new HashSet<>();
         
         if (root == null || network == null) return createdLinks;
