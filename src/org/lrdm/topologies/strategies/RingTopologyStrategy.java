@@ -72,7 +72,7 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
      * Portiert die buildRing-Logik aus RingBuilder.
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes, Properties props) {
         if (totalNodes < minRingSize || !mirrorIterator.hasNext()) return null;
 
         // Erstelle alle Ring-Knoten
@@ -225,9 +225,11 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
     /**
      * Startet das Netzwerk komplett neu mit der Ring-Topologie.
      * Überschreibt die Basis-Implementierung für Ring-spezifische Neustartlogik.
+     *
+     * @return
      */
     @Override
-    public void restartNetwork(Network n, Properties props, int simTime) {
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
         super.restartNetwork(n, props, simTime);
 
         // Bereinige Ring-spezifische Zustände
@@ -530,7 +532,7 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
             throw new IllegalArgumentException("Ring-Topologie benötigt mindestens " + minRingSize + " Mirrors");
         }
 
-        MirrorNode root = buildStructure(totalMirrors, 0, props);
+        MirrorNode root = buildStructure(totalMirrors, props);
         setCurrentStructureRoot(root);
 
         return buildAndConnectLinks(root, props, 0);

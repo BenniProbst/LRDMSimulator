@@ -29,12 +29,11 @@ public class NConnectedTopology extends BuildAsSubstructure {
      * und erstellt die echten Mirror-Links zur simTime.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
-     * @param props Properties der Simulation
+     * @param props      Properties der Simulation
      * @return Die Root-Node der erstellten Struktur
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes, Properties props) {
         if (totalNodes <= 0 || network == null) {
             return null;
         }
@@ -367,7 +366,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
         // Initialisiere den internen Zustand
         initializeInternalState(n);
 
-        MirrorNode root = buildStructure(n.getNumMirrors(), 0, props);
+        MirrorNode root = buildStructure(n.getNumMirrors(), props);
 
         if (root == null) {
             return new HashSet<>();
@@ -380,12 +379,13 @@ public class NConnectedTopology extends BuildAsSubstructure {
     /**
      * Startet das Netzwerk komplett neu mit der aktuellen Topologie.
      *
-     * @param n Das Netzwerk
-     * @param props Simulation Properties
+     * @param n       Das Netzwerk
+     * @param props   Simulation Properties
      * @param simTime Aktuelle Simulationszeit
+     * @return
      */
     @Override
-    public void restartNetwork(Network n, Properties props, int simTime) {
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
         // Standard-Restart-Verhalten
         super.restartNetwork(n, props, simTime);
 
@@ -415,7 +415,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
         // Initialisiere den internen Zustand, falls nötig
         if (getCurrentStructureRoot() == null) {
             initializeInternalState(n);
-            MirrorNode root = buildStructure(n.getNumMirrors(), simTime, props);
+            MirrorNode root = buildStructure(n.getNumMirrors(), props);
             if (root != null) {
                 Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
                 n.getLinks().addAll(newLinks);

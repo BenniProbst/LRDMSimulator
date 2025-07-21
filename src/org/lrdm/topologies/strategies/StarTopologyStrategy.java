@@ -102,12 +102,11 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      * Portiert die buildStar-Logik aus StarBuilder.
      *
      * @param totalNodes Gesamtanzahl der zu erstellenden Knoten
-     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
-     * @param props Properties der Simulation
+     * @param props      Properties der Simulation
      * @return Die Root-Node (Zentrum) der erstellten Stern-Struktur
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes, Properties props) {
         // Validierung: Mindestanzahl von Knoten und verfügbare Mirrors
         if (totalNodes < minStarSize || !mirrorIterator.hasNext()) {
             return null;
@@ -532,7 +531,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         this.mirrorIterator = n.getMirrors().iterator();
 
         // Baue die Stern-Struktur mit allen verfügbaren Mirrors
-        MirrorNode root = buildStructure(n.getMirrors().size(), 0, props);
+        MirrorNode root = buildStructure(n.getMirrors().size(), props);
 
         // Erstelle und verbinde alle Links
         return buildAndConnectLinks(root, props, 0);
@@ -542,12 +541,13 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      * Startet das Netzwerk komplett neu mit der Stern-Topologie.
      * Bereinigt alle bestehenden Links und baut die Struktur neu auf.
      *
-     * @param n Das Netzwerk
-     * @param props Properties der Simulation
+     * @param n       Das Netzwerk
+     * @param props   Properties der Simulation
      * @param simTime Aktuelle Simulationszeit
+     * @return
      */
     @Override
-    public void restartNetwork(Network n, Properties props, int simTime) {
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
         super.initNetwork(n, props);
 
         // Initialisiere den internen Zustand neu
@@ -557,7 +557,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         int usableMirrors = Math.toIntExact(n.getMirrors().stream().filter(Mirror::isUsableForNetwork).count());
 
         // Baue neue Stern-Struktur mit aktueller Simulationszeit
-        MirrorNode root = buildStructure(usableMirrors, simTime, props);
+        MirrorNode root = buildStructure(usableMirrors, props);
 
         // Erstelle alle Links neu
         buildAndConnectLinks(root, props, 0);

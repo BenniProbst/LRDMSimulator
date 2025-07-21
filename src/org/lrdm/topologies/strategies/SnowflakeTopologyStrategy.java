@@ -93,7 +93,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      * NUTZT BuildAsSubstructure.nodeToSubstructure für alle Substruktur-Zuordnungen.
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes, Properties props) {
         if (totalNodes < getMinimumRequiredMirrors()) {
             throw new SnowflakeTopologyException(
                     "Snowflake benötigt mindestens " + getMinimumRequiredMirrors() + " Knoten"
@@ -149,7 +149,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
             ringStrategy.mirrorIterator = ringMirrors.iterator();
 
             // Nutze buildStructure() aus BuildAsSubstructure
-            MirrorNode ringRoot = ringStrategy.buildStructure(mirrorsForThisRing, simTime, props);
+            MirrorNode ringRoot = ringStrategy.buildStructure(mirrorsForThisRing, props);
 
             // Registriere alle Ring-Knoten in der Hauptstruktur
             for (MirrorNode ringNode : ringStrategy.getAllStructureNodes()) {
@@ -221,7 +221,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 bridgeStrategy.mirrorIterator = bridgeMirrors.iterator();
 
                 // Erstelle Bridge-Linie
-                MirrorNode bridgeRoot = bridgeStrategy.buildStructure(bridgeMirrors.size(), simTime, props);
+                MirrorNode bridgeRoot = bridgeStrategy.buildStructure(bridgeMirrors.size(), props);
 
                 // Registriere Bridge-Knoten
                 for (MirrorNode bridgeNode : bridgeStrategy.getAllStructureNodes()) {
@@ -286,7 +286,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
             treeStrategy.mirrorIterator = treeMirrors.iterator();
 
             // Nutze buildStructure() aus BuildAsSubstructure
-            MirrorNode treeRoot = treeStrategy.buildStructure(mirrorsForThisTree, simTime, props);
+            MirrorNode treeRoot = treeStrategy.buildStructure(mirrorsForThisTree, props);
 
             // Registriere Tree-Knoten in der Hauptstruktur
             for (MirrorNode treeNode : treeStrategy.getAllStructureNodes()) {
@@ -324,7 +324,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
             bridgeStrategy.mirrorIterator = bridgeMirrors.iterator();
 
             // Erstelle Bridge-Linie
-            MirrorNode bridgeRoot = bridgeStrategy.buildStructure(bridgeMirrors.size(), simTime, props);
+            MirrorNode bridgeRoot = bridgeStrategy.buildStructure(bridgeMirrors.size(), props);
 
             // Registriere Bridge-Knoten
             for (MirrorNode bridgeNode : bridgeStrategy.getAllStructureNodes()) {
@@ -729,7 +729,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         }
 
         this.mirrorIterator = n.getMirrors().iterator();
-        MirrorNode root = buildStructure(n.getNumMirrors(), 0, props);
+        MirrorNode root = buildStructure(n.getNumMirrors(), props);
 
         if (root != null) {
             setCurrentStructureRoot(root);
@@ -740,7 +740,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
     }
 
     @Override
-    public void restartNetwork(Network n, Properties props, int simTime) {
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
         super.restartNetwork(n, props, simTime);
         bridgeNodes.clear();
         externBridgeNodes.clear();

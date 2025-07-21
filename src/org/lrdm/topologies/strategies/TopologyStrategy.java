@@ -1,6 +1,5 @@
 package org.lrdm.topologies.strategies;
 
-import org.lrdm.DataPackage;
 import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
@@ -8,19 +7,23 @@ import org.lrdm.effectors.Action;
 import org.lrdm.util.IDGenerator;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**Interface to be used by all Topology strategies. Specifies methods to be used for initializing a network, handling added and removed mirrors as well as to compute the number of target links.
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  */
 public abstract class TopologyStrategy {
-	public abstract Set<Link> initNetwork(Network n, Properties props);
-	public void restartNetwork(Network n, Properties props, int simTime) {
+	public Set<Link> initNetwork(Network n, Properties props){
+		return restartNetwork(n, props, 0);
+	}
+	public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
 		n.getLinks().forEach(Link::shutdown);
 		for(Mirror m:n.getMirrors()){
 			if(!m.isRoot())m.shutdown(simTime);
 		}
 		n.getMirrors().addAll(createMirrors(n.getNumMirrors()-1, simTime, props));
+		return n.getLinks().stream().filter(Link::isActive).collect(Collectors.toSet());
 	}
 	public abstract void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime);
 

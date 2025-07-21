@@ -65,7 +65,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      * Portiert die buildLine-Logik aus LineBuilder.
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes, Properties props) {
         if (totalNodes < minLineSize || !mirrorIterator.hasNext()) return null;
 
         // Erstelle alle Linien-Knoten
@@ -466,7 +466,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         }
 
         this.mirrorIterator = n.getMirrors().iterator();
-        MirrorNode root = buildStructure(n.getNumMirrors(), 0, props);
+        MirrorNode root = buildStructure(n.getNumMirrors(), props);
         
         if (root != null) {
             setCurrentStructureRoot(root);
@@ -479,12 +479,13 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
     /**
      * Startet das Netzwerk komplett neu mit der Linien-Topologie.
      *
-     * @param n Das Netzwerk
-     * @param props Simulation Properties
+     * @param n       Das Netzwerk
+     * @param props   Simulation Properties
      * @param simTime Aktuelle Simulationszeit
+     * @return
      */
     @Override
-    public void restartNetwork(Network n, Properties props, int simTime) {
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
         // Lösche alle bestehenden Links
         super.restartNetwork(n, props, simTime);
         

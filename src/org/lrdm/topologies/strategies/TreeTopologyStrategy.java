@@ -29,12 +29,11 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
      * Erstellt sowohl StructureNode-Verbindungen als auch echte Mirror-Links.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
-     * @param props Properties der Simulation
+     * @param props      Properties der Simulation
      * @return Die Root-Node der erstellten Struktur
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes, Properties props) {
         if (totalNodes <= 0 || network == null) {
             return null;
         }
@@ -339,7 +338,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         }
 
         // Baue die Struktur mit allen verfügbaren Mirrors auf
-        MirrorNode root = buildStructure(n.getMirrors().size(), 0, props);
+        MirrorNode root = buildStructure(n.getMirrors().size(), props);
 
         if (root == null) {
             return new HashSet<>();
@@ -352,12 +351,13 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
     /**
      * Startet das Netzwerk komplett neu mit der aktuellen Topologie.
      *
-     * @param n Das Netzwerk
-     * @param props Simulation Properties
+     * @param n       Das Netzwerk
+     * @param props   Simulation Properties
      * @param simTime Aktuelle Simulationszeit
+     * @return
      */
     @Override
-    public void restartNetwork(Network n, Properties props, int simTime) {
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
         // 1. Sammle alle Links, die zu unseren MirrorNodes gehören
         Set<Link> linksToRemove = new HashSet<>();
         for (MirrorNode node : getAllStructureNodes()) {
@@ -385,7 +385,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
 
         if (!n.getMirrors().isEmpty()) {
-            MirrorNode root = buildStructure(n.getMirrors().size(), simTime, props);
+            MirrorNode root = buildStructure(n.getMirrors().size(), props);
             if (root != null) {
                 Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
                 n.getLinks().addAll(newLinks);

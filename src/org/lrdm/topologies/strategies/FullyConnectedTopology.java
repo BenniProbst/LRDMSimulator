@@ -30,12 +30,11 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      * Erstellt sowohl StructureNode-Verbindungen als auch echte Mirror-Links.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
-     * @param props Properties der Simulation
+     * @param props      Properties der Simulation
      * @return Die Root-Node der erstellten Struktur
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes, Properties props) {
         if (totalNodes <= 0 || network == null) {
             return null;
         }
@@ -71,11 +70,11 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         }
 
         // 3. Plane Strukturebene
-        // Vollständige Vernetzung: Jeder mit jedem (außer sich selbst)
+        // vollständige Vernetzung: jeder mit jedem (außer sich selbst)
         for (int i = 0; i < nodes.size(); i++) {
             FullyConnectedMirrorNode sourceNode = nodes.get(i);
 
-            for (int j = i + 1; j < nodes.size(); j++) {
+            for (int j = 0; j < nodes.size(); j++) {
                 if (i == j) continue;
                 FullyConnectedMirrorNode targetNode = nodes.get(j);
 
@@ -234,124 +233,37 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         }
 
         // Sammle alle Knoten in der Struktur
-
-        // Erstelle Links zwischen allen Paaren von Knoten
         List<FullyConnectedMirrorNode> nodeList = fcRoot.getAllNodesInStructure(StructureType.FULLY_CONNECTED, fcRoot)
                 .stream()
                 .filter(node -> node instanceof FullyConnectedMirrorNode)
                 .map(node -> (FullyConnectedMirrorNode) node).distinct().toList();
+
+        // Erstelle Links zwischen allen Paaren von Knoten
         for (int i = 0; i < nodeList.size(); i++) {
             FullyConnectedMirrorNode node1 = nodeList.get(i);
-            Mirror mirror1 = node1.getMirror();
 
-            if (mirror1 == null) {
-                continue; // Überspringe Knoten ohne Mirror
-            }
-
-            for (int j = i + 1; j < nodeList.size(); j++) {
+            for (int j = 0; j < nodeList.size(); j++) {
                 FullyConnectedMirrorNode node2 = nodeList.get(j);
-                Mirror mirror2 = node2.getMirror();
 
-                if (mirror2 == null) {
-                    continue; // Überspringe Knoten ohne Mirror
-                }
+                if(node1.equals(node2)) continue;
 
                 // Prüfe, ob die Mirrors bereits verbunden sind
-                if (!connected(mirror1, mirror2)) {
-                    Link link = new Link(idGenerator.getNextID(), mirror1, mirror2,
+                if (!node1.getMirror().isAlreadyConnected(node2.getMirror())) {
+                    //Mirror nicht verbunden, sollte er verbunden sein → Link erstellen
+                    Link link = new Link(idGenerator.getNextID(), node1.getMirror(), node2.getMirror(),
                             simTime, props);
-                    mirror1.addLink(link);
-                    mirror2.addLink(link);
+                    node1.getMirror().addLink(link);
+                    node2.getMirror().addLink(link);
                     allLinks.add(link);
+                }
+                else{
+                    //Mirror verbunden, solle er nicht verbunden sein → Link löschen
+
                 }
             }
         }
 
         return allLinks;
-    }
-
-    /**
-     * Initializes the network by connecting all mirrors to one another.
-     *
-     * @param n the {@link Network}
-     * @param props {@link Properties} of the simulation
-     * @return {@link Set} of all {@link Link}s created
-     */
-    @Override
-    public Set<Link> initNetwork(Network n, Properties props) {
-        this.network = n;
-        this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
-
-        if (n.getMirrors().isEmpty()) {
-            return new HashSet<>();
-        }
-
-        int usableMirrors = Math.toIntExact(n.getMirrors().stream().filter(Mirror::isUsableForNetwork).count());
-
-        // Baue die Struktur mit allen verfügbaren Mirrors auf - simTime = 0 bei Initialisierung
-        MirrorNode root = buildStructure(usableMirrors, 0, props);
-
-        if (root == null) {
-            return new HashSet<>();
-        }
-
-        // 4. Baue vollständige Vernetzung: StructureNode-Verbindungen UND echte Mirror-Links
-        Set<Link> createdLinks = buildAndConnectLinks(root, props, 0);
-
-        // 5. Registriere alle Links im Network
-        network.getLinks().addAll(createdLinks);
-
-        // Erstelle die tatsächlichen Links
-        return createdLinks;
-    }
-
-
-    /**
-     * Startet das Netzwerk komplett neu mit der aktuellen Topologie.
-     * Löscht alle bestehenden Verbindungen und baut sie neu auf.
-     * Stellt sicher, dass Network. links und Mirror. links synchronisiert bleiben.
-     *
-     * @param n Das Netzwerk
-     * @param props Simulation Properties
-     * @param simTime Aktuelle Simulationszeit
-     */
-    @Override
-    public void restartNetwork(Network n, Properties props, int simTime) {
-        super.restartNetwork(n, props, simTime);
-        // 1. ERST alle Links aus Network.links sammeln, die zu unseren MirrorNodes gehören
-        Set<Link> linksToRemove = new HashSet<>();
-        for (MirrorNode node : getAllStructureNodes()) {
-            Mirror mirror = node.getMirror();
-            if (mirror != null) {
-                // Sammle alle Links dieses Mirrors, die auch im Network sind
-                for (Link link : mirror.getLinks()) {
-                    if (n.getLinks().contains(link)) {
-                        linksToRemove.add(link);
-                    }
-                }
-            }
-        }
-
-        // 2. Links aus Network.links entfernen
-        n.getLinks().removeAll(linksToRemove);
-
-        // 3. TopologyStrategy macht den Rest: Mirror.links.clear() für ALLE Mirrors
-        super.restartNetwork(n, props, simTime);
-
-        // 4. StructureNode-Struktur zurücksetzen
-        resetInternalStateStructureOnly();
-
-        // 5. Neu aufbauen
-        this.network = n;
-        this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
-
-        if (!n.getMirrors().isEmpty()) {
-            MirrorNode root = buildStructure(n.getMirrors().size(), simTime, props);
-            if (root != null) {
-                Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
-                n.getLinks().addAll(newLinks);
-            }
-        }
     }
 
     /**
@@ -471,20 +383,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
 
     // ===== HILFSMETHODEN =====
-
-    /**
-     * Checks if two mirrors are connected or not.
-     * Mirrors are connected if there is a link in either direction between them.
-     *
-     * @param m1 the first {@link Mirror}
-     * @param m2 the second {@link Mirror}
-     * @return true if there is a link between the two mirrors, false if not
-     */
-    private boolean connected(Mirror m1, Mirror m2) {
-        return m1.getLinks().stream()
-                .anyMatch(l -> (l.getSource().equals(m1) && l.getTarget().equals(m2)) ||
-                        (l.getSource().equals(m2) && l.getTarget().equals(m1)));
-    }
 
     /**
      * Validiert die aktuelle vollständig vernetzte Struktur.

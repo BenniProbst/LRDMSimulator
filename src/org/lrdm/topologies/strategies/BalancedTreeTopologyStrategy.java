@@ -55,7 +55,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      * Ermöglicht unbegrenztes Baumwachstum ohne strukturelle Einschränkungen.
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, int simTime, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes, Properties props) {
         if (totalNodes <= 0 || !mirrorIterator.hasNext()) return null;
 
         // Erstelle Root mit Balance-Konfiguration - verwendet globales network-Objekt

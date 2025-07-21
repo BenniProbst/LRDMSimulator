@@ -374,18 +374,30 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Startet das Netzwerk komplett neu mit der aktuellen Topologie.
      * Löscht alle bestehenden Verbindungen und baut sie neu auf.
      *
-     * @param n Das Netzwerk
-     * @param props Simulation Properties
+     * @param n       Das Netzwerk
+     * @param props   Simulation Properties
      * @param simTime Aktuelle Simulationszeit
+     * @return created links
      */
     @Override
-    public void restartNetwork(Network n, Properties props, int simTime) {
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
 
         super.restartNetwork(n, props, simTime);
 
         // Komplett neu initialisieren
-        Set<Link> newLinks = initNetwork(n, props);
-        n.getLinks().addAll(newLinks);
+        initializeInternalState(n);
+
+        MirrorNode root = buildStructure(n.getNumMirrors(), props);
+        if (root != null) {
+            setCurrentStructureRoot(root);
+            Set<Link> links = buildAndConnectLinks(root, props, simTime);
+            n.getLinks().addAll(links);
+            return links;
+        }
+
+        Set<Link> links = getAllLinksRecursive();
+        n.getLinks().addAll(links);
+        return links;
     }
 
     /**
@@ -446,26 +458,15 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Erstellt eine neue Struktur mit der angegebenen Anzahl von Knoten.
-     * Backwards-Kompatibilität: Ruft buildStructure(totalNodes, 0) auf.
-     *
-     * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param props Properties der Simulation
-     * @return Root-Knoten der erstellten Struktur
-     */
-    protected final MirrorNode buildStructure(int totalNodes, Properties props) {
-        return buildStructure(totalNodes, 0, props);
-    }
-
-    /**
-     * Erstellt eine neue Struktur mit der angegebenen Anzahl von Knoten.
      * Muss von Subklassen für spezifische Strukturtypen implementiert werden.
+     * Ist eine zeitlose Planungsklasse und ändert sich bei einem Aufruf!
+     * Wird erst durch einen Simulationszeitpunkt durch das Bauen von Links aktiviert.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param simTime    Aktuelle Simulationszeit für Link-Erstellung
-     * @param props Properties der Simulation
+     * @param props      Properties der Simulation
      * @return Root-Knoten der erstellten Struktur
      */
-    protected abstract MirrorNode buildStructure(int totalNodes, int simTime, Properties props);
+    protected abstract MirrorNode buildStructure(int totalNodes, Properties props);
 
     /**
      * Fügt Knoten zu einer bestehenden Struktur hinzu.
