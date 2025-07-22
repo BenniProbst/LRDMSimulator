@@ -1,402 +1,224 @@
+
 package org.lrdm.topologies.strategies;
 
+import org.lrdm.effectors.TargetLinkChange;
+import org.lrdm.topologies.node.TreeMirrorNode;
+import org.lrdm.topologies.node.MirrorNode;
+import org.lrdm.topologies.node.StructureNode;
 import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
-import org.lrdm.effectors.*;
-import org.lrdm.topologies.node.*;
-import org.lrdm.topologies.node.StructureNode.StructureType;
+import org.lrdm.effectors.Action;
+import org.lrdm.effectors.MirrorChange;
+import org.lrdm.effectors.TopologyChange;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
- * A {@link TopologyStrategy} which connects mirrors in a tree topology.
- * Each mirror (except the root) has exactly one parent, creating a hierarchical structure
- * with no cycles. This results in exactly n-1 links for n mirrors.
+ * Eine TopologyStrategy, die Mirrors in einem Baum verbindet.
  * <p>
- * Verwendet {@link TreeMirrorNode} für Struktur-Management und erweitert {@link BuildAsSubstructure}
- * für konsistente StructureBuilder-Integration.
+ * **Baum-Eigenschaften**:
+ * - Baumstruktur mit hierarchischer Organisation (keine Zyklen)
+ * - Genau eine Root (Head-Node)
+ * - Jeder Knoten außer Root hat genau einen Parent
+ * - n Knoten haben genau n-1 Kanten (charakteristisch für Bäume)
+ * - Zusammenhängend (alle Knoten über Tree-Pfade erreichbar)
+ * - Verwendet {@link TreeMirrorNode} für baumspezifische Funktionalität
+ * <p>
+ * **Aufbau-Strategie**:
+ * - Breadth-First-Aufbau für gleichmäßige Verteilung
+ * - Optimale Kinderzahl pro Knoten für balancierten Baum
+ * - Automatische Root-Auswahl basierend auf der ersten verfügbaren Mirror
+ * <p>
+ * **Planungsebene vs. Ausführungsebene**:
+ * - Planungsebene: `buildStructure()` - plant strukturelle Änderungen ohne Zeitbezug
+ * - Ausführungsebene: `buildAndUpdateLinks()` - führt Mirror-Link-Erstellung zeitkritisch aus
+ * - Automatisches Mitwachsen: MirrorNode-Ebene passt sich an StructureNode-Planung an
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class TreeTopologyStrategy extends BuildAsSubstructure {
 
-    // ===== BUILD SUBSTRUCTURE IMPLEMENTATION =====
+    // ===== ÜBERSCHREIBUNG DER BUILD-AS-SUBSTRUCTURE-METHODEN =====
 
     /**
-     * Baut eine Baum-Struktur mit der angegebenen Anzahl von Knoten auf.
-     * Erstellt eine hierarchische Struktur mit einem Root-Knoten und n-1 Links.
-     * Erstellt sowohl StructureNode-Verbindungen als auch echte Mirror-Links.
+     * **PLANUNGSEBENE**: Erstellt die initiale Baum-Struktur.
+     * Überschreibt BuildAsSubstructure für Baum-spezifische Struktur-Erstellung.
+     * Verwendet TreeMirrorNode für baum-spezifische Funktionalität.
+     * Integriert die gesamte Baum-Aufbau-Logik direkt.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
      * @param props      Properties der Simulation
-     * @return Die Root-Node der erstellten Struktur
+     * @return Die Root-Node der erstellten Baum-Struktur
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes, Properties props) {
-        if (totalNodes <= 0 || network == null) {
+        if (totalNodes < 1 || !hasNextMirror()) {
             return null;
         }
 
-        List<TreeMirrorNode> nodes = new ArrayList<>();
+        // Lese Konfiguration aus Properties
+        int childrenPerParent = Integer.parseInt(props.getProperty("preferredChildrenPerParent", "2"));
 
-        // 1. Erstelle TreeMirrorNodes mit Mirror-Zuordnung
-        for (int i = 0; i < totalNodes && hasNextMirror(); i++) {
-            Mirror mirror = getNextMirror();
-            if (mirror != null) {
-                TreeMirrorNode node = new TreeMirrorNode(mirror.getID(), mirror);
-                nodes.add(node);
-                addToStructureNodes(node); // Registriere bei BuildAsSubstructure
-            }
-        }
+        // 1. Erstelle Root-Node
+        TreeMirrorNode root = (TreeMirrorNode) getMirrorNodeFromIterator();
+        if (root == null) return null;
 
-        if (nodes.isEmpty()) {
-            return null;
-        }
-
-        // 2. Setze den ersten Knoten als Root und Head
-        TreeMirrorNode root = nodes.get(0);
         root.setHead(true);
         setCurrentStructureRoot(root);
 
-        // 3. Baue Baum-Struktur: StructureNode-Verbindungen UND echte Mirror-Links
-        Set<Link> createdLinks = buildTreeStructureWithLinks(nodes, simTime, props);
+        // 2. Erstelle restliche Knoten
+        List<TreeMirrorNode> remainingNodes = new ArrayList<>();
+        for (int i = 1; i < totalNodes; i++) {
+            TreeMirrorNode node = (TreeMirrorNode) getMirrorNodeFromIterator();
+            if (node == null) break;
+            remainingNodes.add(node);
+        }
 
-        // 4. Registriere alle Links im Network
-        network.getLinks().addAll(createdLinks);
+        if (remainingNodes.isEmpty()) {
+            return root; // Nur Root-Node
+        }
+
+        // 3. Baue Baum-Struktur direkt mit Breadth-First-Strategie
+        Queue<TreeMirrorNode> parentQueue = new LinkedList<>();
+        parentQueue.offer(root);
+
+        int nodeIndex = 0;
+
+        while (!parentQueue.isEmpty() && nodeIndex < remainingNodes.size()) {
+            TreeMirrorNode parent = parentQueue.poll();
+
+            // Füge Kinder hinzu
+            for (int i = 0; i < childrenPerParent && nodeIndex < remainingNodes.size(); i++) {
+                TreeMirrorNode child = remainingNodes.get(nodeIndex);
+
+                // Verbinde Kind mit Parent (nur Planungsebene)
+                parent.addChild(child);
+
+                // Füge zur nächsten Ebene hinzu
+                parentQueue.offer(child);
+
+                nodeIndex++;
+            }
+        }
 
         return root;
     }
 
     /**
-     * Erstellt die Baum-Struktur zwischen den Knoten mit echten Mirror-Links.
-     * Jeder Knoten (außer Root) wird mit genau einem Parent verbunden.
-     * Erstellt sowohl StructureNode-Verbindungen als auch echte Mirror-Links.
-     *
-     * @param nodes Liste der TreeMirrorNodes
-     * @param simTime Aktuelle Simulationszeit für Link-Erstellung
-     * @param props Properties der Simulation
-     * @return Set aller erstellten Links
-     */
-    private Set<Link> buildTreeStructureWithLinks(List<TreeMirrorNode> nodes, int simTime, Properties props) {
-        Set<Link> createdLinks = new HashSet<>();
-
-        if (nodes.size() <= 1) {
-            return createdLinks; // Kein Link bei 0 oder 1 Knoten
-        }
-
-        TreeMirrorNode root = nodes.get(0);
-
-        // Erstelle eine einfache Breadth-First-Baum-Struktur
-        Queue<TreeMirrorNode> parentsQueue = new LinkedList<>();
-        parentsQueue.offer(root);
-
-        int nodeIndex = 1; // Beginne bei Index 1 (nach Root)
-        int maxChildrenPerParent = 2; // Binärbaum als Standard
-
-        while (!parentsQueue.isEmpty() && nodeIndex < nodes.size()) {
-            TreeMirrorNode parent = parentsQueue.poll();
-            Mirror parentMirror = parent.getMirror();
-
-            // Füge bis zu maxChildrenPerParent Kinder hinzu
-            for (int i = 0; i < maxChildrenPerParent && nodeIndex < nodes.size(); i++) {
-                TreeMirrorNode child = nodes.get(nodeIndex);
-                Mirror childMirror = child.getMirror();
-
-                if (parentMirror != null && childMirror != null) {
-                    // Erstelle echten Mirror-Link
-                    Link link = new Link(
-                            idGenerator != null ? idGenerator.getNextID() : (int)(Math.random() * 100000),
-                            parentMirror,
-                            childMirror,
-                            simTime,
-                            props
-                    );
-
-                    // Füge Link zu beiden Mirrors hinzu
-                    parentMirror.addLink(link);
-                    childMirror.addLink(link);
-
-                    // Füge StructureNode-Verbindungen hinzu (Parent-Child-Beziehung)
-                    parent.addChild(child);
-                    child.setParent(parent);
-
-                    createdLinks.add(link);
-                }
-
-                // Füge das Kind zur Queue für die nächste Ebene hinzu
-                parentsQueue.offer(child);
-                nodeIndex++;
-            }
-        }
-
-        return createdLinks;
-    }
-
-    /**
-     * Fügt neue Knoten zur bestehenden Baum-Struktur hinzu.
-     * Neue Knoten werden als Blätter an bestehende Knoten angehängt.
+     * **PLANUNGSEBENE**: Fügt neue Knoten zur bestehenden Baum-Struktur hinzu.
+     * Überschreibt BuildAsSubstructure für baum-spezifische Einfügung.
+     * Verwendet Breadth-First-Strategie für gleichmäßige Verteilung.
      *
      * @param nodesToAdd Anzahl der hinzuzufügenden Knoten
      * @return Tatsächliche Anzahl der hinzugefügten Knoten
      */
     @Override
     protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0 || getCurrentStructureRoot() == null) {
-            return 0;
-        }
+        if (nodesToAdd <= 0) return 0;
 
-        // Finde alle Blatt-Knoten (Knoten ohne Kinder)
-        List<TreeMirrorNode> leafNodes = getAllStructureNodes().stream()
-                .filter(node -> node instanceof TreeMirrorNode)
-                .map(node -> (TreeMirrorNode) node)
-                .filter(node -> node.getChildren().isEmpty())
-                .toList();
+        TreeMirrorNode root = (TreeMirrorNode) getCurrentStructureRoot();
+        if (root == null) return 0;
 
-        if (leafNodes.isEmpty()) {
-            return 0; // Keine Blätter verfügbar
-        }
-
-        List<TreeMirrorNode> newNodes = new ArrayList<>();
         int actuallyAdded = 0;
 
-        // Erstelle neue TreeMirrorNodes
-        for (int i = 0; i < nodesToAdd && hasNextMirror(); i++) {
-            Mirror mirror = getNextMirror();
-            if (mirror != null) {
-                TreeMirrorNode newNode = new TreeMirrorNode(mirror.getID(), mirror);
-                newNodes.add(newNode);
-                addToStructureNodes(newNode);
+        // Füge neue Knoten mit Breadth-First-Strategie hinzu
+        for (int i = 0; i < nodesToAdd; i++) {
+            // Erstelle neuen Knoten
+            TreeMirrorNode newNode = (TreeMirrorNode) getMirrorNodeFromIterator();
+            if (newNode == null) break;
+
+            // Finde optimalen Einfügepunkt
+            TreeMirrorNode insertionPoint = findOptimalInsertionPoint(root);
+            if (insertionPoint != null && insertionPoint.canAcceptMoreChildren()) {
+                // Verbinde neuen Knoten mit Einfügepunkt (nur Planungsebene)
+                insertionPoint.addChild(newNode);
                 actuallyAdded++;
+            } else {
+                // Keine geeigneten Einfügepunkte mehr verfügbar
+                break;
             }
-        }
-
-        // Verbinde neue Knoten mit vorhandenen Blatt-Knoten
-        int leafIndex = 0;
-        for (TreeMirrorNode newNode : newNodes) {
-            TreeMirrorNode parent = leafNodes.get(leafIndex % leafNodes.size());
-            
-            // StructureNode-Verbindung
-            parent.addChild(newNode);
-            newNode.setParent(parent);
-
-            leafIndex++;
         }
 
         return actuallyAdded;
     }
 
     /**
-     * Entfernt Knoten aus einer bestehenden Baum-Struktur.
-     * Bevorzugt Blatt-Knoten für die Entfernung, um die Baum-Struktur zu erhalten.
+     * **PLANUNGSEBENE**: Entfernt Knoten aus der Baum-Struktur.
+     * Überschreibt BuildAsSubstructure für baum-spezifische Entfernung.
+     * Bevorzugt Blätter für die Entfernung um Baum-Struktur zu erhalten.
      *
      * @param nodesToRemove Anzahl der zu entfernenden Knoten
      * @return Anzahl der tatsächlich entfernten Knoten
      */
     @Override
     protected int removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0 || getAllStructureNodes().isEmpty()) {
-            return 0;
+        if (nodesToRemove <= 0) return 0;
+
+        List<TreeMirrorNode> treeNodes = getAllTreeNodes();
+        TreeMirrorNode root = (TreeMirrorNode) getCurrentStructureRoot();
+
+        if (treeNodes.size() - nodesToRemove < 1) {
+            nodesToRemove = treeNodes.size() - 1;
         }
+        if (nodesToRemove <= 0) return 0;
 
-        // Sammle Blatt-Knoten (außer Root) für die Entfernung
-        List<TreeMirrorNode> leafCandidates = new ArrayList<>();
+        int actuallyRemoved = 0;
 
-        for (MirrorNode node : getAllStructureNodes()) {
-            if (node != getCurrentStructureRoot() && node instanceof TreeMirrorNode treeNode) {
-                // Nur Blätter (Knoten ohne Kinder) entfernen
-                if (treeNode.getChildren().isEmpty()) {
-                    leafCandidates.add(treeNode);
-                }
-            }
-        }
-
-        // Begrenze auf verfügbare Anzahl
-        int actualRemovalCount = Math.min(nodesToRemove, leafCandidates.size());
-
-        if (actualRemovalCount == 0) {
-            return 0;
-        }
-
-        // Sortiere nach ID (höchste zuerst) für deterministische Entfernung
-        leafCandidates.sort((node1, node2) -> Integer.compare(node2.getId(), node1.getId()));
+        // Sortiere Kandidaten: Blätter zuerst, dann nach Tiefe
+        List<TreeMirrorNode> candidates = treeNodes.stream()
+                .filter(node -> node != root)
+                .sorted((node1, node2) -> {
+                    int childrenCompare = Integer.compare(node1.getChildren().size(), node2.getChildren().size());
+                    if (childrenCompare != 0) return childrenCompare;
+                    return Integer.compare(node2.getDepthInTree(), node1.getDepthInTree());
+                })
+                .toList();
 
         // Entferne die ersten N Kandidaten
-        List<MirrorNode> nodesToRemoveList = new ArrayList<>();
-        for (int i = 0; i < actualRemovalCount; i++) {
-            TreeMirrorNode nodeToRemove = leafCandidates.get(i);
+        for (int i = 0; i < nodesToRemove && i < candidates.size(); i++) {
+            TreeMirrorNode nodeToRemove = candidates.get(i);
 
-            // Entferne Parent-Child-Beziehungen
-            removeNodeFromTreeStructure(nodeToRemove);
+            // Entferne aus Parent-Child-Beziehung
+            StructureNode parent = nodeToRemove.getParent();
+            if (parent != null) {
+                parent.removeChild(nodeToRemove);
+            }
 
-            nodesToRemoveList.add(nodeToRemove);
+            // Verweise Kinder an Großeltern
+            List<StructureNode> children = new ArrayList<>(nodeToRemove.getChildren());
+            for (StructureNode child : children) {
+                nodeToRemove.removeChild(child);
+                if (parent != null) {
+                    parent.addChild(child);
+                }
+            }
+
+            removeFromStructureNodes(nodeToRemove);
+            actuallyRemoved++;
         }
 
-        // Bereinige die StructureNode-Verwaltung
-        cleanupStructureNodes(nodesToRemoveList);
-
-        return actualRemovalCount;
+        return actuallyRemoved;
     }
 
+    /**
+     * Validiert die aktuelle Baum-Struktur.
+     * Überschreibt BuildAsSubstructure für baum-spezifische Validierung.
+     *
+     * @return true, wenn die Baum-Struktur gültig ist
+     */
     @Override
     protected boolean validateTopology() {
-        return false;
-    }
-
-    /**
-     * Entfernt einen Knoten vollständig aus der Baum-Struktur.
-     * Bereinigt die Parent-Child-Beziehungen.
-     *
-     * @param nodeToRemove Der zu entfernende TreeMirrorNode
-     */
-    private void removeNodeFromTreeStructure(TreeMirrorNode nodeToRemove) {
-        // Entferne aus Parent
-        StructureNode parent = nodeToRemove.getParent();
-        if (parent != null) {
-            parent.removeChild(nodeToRemove);
+        TreeMirrorNode root = (TreeMirrorNode) getCurrentStructureRoot();
+        if (root == null) {
+            return getAllStructureNodes().isEmpty();
         }
 
-        // Entferne alle Children (sollten keine sein bei Blatt-Knoten)
-        List<StructureNode> children = new ArrayList<>(nodeToRemove.getChildren());
-        for (StructureNode child : children) {
-            nodeToRemove.removeChild(child);
-            if (child instanceof TreeMirrorNode treeChild) {
-                treeChild.setParent(null);
-            }
-        }
-
-        // Entferne der Parent-Referenz
-        nodeToRemove.setParent(null);
-    }
-
-    /**
-     * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
-     * Erstellt für jede Parent-Child-Beziehung einen entsprechenden Mirror-Link.
-     *
-     * @param root    Die Root-Node der Struktur
-     * @param props   Simulation Properties
-     * @param simTime
-     * @return Set aller erstellten Links
-     */
-    @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
-        Set<Link> allLinks = new HashSet<>();
-
-        if (!(root instanceof TreeMirrorNode treeRoot)) {
-            return allLinks;
-        }
-
-        // Durchlaufe alle Knoten in der Struktur
-        Set<StructureNode> allNodes = treeRoot.getAllNodesInStructure(StructureType.TREE, treeRoot);
-
-        for (StructureNode node : allNodes) {
-            if (!(node instanceof TreeMirrorNode treeNode)) {
-                continue;
-            }
-
-            Mirror nodeMirror = treeNode.getMirror();
-            if (nodeMirror == null) {
-                continue;
-            }
-
-            // Erstelle Links zu allen Kindern
-            for (StructureNode child : treeNode.getChildren()) {
-                if (!(child instanceof TreeMirrorNode treeChild)) {
-                    continue;
-                }
-
-                Mirror childMirror = treeChild.getMirror();
-                if (childMirror == null) {
-                    continue;
-                }
-
-                // Prüfe, ob die Mirrors bereits verbunden sind
-                if (!nodeMirror.isAlreadyConnected(childMirror)) {
-                    Link link = new Link(idGenerator.getNextID(), nodeMirror, childMirror,
-                            0, props);
-                    nodeMirror.addLink(link);
-                    childMirror.addLink(link);
-                    allLinks.add(link);
-                }
-            }
-        }
-
-        return allLinks;
+        return root.isValidStructure();
     }
 
     // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
-
-    /**
-     * Initializes the network by connecting mirrors in a tree topology.
-     *
-     * @param n the {@link Network}
-     * @param props {@link Properties} of the simulation
-     * @return {@link Set} of all {@link Link}s created
-     */
-    @Override
-    public Set<Link> initNetwork(Network n, Properties props) {
-        this.network = n;
-        this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
-
-        if (n.getMirrors().isEmpty()) {
-            return new HashSet<>();
-        }
-
-        // Baue die Struktur mit allen verfügbaren Mirrors auf
-        MirrorNode root = buildStructure(n.getMirrors().size(), props);
-
-        if (root == null) {
-            return new HashSet<>();
-        }
-
-        // Erstelle die tatsächlichen Links
-        return buildAndConnectLinks(root, props, 0);
-    }
-
-    /**
-     * Startet das Netzwerk komplett neu mit der aktuellen Topologie.
-     *
-     * @param n       Das Netzwerk
-     * @param props   Simulation Properties
-     * @param simTime Aktuelle Simulationszeit
-     * @return
-     */
-    @Override
-    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
-        // 1. Sammle alle Links, die zu unseren MirrorNodes gehören
-        Set<Link> linksToRemove = new HashSet<>();
-        for (MirrorNode node : getAllStructureNodes()) {
-            Mirror mirror = node.getMirror();
-            if (mirror != null) {
-                for (Link link : mirror.getLinks()) {
-                    if (n.getLinks().contains(link)) {
-                        linksToRemove.add(link);
-                    }
-                }
-            }
-        }
-
-        // 2. Links aus Network.links entfernen
-        n.getLinks().removeAll(linksToRemove);
-
-        // 3. TopologyStrategy macht den Rest: Mirror.links.clear() für ALLE Mirrors
-        super.restartNetwork(n, props, simTime);
-
-        // 4. StructureNode-Struktur zurücksetzen
-        resetInternalStateStructureOnly();
-
-        // 5. Neu aufbauen
-        this.network = n;
-        this.mirrorIterator = new ArrayList<>(n.getMirrors()).iterator();
-
-        if (!n.getMirrors().isEmpty()) {
-            MirrorNode root = buildStructure(n.getMirrors().size(), props);
-            if (root != null) {
-                Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
-                n.getLinks().addAll(newLinks);
-            }
-        }
-    }
 
     /**
      * Adds the requested number of mirrors to the network and connects them accordingly.
@@ -422,26 +244,29 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
-            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props, 0);
+            Set<Link> newLinks = buildAndUpdateLinks(getCurrentStructureRoot(), props, 0, StructureNode.StructureType.TREE);
             n.getLinks().addAll(newLinks);
         }
     }
 
     /**
-     * Returns the expected number of total links in the network according to the tree topology.
-     * For n mirrors, the number of links is n-1 (tree property).
+     * Berechnet die erwartete Anzahl der Links für Bäume.
+     * Bäume haben immer n-1 Links für n Knoten.
      *
-     * @param n {@link Network} the network
-     * @return number of total links expected for the network
+     * @param n Das Netzwerk
+     * @return Erwartete Anzahl Links (Anzahl Mirrors - 1)
      */
     @Override
     public int getNumTargetLinks(Network n) {
-        int numMirrors = n.getNumMirrors();
-        return Math.max(0, numMirrors - 1); // n-1 Links für n Knoten in einem Baum
+        return Math.max(0, n.getNumMirrors() - 1);
     }
 
     /**
      * Berechnet die erwartete Anzahl der Links, wenn die gegebene Aktion ausgeführt wird.
+     * Behandelt verschiedene Action-Typen:
+     * 1. MirrorChange: Berechnet Links für neue Mirror-Anzahl
+     * 2. TargetLinkChange: Berechnet Links basierend auf neuen Links pro Mirror
+     * 3. TopologyChange: Delegiert an neue Topology-Strategie
      *
      * @param a Die Action, deren Auswirkungen berechnet werden sollen
      * @return Anzahl der erwarteten Links nach Ausführung der Action
@@ -457,44 +282,116 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
 
         // 1. MirrorChange: Ändert die Anzahl der Mirrors
         if (a instanceof MirrorChange mc) {
+            // Bei MirrorChange wird die NEUE GESAMTANZAHL gesetzt, nicht hinzugefügt
             int newMirrorCount = mc.getNewMirrors();
-            return Math.max(0, newMirrorCount - 1); // n-1 Links für n Mirrors
+
+            // Bei TreeTopology: n-1 Links für n Mirrors (Baum-Eigenschaft)
+            return Math.max(0, newMirrorCount - 1);
         }
 
-        // 2. TargetLinkChange: Für Baum-Topologie immer n-1 Links
-        else if (a instanceof TargetLinkChange) {
-            return Math.max(0, currentMirrors - 1);
+        // 2. TargetLinkChange: Ändert die Links pro Mirror
+        else if (a instanceof TargetLinkChange tlc) {
+            // Bei TargetLinkChange werden die Links pro Mirror geändert
+            int newLinksPerMirror = tlc.getNewLinksPerMirror();
+
+            // Für Bäume ist die Anzahl Links immer n-1, unabhängig von Links pro Mirror
+            // Aber wir können eine theoretische Berechnung machen:
+            // Wenn jeder Mirror newLinksPerMirror Links haben soll, dann:
+            // Gesamtlinks = (currentMirrors * newLinksPerMirror) / 2
+            // Aber für echte Bäume ist es immer n-1
+
+            // Baum-Constraint: Maximal n-1 Links für n Knoten
+            int theoreticalLinks = (currentMirrors * newLinksPerMirror) / 2;
+            int treeConstraintLinks = Math.max(0, currentMirrors - 1);
+
+            // Für Bäume: Nimm das Minimum zwischen theoretischer Berechnung und Baum-Constraint
+            return Math.min(theoreticalLinks, treeConstraintLinks);
         }
 
-        // 3. TopologyChange: Delegiere an neue Topology-Strategie
+        // 3. TopologyChange: Delegiert an neue Topology-Strategie
         else if (a instanceof TopologyChange tc) {
-            TopologyStrategy newTopology = tc.getNewTopology();
-            return newTopology.getNumTargetLinks(network);
+            TopologyStrategy newStrategy = tc.getNewTopology();
+            if (newStrategy != null) {
+                return newStrategy.getNumTargetLinks(tc.getNetwork());
+            }
+            // Fallback: Aktuelle Strategie verwenden
+            return getNumTargetLinks(tc.getNetwork());
         }
 
-        // Fallback: Verwende aktuellen Zustand
+        // 4. Unbekannter Action-Typ: Verwende aktuelle Netzwerk-Konfiguration
         return getNumTargetLinks(network);
     }
 
-    // ===== HILFSMETHODEN =====
+    // ===== BAUM-SPEZIFISCHE HILFSMETHODEN =====
 
     /**
-     * Berechnet die erwartete Link-Anzahl für eine gegebene Knotenzahl.
-     * Für Baum-Topologie: n-1 Links für n Knoten.
+     * Findet den optimalen Einfügepunkt für neue Knoten.
+     * Verwendet Breadth-First-Strategie für gleichmäßige Verteilung.
      *
-     * @param nodeCount Anzahl der Knoten
-     * @return Erwartete Anzahl der Links für Baum-Topologie
+     * @param root Root-Node der Struktur
+     * @return Optimaler Einfügepunkt oder null, wenn keiner verfügbar
      */
-    public static int calculateExpectedLinks(int nodeCount) {
-        return Math.max(0, nodeCount - 1);
+    private TreeMirrorNode findOptimalInsertionPoint(TreeMirrorNode root) {
+        if (root == null) return null;
+
+        // Breadth-First-Suche nach geeignetem Parent
+        Queue<TreeMirrorNode> queue = new LinkedList<>();
+        queue.offer(root);
+
+        while (!queue.isEmpty()) {
+            TreeMirrorNode current = queue.poll();
+
+            if (current.canAcceptMoreChildren()) {
+                return current;
+            }
+
+            // Füge alle Kinder zur Queue hinzu
+            for (StructureNode child : current.getChildren()) {
+                if (child instanceof TreeMirrorNode treeChild) {
+                    queue.offer(treeChild);
+                }
+            }
+        }
+
+        return null;
     }
+
+    /**
+     * Gibt alle Knoten als TreeMirrorNode-Liste zurück.
+     *
+     * @return Liste aller TreeMirrorNodes
+     */
+    private List<TreeMirrorNode> getAllTreeNodes() {
+        return getAllStructureNodes().stream()
+                .filter(TreeMirrorNode.class::isInstance)
+                .map(TreeMirrorNode.class::cast)
+                .collect(Collectors.toList());
+    }
+
+    // ===== ÜBERSCHREIBUNG DER FACTORY-METHODE =====
+
+    /**
+     * Factory-Methode für baum-spezifische MirrorNode-Erstellung.
+     * Überschreibt BuildAsSubstructure für TreeMirrorNode-Erstellung.
+     *
+     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
+     * @return Neuer TreeMirrorNode
+     */
+    @Override
+    protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
+        return new TreeMirrorNode(mirror.getID(), mirror);
+    }
+
+    // ===== STRING REPRESENTATION =====
 
     @Override
     public String toString() {
-        int nodeCount = getAllStructureNodes().size();
-        int expectedLinks = calculateExpectedLinks(nodeCount);
-        
-        return String.format("TreeTopologyStrategy{nodes=%d, expectedLinks=%d, substructureId=%d}",
-                nodeCount, expectedLinks, getSubstructureId());
+        String baseString = super.toString();
+        TreeMirrorNode root = (TreeMirrorNode) getCurrentStructureRoot();
+        int maxDepth = root != null ? root.getMaxTreeDepth() : 0;
+        int leaves = (int) getAllTreeNodes().stream().filter(TreeMirrorNode::isLeaf).count();
+
+        return baseString + "[maxDepth=" + maxDepth + ", leaves=" + leaves + "]";
     }
+
 }

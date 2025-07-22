@@ -313,21 +313,17 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @param props Simulation Properties
      * @return Set aller erstellten Links
      */
-    public Set<Link> initNetwork(Network n, Properties props, StructureNode.StructureType type) {
+    @Override
+    public Set<Link> initNetwork(Network n, Properties props) {
         initializeInternalState(n);
 
         MirrorNode root = buildStructure(n.getNumMirrors(), props);
         if (root != null) {
             setCurrentStructureRoot(root);
-            return buildAndUpdateLinks(root, props, 0, type);
+            return buildAndUpdateLinks(root, props, 0, getCurrentStructureType());
         }
 
         return getAllLinksRecursive();
-    }
-
-    @Override
-    public Set<Link> initNetwork(Network n, Properties props) {
-        return initNetwork(n, props, StructureNode.StructureType.DEFAULT);
     }
 
         /**
@@ -383,7 +379,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @param simTime Aktuelle Simulationszeit
      * @return created links
      */
-    public Set<Link> restartNetwork(Network n, Properties props, int simTime, StructureNode.StructureType type) {
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
 
         super.restartNetwork(n, props, simTime);
 
@@ -393,7 +389,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         MirrorNode root = buildStructure(n.getNumMirrors(), props);
         if (root != null) {
             setCurrentStructureRoot(root);
-            Set<Link> links = buildAndUpdateLinks(root, props, simTime, type);
+            Set<Link> links = buildAndUpdateLinks(root, props, simTime, getCurrentStructureType());
             n.getLinks().addAll(links);
             return links;
         }
@@ -401,11 +397,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         Set<Link> links = getAllLinksRecursive();
         n.getLinks().addAll(links);
         return links;
-    }
-
-    @Override
-    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
-        return restartNetwork(n, props, simTime, StructureNode.StructureType.DEFAULT);
     }
 
     /**
@@ -417,7 +408,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @param props Simulation Properties
      * @param simTime Aktuelle Simulationszeit
      */
-    public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime, StructureNode.StructureType type) {
+    public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
         // Verwende das offizielle Interface von TopologyStrategy
         List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
         n.getMirrors().addAll(addedMirrors);
@@ -431,14 +422,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
-            Set<Link> newLinks = buildAndUpdateLinks(getCurrentStructureRoot(), props, 0, StructureNode.StructureType.FULLY_CONNECTED);
+            Set<Link> newLinks = buildAndUpdateLinks(getCurrentStructureRoot(), props, 0, getCurrentStructureType());
             n.getLinks().addAll(newLinks);
         }
-    }
-
-    @Override
-    public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
-        handleAddNewMirrors(n, newMirrors, props, simTime, StructureNode.StructureType.DEFAULT);
     }
 
     /**

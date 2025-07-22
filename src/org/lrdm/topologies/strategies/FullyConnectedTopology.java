@@ -23,16 +23,6 @@ import java.util.*;
  */
 public class FullyConnectedTopology extends BuildAsSubstructure {
 
-    @Override
-    public Set<Link> initNetwork(Network n, Properties props) {
-        return initNetwork(n, props, StructureType.FULLY_CONNECTED);
-    }
-
-    @Override
-    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
-        return restartNetwork(n, props, simTime, StructureType.FULLY_CONNECTED);
-    }
-
     // ===== BUILD SUBSTRUCTURE IMPLEMENTATION =====
 
     /**
@@ -226,19 +216,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         }
     }
 
-    /**
-     * Adds the requested number of mirrors to the network and connects them accordingly.
-     *
-     * @param n the {@link Network}
-     * @param newMirrors number of mirrors to add
-     * @param props {@link Properties} of the simulation
-     * @param simTime current simulation time
-     */
-    @Override
-    public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
-        handleAddNewMirrors(n, newMirrors, props, simTime, StructureType.FULLY_CONNECTED);
-    }
-
     // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
 
     /**
@@ -325,4 +302,17 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         }
         return false;
     }
+
+    /**
+     * Factory-Methode für baum-spezifische MirrorNode-Erstellung.
+     * Überschreibt BuildAsSubstructure für TreeMirrorNode-Erstellung.
+     *
+     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
+     * @return Neuer TreeMirrorNode
+     */
+    @Override
+    protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
+        return new FullyConnectedMirrorNode(mirror.getID(), mirror);
+    }
+
 }
