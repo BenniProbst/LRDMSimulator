@@ -6,6 +6,7 @@ import org.lrdm.Network;
 import org.lrdm.effectors.*;
 import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
+import org.lrdm.topologies.node.StructureNode;
 import org.lrdm.topologies.node.StructureNode.StructureType;
 
 import java.util.*;
@@ -21,6 +22,16 @@ import java.util.*;
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class FullyConnectedTopology extends BuildAsSubstructure {
+
+    @Override
+    public Set<Link> initNetwork(Network n, Properties props) {
+        return initNetwork(n, props, StructureType.FULLY_CONNECTED);
+    }
+
+    @Override
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
+        return restartNetwork(n, props, simTime, StructureType.FULLY_CONNECTED);
+    }
 
     // ===== BUILD SUBSTRUCTURE IMPLEMENTATION =====
 
@@ -225,23 +236,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      */
     @Override
     public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
-        this.network = n;
-
-        // Verwende das offizielle Interface von TopologyStrategy
-        List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
-        n.getMirrors().addAll(addedMirrors);
-
-        // Setze Iterator für die neuen Mirrors - BuildAsSubstructure erwartet diesen
-        this.mirrorIterator = addedMirrors.iterator();
-
-        // Füge die neuen Knoten zur Struktur hinzu
-        int actuallyAdded = addNodesToStructure(newMirrors);
-
-        if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
-            // Baue nur die neuen Links auf
-            Set<Link> newLinks = buildAndUpdateLinks(getCurrentStructureRoot(), props, 0, StructureType.FULLY_CONNECTED);
-            n.getLinks().addAll(newLinks);
-        }
+        handleAddNewMirrors(n, newMirrors, props, simTime, StructureType.FULLY_CONNECTED);
     }
 
     // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====

@@ -238,6 +238,11 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         return actualRemovalCount;
     }
 
+    @Override
+    protected boolean validateTopology() {
+        return false;
+    }
+
     /**
      * Entfernt einen Knoten vollständig aus der Baum-Struktur.
      * Bereinigt die Parent-Child-Beziehungen.
