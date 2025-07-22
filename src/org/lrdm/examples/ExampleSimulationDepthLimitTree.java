@@ -3,7 +3,7 @@ package org.lrdm.examples;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.strategies.NConnectedTopology;
+import org.lrdm.topologies.strategies.DepthLimitTreeTopologyStrategy;
 import org.lrdm.topologies.strategies.FullyConnectedTopology;
 
 import java.util.List;
@@ -13,12 +13,12 @@ import java.util.List;
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  *
  */
-public class ExampleSimulationNConnected {
+public class ExampleSimulationDepthLimitTree {
 	public static void main(String[] args) {
 		System.setProperty("java.util.logging.SimpleFormatter.format",
 				"[%1$tF %1$tT] [%4$-7s] %5$s %n");
 		TimedRDMSim sim = new TimedRDMSim();
-		sim.initialize(new NConnectedTopology());
+		sim.initialize(new DepthLimitTreeTopologyStrategy());
 		Effector effector = sim.getEffector();
 		int mirrors = 10;
 		for(int t = 0; t < 100; t += 10) {
@@ -31,9 +31,9 @@ public class ExampleSimulationNConnected {
 			mirrors -= 4;
 		}
 		effector.setStrategy(new FullyConnectedTopology(), 20);
-		effector.setStrategy(new NConnectedTopology(), 40);
+		effector.setStrategy(new DepthLimitTreeTopologyStrategy(), 40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
-		effector.setStrategy(new NConnectedTopology(), 80);
+		effector.setStrategy(new DepthLimitTreeTopologyStrategy(), 80);
 
 		//use this code to manually run the simulation step by step
 		List<Probe> probes = sim.getProbes();
