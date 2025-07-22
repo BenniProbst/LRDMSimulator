@@ -6,7 +6,6 @@ import org.lrdm.effectors.TopologyChange;
 import org.lrdm.topologies.node.BalancedTreeMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StructureNode;
-import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
@@ -176,7 +175,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
     /**
      * Berechnet die erwartete Anzahl der Links für balancierte Bäume.
      * Überschreibt TreeTopologyStrategy, da balancierte Bäume mehr als n-1 Links haben können.
-     *
+     * <p>
      * Bei balancierten Bäumen ist die Link-Anzahl abhängig von:
      * - Anzahl der Knoten (n)
      * - Target Links pro Knoten (konfigurierbar)
@@ -225,7 +224,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
     /**
      * Berechnet die erwartete Anzahl der Links, wenn die gegebene Aktion ausgeführt wird.
      * Überschreibt TreeTopologyStrategy für Balance-spezifische Link-Berechnung.
-     *
+     * <p>
      * Behandelt verschiedene Action-Typen mit Balance-Bewusstsein:
      * 1. MirrorChange: Berechnet Links für neue Mirror-Anzahl mit Balance-Optimierung
      * 2. TargetLinkChange: Berechnet Links basierend auf neuen Links pro Mirror mit Balance-Constraints
@@ -284,7 +283,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
     /**
      * Berechnet die optimale Anzahl Links für einen balancierten Baum.
-     *
+     * <p>
      * Berücksichtigt:
      * - Baum-Minimum: n-1 Links
      * - Balance-Optimierung: Gleichmäßige Verteilung

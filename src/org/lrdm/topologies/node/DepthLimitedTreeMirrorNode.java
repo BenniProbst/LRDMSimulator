@@ -26,11 +26,6 @@ public class DepthLimitedTreeMirrorNode extends TreeMirrorNode {
         addNodeType(StructureType.TREE);
     }
 
-    @Override
-    public StructureType deriveTypeId() {
-        return StructureType.DEPTH_LIMIT_TREE;
-    }
-
     // ===== TIEFENBESCHRÄNKUNGS-SPEZIFISCHE METHODEN =====
 
     /**
