@@ -230,6 +230,12 @@ public class Mirror {
 		return isAlreadyConnected(this, target);
 	}
 
+	public Set<Link> getLinksTo(Mirror target) {
+		return links.stream().filter(l -> (l.getSource().equals(this) &&
+				l.getTarget().equals(target))||((l.getTarget().equals(this) &&
+				l.getSource().equals(target)))).collect(Collectors.toSet());
+	}
+
 	@Override
 	public String toString() {
 		return id + " {" + state + "}";

@@ -216,57 +216,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
     }
 
     /**
-     * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
-     * Erstellt für jede StructureNode-Verbindung einen entsprechenden Mirror-Link.
-     *
-     * @param root    Die Root-Node der Struktur
-     * @param props   Simulation Properties
-     * @param simTime Zeitpunkt der Simulation
-     * @return Set aller erstellten Links
-     */
-    @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
-        Set<Link> allLinks = new HashSet<>();
-
-        if (!(root instanceof FullyConnectedMirrorNode fcRoot)) {
-            return allLinks;
-        }
-
-        // Sammle alle Knoten in der Struktur
-        List<FullyConnectedMirrorNode> nodeList = fcRoot.getAllNodesInStructure(StructureType.FULLY_CONNECTED, fcRoot)
-                .stream()
-                .filter(node -> node instanceof FullyConnectedMirrorNode)
-                .map(node -> (FullyConnectedMirrorNode) node).distinct().toList();
-
-        // Erstelle Links zwischen allen Paaren von Knoten
-        for (int i = 0; i < nodeList.size(); i++) {
-            FullyConnectedMirrorNode node1 = nodeList.get(i);
-
-            for (int j = 0; j < nodeList.size(); j++) {
-                FullyConnectedMirrorNode node2 = nodeList.get(j);
-
-                if(node1.equals(node2)) continue;
-
-                // Prüfe, ob die Mirrors bereits verbunden sind
-                if (!node1.getMirror().isAlreadyConnected(node2.getMirror())) {
-                    //Mirror nicht verbunden, sollte er verbunden sein → Link erstellen
-                    Link link = new Link(idGenerator.getNextID(), node1.getMirror(), node2.getMirror(),
-                            simTime, props);
-                    node1.getMirror().addLink(link);
-                    node2.getMirror().addLink(link);
-                    allLinks.add(link);
-                }
-                else{
-                    //Mirror verbunden, solle er nicht verbunden sein → Link löschen
-
-                }
-            }
-        }
-
-        return allLinks;
-    }
-
-    /**
      * Adds the requested number of mirrors to the network and connects them accordingly.
      *
      * @param n the {@link Network}
@@ -290,7 +239,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
-            Set<Link> newLinks = buildAndConnectLinks(getCurrentStructureRoot(), props, 0);
+            Set<Link> newLinks = buildAndUpdateLinks(getCurrentStructureRoot(), props, 0, StructureType.FULLY_CONNECTED);
             n.getLinks().addAll(newLinks);
         }
     }
@@ -367,21 +316,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         return getNumTargetLinks(network);
     }
 
-    /**
-     * Berechnet die erwartete Link-Anzahl für eine gegebene Knotenzahl.
-     * Für vollständige Vernetzung: n * (n-1) / 2 Links für n Knoten.
-     *
-     * @param nodeCount Anzahl der Knoten
-     * @return Erwartete Anzahl der Links für vollständige Vernetzung
-     */
-    public static int calculateExpectedLinks(int nodeCount) {
-        if (nodeCount <= 0) {
-            return 0;
-        }
-        return nodeCount * (nodeCount - 1) / 2;
-    }
-
-
     // ===== HILFSMETHODEN =====
 
     /**
@@ -395,15 +329,5 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
             return fcRoot.isValidStructure();
         }
         return false;
-    }
-
-    @Override
-    public String toString() {
-        int nodeCount = getAllStructureNodes().size();
-        int expectedLinks = calculateExpectedLinks(nodeCount);
-        boolean isValid = validateTopology();
-
-        return String.format("FullyConnectedTopology{nodes=%d, expectedLinks=%d, valid=%s, substructureId=%d}",
-                nodeCount, expectedLinks, isValid, getSubstructureId());
     }
 }

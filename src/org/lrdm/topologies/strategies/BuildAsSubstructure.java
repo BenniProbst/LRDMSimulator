@@ -4,6 +4,7 @@ import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
+import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StructureNode;
 import org.lrdm.util.IDGenerator;
@@ -112,7 +113,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * <p>
      * REKURSIV: Berücksichtigt auch alle Knoten der untergeordneten Substrukturen.
      *
-     * @return Unveränderliche Kopie aller MirrorNodes in der Struktur und allen Substrukturen
+     * @return Unveränderliche Kopie aller MirrorNodes in der Struktur und aller Substrukturen
      */
     public final Set<MirrorNode> getAllStructureNodes() {
         return Set.copyOf(getAllStructureNodesRecursive(new HashSet<>()));
@@ -319,7 +320,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         MirrorNode root = buildStructure(n.getNumMirrors(), props);
         if (root != null) {
             setCurrentStructureRoot(root);
-            return buildAndConnectLinks(root, props, 0);
+            return buildAndUpdateLinks(root, props, 0, StructureNode.StructureType.DEFAULT);
         }
 
         return getAllLinksRecursive();
@@ -390,7 +391,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         MirrorNode root = buildStructure(n.getNumMirrors(), props);
         if (root != null) {
             setCurrentStructureRoot(root);
-            Set<Link> links = buildAndConnectLinks(root, props, simTime);
+            Set<Link> links = buildAndUpdateLinks(root, props, simTime, StructureNode.StructureType.DEFAULT);
             n.getLinks().addAll(links);
             return links;
         }
@@ -425,7 +426,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             // Links für die gesamte Struktur neu aufbauen
             MirrorNode root = getCurrentStructureRoot();
             if (root != null) {
-                Set<Link> newLinks = buildAndConnectLinks(root, props, 0);
+                Set<Link> newLinks = buildAndUpdateLinks(root, props, simTime, StructureNode.StructureType.DEFAULT);
                 n.getLinks().addAll(newLinks);
             }
         } else {
@@ -486,7 +487,16 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     protected abstract int removeNodesFromStructure(int nodesToRemove);
 
+
+
     // ===== INTERNE STRUCTURE BUILDER-HILFSMETHODEN (PROTECTED) =====
+
+    /**
+     * Validiert die aktuelle vollständig vernetzte Struktur.
+     *
+     * @return true, wenn die Struktur gültig ist
+     */
+    protected abstract boolean validateTopology();
 
     /**
      * Fügt einen MirrorNode zu den verwalteten Struktur-Knoten hinzu.
@@ -762,15 +772,82 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     // ===== ABSTRAKTE METHODEN FÜR LINK-ERSTELLUNG =====
 
     /**
-     * Erstellt und verbindet alle Links für eine Struktur.
-     * Muss von Subklassen implementiert werden.
+     * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
+     * Erstellt für jede StructureNode-Verbindung einen entsprechenden Mirror-Link.
      *
      * @param root    Die Root-Node der Struktur
      * @param props   Simulation Properties
-     * @param simTime Zeitpunkt an dem die Links tatsächlich erstellt werden
+     * @param simTime Zeitpunkt der Simulation
      * @return Set aller erstellten Links
      */
-    protected abstract Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime);
+    protected Set<Link> buildAndUpdateLinks(MirrorNode root, Properties props, int simTime, StructureNode.StructureType structureType) {
+        Set<Link> allLinks = new HashSet<>();
+
+        if (!(root instanceof FullyConnectedMirrorNode fcRoot)) {
+            return allLinks;
+        }
+
+        // Sammle alle Knoten in der Struktur
+        List<FullyConnectedMirrorNode> nodeList = fcRoot.getAllNodesInStructure(structureType, fcRoot)
+                .stream()
+                .filter(node -> node instanceof FullyConnectedMirrorNode)
+                .map(node -> (FullyConnectedMirrorNode) node).distinct().toList();
+
+        // Erstelle Links zwischen allen Paaren von Knoten
+        for (int i = 0; i < nodeList.size(); i++) {
+            FullyConnectedMirrorNode node1 = nodeList.get(i);
+
+            for (FullyConnectedMirrorNode node2 : nodeList) {
+                //self connect is forbidden
+                if (node1.equals(node2)) continue;
+
+                boolean node12_connect = node1.getChildren().contains(node2);
+                boolean node21_connect = node2.getChildren().contains(node1);
+
+                if ((node1.getMirror().isAlreadyConnected(node2.getMirror()) && !node2.getMirror().isAlreadyConnected(node1.getMirror())) ||
+                        (!node1.getMirror().isAlreadyConnected(node2.getMirror()) && node2.getMirror().isAlreadyConnected(node1.getMirror()))) {
+                    throw new IllegalStateException("Link-Verbindung zwischen Knoten " + node1.getId() + " und " + node2.getId() + " ist bereits vorhanden, aber es gibt ein asymmetrisches Verbindungsproblem!");
+                }
+
+                // Prüfe, ob die Mirrors bereits verbunden sind
+                if (!node1.getMirror().isAlreadyConnected(node2.getMirror()) && !node2.getMirror().isAlreadyConnected(node1.getMirror())) {
+                    //Mirror nicht verbunden, sollte er per Plan verbunden sein → Link erstellen
+                    if (node12_connect) {
+                        Link link = new Link(idGenerator.getNextID(), node1.getMirror(), node2.getMirror(),
+                                simTime, props);
+                        node1.getMirror().addLink(link);
+                        node2.getMirror().addLink(link);
+                        allLinks.add(link);
+                    } else {
+                        if (node21_connect) {
+                            Link link = new Link(idGenerator.getNextID(), node2.getMirror(), node1.getMirror(),
+                                    simTime, props);
+                            node2.getMirror().addLink(link);
+                            node1.getMirror().addLink(link);
+                            allLinks.add(link);
+                        }
+                    }
+                } else {
+                    //Mirror verbunden, solle er nicht verbunden sein → Link löschen
+                    if (!node12_connect && !node21_connect) {
+                        //sollte überhaupt nicht verbunden sein → Verbindung löschen
+
+                        Set<Link> links1 = node1.getMirror().getLinksTo(node2.getMirror());
+                        for(Link link1:links1){
+                            link1.shutdown();
+                        }
+
+                        Set<Link> links2 = node2.getMirror().getLinksTo(node1.getMirror());
+                        for(Link link2:links2){
+                            link2.shutdown();
+                        }
+                    }
+                }
+            }
+        }
+
+        return allLinks;
+    }
 
     // ===== OBSERVER PATTERN INTERFACES =====
 
@@ -996,12 +1073,46 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         return new MirrorNode(idGenerator.getNextID(), mirror);
     }
 
+    /**
+     * Gibt eine detaillierte String-Repräsentation der BuildAsSubstructure zurück.
+     * Enthält Informationen über Knotenzahl, erwartete Links, Struktur-Validität
+     * und Substruktur-Details.
+     *
+     * @return String-Repräsentation mit Klassenname, Knotenzahl, erwarteten Links und Validitätsstatus
+     */
     @Override
     public String toString() {
-        return getClass().getSimpleName() +
-                "{substructureId=" + substructureId +
-                ", structureNodes=" + structureNodes.size() +
-                ", currentStructureRoot=" +
-                (currentStructureRoot != null ? currentStructureRoot.getId() : "null") + "}";
+        StringBuilder sb = new StringBuilder();
+
+        // Grundlegende Klasseninformationen
+        sb.append(this.getClass().getSimpleName());
+        sb.append(" [");
+
+        // Struktur-Informationen
+        sb.append("substructureId=").append(substructureId);
+        sb.append(", nodeCount=").append(structureNodes.size());
+
+        // Netzwerk-Informationen falls verfügbar
+        if (network != null) {
+            sb.append(", expectedLinks=").append(getNumTargetLinks(network));
+        }
+
+        // Validitätsstatus
+        sb.append(", isValid=").append(validateTopology());
+
+        // Root-Informationen
+        if (currentStructureRoot != null) {
+            sb.append(", rootId=").append(currentStructureRoot.getId());
+            sb.append(", structureType=").append(getCurrentStructureType());
+        }
+
+        // Substruktur-Informationen
+        if (!nodeToSubstructure.isEmpty()) {
+            sb.append(", substructures=").append(nodeToSubstructure.size());
+        }
+
+        sb.append("]");
+
+        return sb.toString();
     }
 }

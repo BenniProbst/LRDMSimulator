@@ -2,7 +2,7 @@ package org.lrdm;
 
 import org.lrdm.effectors.Action;
 import org.lrdm.examples.ExampleOptimizer;
-import org.lrdm.examples.ExampleSimulation;
+import org.lrdm.examples.ExampleSimulationBalancedTree;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 import org.lrdm.probes.Probe;
@@ -82,7 +82,7 @@ class AppTest {
     }
     @Test
     void testExampleSimulator() {
-        assertDoesNotThrow(()-> ExampleSimulation.main(new String[]{}));
+        assertDoesNotThrow(()-> ExampleSimulationBalancedTree.main(new String[]{}));
     }
     @Test
     void testSzenarioZero() {
