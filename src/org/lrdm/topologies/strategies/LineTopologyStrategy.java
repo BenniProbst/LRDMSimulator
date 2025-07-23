@@ -1,6 +1,7 @@
 
 package org.lrdm.topologies.strategies;
 
+import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.*;
@@ -181,6 +182,12 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für Linien-Erhaltung.
      * Führt Mirror-Shutdown innerhalb der strukturellen Linien-Planungsgrenzen aus.
      * Arbeitet komplementär zu removeNodesFromStructure.
+     *
+     * @param n Das Netzwerk
+     * @param removeMirrors Anzahl zu entfernender Mirrors
+     * @param props Properties der Simulation
+     * @param simTime Aktuelle Simulationszeit
+     * @return Set der entfernten Mirrors
      */
     @Override
     public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
@@ -218,6 +225,64 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         removeNodesFromStructure(actuallyRemoved);
 
         return cleanedMirrors;
+    }
+
+    // ===== FEHLENDE TOPOLOGY STRATEGY METHODEN =====
+
+    /**
+     * Startet das Netzwerk komplett neu mit der Linien-Topologie.
+     * Überschreibt die Basis-Implementierung für Linien-spezifische Neustartlogik.
+     *
+     * @param n Das Netzwerk
+     * @param props Properties der Simulation
+     * @param simTime Aktuelle Simulationszeit
+     * @return Set aller erstellten Links
+     */
+    @Override
+    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
+        if (n == null) return new HashSet<>();
+
+        // Alle bestehenden Links löschen
+        n.getLinks().clear();
+
+        // Erstelle neue Linien-Struktur
+        int totalMirrors = n.getNumMirrors();
+        MirrorNode root = buildStructure(totalMirrors, props);
+
+        if (root == null) return new HashSet<>();
+
+        // BuildAsSubstructure erstellt automatisch die Mirror-Links
+        // basierend auf der StructureNode-Struktur
+        return new HashSet<>(n.getLinks());
+    }
+
+
+    /**
+     * Berechnet die erwartete Anzahl der Links, wenn die gegebene Aktion ausgeführt wird.
+     * Linien-spezifische Implementierung basierend auf den drei Action-Typen.
+     * Überschreibt die abstrakte Methode aus TopologyStrategy.
+     *
+     * @param a Die Action, deren Auswirkungen berechnet werden sollen
+     * @return Anzahl der erwarteten Links nach Ausführung der Action
+     */
+    @Override
+    public int getPredictedNumTargetLinks(Action a) {
+        if (a instanceof MirrorChange mirrorChange) {
+            // MirrorChange: Neue Mirror-Anzahl → neue Link-Anzahl
+            int newMirrors = mirrorChange.getNewMirrors();
+            return calculateExpectedLinks(newMirrors);
+        } else if (a instanceof TargetLinkChange targetLinkChange) {
+            // TargetLinkChange: Begrenzt durch Linien-Eigenschaft
+            Network network = targetLinkChange.getNetwork();
+            int maxPossibleLinks = Math.max(0, network.getNumMirrors() - 1);
+            int requestedTotalLinks = targetLinkChange.getNewLinksPerMirror() * network.getNumMirrors();
+            return Math.min(requestedTotalLinks, maxPossibleLinks);
+        } else if (a instanceof TopologyChange topologyChange) {
+            // TopologyChange: Delegiere an neue Strategie
+            return topologyChange.getNewTopology().getPredictedNumTargetLinks(a);
+        }
+
+        return 0;
     }
 
     // ===== LINIEN-SPEZIFISCHE HILFSMETHODEN - NUR PLANUNGSEBENE =====
@@ -404,35 +469,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
     public int getNumTargetLinks(Network n) {
         int numMirrors = n.getNumMirrors();
         return Math.max(0, numMirrors - 1);
-    }
-
-    /**
-     * Berechnet die erwartete Anzahl der Links, wenn die gegebene Aktion ausgeführt wird.
-     * Linien-spezifische Implementierung basierend auf den drei Action-Typen:
-     * - MirrorChange: Verändert Linien-Größe dynamisch (n Mirrors → n-1 Links)
-     * - TargetLinkChange: Hat BEGRENZTEN Effekt bei Linie (max. n-1 Links möglich)
-     * - TopologyChange: Komplette Rekonstruktion mit verfügbaren Mirrors
-     *
-     * @param a Die Action, deren Auswirkungen berechnet werden sollen
-     * @return Anzahl der erwarteten Links nach Ausführung der Action
-     */
-    @Override
-    public int getPredictedNumTargetLinks(Action a) {
-        if (a instanceof MirrorChange mirrorChange) {
-            // MirrorChange: Neue Mirror-Anzahl → neue Link-Anzahl
-            int newMirrors = mirrorChange.getNewMirrors();
-            return calculateExpectedLinks(newMirrors);
-        } else if (a instanceof TargetLinkChange targetLinkChange) {
-            // TargetLinkChange: Begrenzt durch Linien-Eigenschaft
-            Network network = targetLinkChange.getNetwork();
-            int maxPossibleLinks = Math.max(0, network.getNumMirrors() - 1);
-            return Math.min(targetLinkChange.getNewLinksPerMirror(), maxPossibleLinks);
-        } else if (a instanceof TopologyChange topologyChange) {
-            // TopologyChange: Delegiere an neue Strategie
-            return topologyChange.getNewTopology().getPredictedNumTargetLinks(a);
-        }
-
-        return 0;
     }
 
     /**
