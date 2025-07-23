@@ -1,22 +1,20 @@
 package org.lrdm.topologies.strategies;
 
-import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
 import org.lrdm.effectors.MirrorChange;
 import org.lrdm.effectors.TargetLinkChange;
 import org.lrdm.effectors.TopologyChange;
-import org.lrdm.topologies.node.*;
-import org.lrdm.topologies.node.StructureNode.StructureType;
-import org.lrdm.util.IDGenerator;
+import org.lrdm.topologies.node.MirrorNode;
+import org.lrdm.topologies.node.RingMirrorNode;
 
 import java.util.*;
 
-
 /**
  * Eine spezialisierte {@link TopologyStrategy}, die Mirrors als Ring-Topologie mit einer
- * geschlossenen Schleife verknüpft. Diese Strategie ist eine Portierung der {@link org.lrdm.topologies.strategies.RingTopologyStrategy} Klasse.
+ * geschlossenen Schleife verknüpft. Basiert auf {@link LineTopologyStrategy} mit einem
+ * zusätzlichen Link vom letzten zum ersten Knoten.
  * <p>
  * **Ring-Topologie-Eigenschaften**:
  * - Jeder Mirror ist mit genau zwei anderen Mirrors verbunden (Vorgänger und Nachfolger)
@@ -30,13 +28,8 @@ import java.util.*;
  * - Ausführungsebene: `handleRemoveMirrors()` - führt Mirror-Shutdown innerhalb der Ring-Planungsgrenzen aus
  * - Automatisches Mitwachsen: MirrorNode-Ebene passt sich an StructureNode-Ring-Planung an
  * <p>
- * **Ring-Constraints**: Im Gegensatz zu Bäumen ist die Ring-Struktur zyklisch und
- * hat strenge topologische Anforderungen (jeder Knoten hat genau 2 Nachbarn).
- * <p>
- * **Head-Node-basierte Operationen**:
- * - Hinzufügen: Neue Knoten werden hinter der Head-Node eingefügt
- * - Entfernen: Knoten werden von hinten nach vorne entfernt (entfernt von der Head-Node)
- * - Ring-Länge: Head-Node + n Ring-Knoten = Gesamtstruktur
+ * **Ring = Linie + schließender Link**: Ring ist eine Linie, bei der der letzte Knoten
+ * mit dem ersten Knoten verbunden wird (geschlossene Schleife).
  *
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
@@ -67,41 +60,42 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
     // ===== ÜBERSCHREIBUNG DER BUILD-AS-SUBSTRUCTURE-METHODEN =====
 
     /**
-     * **PLANUNGSEBENE**: Erstellt die Ring-Struktur mit geschlossener Schleife.
+     * **PLANUNGSEBENE**: Erstellt die Ring-Struktur (Linie + schließender Link).
      * Überschreibt BuildAsSubstructure für Ring-spezifische Logik.
-     * Portiert die buildRing-Logik aus RingBuilder.
+     * NUR STRUKTURPLANUNG - keine Mirror-Links!
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes, Properties props) {
-        if (totalNodes < minRingSize || !mirrorIterator.hasNext()) return null;
+        if (totalNodes < minRingSize || !hasNextMirror()) return null;
 
-        // Erstelle alle Ring-Knoten
+        // Erstelle alle Ring-Knoten (wie bei Linie)
         List<RingMirrorNode> ringNodes = new ArrayList<>();
         for (int i = 0; i < totalNodes; i++) {
-            if (!mirrorIterator.hasNext()) break;
+            if (!hasNextMirror()) break;
 
-            Mirror mirror = mirrorIterator.next();
+            Mirror mirror = getNextMirror();
             RingMirrorNode ringNode = new RingMirrorNode(mirror.getID(), mirror);
             ringNodes.add(ringNode);
-            this.addToStructureNodes(ringNode);
+            addToStructureNodes(ringNode);
         }
 
         if (ringNodes.size() < minRingSize) return null;
 
-        // Strukturplanung: Erstellen von Ring-Verbindungen
-        buildRingStructureWithLinks(ringNodes, simTime, props);
+        // **NUR STRUKTURPLANUNG**: Erstelle Ring-Struktur (Linie + schließender Link)
+        buildRingStructurePlanning(ringNodes);
 
-        // Setze ersten Knoten als Head
-        RingMirrorNode head = ringNodes.get(0);
-        head.setHead(true);
+        // Setze erste Knoten als Head und Root
+        RingMirrorNode root = ringNodes.get(0);
+        root.setHead(true);
+        setCurrentStructureRoot(root);
 
-        return head;
+        return root;
     }
 
     /**
      * **PLANUNGSEBENE**: Fügt neue Knoten zur Ring-Struktur hinzu.
-     * HEAD-NODE-BASIERT: Neue Knoten werden hinter der Head-Node eingefügt.
-     * Überschreibt BuildAsSubstructure für Ring-Einfügung hinter Head-Node.
+     * Ring-Erweiterung: Neue Knoten werden an beliebiger Stelle im Ring eingefügt.
+     * NUR STRUKTURPLANUNG - keine Mirror-Links!
      */
     @Override
     protected int addNodesToStructure(int nodesToAdd) {
@@ -110,29 +104,27 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
         RingMirrorNode head = getRingHead();
         if (head == null) return 0;
 
-        // Prüfe Ring-Länge: Head-Node + n Ring-Knoten
-        int currentRingLength = calculateCurrentRingLength();
-        if (currentRingLength < minRingSize) return 0;
+        List<RingMirrorNode> ringNodes = getAllRingNodes();
+        if (ringNodes.isEmpty()) return 0;
 
         int actuallyAdded = 0;
+        int insertionIndex = 0;
 
-        // HEAD-NODE-BASIERT: Füge neue Knoten hinter der Head-Node ein
-        RingMirrorNode currentInsertionPoint = head;
+        // Ring-Erweiterung: Neue Knoten zwischen bestehenden Knoten einfügen
+        while (actuallyAdded < nodesToAdd && insertionIndex < ringNodes.size() && hasNextMirror()) {
+            RingMirrorNode currentNode = ringNodes.get(insertionIndex);
+            RingMirrorNode nextNode = ringNodes.get((insertionIndex + 1) % ringNodes.size());
 
-        for (int i = 0; i < nodesToAdd && mirrorIterator.hasNext(); i++) {
-            RingMirrorNode nextNode = currentInsertionPoint.getNextInRing();
-            if (nextNode == null) break;
-
-            // Erstelle neuen Knoten
-            RingMirrorNode newNode = createRingNode(0, new Properties());
+            // **NUR STRUKTURPLANUNG**: Erstelle neuen Knoten
+            RingMirrorNode newNode = createRingNodeForStructure();
             if (newNode != null) {
-                // Füge hinter der aktuellen Position ein
-                insertNodeIntoRing(currentInsertionPoint, newNode, nextNode, 0, new Properties());
+                // **NUR STRUKTURPLANUNG**: Füge in Ring zwischen current und next ein
+                insertNodeIntoRingStructuralPlanning(currentNode, newNode, nextNode);
+                ringNodes.add(insertionIndex + 1, newNode); // Update lokale Liste
                 actuallyAdded++;
-
-                // Nächster Knoten wird hinter dem neu eingefügten Knoten eingefügt
-                currentInsertionPoint = newNode;
             }
+
+            insertionIndex = (insertionIndex + 2) % ringNodes.size(); // Skip über neu eingefügten Knoten
         }
 
         return actuallyAdded;
@@ -140,31 +132,26 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
 
     /**
      * **PLANUNGSEBENE**: Entfernt Knoten aus der Ring-Struktur.
-     * HEAD-NODE-BASIERT: Entfernt Knoten von hinten nach vorne (entfernt von Head-Node).
-     * Überschreibt BuildAsSubstructure für Ring-erhaltende Entfernung.
+     * Ring-Entfernung: Entfernt beliebige Knoten (außer Head), Ring bleibt geschlossen.
      */
     @Override
     protected int removeNodesFromStructure(int nodesToRemove) {
         if (nodesToRemove <= 0) return 0;
 
-        // Prüfe Ring-Länge: Head-Node + n Ring-Knoten
-        int currentRingLength = calculateCurrentRingLength();
-        if (currentRingLength - nodesToRemove < minRingSize) {
-            nodesToRemove = currentRingLength - minRingSize;
+        List<RingMirrorNode> ringNodes = getAllRingNodes();
+        if (ringNodes.size() - nodesToRemove < minRingSize) {
+            nodesToRemove = ringNodes.size() - minRingSize;
         }
         if (nodesToRemove <= 0) return 0;
 
-        RingMirrorNode head = getRingHead();
-        if (head == null) return 0;
-
         int actuallyRemoved = 0;
 
-        // HEAD-NODE-BASIERT: Entferne Knoten von hinten nach vorne,
-        // finde den entferntesten Knoten von der Head-Node
-        for (int i = 0; i < nodesToRemove; i++) {
-            RingMirrorNode nodeToRemove = findNodeFarthestFromHead(head);
-            if (nodeToRemove != null && nodeToRemove != head) {
+        // Ring-Entfernung: Entferne Nicht-Head-Knoten
+        for (int i = 0; i < nodesToRemove && !ringNodes.isEmpty(); i++) {
+            RingMirrorNode nodeToRemove = selectNodeForRemoval(ringNodes);
+            if (nodeToRemove != null) {
                 removeNodeFromRingStructuralPlanning(nodeToRemove);
+                ringNodes.remove(nodeToRemove);
                 actuallyRemoved++;
             }
         }
@@ -172,10 +159,33 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
         return actuallyRemoved;
     }
 
+    @Override
+    protected boolean validateTopology() {
+        return isRingIntact();
+    }
+
+    /**
+     * Factory-Methode für Ring-spezifische MirrorNode-Erstellung.
+     * Überschreibt BuildAsSubstructure für die RingMirrorNode-Erstellung.
+     *
+     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
+     * @return Neuer RingMirrorNode
+     */
+    @Override
+    protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
+        return new RingMirrorNode(mirror.getID(), mirror);
+    }
+
     /**
      * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für Ring-Erhaltung.
-     * HEAD-NODE-BASIERT: Entfernt Mirrors von hinten nach vorne (entfernt von Head-Node).
      * Führt Mirror-Shutdown innerhalb der strukturellen Ring-Planungsgrenzen aus.
+     * Arbeitet komplementär zu removeNodesFromStructure.
+     *
+     * @param n Das Netzwerk
+     * @param removeMirrors Anzahl zu entfernender Mirrors
+     * @param props Properties der Simulation
+     * @param simTime Aktuelle Simulationszeit
+     * @return Set der entfernten Mirrors
      */
     @Override
     public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
@@ -183,33 +193,28 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
             return new HashSet<>();
         }
 
-        // Prüfe Ring-Länge: Head-Node + n Ring-Knoten
-        int currentRingLength = calculateCurrentRingLength();
-        if (currentRingLength - removeMirrors < minRingSize) {
-            removeMirrors = currentRingLength - minRingSize;
+        List<RingMirrorNode> ringNodes = getAllRingNodes();
+        if (ringNodes.size() - removeMirrors < minRingSize) {
+            removeMirrors = ringNodes.size() - minRingSize;
         }
         if (removeMirrors <= 0) {
-            return new HashSet<>();
-        }
-
-        RingMirrorNode head = getRingHead();
-        if (head == null) {
             return new HashSet<>();
         }
 
         Set<Mirror> cleanedMirrors = new HashSet<>();
         int actuallyRemoved = 0;
 
-        // HEAD-NODE-BASIERT: Entferne Mirrors von hinten nach vorne
-        for (int i = 0; i < removeMirrors; i++) {
-            RingMirrorNode nodeToRemove = findNodeFarthestFromHead(head);
-            if (nodeToRemove != null && nodeToRemove != head) {
-                Mirror targetMirror = nodeToRemove.getMirror();
+        // Ausführungsebene: Ring-bewusste Mirror-Entfernung
+        for (int i = 0; i < removeMirrors && !ringNodes.isEmpty(); i++) {
+            RingMirrorNode targetNode = selectNodeForRemoval(ringNodes);
+            if (targetNode != null) {
+                Mirror targetMirror = targetNode.getMirror();
                 if (targetMirror != null) {
                     // Mirror-Shutdown auf Ausführungsebene
                     targetMirror.shutdown(simTime);
                     cleanedMirrors.add(targetMirror);
                     actuallyRemoved++;
+                    ringNodes.remove(targetNode);
                 }
             }
         }
@@ -220,261 +225,196 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
         return cleanedMirrors;
     }
 
-    // ===== FEHLENDE TOPOLOGY STRATEGY METHODEN =====
+    // ===== TOPOLOGY STRATEGY METHODEN =====
 
     /**
-     * Startet das Netzwerk komplett neu mit der Ring-Topologie.
-     * Überschreibt die Basis-Implementierung für Ring-spezifische Neustartlogik.
+     * Gibt die erwartete Anzahl Links für das Netzwerk gemäß Ring-Topologie zurück.
+     * Ring-Topologie: n Links für n Knoten (jeder Knoten hat genau 2 Nachbarn).
      *
-     * @return
+     * @param n Das Netzwerk
+     * @return Anzahl der erwarteten Links für Ring-Topologie
      */
     @Override
-    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
-        super.restartNetwork(n, props, simTime);
-
-        // Bereinige Ring-spezifische Zustände
-        clearRingState();
-
-        // Initialisiere Ring-Netzwerk neu
-        initNetwork(n, props);
+    public int getNumTargetLinks(Network n) {
+        if (n == null) return 0;
+        return calculateExpectedLinks(n.getNumMirrors());
     }
 
     /**
      * Berechnet die erwartete Anzahl der Links, wenn die gegebene Aktion ausgeführt wird.
      * Ring-spezifische Implementierung basierend auf den drei Action-Typen.
      * Überschreibt die abstrakte Methode aus TopologyStrategy.
+     *
+     * @param a Die Action, deren Auswirkungen berechnet werden sollen
+     * @return Anzahl der erwarteten Links nach Ausführung der Action
      */
     @Override
     public int getPredictedNumTargetLinks(Action a) {
-        if (a == null) {
-            return network != null ? getNumTargetLinks(network) : 0;
-        }
-
-        // 1. MirrorChange: Ring-Größe ändert sich dynamisch
         if (a instanceof MirrorChange mirrorChange) {
-            int newMirrorCount = mirrorChange.getNewMirrors();
-            return calculateExpectedLinks(newMirrorCount);
+            // MirrorChange: Neue Mirror-Anzahl → neue Link-Anzahl
+            int newMirrors = mirrorChange.getNewMirrors();
+            return calculateExpectedLinks(newMirrors);
+        } else if (a instanceof TargetLinkChange targetLinkChange) {
+            // TargetLinkChange: Begrenzt durch Ring-Eigenschaft
+            Network network = targetLinkChange.getNetwork();
+            int maxPossibleLinks = network.getNumMirrors(); // Ring: n Links für n Knoten
+            int requestedTotalLinks = targetLinkChange.getNewLinksPerMirror() * network.getNumMirrors();
+            return Math.min(requestedTotalLinks, maxPossibleLinks);
+        } else if (a instanceof TopologyChange topologyChange) {
+            // TopologyChange: Delegiere an neue Strategie
+            return topologyChange.getNewTopology().getPredictedNumTargetLinks(a);
         }
 
-        // 2. TargetLinkChange: KEIN Effekt bei Ring-Topologie
-        if (a instanceof TargetLinkChange) {
-            return network != null ? getNumTargetLinks(network) : 0;
-        }
-
-        // 3. TopologyChange: Komplette Rekonstruktion
-        if (a instanceof TopologyChange topologyChange) {
-            TopologyStrategy newTopology = topologyChange.getNewTopology();
-            if (newTopology instanceof RingTopologyStrategy) {
-                int currentMirrors = network != null ? network.getNumMirrors() : 0;
-                return calculateExpectedLinks(currentMirrors);
-            }
-            if (network != null) {
-                return newTopology.getNumTargetLinks(network);
-            }
-            return 0;
-        }
-
-        return network != null ? getNumTargetLinks(network) : 0;
+        return 0;
     }
 
-    // ===== RING-SPEZIFISCHE HILFSMETHODEN =====
+    // ===== RING-SPEZIFISCHE HILFSMETHODEN - NUR PLANUNGSEBENE =====
 
     /**
-     * HEAD-NODE-BASIERT: Berechnet die aktuelle Ring-Länge (Head-Node + n Ring-Knoten).
-     * Prüft die Tiefe der Struktur bzw. die Länge des Rings.
+     * **NUR PLANUNGSEBENE**: Baut die Ring-Struktur auf (Linie + schließender Link).
+     * Erstellt KEINE Mirror-Links - nur StructureNode-Verbindungen!
      */
-    private int calculateCurrentRingLength() {
-        RingMirrorNode head = getRingHead();
-        if (head == null) return 0;
-
-        int length = 0;
-        RingMirrorNode current = head;
-        Set<RingMirrorNode> visited = new HashSet<>();
-
-        // Durchlaufe den Ring und zähle alle Knoten
-        do {
-            if (visited.contains(current)) {
-                break; // Verhindere Endlosschleife
-            }
-            visited.add(current);
-            length++;
-            current = current.getNextInRing();
-        } while (current != null && current != head);
-
-        return length;
-    }
-
-    /**
-     * HEAD-NODE-BASIERT: Findet den Knoten, der am weitesten von der Head-Node entfernt ist.
-     * Wird für die Entfernung "von hinten nach vorne" verwendet.
-     */
-    private RingMirrorNode findNodeFarthestFromHead(RingMirrorNode head) {
-        if (head == null) return null;
-
-        RingMirrorNode current = head;
-        RingMirrorNode farthest = null;
-        int maxDistance = -1;
-        int currentDistance = 0;
-        Set<RingMirrorNode> visited = new HashSet<>();
-
-        // Durchlaufe den Ring und finde den entferntesten Knoten
-        do {
-            if (visited.contains(current)) {
-                break; // Verhindere Endlosschleife
-            }
-            visited.add(current);
-
-            if (current != head && currentDistance > maxDistance) {
-                maxDistance = currentDistance;
-                farthest = current;
-            }
-
-            current = current.getNextInRing();
-            currentDistance++;
-        } while (current != null && current != head);
-
-        return farthest;
-    }
-
-    /**
-     * Bereinigt. Ring-spezifische Zustände für Neustarts.
-     */
-    private void clearRingState() {
-        // Bereinige alle Ring-spezifischen Zustände
-        // (Wird bei Bedarf erweitert)
-    }
-
-    /**
-     * Baut die Ring-Struktur mit echten Mirror-Links auf.
-     * Portiert die Ring-Verbindungslogik aus RingBuilder.
-     */
-    private void buildRingStructureWithLinks(List<RingMirrorNode> ringNodes, int simTime, Properties props) {
+    private void buildRingStructurePlanning(List<RingMirrorNode> ringNodes) {
         if (ringNodes.size() < minRingSize) return;
 
-        // Strukturplanung und Ausführung: Verbinde Ring-Knoten zyklisch
-        for (int i = 0; i < ringNodes.size(); i++) {
+        // **SCHRITT 1**: Erstelle Linien-Struktur (wie LineTopologyStrategy)
+        for (int i = 0; i < ringNodes.size() - 1; i++) {
             RingMirrorNode current = ringNodes.get(i);
-            RingMirrorNode next = ringNodes.get((i + 1) % ringNodes.size());
+            RingMirrorNode next = ringNodes.get(i + 1);
 
-            // StructureNode-Verbindung
-            Set<StructureType> typeIds = new HashSet<>();
-            typeIds.add(StructureType.RING);
-
-            Map<StructureType, Integer> headIds = new HashMap<>();
-            headIds.put(StructureType.RING, getRingHeadId(ringNodes));
-
-            current.addChild(next, typeIds, headIds);
-
-            // Mirror-Link-Erstellung
-            createRingMirrorLink(current, next, simTime, props);
+            // StructureNode-Verbindung (keine Mirror-Links!)
+            current.addChild(next);
+            next.setParent(current);
         }
+
+        // **SCHRITT 2**: Schließe den Ring (letzter → erster Knoten)
+        RingMirrorNode lastNode = ringNodes.get(ringNodes.size() - 1);
+        RingMirrorNode firstNode = ringNodes.get(0);
+
+        // Ring-Schließung auf StructureNode-Ebene
+        lastNode.addChild(firstNode);
+        // NICHT: firstNode.setParent(lastNode) - würde Baum-Struktur verletzen!
+
+        // KEINE Mirror-Link-Erstellung hier! Nur Strukturplanung!
     }
 
     /**
-     * Erstellt einen neuen Ring-Knoten mit struktureller Planung.
+     * **NUR PLANUNGSEBENE**: Erstellt einen neuen Ring-Knoten mit struktureller Planung.
      */
-    private RingMirrorNode createRingNode(int simTime, Properties props) {
-        if (!mirrorIterator.hasNext()) return null;
+    private RingMirrorNode createRingNodeForStructure() {
+        if (!hasNextMirror()) return null;
 
-        Mirror mirror = mirrorIterator.next();
+        Mirror mirror = getNextMirror();
         RingMirrorNode ringNode = new RingMirrorNode(mirror.getID(), mirror);
-        this.addToStructureNodes(ringNode);
+        addToStructureNodes(ringNode);
 
         return ringNode;
     }
 
     /**
-     * Fügt einen neuen Knoten in den Ring zwischen zwei bestehenden Knoten ein.
-     * Portiert die Ring-Einfügungslogik aus RingBuilder.
+     * **NUR PLANUNGSEBENE**: Fügt einen Knoten in den Ring zwischen zwei bestehenden Knoten ein.
+     * Erstellt KEINE Mirror-Links - nur StructureNode-Verbindungen!
      */
-    private void insertNodeIntoRing(RingMirrorNode current, RingMirrorNode newNode,
-                                    RingMirrorNode next, int simTime, Properties props) {
-        // Strukturplanung: Entferne alte Verbindung current -> next
+    private void insertNodeIntoRingStructuralPlanning(RingMirrorNode current, RingMirrorNode newNode, RingMirrorNode next) {
+        if (current == null || newNode == null || next == null) return;
+
+        // Entferne bestehende Verbindung current → next
         current.removeChild(next);
 
-        // Strukturplanung: Füge neue Verbindungen hinzu
-        Set<StructureType> typeIds = new HashSet<>();
-        typeIds.add(StructureType.RING);
+        // Erstelle neue Verbindungen: current → newNode → next
+        current.addChild(newNode);
+        newNode.setParent(current);
+        newNode.addChild(next);
+        next.setParent(newNode);
 
-        Map<StructureType, Integer> headIds = new HashMap<>();
-        headIds.put(StructureType.RING, getRingHeadId());
+        // KEINE Mirror-Link-Erstellung hier! Nur Strukturplanung!
+    }
 
-        // current -> newNode -> next
-        current.addChild(newNode, typeIds, headIds);
-        newNode.addChild(next, typeIds, headIds);
+    /**
+     * Wählt einen Knoten für die Entfernung aus dem Ring aus.
+     * Bevorzugt Nicht-Head-Knoten, wenn möglich.
+     */
+    private RingMirrorNode selectNodeForRemoval(List<RingMirrorNode> ringNodes) {
+        if (ringNodes.isEmpty()) return null;
 
-        // Ausführungsebene: Erstelle neue Mirror-Links
-        createRingMirrorLink(current, newNode, simTime, props);
-        createRingMirrorLink(newNode, next, simTime, props);
+        // Bevorzuge Nicht-Head-Knoten
+        for (RingMirrorNode node : ringNodes) {
+            if (!node.isHead()) {
+                return node;
+            }
+        }
+
+        // Fallback: Erster verfügbarer Knoten (sollte nicht Head sein, wenn minRingSize > 1)
+        return ringNodes.get(0);
     }
 
     /**
      * **PLANUNGSEBENE**: Entfernt Knoten aus der Ring-Struktur-Planung.
-     * Arbeitet ohne Zeitbezug - nur strukturelle Ring-Änderungen.
+     * Stellt sicher, dass der Ring geschlossen bleibt.
      */
     private void removeNodeFromRingStructuralPlanning(RingMirrorNode nodeToRemove) {
-        RingMirrorNode previous = nodeToRemove.getPreviousInRing();
-        RingMirrorNode next = nodeToRemove.getNextInRing();
+        if (nodeToRemove == null) return;
 
-        if (previous != null && next != null) {
-            // Strukturplanung: Verbinde Vorgänger direkt mit Nachfolgern
-            previous.removeChild(nodeToRemove);
-            nodeToRemove.removeChild(next);
+        // Finde Vorgänger und Nachfolger
+        RingMirrorNode predecessor = findRingPredecessor(nodeToRemove);
+        RingMirrorNode successor = findRingSuccessor(nodeToRemove);
 
-            Set<StructureType> typeIds = new HashSet<>();
-            typeIds.add(StructureType.RING);
+        if (predecessor != null && successor != null) {
+            // Entferne Knoten aus der Kette
+            predecessor.removeChild(nodeToRemove);
+            nodeToRemove.removeChild(successor);
 
-            Map<StructureType, Integer> headIds = new HashMap<>();
-            headIds.put(StructureType.RING, getRingHeadId());
-
-            previous.addChild(next, typeIds, headIds);
+            // Verbinde Vorgänger direkt mit Nachfolger (Ring bleibt geschlossen)
+            predecessor.addChild(successor);
+            if (successor.getParent() == nodeToRemove) {
+                successor.setParent(predecessor);
+            }
         }
 
-        // Bereinige alle Verbindungen des entfernten Knotens
-        Set<StructureNode> childrenToRemove = new HashSet<>();
-        for (StructureNode child : nodeToRemove.getChildren()) {
-            childrenToRemove.add(child);
-        }
-
-        for (StructureNode child : childrenToRemove) {
-            nodeToRemove.removeChild(child);
-        }
-
-        nodeToRemove.setParent(null);
+        // Entferne Knoten aus der Struktur
+        removeFromStructureNodes(nodeToRemove);
     }
 
     /**
-     * Erstellt Mirror-Link mit Ring-Validierung.
-     * Ausführungsebene: Echte Mirror-Verbindungen.
+     * Findet den Vorgänger eines Ring-Knotens.
      */
-    private void createRingMirrorLink(RingMirrorNode from, RingMirrorNode to, int simTime, Properties props) {
-        Mirror fromMirror = from.getMirror();
-        Mirror toMirror = to.getMirror();
-
-        if (fromMirror == null || toMirror == null) return;
-        if (isAlreadyConnected(fromMirror, toMirror)) return;
-
-        // Erstelle Link auf Ausführungsebene
-        Link link = new Link(idGenerator.getNextID(), fromMirror, toMirror, simTime, props);
-
-        // Füge Links zu Mirrors hinzu
-        fromMirror.addLink(link);
-        toMirror.addLink(link);
-
-        // Füge auch zu network links hinzu
-        if (network != null) {
-            network.getLinks().add(link);
-        }
+    private RingMirrorNode findRingPredecessor(RingMirrorNode node) {
+        if (node == null) return null;
+        return (RingMirrorNode) node.getParent();
     }
 
     /**
-     * Prüft bestehende Mirror-Verbindungen.
+     * Findet den Nachfolger eines Ring-Knotens.
      */
-    private boolean isAlreadyConnected(Mirror mirror1, Mirror mirror2) {
-        return mirror1.getLinks().stream()
-                .anyMatch(link ->
-                        (link.getTarget().equals(mirror2) && link.getSource().equals(mirror1)) ||
-                                (link.getTarget().equals(mirror1) && link.getSource().equals(mirror2)));
+    private RingMirrorNode findRingSuccessor(RingMirrorNode node) {
+        if (node == null || node.getChildren().isEmpty()) return null;
+        return (RingMirrorNode) node.getChildren().iterator().next();
+    }
+
+    /**
+     * Prüft, ob die Ring-Struktur intakt ist.
+     */
+    private boolean isRingIntact() {
+        List<RingMirrorNode> ringNodes = getAllRingNodes();
+        if (ringNodes.size() < minRingSize) return false;
+
+        // Prüfe, ob jeder Knoten genau einen Vorgänger und einen Nachfolger hat
+        for (RingMirrorNode node : ringNodes) {
+            if (node.getChildren().size() != 1) return false;
+            // Parent-Check ist für Ring-Schließung komplexer, da der erste Knoten
+            // könnte zwei "Parents" haben (strukturell)
+        }
+
+        return true;
+    }
+
+    /**
+     * Berechnet die erwartete Link-Anzahl für eine gegebene Knotenzahl.
+     * Ring-Topologie: n Links für n Knoten (jeder Knoten hat genau 2 Nachbarn).
+     */
+    private int calculateExpectedLinks(int nodeCount) {
+        if (nodeCount < minRingSize) return 0;
+        return nodeCount; // Ring: n Links für n Knoten
     }
 
     // ===== TYPSICHERE HILFSMETHODEN =====
@@ -488,175 +428,21 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
     }
 
     /**
-     * Gibt die Head-ID des Rings zurück.
-     */
-    private int getRingHeadId() {
-        RingMirrorNode head = getRingHead();
-        return (head != null) ? head.getId() : -1;
-    }
-
-    /**
-     * Gibt die Head-ID für eine Liste von Ring-Knoten zurück.
-     */
-    private int getRingHeadId(List<RingMirrorNode> ringNodes) {
-        return ringNodes.isEmpty() ? -1 : ringNodes.get(0).getId();
-    }
-
-    /**
      * Gibt alle Ring-Knoten als typisierte Liste zurück.
      */
     private List<RingMirrorNode> getAllRingNodes() {
         return getAllStructureNodes().stream()
-                .filter(RingMirrorNode.class::isInstance)
-                .map(RingMirrorNode.class::cast)
-                .toList();
-    }
-
-    // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
-
-    /**
-     * Initializes the network by connecting mirrors in a ring topology.
-     *
-     * @param n the {@link Network}
-     * @param props {@link Properties} of the simulation
-     * @return {@link Set} of all {@link Link}s created
-     */
-    @Override
-    public Set<Link> initNetwork(Network n, Properties props) {
-        this.network = n;
-        this.idGenerator = IDGenerator.getInstance();
-        this.mirrorIterator = n.getMirrors().iterator();
-
-        int totalMirrors = n.getNumMirrors();
-        if (totalMirrors < minRingSize) {
-            throw new IllegalArgumentException("Ring-Topologie benötigt mindestens " + minRingSize + " Mirrors");
-        }
-
-        MirrorNode root = buildStructure(totalMirrors, props);
-        setCurrentStructureRoot(root);
-
-        return buildAndConnectLinks(root, props, 0);
-    }
-
-    /**
-     * Adds the requested number of mirrors to the network and connects them accordingly.
-     *
-     * @param n the {@link Network}
-     * @param newMirrors number of mirrors to add
-     * @param props {@link Properties} of the simulation
-     * @param simTime current simulation time
-     */
-    @Override
-    public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
-        if (newMirrors <= 0 || !allowRingExpansion) return;
-
-        // Erstelle neue Mirrors
-        List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
-        n.getMirrors().addAll(addedMirrors);
-
-        // Aktualisiere mirrorIterator für neue Mirrors
-        this.mirrorIterator = addedMirrors.iterator();
-
-        // Füge zur Ring-Struktur hinzu
-        addNodesToStructure(newMirrors);
-
-        // Erstelle neue Links
-        MirrorNode root = getCurrentStructureRoot();
-        if (root != null) {
-            buildAndConnectLinks(root, props, 0);
-        }
-    }
-
-    /**
-     * Returns the expected number of total links in the network according to the ring topology.
-     * For n mirrors, the number of links is n (ring property - each node connects to its neighbor).
-     *
-     * @param n {@link Network} the network
-     * @return number of total links expected for the network
-     */
-    @Override
-    public int getNumTargetLinks(Network n) {
-        int numMirrors = n.getNumMirrors();
-        return (numMirrors >= minRingSize) ? numMirrors : 0;
-    }
-
-    /**
-     * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
-     *
-     * @param root    Die Root-Node der Struktur
-     * @param props   Simulation Properties
-     * @param simTime
-     * @return Set aller erstellten Links
-     */
-    @Override
-    protected Set<Link> buildAndConnectLinks(MirrorNode root, Properties props, int simTime) {
-        Set<Link> allLinks = new HashSet<>();
-
-        if (root == null) return allLinks;
-
-        // Sammle alle Ring-Knoten
-        List<RingMirrorNode> ringNodes = getAllRingNodes();
-
-        // Erstelle Links basierend auf Ring-Struktur
-        for (RingMirrorNode node : ringNodes) {
-            Mirror nodeMirror = node.getMirror();
-            if (nodeMirror == null) continue;
-
-            RingMirrorNode nextNode = node.getNextInRing();
-            if (nextNode != null && nextNode.getMirror() != null) {
-                Mirror nextMirror = nextNode.getMirror();
-
-                if (!isAlreadyConnected(nodeMirror, nextMirror)) {
-                    Link link = new Link(idGenerator.getNextID(), nodeMirror, nextMirror, 0, props);
-                    allLinks.add(link);
-
-                    // Füge zu Network hinzu
-                    if (network != null) {
-                        network.getLinks().add(link);
-                    }
-                }
-            }
-        }
-
-        return allLinks;
-    }
-
-    // ===== HILFSMETHODEN =====
-
-    /**
-     * Berechnet die erwartete Link-Anzahl für eine gegebene Knotenzahl.
-     * Für Ring-Topologie: n Links für n Knoten.
-     *
-     * @param nodeCount Anzahl der Knoten
-     * @return Erwartete Anzahl der Links für Ring-Topologie
-     */
-    public static int calculateExpectedLinks(int nodeCount) {
-        return (nodeCount >= 3) ? nodeCount : 0;
-    }
-
-    // ===== KONFIGURATION =====
-
-    public int getMinRingSize() {
-        return minRingSize;
-    }
-
-    public void setMinRingSize(int minRingSize) {
-        this.minRingSize = Math.max(3, minRingSize);
-    }
-
-    public boolean isAllowRingExpansion() {
-        return allowRingExpansion;
-    }
-
-    public void setAllowRingExpansion(boolean allowRingExpansion) {
-        this.allowRingExpansion = allowRingExpansion;
+                .filter(node -> node instanceof RingMirrorNode)
+                .map(node -> (RingMirrorNode) node)
+                .collect(java.util.stream.Collectors.toList());
     }
 
     @Override
     public String toString() {
-        return String.format("RingTopologyStrategy{minRingSize=%d, allowRingExpansion=%s, " +
-                        "currentRingSize=%d, ringLength=%d}",
-                minRingSize, allowRingExpansion, getAllRingNodes().size(),
-                calculateCurrentRingLength());
+        return "RingTopologyStrategy{" +
+                "minRingSize=" + minRingSize +
+                ", allowRingExpansion=" + allowRingExpansion +
+                ", nodes=" + getAllRingNodes().size() +
+                '}';
     }
 }

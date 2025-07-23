@@ -230,34 +230,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
     // ===== FEHLENDE TOPOLOGY STRATEGY METHODEN =====
 
     /**
-     * Startet das Netzwerk komplett neu mit der Linien-Topologie.
-     * Überschreibt die Basis-Implementierung für Linien-spezifische Neustartlogik.
-     *
-     * @param n Das Netzwerk
-     * @param props Properties der Simulation
-     * @param simTime Aktuelle Simulationszeit
-     * @return Set aller erstellten Links
-     */
-    @Override
-    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
-        if (n == null) return new HashSet<>();
-
-        // Alle bestehenden Links löschen
-        n.getLinks().clear();
-
-        // Erstelle neue Linien-Struktur
-        int totalMirrors = n.getNumMirrors();
-        MirrorNode root = buildStructure(totalMirrors, props);
-
-        if (root == null) return new HashSet<>();
-
-        // BuildAsSubstructure erstellt automatisch die Mirror-Links
-        // basierend auf der StructureNode-Struktur
-        return new HashSet<>(n.getLinks());
-    }
-
-
-    /**
      * Berechnet die erwartete Anzahl der Links, wenn die gegebene Aktion ausgeführt wird.
      * Linien-spezifische Implementierung basierend auf den drei Action-Typen.
      * Überschreibt die abstrakte Methode aus TopologyStrategy.
