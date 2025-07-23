@@ -1,4 +1,3 @@
-
 package org.lrdm.topologies.strategies;
 
 import org.lrdm.Mirror;
@@ -9,8 +8,8 @@ import org.lrdm.effectors.TargetLinkChange;
 import org.lrdm.effectors.TopologyChange;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.RingMirrorNode;
+import org.lrdm.topologies.node.StructureNode;
 import org.lrdm.topologies.validators.SnowflakeTopologyValidator;
-import org.lrdm.topologies.exceptions.SnowflakeTopologyException;
 
 import java.util.*;
 
@@ -34,9 +33,9 @@ import java.util.*;
 public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
     /**
-         * Einfache Tupel-Klasse für die Mirror-Verteilung.
-         */
-        public record MirrorDistribution(int ringMirrors, int externalMirrors) {
+     * Einfache Tupel-Klasse für die Mirror-Verteilung.
+     */
+    public record MirrorDistribution(int ringMirrors, int externalMirrors) {
     }
 
     // ===== SCHNEEFLOCKEN-PARAMETER =====
@@ -78,7 +77,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
     @Override
     protected MirrorNode buildStructure(int totalNodes, Properties props) {
         if (totalNodes < getMinimumRequiredMirrors()) {
-            throw new SnowflakeTopologyException(
+            throw new IllegalArgumentException(
                     "Insufficient mirrors for snowflake: " + totalNodes + " < " + getMinimumRequiredMirrors()
             );
         }
@@ -115,7 +114,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         int actuallyAdded = 0;
 
         // Finde alle Substrukturen über BuildAsSubstructure.nodeToSubstructure
-        Set<BuildAsSubstructure> allSubstructures = new HashSet<>(getNodeToSubstructure().values());
+        Set<BuildAsSubstructure> allSubstructures = new HashSet<>(getNodeToSubstructureMapping().values());
 
         // Erweitere externe Baum-Strukturen zuerst
         for (BuildAsSubstructure substructure : allSubstructures) {
@@ -149,7 +148,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         int actuallyRemoved = 0;
 
         // Finde alle Substrukturen
-        Set<BuildAsSubstructure> allSubstructures = new HashSet<>(getNodeToSubstructure().values());
+        Set<BuildAsSubstructure> allSubstructures = new HashSet<>(getNodeToSubstructureMapping().values());
 
         // Entferne aus Externen Baum-Strukturen zuerst
         for (BuildAsSubstructure substructure : allSubstructures) {
@@ -175,7 +174,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
     @Override
     protected boolean validateTopology() {
         // Validiere alle Substrukturen über BuildAsSubstructure.nodeToSubstructure
-        for (BuildAsSubstructure substructure : getNodeToSubstructure().values()) {
+        for (BuildAsSubstructure substructure : getNodeToSubstructureMapping().values()) {
             if (!substructure.validateTopology()) {
                 return false;
             }
@@ -204,7 +203,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         int totalLinks = 0;
 
         // Summiere Links aus allen Substrukturen
-        for (BuildAsSubstructure substructure : getNodeToSubstructure().values()) {
+        for (BuildAsSubstructure substructure : getNodeToSubstructureMapping().values()) {
             totalLinks += substructure.getNumTargetLinks(n);
         }
 
@@ -251,6 +250,328 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         // **Fallback**: Aktueller Zustand
         return network != null ? getNumTargetLinks(network) : 0;
+    }
+
+    // ===== SCHNEEFLOCKEN-AUFBAU METHODEN =====
+
+    /**
+     * Erstellt den zentralen Ring mit RingTopologyStrategy.
+     */
+    private MirrorNode buildCentralRing(int ringMirrors, Properties props) {
+        int centralRingSize = Math.max(MINIMAL_RING_SIZE, ringMirrors / MAX_RING_LAYERS);
+
+        RingTopologyStrategy centralRingStrategy = new RingTopologyStrategy(MINIMAL_RING_SIZE);
+
+        // Übertrage Mirrors an die Ring-Strategie
+        transferMirrorsToSubstructure(centralRingStrategy, centralRingSize);
+
+        // Baue Ring-Struktur
+        MirrorNode centralRingHead = centralRingStrategy.buildStructure(centralRingSize, props);
+        if (centralRingHead != null) {
+            // Registriere Substruktur über BuildAsSubstructure
+            registerSubstructure(centralRingHead, centralRingStrategy);
+            setCurrentStructureRoot(centralRingHead);
+        }
+
+        return centralRingHead;
+    }
+
+    /**
+     * Erstellt konzentrische Ring-Schichten um den zentralen Ring.
+     */
+    private void buildConcentricRingLayers(MirrorNode centralRingHead, int remainingMirrors, Properties props) {
+        int ringsBuilt = 1; // Zentraler Ring bereits erstellt
+        int mirrorsPerRing = Math.max(MINIMAL_RING_SIZE, remainingMirrors / (MAX_RING_LAYERS - 1));
+
+        while (ringsBuilt < MAX_RING_LAYERS && remainingMirrors >= MINIMAL_RING_SIZE) {
+            int mirrorsForThisRing = Math.min(mirrorsPerRing, remainingMirrors);
+            if (mirrorsForThisRing < MINIMAL_RING_SIZE) break;
+
+            MirrorNode ringHead = buildSingleRing(mirrorsForThisRing, props);
+            if (ringHead != null) {
+                remainingMirrors -= mirrorsForThisRing;
+                ringsBuilt++;
+            }
+        }
+    }
+
+    /**
+     * Erstellt einen einzelnen Ring mit RingTopologyStrategy.
+     */
+    private MirrorNode buildSingleRing(int ringSize, Properties props) {
+        RingTopologyStrategy ringStrategy = new RingTopologyStrategy(MINIMAL_RING_SIZE);
+
+        transferMirrorsToSubstructure(ringStrategy, ringSize);
+
+        MirrorNode ringHead = ringStrategy.buildStructure(ringSize, props);
+        if (ringHead != null) {
+            registerSubstructure(ringHead, ringStrategy);
+        }
+
+        return ringHead;
+    }
+
+    /**
+     * Verbindet Ringe mit LineTopologyStrategy-Brücken.
+     */
+    private void connectRingsWithBridges(Properties props) {
+        List<MirrorNode> ringHeads = findAllRingHeads();
+
+        for (int i = 0; i < ringHeads.size() - 1; i++) {
+            MirrorNode innerRingHead = ringHeads.get(i);
+            MirrorNode outerRingHead = ringHeads.get(i + 1);
+
+            createBridgeBetweenRings(innerRingHead, outerRingHead, props);
+        }
+    }
+
+    /**
+     * Erstellt eine Brücke zwischen zwei Ringen mit LineTopologyStrategy.
+     */
+    private void createBridgeBetweenRings(MirrorNode innerRingHead, MirrorNode outerRingHead, Properties props) {
+        LineTopologyStrategy bridgeStrategy = new LineTopologyStrategy(RING_BRIDGE_LENGTH);
+
+        transferMirrorsToSubstructure(bridgeStrategy, RING_BRIDGE_LENGTH);
+
+        MirrorNode bridgeHead = bridgeStrategy.buildStructure(RING_BRIDGE_LENGTH, props);
+        if (bridgeHead != null) {
+            registerSubstructure(bridgeHead, bridgeStrategy);
+
+            // Verbinde einer Bridge mit Ring-Knoten (auf StructureNode-Ebene)
+            List<MirrorNode> innerBridgeNodes = findBridgeNodesInRing(innerRingHead, RING_BRIDGE_STEP_ON_RING);
+            List<MirrorNode> outerBridgeNodes = findBridgeNodesInRing(outerRingHead, RING_BRIDGE_STEP_ON_RING, RING_BRIDGE_OFFSET);
+
+            if (!innerBridgeNodes.isEmpty() && !outerBridgeNodes.isEmpty()) {
+                List<MirrorNode> bridgeEndpoints = findLineEndpoints(bridgeHead);
+                if (bridgeEndpoints.size() >= 2) {
+                    connectNodesThroughStructure(innerBridgeNodes.get(0), bridgeEndpoints.get(0));
+                    connectNodesThroughStructure(outerBridgeNodes.get(0), bridgeEndpoints.get(1));
+                }
+            }
+        }
+    }
+
+    /**
+     * Erstellt externe Baum-Strukturen mit DepthLimitTreeTopologyStrategy.
+     */
+    private void attachExternalTreeStructures(int mirrorsForExternal, Properties props) {
+        if (mirrorsForExternal <= 0) return;
+
+        List<MirrorNode> bridgePoints = findBridgeAttachmentPoints();
+        if (bridgePoints.isEmpty()) return;
+
+        int mirrorsPerTree = Math.max(2, mirrorsForExternal / Math.min(bridgePoints.size(), 3));
+        int treesCreated = 0;
+
+        for (MirrorNode bridgePoint : bridgePoints) {
+            if (mirrorsForExternal == 0 || treesCreated >= 3) break;
+
+            MirrorNode treeHead = buildExternalTree(Math.min(mirrorsPerTree, mirrorsForExternal), props);
+            if (treeHead != null) {
+                // Verbinde über eine Brücke mit dem Ring
+                createExternalBridge(bridgePoint, treeHead, props);
+                mirrorsForExternal -= Math.min(mirrorsPerTree, mirrorsForExternal);
+                treesCreated++;
+            }
+        }
+    }
+
+    /**
+     * Erstellt einen einzelnen externen Baum mit DepthLimitTreeTopologyStrategy.
+     */
+    private MirrorNode buildExternalTree(int treeSize, Properties props) {
+        DepthLimitTreeTopologyStrategy treeStrategy = new DepthLimitTreeTopologyStrategy(EXTERN_TREE_MAX_DEPTH);
+
+        transferMirrorsToSubstructure(treeStrategy, treeSize);
+
+        MirrorNode treeHead = treeStrategy.buildStructure(treeSize, props);
+        if (treeHead != null) {
+            registerSubstructure(treeHead, treeStrategy);
+        }
+
+        return treeHead;
+    }
+
+    /**
+     * Erstellt eine Brücke zu einem externen Baum.
+     */
+    private void createExternalBridge(MirrorNode ringNode, MirrorNode treeHead, Properties props) {
+        LineTopologyStrategy bridgeStrategy = new LineTopologyStrategy(BRIDGE_TO_EXTERN_LENGTH);
+
+        transferMirrorsToSubstructure(bridgeStrategy, BRIDGE_TO_EXTERN_LENGTH);
+
+        MirrorNode bridgeHead = bridgeStrategy.buildStructure(BRIDGE_TO_EXTERN_LENGTH, props);
+        if (bridgeHead != null) {
+            registerSubstructure(bridgeHead, bridgeStrategy);
+
+            // Verbinde Ring → Brücke → Baum
+            List<MirrorNode> bridgeEndpoints = findLineEndpoints(bridgeHead);
+            if (bridgeEndpoints.size() >= 2) {
+                connectNodesThroughStructure(ringNode, bridgeEndpoints.get(0));
+                connectNodesThroughStructure(bridgeEndpoints.get(1), treeHead);
+            }
+        }
+    }
+
+    // ===== HILFSMETHODEN =====
+
+    /**
+     * Registriert eine Substruktur über BuildAsSubstructure.nodeToSubstructure.
+     */
+    private void registerSubstructure(MirrorNode headNode, BuildAsSubstructure substructure) {
+        setSubstructureForNode(headNode, substructure);
+    }
+
+    /**
+     * Überträgt verfügbare Mirrors an eine Substruktur.
+     */
+    private void transferMirrorsToSubstructure(BuildAsSubstructure substructure, int mirrorCount) {
+        // Vereinfachte Implementierung - in der Realität wird hier der Mirror-Iterator verwendet
+        for (int i = 0; i < mirrorCount && hasNextMirror(); i++) {
+            Mirror mirror = getNextMirror();
+            // Substruktur würde Mirror über ihren eigenen Iterator erhalten
+        }
+    }
+
+    /**
+     * Verbindet zwei Knoten auf Struktur-Planungsebene.
+     */
+    private void connectNodesThroughStructure(MirrorNode from, MirrorNode to) {
+        if (from != null && to != null) {
+            from.addChild(to);
+            to.setParent(from);
+        }
+    }
+
+    /**
+     * Findet alle Ring-Head-Nodes.
+     */
+    private List<MirrorNode> findAllRingHeads() {
+        List<MirrorNode> ringHeads = new ArrayList<>();
+        for (Map.Entry<MirrorNode, BuildAsSubstructure> entry : getNodeToSubstructureMapping().entrySet()) {
+            if (entry.getValue() instanceof RingTopologyStrategy) {
+                ringHeads.add(entry.getKey());
+            }
+        }
+        return ringHeads;
+    }
+
+    /**
+     * Findet Bridge-Attachment-Points in den Ringen.
+     */
+    private List<MirrorNode> findBridgeAttachmentPoints() {
+        List<MirrorNode> attachmentPoints = new ArrayList<>();
+        for (MirrorNode ringHead : findAllRingHeads()) {
+            List<MirrorNode> bridgeNodes = findBridgeNodesInRing(ringHead, RING_BRIDGE_STEP_ON_RING);
+            attachmentPoints.addAll(bridgeNodes);
+        }
+        return attachmentPoints;
+    }
+
+    /**
+     * Findet Bridge-Knoten in einem Ring.
+     */
+    private List<MirrorNode> findBridgeNodesInRing(MirrorNode ringHead, int step) {
+        return findBridgeNodesInRing(ringHead, step, 0);
+    }
+
+    /**
+     * Findet Bridge-Knoten in einem Ring mit Offset.
+     */
+    private List<MirrorNode> findBridgeNodesInRing(MirrorNode ringHead, int step, int offset) {
+        List<MirrorNode> bridgeNodes = new ArrayList<>();
+        List<MirrorNode> allRingNodes = collectAllRingNodes(ringHead);
+
+        for (int i = offset; i < allRingNodes.size(); i += step) {
+            bridgeNodes.add(allRingNodes.get(i));
+        }
+
+        return bridgeNodes;
+    }
+
+    /**
+     * Sammelt alle Knoten eines Rings.
+     */
+    private List<MirrorNode> collectAllRingNodes(MirrorNode ringHead) {
+        return collectAllMirrorNodesFromStructure(ringHead);
+    }
+
+    /**
+     * Sammelt alle MirrorNodes aus einer Struktur-Hierarchie (type-safe).
+     * Verwendet Breadth-First-Traversierung mit visited-Set für Zyklusvermeidung.
+     *
+     * @param root Root-Node der zu durchsuchenden Struktur
+     * @return Alle MirrorNodes in der Struktur
+     */
+    private List<MirrorNode> collectAllMirrorNodesFromStructure(MirrorNode root) {
+        if (root == null) return List.of();
+
+        List<MirrorNode> allNodes = new ArrayList<>();
+        Set<MirrorNode> visited = new HashSet<>();
+        Queue<MirrorNode> queue = new ArrayDeque<>();
+
+        queue.offer(root);
+        visited.add(root);
+
+        while (!queue.isEmpty()) {
+            MirrorNode current = queue.poll();
+            allNodes.add(current);
+
+            // Type-safe Traversierung
+            for (MirrorNode child : getMirrorNodeChildren(current)) {
+                if (!visited.contains(child)) {
+                    visited.add(child);
+                    queue.offer(child);
+                }
+            }
+        }
+
+        return allNodes;
+    }
+
+    /**
+     * Konvertiert StructureNode-Kinder zu MirrorNode-Liste (type-safe).
+     * Filtert automatisch Nicht-MirrorNode-Instanzen heraus.
+     *
+     * @param structureNode Der StructureNode, dessen Kinder konvertiert werden sollen
+     * @return Liste aller MirrorNode-Kinder
+     */
+    private List<MirrorNode> getMirrorNodeChildren(StructureNode structureNode) {
+        if (structureNode == null) return List.of();
+
+        return structureNode.getChildren().stream()
+                .filter(child -> child instanceof MirrorNode)
+                .map(child -> (MirrorNode) child)
+                .toList();
+    }
+
+    /**
+     * Findet Endpunkte einer Linien-Struktur.
+     */
+    private List<MirrorNode> findLineEndpoints(MirrorNode lineHead) {
+        List<MirrorNode> endpoints = new ArrayList<>();
+
+        for (MirrorNode node : collectAllMirrorNodesFromStructure(lineHead)) {
+            int connectionCount = getMirrorNodeChildren(node).size() + (node.getParent() != null ? 1 : 0);
+            if (connectionCount <= 1) {
+                endpoints.add(node);
+            }
+        }
+
+        return endpoints;
+    }
+
+    /**
+     * Prüft, ob eine Substruktur der zentrale Ring ist.
+     */
+    private boolean isCentralRing(BuildAsSubstructure substructure) {
+        // Der zentrale Ring ist die Root-Substruktur
+        MirrorNode root = getCurrentStructureRoot();
+        if (root != null) {
+            BuildAsSubstructure rootSubstructure = findSubstructureForNode(root);
+            return rootSubstructure == substructure;
+        }
+        return false;
     }
 
     /**
@@ -335,331 +656,6 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         return Math.min(maxTrees, externalMirrors / minMirrorsPerTree);
     }
 
-    // ===== SCHNEEFLOCKEN-AUFBAU METHODEN =====
-
-    /**
-     * Erstellt den zentralen Ring mit RingTopologyStrategy.
-     */
-    private MirrorNode buildCentralRing(int ringMirrors, Properties props) {
-        int centralRingSize = Math.max(MINIMAL_RING_SIZE, ringMirrors / MAX_RING_LAYERS);
-
-        RingTopologyStrategy centralRingStrategy = new RingTopologyStrategy(MINIMAL_RING_SIZE, true);
-
-        // Übertrage Mirrors an die Ring-Strategie
-        transferMirrorsToSubstructure(centralRingStrategy, centralRingSize);
-
-        // Baue Ring-Struktur
-        MirrorNode centralRingHead = centralRingStrategy.buildStructure(centralRingSize, props);
-        if (centralRingHead != null) {
-            // Registriere Substruktur über BuildAsSubstructure
-            registerSubstructure(centralRingHead, centralRingStrategy);
-            setCurrentStructureRoot(centralRingHead);
-        }
-
-        return centralRingHead;
-    }
-
-    /**
-     * Erstellt konzentrische Ring-Schichten um den zentralen Ring.
-     */
-    private void buildConcentricRingLayers(MirrorNode centralRingHead, int remainingMirrors, Properties props) {
-        int ringsBuilt = 1; // Zentraler Ring bereits erstellt
-        int mirrorsPerRing = Math.max(MINIMAL_RING_SIZE, remainingMirrors / (MAX_RING_LAYERS - 1));
-
-        while (ringsBuilt < MAX_RING_LAYERS && remainingMirrors >= MINIMAL_RING_SIZE) {
-            int mirrorsForThisRing = Math.min(mirrorsPerRing, remainingMirrors);
-            if (mirrorsForThisRing < MINIMAL_RING_SIZE) break;
-
-            MirrorNode ringHead = buildSingleRing(mirrorsForThisRing, props);
-            if (ringHead != null) {
-                remainingMirrors -= mirrorsForThisRing;
-                ringsBuilt++;
-            }
-        }
-    }
-
-    /**
-     * Erstellt einen einzelnen Ring mit RingTopologyStrategy.
-     */
-    private MirrorNode buildSingleRing(int ringSize, Properties props) {
-        RingTopologyStrategy ringStrategy = new RingTopologyStrategy(MINIMAL_RING_SIZE, true);
-
-        transferMirrorsToSubstructure(ringStrategy, ringSize);
-
-        MirrorNode ringHead = ringStrategy.buildStructure(ringSize, props);
-        if (ringHead != null) {
-            registerSubstructure(ringHead, ringStrategy);
-        }
-
-        return ringHead;
-    }
-
-    /**
-     * Verbindet Ringe mit LineTopologyStrategy-Brücken.
-     */
-    private void connectRingsWithBridges(Properties props) {
-        List<MirrorNode> ringHeads = findAllRingHeads();
-
-        for (int i = 0; i < ringHeads.size() - 1; i++) {
-            MirrorNode innerRingHead = ringHeads.get(i);
-            MirrorNode outerRingHead = ringHeads.get(i + 1);
-
-            createBridgeBetweenRings(innerRingHead, outerRingHead, props);
-        }
-    }
-
-    /**
-     * Erstellt eine Brücke zwischen zwei Ringen mit LineTopologyStrategy.
-     */
-    private void createBridgeBetweenRings(MirrorNode innerRingHead, MirrorNode outerRingHead, Properties props) {
-        LineTopologyStrategy bridgeStrategy = new LineTopologyStrategy(RING_BRIDGE_LENGTH);
-
-        transferMirrorsToSubstructure(bridgeStrategy, RING_BRIDGE_LENGTH);
-
-        MirrorNode bridgeHead = bridgeStrategy.buildStructure(RING_BRIDGE_LENGTH, props);
-        if (bridgeHead != null) {
-            registerSubstructure(bridgeHead, bridgeStrategy);
-
-            // Verbinde einem Bridge mit Ring-Knoten (auf StructureNode-Ebene)
-            List<MirrorNode> innerBridgeNodes = findBridgeNodesInRing(innerRingHead, RING_BRIDGE_STEP_ON_RING);
-            List<MirrorNode> outerBridgeNodes = findBridgeNodesInRing(outerRingHead, RING_BRIDGE_STEP_ON_RING, RING_BRIDGE_OFFSET);
-
-            if (!innerBridgeNodes.isEmpty() && !outerBridgeNodes.isEmpty()) {
-                List<MirrorNode> bridgeEndpoints = findLineEndpoints(bridgeHead);
-                if (bridgeEndpoints.size() >= 2) {
-                    connectNodesThroughStructure(innerBridgeNodes.get(0), bridgeEndpoints.get(0));
-                    connectNodesThroughStructure(outerBridgeNodes.get(0), bridgeEndpoints.get(1));
-                }
-            }
-        }
-    }
-
-    /**
-     * Erstellt externe Baum-Strukturen mit DepthLimitTreeTopologyStrategy.
-     */
-    private void attachExternalTreeStructures(int mirrorsForExternal, Properties props) {
-        if (mirrorsForExternal <= 0) return;
-
-        List<MirrorNode> bridgePoints = findBridgeAttachmentPoints();
-        if (bridgePoints.isEmpty()) return;
-
-        int mirrorsPerTree = Math.max(2, mirrorsForExternal / Math.min(bridgePoints.size(), 3));
-        int treesCreated = 0;
-
-        for (MirrorNode bridgePoint : bridgePoints) {
-            if (mirrorsForExternal == 0 || treesCreated >= 3) break;
-
-            MirrorNode treeHead = buildExternalTree(Math.min(mirrorsPerTree, mirrorsForExternal), props);
-            if (treeHead != null) {
-                // Verbinde über eine Brücke mit dem Ring
-                createExternalBridge(bridgePoint, treeHead, props);
-                mirrorsForExternal -= Math.min(mirrorsPerTree, mirrorsForExternal);
-                treesCreated++;
-            }
-        }
-    }
-
-    /**
-     * Erstellt einen einzelnen externen Baum mit DepthLimitTreeTopologyStrategy.
-     */
-    private MirrorNode buildExternalTree(int treeSize, Properties props) {
-        DepthLimitTreeTopologyStrategy treeStrategy = new DepthLimitTreeTopologyStrategy(EXTERN_TREE_MAX_DEPTH);
-
-        transferMirrorsToSubstructure(treeStrategy, treeSize);
-
-        MirrorNode treeHead = treeStrategy.buildStructure(treeSize, props);
-        if (treeHead != null) {
-            registerSubstructure(treeHead, treeStrategy);
-        }
-
-        return treeHead;
-    }
-
-    /**
-     * Erstellt eine Brücke zu einem externen Baum.
-     */
-    private void createExternalBridge(MirrorNode ringNode, MirrorNode treeHead, Properties props) {
-        LineTopologyStrategy bridgeStrategy = new LineTopologyStrategy(BRIDGE_TO_EXTERN_LENGTH);
-
-        transferMirrorsToSubstructure(bridgeStrategy, BRIDGE_TO_EXTERN_LENGTH);
-
-        MirrorNode bridgeHead = bridgeStrategy.buildStructure(BRIDGE_TO_EXTERN_LENGTH, props);
-        if (bridgeHead != null) {
-            registerSubstructure(bridgeHead, bridgeStrategy);
-
-            // Verbinde Ring → Brücke → Baum
-            List<MirrorNode> bridgeEndpoints = findLineEndpoints(bridgeHead);
-            if (bridgeEndpoints.size() >= 2) {
-                connectNodesThroughStructure(ringNode, bridgeEndpoints.get(0));
-                connectNodesThroughStructure(bridgeEndpoints.get(1), treeHead);
-            }
-        }
-    }
-
-    // ===== HILFSMETHODEN =====
-
-    /**
-     * Registriert eine Substruktur über BuildAsSubstructure.nodeToSubstructure.
-     */
-    private void registerSubstructure(MirrorNode headNode, BuildAsSubstructure substructure) {
-        getNodeToSubstructure().put(headNode, substructure);
-        addToStructureNodes(headNode);
-    }
-
-    /**
-     * Überträgt verfügbare Mirrors an eine Substruktur.
-     */
-    private void transferMirrorsToSubstructure(BuildAsSubstructure substructure, int mirrorCount) {
-        // Vereinfachte Implementierung - in der Realität wird hier der Mirror-Iterator verwendet
-        for (int i = 0; i < mirrorCount && hasNextMirror(); i++) {
-            Mirror mirror = getNextMirror();
-            // Substruktur würde Mirror über ihren eigenen Iterator erhalten
-        }
-    }
-
-    /**
-     * Verbindet zwei Knoten auf Struktur-Planungsebene.
-     */
-    private void connectNodesThroughStructure(MirrorNode from, MirrorNode to) {
-        if (from != null && to != null) {
-            from.addChild(to);
-            to.setParent(from);
-        }
-    }
-
-    /**
-     * Findet alle Ring-Head-Nodes.
-     */
-    private List<MirrorNode> findAllRingHeads() {
-        List<MirrorNode> ringHeads = new ArrayList<>();
-        for (Map.Entry<MirrorNode, BuildAsSubstructure> entry : getNodeToSubstructure().entrySet()) {
-            if (entry.getValue() instanceof RingTopologyStrategy) {
-                ringHeads.add(entry.getKey());
-            }
-        }
-        return ringHeads;
-    }
-
-    /**
-     * Findet Bridge-Attachment-Points in den Ringen.
-     */
-    private List<MirrorNode> findBridgeAttachmentPoints() {
-        List<MirrorNode> attachmentPoints = new ArrayList<>();
-        for (MirrorNode ringHead : findAllRingHeads()) {
-            List<MirrorNode> bridgeNodes = findBridgeNodesInRing(ringHead, RING_BRIDGE_STEP_ON_RING);
-            attachmentPoints.addAll(bridgeNodes);
-        }
-        return attachmentPoints;
-    }
-
-    /**
-     * Findet Bridge-Knoten in einem Ring.
-     */
-    private List<MirrorNode> findBridgeNodesInRing(MirrorNode ringHead, int step) {
-        return findBridgeNodesInRing(ringHead, step, 0);
-    }
-
-    /**
-     * Findet Bridge-Knoten in einem Ring mit Offset.
-     */
-    private List<MirrorNode> findBridgeNodesInRing(MirrorNode ringHead, int step, int offset) {
-        List<MirrorNode> bridgeNodes = new ArrayList<>();
-        List<MirrorNode> allRingNodes = collectAllRingNodes(ringHead);
-
-        for (int i = offset; i < allRingNodes.size(); i += step) {
-            bridgeNodes.add(allRingNodes.get(i));
-        }
-
-        return bridgeNodes;
-    }
-
-    /**
-     * Sammelt alle Knoten eines Rings.
-     */
-    private List<MirrorNode> collectAllRingNodes(MirrorNode ringHead) {
-        List<MirrorNode> ringNodes = new ArrayList<>();
-        Set<MirrorNode> visited = new HashSet<>();
-        collectRingNodesRecursive(ringHead, ringNodes, visited);
-        return ringNodes;
-    }
-
-    /**
-     * Sammelt Ring-Knoten rekursiv.
-     */
-    private void collectRingNodesRecursive(MirrorNode current, List<MirrorNode> ringNodes, Set<MirrorNode> visited) {
-        if (current == null || visited.contains(current)) return;
-
-        visited.add(current);
-        ringNodes.add(current);
-
-        // **TYPE-SAFE CAST**: StructureNode -> MirrorNode
-        for (StructureNode childStructureNode : current.getChildren()) {
-            if (childStructureNode instanceof MirrorNode mirrorChild) {
-                collectRingNodesRecursive(mirrorChild, ringNodes, visited);
-            }
-        }
-    }
-
-    /**
-     * Findet Endpunkte einer Linien-Struktur.
-     */
-    private List<MirrorNode> findLineEndpoints(MirrorNode lineHead) {
-        List<MirrorNode> endpoints = new ArrayList<>();
-        Set<MirrorNode> visited = new HashSet<>();
-        findLineEndpointsRecursive(lineHead, endpoints, visited);
-        return endpoints;
-    }
-
-    /**
-     * Findet Linien-Endpunkte rekursiv.
-     */
-    private void findLineEndpointsRecursive(MirrorNode current, List<MirrorNode> endpoints, Set<MirrorNode> visited) {
-        if (current == null || visited.contains(current)) return;
-
-        visited.add(current);
-
-        // Zähle alle Verbindungen (Kinder + Parent)
-        int childrenCount = current.getChildren().size();
-        int parentCount = current.getParent() != null ? 1 : 0;
-        int connectionCount = childrenCount + parentCount;
-
-        // Endpunkt = maximal eine Verbindung
-        if (connectionCount <= 1) {
-            endpoints.add(current);
-        }
-
-        // **TYPE-SAFE CAST**: StructureNode -> MirrorNode für rekursive Traversierung
-        for (StructureNode childStructureNode : current.getChildren()) {
-            if (childStructureNode instanceof MirrorNode mirrorChild) {
-                findLineEndpointsRecursive(mirrorChild, endpoints, visited);
-            }
-        }
-    }
-
-    /**
-     * Prüft, ob eine Substruktur der zentrale Ring ist.
-     */
-    private boolean isCentralRing(BuildAsSubstructure substructure) {
-        // Der zentrale Ring ist die Root-Substruktur
-        MirrorNode root = getCurrentStructureRoot();
-        if (root != null) {
-            BuildAsSubstructure rootSubstructure = getNodeToSubstructure().get(root);
-            return rootSubstructure == substructure;
-        }
-        return false;
-    }
-
-    /**
-     * Berechnet die ungefähre Link-Anzahl für die Schneeflocken-Struktur.
-     */
-    private int calculateApproximateLinks(int totalMirrors) {
-        int ringMirrors = (int) (totalMirrors * (1.0 - EXTERN_STRUCTURE_RATIO));
-        int externalMirrors = totalMirrors - ringMirrors;
-
-        // Ring-Links + Bridge-Links + Baum-Links
-        return ringMirrors + (MAX_RING_LAYERS * RING_BRIDGE_LENGTH) + Math.max(0, externalMirrors - 1);
-    }
-
     /**
      * Berechnet die Mirror-Verteilung zwischen Ringen und externen Strukturen.
      */
@@ -687,113 +683,14 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      */
     private boolean isSnowflakeStructureIntact() {
         // Mindestens ein zentraler Ring muss vorhanden sein
-        return getCurrentStructureRoot() != null && !getNodeToSubstructure().isEmpty();
-    }
-
-    // ===== ZUGRIFFS-METHODEN FÜR BuildAsSubstructure =====
-
-    /**
-     * Gibt Zugriff auf nodeToSubstructure für Subklassen.
-     */
-    protected Map<MirrorNode, BuildAsSubstructure> getNodeToSubstructure() {
-        // Diese Methode müsste in BuildAsSubstructure als protected implementiert werden
-        // für jetzt als Platzhalter
-        return new HashMap<>(); // Temporärer Fallback
+        return getCurrentStructureRoot() != null && !getNodeToSubstructureMapping().isEmpty();
     }
 
     @Override
     public String toString() {
         return "SnowflakeTopologyStrategy{" +
-                "totalSubstructures=" + getNodeToSubstructure().size() +
+                "totalSubstructures=" + getNodeToSubstructureMapping().size() +
                 ", totalNodes=" + getAllStructureNodes().size() +
                 '}';
-    }
-
-    // ===== TYPE-SAFE HELPER METHODEN =====
-
-    /**
-     * Konvertiert StructureNode-Kinder zu MirrorNode-Liste (type-safe).
-     * Filtert automatisch nicht-MirrorNode-Instanzen heraus.
-     *
-     * @param structureNode Der StructureNode, dessen Kinder konvertiert werden sollen
-     * @return Liste aller MirrorNode-Kinder
-     */
-    private List<MirrorNode> getMirrorNodeChildren(StructureNode structureNode) {
-        if (structureNode == null) return List.of();
-
-        return structureNode.getChildren().stream()
-                .filter(child -> child instanceof MirrorNode)
-                .map(child -> (MirrorNode) child)
-                .toList();
-    }
-
-    /**
-     * Sammelt alle MirrorNodes aus einer Struktur-Hierarchie (type-safe).
-     * Verwendet Breadth-First-Traversierung mit visited-Set für Zyklusvermeidung.
-     *
-     * @param root Root-Node der zu durchsuchenden Struktur
-     * @return Alle MirrorNodes in der Struktur
-     */
-    private List<MirrorNode> collectAllMirrorNodesFromStructure(MirrorNode root) {
-        if (root == null) return List.of();
-
-        List<MirrorNode> allNodes = new ArrayList<>();
-        Set<MirrorNode> visited = new HashSet<>();
-        Queue<MirrorNode> queue = new ArrayDeque<>();
-
-        queue.offer(root);
-        visited.add(root);
-
-        while (!queue.isEmpty()) {
-            MirrorNode current = queue.poll();
-            allNodes.add(current);
-
-            // Type-safe Traversierung
-            for (MirrorNode child : getMirrorNodeChildren(current)) {
-                if (!visited.contains(child)) {
-                    visited.add(child);
-                    queue.offer(child);
-                }
-            }
-        }
-
-        return allNodes;
-    }
-
-    /**
-     * Sammelt alle Knoten eines Rings - VEREINFACHT.
-     */
-    private List<MirrorNode> collectAllRingNodes(MirrorNode ringHead) {
-        return collectAllMirrorNodesFromStructure(ringHead);
-    }
-
-    /**
-     * Findet Endpunkte einer Linien-Struktur - VEREINFACHT.
-     */
-    private List<MirrorNode> findLineEndpoints(MirrorNode lineHead) {
-        List<MirrorNode> endpoints = new ArrayList<>();
-
-        for (MirrorNode node : collectAllMirrorNodesFromStructure(lineHead)) {
-            int connectionCount = getMirrorNodeChildren(node).size() + (node.getParent() != null ? 1 : 0);
-            if (connectionCount <= 1) {
-                endpoints.add(node);
-            }
-        }
-
-        return endpoints;
-    }
-
-    /**
-     * Findet Bridge-Knoten in einem Ring mit Offset - VEREINFACHT.
-     */
-    private List<MirrorNode> findBridgeNodesInRing(MirrorNode ringHead, int step, int offset) {
-        List<MirrorNode> bridgeNodes = new ArrayList<>();
-        List<MirrorNode> allRingNodes = collectAllRingNodes(ringHead);
-
-        for (int i = offset; i < allRingNodes.size(); i += step) {
-            bridgeNodes.add(allRingNodes.get(i));
-        }
-
-        return bridgeNodes;
     }
 }
