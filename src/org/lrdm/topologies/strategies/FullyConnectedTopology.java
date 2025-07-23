@@ -1,13 +1,10 @@
 package org.lrdm.topologies.strategies;
 
-import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.*;
 import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
-import org.lrdm.topologies.node.StructureNode;
-import org.lrdm.topologies.node.StructureNode.StructureType;
 
 import java.util.*;
 
@@ -305,7 +302,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
     /**
      * Factory-Methode für baum-spezifische MirrorNode-Erstellung.
-     * Überschreibt BuildAsSubstructure für TreeMirrorNode-Erstellung.
+     * Überschreibt BuildAsSubstructure für die TreeMirrorNode-Erstellung.
      *
      * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
      * @return Neuer TreeMirrorNode

@@ -48,9 +48,6 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
     /** Bevorzugte Strategie für Knoteneinfügung */
     private DepthInsertionStrategy insertionStrategy = DepthInsertionStrategy.DEPTH_FIRST;
 
-    /** Minimale Anzahl an Knoten für einen funktionsfähigen tiefen-beschränkten Baum */
-    private int minTreeSize = 1;
-
     // ===== KONSTRUKTOREN =====
 
     /**
