@@ -3,10 +3,13 @@ package org.lrdm.examples;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
+import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.strategies.DepthLimitTreeTopologyStrategy;
 import org.lrdm.topologies.strategies.FullyConnectedTopology;
 
 import java.util.List;
+
+import static java.lang.Math.min;
 
 /**Simple simulation runner.
  * 
@@ -33,7 +36,24 @@ public class ExampleSimulationDepthLimitTree {
 		effector.setStrategy(new FullyConnectedTopology(), 20);
 		effector.setStrategy(new DepthLimitTreeTopologyStrategy(), 40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
-		effector.setStrategy(new DepthLimitTreeTopologyStrategy(), 80);
+		DepthLimitTreeTopologyStrategy topoS = new DepthLimitTreeTopologyStrategy();
+		topoS.setMaxDepth(3);
+		effector.setStrategy(topoS, 80);
+
+		int startMirrors = 15;
+		int count = 0;
+		for(int t = 100; t < 200; t += 10) {
+			effector.setMirrors(t,startMirrors - count++);
+		}
+
+		startMirrors = 5;
+		count = 0;
+		for(int t = 200; t < 300; t += 10) {
+			effector.setMirrors(t,startMirrors + count);
+			count += min(1,count);
+		}
+
+		effector.setTargetLinksPerMirror(4,320);
 
 		//use this code to manually run the simulation step by step
 		List<Probe> probes = sim.getProbes();

@@ -5,8 +5,11 @@ import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
 import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.strategies.FullyConnectedTopology;
+import org.lrdm.topologies.strategies.TopologyStrategy;
 
 import java.util.List;
+
+import static java.lang.Math.min;
 
 /**Simple simulation runner.
  * 
@@ -33,7 +36,24 @@ public class ExampleSimulationBalancedTree {
 		effector.setStrategy(new FullyConnectedTopology(), 20);
 		effector.setStrategy(new BalancedTreeTopologyStrategy(), 40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
-		effector.setStrategy(new BalancedTreeTopologyStrategy(), 80);
+		BalancedTreeTopologyStrategy topoS = new BalancedTreeTopologyStrategy();
+		topoS.setTargetLinksPerNode(5);
+		effector.setStrategy(topoS, 80);
+
+		int startMirrors = 15;
+		int count = 0;
+		for(int t = 100; t < 200; t += 10) {
+			effector.setMirrors(t,startMirrors - count++);
+		}
+
+		startMirrors = 5;
+		count = 0;
+		for(int t = 200; t < 300; t += 10) {
+			effector.setMirrors(t,startMirrors + count);
+			count += min(1,count);
+		}
+
+		effector.setTargetLinksPerMirror(3,320);
 
 		//use this code to manually run the simulation step by step
 		List<Probe> probes = sim.getProbes();

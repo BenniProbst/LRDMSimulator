@@ -8,6 +8,8 @@ import org.lrdm.topologies.strategies.FullyConnectedTopology;
 
 import java.util.List;
 
+import static java.lang.Math.min;
+
 /**Simple simulation runner.
  * 
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
@@ -34,6 +36,19 @@ public class ExampleSimulationNConnected {
 		effector.setStrategy(new NConnectedTopology(), 40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
 		effector.setStrategy(new NConnectedTopology(), 80);
+
+		int startMirrors = 15;
+		int count = 0;
+		for(int t = 100; t < 200; t += 10) {
+			effector.setMirrors(t,startMirrors - count++);
+		}
+
+		startMirrors = 5;
+		count = 0;
+		for(int t = 200; t < 300; t += 10) {
+			effector.setMirrors(t,startMirrors + count);
+			count += min(1,count);
+		}
 
 		//use this code to manually run the simulation step by step
 		List<Probe> probes = sim.getProbes();
