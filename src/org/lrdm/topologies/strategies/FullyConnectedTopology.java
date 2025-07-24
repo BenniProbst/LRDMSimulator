@@ -7,6 +7,7 @@ import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * A {@link TopologyStrategy} which links each {@link Mirror} of the {@link Network} with each other mirror.
@@ -143,55 +144,103 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         return actuallyAdded;
     }
 
+
     /**
-     * Entfernt Knoten aus einer bestehenden vollständig vernetzten Struktur.
-     * Da in einer vollständigen Vernetzung alle Knoten gleich wichtig sind,
-     * können beliebige Knoten entfernt werden (außer der Root).
+     * **PLANUNGSEBENE**: Entfernt Knoten aus der vollständig vernetzten Struktur.
+     * Fully-Connected-Entfernung: Entfernt bevorzugt Knoten mit höchsten IDs (deterministische Auswahl).
+     * Da alle Nicht-Root-Knoten gleichwertig sind, werden Knoten nach ID-Priorität entfernt.
+     * NUR STRUKTURPLANUNG - keine Mirror-Links!
      *
      * @param nodesToRemove Anzahl der zu entfernenden Knoten
      * @return Anzahl der tatsächlich entfernten Knoten
      */
     @Override
     protected int removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0 || getAllStructureNodes().isEmpty()) {
-            return 0;
-        }
+        if (nodesToRemove <= 0) return 0;
+
+        List<FullyConnectedMirrorNode> fullyConnectedNodes = getAllFullyConnectedNodes();
 
         // Sammle alle Knoten außer Root für die Entfernung
-        List<FullyConnectedMirrorNode> candidatesForRemoval = new ArrayList<>();
+        List<FullyConnectedMirrorNode> candidatesForRemoval = fullyConnectedNodes.stream()
+                .filter(node -> node != getCurrentStructureRoot()) // Root nie entfernen
+                .filter(node -> !node.isHead()) // Head-Knoten bevorzugt beibehalten
+                .collect(Collectors.toList());
 
-        for (MirrorNode node : getAllStructureNodes()) {
-            // Root-Node nie entfernen, alle anderen sind gleichwertige Kandidaten
-            if (node != getCurrentStructureRoot() && node instanceof FullyConnectedMirrorNode fcNode) {
-                candidatesForRemoval.add(fcNode);
-            }
+        // Fallback: Wenn keine Nicht-Head-Kandidaten verfügbar, verwende alle Nicht-Root-Knoten
+        if (candidatesForRemoval.isEmpty()) {
+            candidatesForRemoval = fullyConnectedNodes.stream()
+                    .filter(node -> node != getCurrentStructureRoot())
+                    .collect(Collectors.toList());
         }
 
         // Begrenze auf verfügbare Anzahl
         int actualRemovalCount = Math.min(nodesToRemove, candidatesForRemoval.size());
+        if (actualRemovalCount == 0) return 0;
 
-        if (actualRemovalCount == 0) {
-            return 0;
-        }
-
-        // Sortiere nach ID (höchste zuerst) für deterministische Entfernung
+        // **FULLY-CONNECTED-SPEZIFISCH**: Sortiere nach ID (höchste zuerst) für deterministische Entfernung
         candidatesForRemoval.sort((node1, node2) -> Integer.compare(node2.getId(), node1.getId()));
 
-        // Entferne die ersten N Kandidaten
-        List<MirrorNode> nodesToRemoveList = new ArrayList<>();
+        int actuallyRemoved = 0;
+
+        // **NUR PLANUNGSEBENE**: Entferne die ersten N Kandidaten
         for (int i = 0; i < actualRemovalCount; i++) {
             FullyConnectedMirrorNode nodeToRemove = candidatesForRemoval.get(i);
 
-            // Entferne alle StructureNode-Verbindungen zu diesem Knoten
-            removeNodeFromFullyConnectedStructure(nodeToRemove);
+            // 1. **NUR STRUKTURPLANUNG**: Entferne alle StructureNode-Verbindungen
+            removeNodeFromFullyConnectedStructuralPlanning(nodeToRemove);
 
-            nodesToRemoveList.add(nodeToRemove);
+            // 2. Entferne aus BuildAsSubstructure-Verwaltung
+            removeFromStructureNodes(nodeToRemove);
+
+            actuallyRemoved++;
         }
 
-        // Bereinige die StructureNode-Verwaltung
-        cleanupStructureNodes(nodesToRemoveList);
+        return actuallyRemoved;
+    }
 
-        return actualRemovalCount;
+    /**
+     * **NUR PLANUNGSEBENE**: Entfernt einen Knoten vollständig aus der vollständig vernetzten Struktur.
+     * Bereinigt alle bidirektionalen StructureNode-Verbindungen zu anderen Knoten.
+     * Arbeitet ohne Zeitbezug - nur strukturelle Fully-Connected-Änderungen.
+     *
+     * @param nodeToRemove Der zu entfernende FullyConnectedMirrorNode
+     */
+    private void removeNodeFromFullyConnectedStructuralPlanning(FullyConnectedMirrorNode nodeToRemove) {
+        if (nodeToRemove == null) return;
+
+        // Sammle alle verbundenen Knoten vor der Trennung
+        Set<FullyConnectedMirrorNode> connectedNodes = nodeToRemove.getConnectedNodes();
+
+        // **NUR STRUKTURPLANUNG**: Entferne bidirektionale StructureNode-Verbindungen
+        for (FullyConnectedMirrorNode connectedNode : connectedNodes) {
+            // Entferne nodeToRemove aus den Kindern von connectedNode
+            connectedNode.removeChild(nodeToRemove);
+            // Entferne connectedNode aus den Kindern von nodeToRemove
+            nodeToRemove.removeChild(connectedNode);
+        }
+
+        // Parent-Verbindung trennen (falls vorhanden)
+        if (nodeToRemove.getParent() != null) {
+            nodeToRemove.getParent().removeChild(nodeToRemove);
+            nodeToRemove.setParent(null);
+        }
+
+        // KEINE Mirror-Link-Bereinigung hier! Nur Strukturplanung!
+    }
+
+// ===== TYPSICHERE HILFSMETHODEN =====
+
+    /**
+     * Gibt alle Fully-Connected-Knoten als typisierte Liste zurück.
+     * Erweitert die BuildAsSubstructure-Funktionalität um Typ-Sicherheit.
+     *
+     * @return Liste aller FullyConnectedMirrorNodes in der Struktur
+     */
+    private List<FullyConnectedMirrorNode> getAllFullyConnectedNodes() {
+        return getAllStructureNodes().stream()
+                .filter(node -> node instanceof FullyConnectedMirrorNode)
+                .map(node -> (FullyConnectedMirrorNode) node)
+                .collect(Collectors.toList());
     }
 
     /**
