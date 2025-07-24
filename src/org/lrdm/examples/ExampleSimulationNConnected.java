@@ -3,6 +3,7 @@ package org.lrdm.examples;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
+import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
 import org.lrdm.topologies.strategies.NConnectedTopology;
 import org.lrdm.topologies.strategies.FullyConnectedTopology;
 
@@ -49,6 +50,8 @@ public class ExampleSimulationNConnected {
 			effector.setMirrors(t,startMirrors + count);
 			count += min(1,count);
 		}
+
+		effector.setTargetLinksPerMirror(6,320);
 
 		//use this code to manually run the simulation step by step
 		List<Probe> probes = sim.getProbes();
