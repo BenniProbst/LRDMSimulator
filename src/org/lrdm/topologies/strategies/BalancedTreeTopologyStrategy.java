@@ -91,7 +91,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         }
 
         // 2. Baue balancierte Struktur mit Breadth-First für optimale Balance
-        buildBalancedTreeBreadthFirst(root, totalNodes - 1, targetLinksPerNode, 0, props);
+        buildBalancedTreeBreadthFirst(root, totalNodes - 1, targetLinksPerNode, props);
 
         return root;
     }
@@ -357,14 +357,13 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      * Baut die balancierte Baum-Struktur mit Breadth-First-Ansatz auf.
      * Ermöglicht optimale Verteilung ohne strukturelle Limitierungen.
      *
-     * @param root Root-Node der Struktur
+     * @param root           Root-Node der Struktur
      * @param remainingNodes Anzahl der noch zu verbindenden Knoten
-     * @param linksPerNode Maximale Links pro Knoten
-     * @param simTime Aktuelle Simulationszeit (für zukünftige Verwendung)
-     * @param props Properties der Simulation
+     * @param linksPerNode   Maximale Links pro Knoten
+     * @param props          Properties der Simulation
      */
     private void buildBalancedTreeBreadthFirst(BalancedTreeMirrorNode root, int remainingNodes,
-                                               int linksPerNode, int simTime, Properties props) {
+                                               int linksPerNode, Properties props) {
         if (remainingNodes <= 0) return;
 
         Queue<BalancedTreeMirrorNode> parentQueue = new LinkedList<>();

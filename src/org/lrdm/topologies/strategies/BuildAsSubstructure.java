@@ -737,30 +737,35 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     /**
      * Baut die tatsächlichen Links zwischen den Mirrors basierend auf der StructureNode-Struktur auf.
      * Erstellt für jede StructureNode-Verbindung einen entsprechenden Mirror-Link.
+     * Validiert die Typkompatibilität zwischen Root-Node und StructureType.
      *
-     * @param root    Die Root-Node der Struktur
-     * @param props   Simulation Properties
+     * @param root Die Root-Node der Struktur
+     * @param props Simulation Properties
      * @param simTime Zeitpunkt der Simulation
+     * @param structureType Der erwartete StructureType für Validierung
      * @return Set aller erstellten Links
+     * @throws IllegalStateException wenn Root-Node-Typ nicht mit StructureType kompatibel ist
      */
+
     protected Set<Link> buildAndUpdateLinks(MirrorNode root, Properties props, int simTime, StructureNode.StructureType structureType) {
-        Set<Link> allLinks = new HashSet<>();
+        // **TYPKOMPATIBILITÄT VALIDIEREN**: Root-Node-Typ muss mit StructureType kompatibel sein
+        validateNodeTypeCompatibility(root, structureType);
 
-        if (!(root instanceof FullyConnectedMirrorNode fcRoot)) {
-            return allLinks;
-        }
-
-        // Sammle alle Knoten in der Struktur
-        List<FullyConnectedMirrorNode> nodeList = fcRoot.getAllNodesInStructure(structureType, fcRoot)
+        // Sammle alle Knoten in der Struktur (generisch für alle Node-Typen)
+        List<MirrorNode> nodeList = root.getAllNodesInStructure(structureType, root)
                 .stream()
-                .filter(node -> node instanceof FullyConnectedMirrorNode)
-                .map(node -> (FullyConnectedMirrorNode) node).distinct().toList();
+                .filter(node -> node instanceof MirrorNode)
+                .map(node -> (MirrorNode) node)
+                .distinct()
+                .toList();
+
+        Set<Link> allLinks = new HashSet<>();
 
         // Erstelle Links zwischen allen Paaren von Knoten
         for (int i = 0; i < nodeList.size(); i++) {
-            FullyConnectedMirrorNode node1 = nodeList.get(i);
+            MirrorNode node1 = nodeList.get(i);
 
-            for (FullyConnectedMirrorNode node2 : nodeList) {
+            for (MirrorNode node2 : nodeList) {
                 //self connect is forbidden
                 if (node1.equals(node2)) continue;
 
@@ -811,6 +816,35 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         return allLinks;
     }
+
+    /**
+     * Validiert, ob der gegebene Root-Node-Typ mit dem erwarteten StructureType kompatibel ist.
+     * Wirft eine IllegalStateException bei Inkompatibilität.
+     *
+     * @param root Der Root-MirrorNode
+     * @param expectedStructureType Der erwartete StructureType
+     * @throws IllegalStateException wenn die Typen nicht kompatibel sind
+     */
+    private void validateNodeTypeCompatibility(MirrorNode root, StructureNode.StructureType expectedStructureType) {
+        // Sammle alle Strukturtypen des Root-Nodes
+        Set<StructureNode.StructureType> rootNodeTypes = root.getNodeTypes();
+
+        // Prüfe, ob der erwartete StructureType in den Node-Typen enthalten ist
+        if (!rootNodeTypes.contains(expectedStructureType)) {
+            String nodeTypesString = rootNodeTypes.stream()
+                    .map(Enum::name)
+                    .collect(Collectors.joining(", "));
+
+            throw new IllegalStateException(
+                    String.format("Node-Typ-Inkompatibilität: Root-Node (ID: %d, Klasse: %s) hat Typen [%s], " +
+                                    "aber StructureType %s wurde erwartet",
+                            root.getId(),
+                            root.getClass().getSimpleName(),
+                            nodeTypesString,
+                            expectedStructureType.name()));
+        }
+    }
+
 
     // ===== OBSERVER PATTERN INTERFACES =====
 
