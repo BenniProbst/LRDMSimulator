@@ -248,7 +248,7 @@ public class StructureNode {
 
             // Head-Knoten stoppen hier - keine weitere Traversierung über Parent
             // Dies ermöglicht Substruktur-Abgrenzung bei verschachtelten Strukturen
-            if (current.isHead(typeId) && current.getId() == headId) continue;
+            if ((current.isHead(typeId) && current.getId() != this.getId()) || !current.getNodeTypes().contains(typeId)) continue;
 
             // Parent traversieren (wenn Typ-ID und Head-ID passen)
             if (current.parent != null) {
