@@ -8,7 +8,7 @@ import org.lrdm.topologies.strategies.FullyConnectedTopology;
 
 import java.util.List;
 
-import static java.lang.Math.min;
+import static java.lang.Math.max;
 
 /**Simple simulation runner.
  * 
@@ -47,7 +47,7 @@ public class ExampleSimulationLine {
 		count = 0;
 		for(int t = 200; t < 300; t += 10) {
 			effector.setMirrors(t,startMirrors + count);
-			count += min(1,count);
+			count += max(1,count);
 		}
 
 		//use this code to manually run the simulation step by step
