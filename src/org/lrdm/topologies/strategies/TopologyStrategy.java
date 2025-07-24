@@ -19,10 +19,10 @@ public abstract class TopologyStrategy {
 	}
 	public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
 		n.getLinks().forEach(Link::shutdown);
-		for(Mirror m:n.getMirrors()){
-			if(!m.isRoot())m.shutdown(simTime);
-		}
-		n.getMirrors().addAll(createMirrors(n.getNumMirrors()-1, simTime, props));
+		Set<Mirror> mirrorSet = n.getMirrors().stream()
+				.filter(mirror -> !mirror.isRoot()).collect(Collectors.toSet());
+		mirrorSet.forEach(mirror -> mirror.shutdown(simTime));
+		n.getMirrors().addAll(createMirrors(mirrorSet.size(), simTime, props));
 		return n.getLinks().stream().filter(Link::isActive).collect(Collectors.toSet());
 	}
 	public abstract void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime);
