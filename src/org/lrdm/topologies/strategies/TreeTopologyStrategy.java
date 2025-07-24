@@ -414,7 +414,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
                                                                Properties props, int simTime,
                                                                StructureNode.StructureType structureType) {
 
-        Set<Link> touchedLinks = initNetwork(n,props);
+        //Set<Link> touchedLinks = initNetwork(n,props);
 
 
         if (removeMirrors <= 0 || getCurrentStructureRoot() == null) {

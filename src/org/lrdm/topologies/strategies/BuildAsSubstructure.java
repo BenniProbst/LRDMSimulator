@@ -320,7 +320,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     public Set<Link> initNetwork(Network n, Properties props) {
         initializeInternalState(n);
 
-        MirrorNode root = buildStructure(n.getNumMirrors(), props);
+        int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
+                .filter(Mirror::isUsableForNetwork).count());
+        MirrorNode root = buildStructure(usableMirrorCount, props);
         if (root != null) {
             setCurrentStructureRoot(root);
             return buildAndUpdateLinks(root, props, 0, getCurrentStructureType());
@@ -389,7 +391,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         // Komplett neu initialisieren
         initializeInternalState(n);
 
-        MirrorNode root = buildStructure(n.getNumMirrors(), props);
+        int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
+                .filter(Mirror::isUsableForNetwork).count());
+        MirrorNode root = buildStructure(usableMirrorCount, props);
         if (root != null) {
             setCurrentStructureRoot(root);
             return buildAndUpdateLinks(root, props, simTime, getCurrentStructureType());
@@ -814,7 +818,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         }
 
         // alle Links müssen immer bekannt sein, um automatisch vom Netzwerk bereinigt zu werden (herunterfahren/crash)
-        network.getLinks().addAll(allLinks);
+        if(network != null && network.getLinks() != null) {
+            network.getLinks().addAll(allLinks);
+        }
 
         return allLinks;
     }
