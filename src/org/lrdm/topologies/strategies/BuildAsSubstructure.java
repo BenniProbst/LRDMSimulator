@@ -77,6 +77,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @return Die Root-Node der Struktur oder null, wenn noch nicht initialisiert
      */
     public final MirrorNode getCurrentStructureRoot() {
+        if (currentStructureRoot == null) {
+            throw new IllegalStateException("Current structure root is not initialized yet!");
+        }
         return currentStructureRoot;
     }
 
@@ -554,30 +557,24 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         // 1.3. Structure Nodes auf Planungsebene entkoppeln (removeNodesFromStructure)
         int actuallyRemovedFromStructure = removeNodesFromStructure(actualNodesToRemove);
 
-        // ===== PHASE 2: LINK-UPDATE - Komplette Link-Neuerstellung =====
+        // ===== PHASE 2: LINK-UPDATE - komplette Link-Neuerstellung =====
 
         // 2.1. Alle bestehenden Links über buildAndUpdateLinks neu aufbauen
-        if (getCurrentStructureRoot() != null) {
-            buildAndUpdateLinks(getCurrentStructureRoot(), props, simTime, getCurrentStructureType());
-        }
+        Set<Link> linksToCheckForDisconnectedMirrors = buildAndUpdateLinks(getCurrentStructureRoot(), props, simTime, getCurrentStructureType());
 
-        // ===== PHASE 3: MIRROR-SHUTDOWN - Unverbundene Mirrors sammeln und herunterfahren =====
+        // ===== PHASE 3: MIRROR-SHUTDOWN - unverbundene Mirrors sammeln und herunterfahren =====
 
         Set<Mirror> shutdownMirrors = new HashSet<>();
 
         // 3.1. Mirrors der entkoppelten Knoten prüfen und herunterfahren
-        for (MirrorNode nodeToRemove : nodesToRemove) {
-            Mirror mirror = nodeToRemove.getMirror();
-            if (mirror != null) {
-                // 3.2. Prüfen, ob Mirror noch Links hat (durch buildAndUpdateLinks bestimmt)
-                if (mirror.getLinks().isEmpty()) {
-                    // 3.3. Mirror herunterfahren und sammeln
-                    mirror.shutdown(simTime);
-                    shutdownMirrors.add(mirror);
-
-                    // 3.4. Mirror aus Structure Node-Verwaltung entfernen
-                    removeFromStructureNodes(nodeToRemove);
-                }
+        for (Link touchedLink : linksToCheckForDisconnectedMirrors) {
+            if (touchedLink.getSource().getLinks().isEmpty()) {
+                touchedLink.getSource().shutdown(simTime);
+                shutdownMirrors.add(touchedLink.getSource());
+            }
+            if (touchedLink.getTarget().getLinks().isEmpty()) {
+                touchedLink.getTarget().shutdown(simTime);
+                shutdownMirrors.add(touchedLink.getTarget());
             }
         }
 
@@ -603,6 +600,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 if (!remainingNodes.isEmpty()) {
                     // Knoten mit niedrigster ID als neue Root wählen
                     MirrorNode newRoot = remainingNodes.stream()
+                            .filter(mirrorNode -> mirrorNode.getMirror().isUsableForNetwork())
                             .min(Comparator.comparing(MirrorNode::getId))
                             .orElse(null);
                     setCurrentStructureRoot(newRoot);
@@ -803,11 +801,13 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                         Set<Link> links1 = node1.getMirror().getLinksTo(node2.getMirror());
                         for(Link link1:links1){
                             link1.shutdown();
+                            allLinks.add(link1);
                         }
 
                         Set<Link> links2 = node2.getMirror().getLinksTo(node1.getMirror());
                         for(Link link2:links2){
                             link2.shutdown();
+                            allLinks.add(link2);
                         }
                     }
                 }
