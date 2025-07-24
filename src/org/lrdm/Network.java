@@ -133,10 +133,11 @@ public class Network {
 	 */
 	public void setNumMirrors(int newMirrors, int simTime) {
 		log.log(Level.INFO, "setNumMirrors({0},{1})",  new Object[] {newMirrors, simTime});
-		if (newMirrors > mirrors.size()) { // create new mirrors
-			strategy.handleAddNewMirrors(this, newMirrors - mirrors.size(), props, simTime);
-		} else if (newMirrors < mirrors.size()) { // send shutdown signal to mirrors being too much
-			strategy.handleRemoveMirrors(this, mirrors.size() - newMirrors, props, simTime);
+		int upMirrors = Math.toIntExact(mirrors.stream().filter(Mirror::isUsableForNetwork).count());
+		if (newMirrors > upMirrors) { // create new mirrors
+			strategy.handleAddNewMirrors(this, newMirrors - upMirrors, props, simTime);
+		} else if (newMirrors < upMirrors) { // send shutdown signal to mirrors being too much
+			strategy.handleRemoveMirrors(this, upMirrors - newMirrors, props, simTime);
 		}
 		numTargetMirrors = newMirrors;
 	}
