@@ -170,6 +170,23 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         return actuallyRemoved;
     }
 
+    /**
+     * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für balancierte Bäume.
+     * Delegiert an TreeTopologyStrategy mit BALANCED_TREE-Struktur-Typ.
+     *
+     * @param n Das Netzwerk
+     * @param removeMirrors Anzahl zu entfernender Mirrors
+     * @param props Properties der Simulation
+     * @param simTime Aktuelle Simulationszeit
+     * @return Set der entfernten Mirrors
+     */
+    @Override
+    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+        // Delegiert an TreeTopologyStrategy mit spezifischem StructureType
+        return handleRemoveMirrorsWithStructureType(n, removeMirrors, props, simTime,
+                StructureNode.StructureType.BALANCED_TREE);
+    }
+
     // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
 
     /**

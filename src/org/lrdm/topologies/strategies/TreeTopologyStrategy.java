@@ -394,4 +394,131 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         return baseString + "[maxDepth=" + maxDepth + ", leaves=" + leaves + "]";
     }
 
+    /**
+     * **AUSFÜHRUNGSEBENE**: Gemeinsame handleRemoveMirrors-Implementierung für alle Baum-Varianten.
+     * Verwendet StructureType-Parameter für spezifische Filterung und Entfernungslogik.
+     * <p>
+     * **3-Phasen-Architektur mit Baum-spezifischer Tiefenmessung**:
+     * - Phase 1: Structure Nodes nach Entfernung zur Wurzel sortieren (tiefste zuerst)
+     * - Phase 2: Links über buildAndUpdateLinks komplett neu aufbauen
+     * - Phase 3: Unverbundene Mirrors herunterfahren und sammeln
+     *
+     * @param n Das Netzwerk
+     * @param removeMirrors Anzahl zu entfernender Mirrors
+     * @param props Properties der Simulation
+     * @param simTime Aktuelle Simulationszeit
+     * @param structureType Struktur-Typ für spezifische Filterung (TREE, BALANCED_TREE, DEPTH_LIMITED_TREE)
+     * @return Set der heruntergefahrenen Mirrors
+     */
+    protected Set<Mirror> handleRemoveMirrorsWithStructureType(Network n, int removeMirrors,
+                                                               Properties props, int simTime,
+                                                               StructureNode.StructureType structureType) {
+
+        initNetwork(n,props);
+
+        if (removeMirrors <= 0 || getCurrentStructureRoot() == null) {
+            return Set.of(); // Keine Entfernung erforderlich
+        }
+
+        // ===== PHASE 1: PLANUNGSEBENE - Structure Nodes nach Tiefe sortieren (tiefste zuerst) =====
+
+        // 1.1. Alle Baum-Knoten des spezifischen Typs sammeln
+        List<TreeMirrorNode> allTreeNodes = getAllTreeNodesOfType(structureType);
+
+        // 1.2. Nach Entfernung zur Wurzel sortieren (tiefste Knoten zuerst, dann höchste IDs)
+        List<TreeMirrorNode> sortedForRemoval = allTreeNodes.stream()
+                .sorted(Comparator
+                        .comparingInt(TreeMirrorNode::getDepthInTree).reversed() // Tiefste zuerst
+                        .thenComparing((node1, node2) -> Integer.compare(node2.getId(), node1.getId()))) // Höchste IDs zuerst
+                .toList();
+
+        // 1.3. Zu entfernende Knoten basierend auf Tiefe und ID auswählen
+        int actualNodesToRemove = Math.min(removeMirrors, sortedForRemoval.size());
+        List<TreeMirrorNode> nodesToRemove = sortedForRemoval.subList(0, actualNodesToRemove);
+
+        // 1.4. Structure Nodes auf Planungsebene entkoppeln (delegiert an Subklasse)
+        int actuallyRemovedFromStructure = removeNodesFromStructure(actualNodesToRemove);
+
+        // ===== PHASE 2: LINK-UPDATE - Komplette Link-Neuerstellung =====
+
+        // 2.1. Alle bestehenden Links über buildAndUpdateLinks neu aufbauen
+        if (getCurrentStructureRoot() != null) {
+            buildAndUpdateLinks(getCurrentStructureRoot(), props, simTime, structureType);
+        }
+
+        // ===== PHASE 3: MIRROR-SHUTDOWN - Unverbundene Mirrors sammeln und herunterfahren =====
+
+        Set<Mirror> shutdownMirrors = new HashSet<>();
+
+        // 3.1. Mirrors der entkoppelten Knoten prüfen und herunterfahren
+        for (TreeMirrorNode nodeToRemove : nodesToRemove) {
+            Mirror mirror = nodeToRemove.getMirror();
+            if (mirror != null) {
+                // 3.2. Prüfen, ob Mirror noch Links hat (durch buildAndUpdateLinks bestimmt)
+                if (mirror.getLinks().isEmpty()) {
+                    // 3.3. Mirror herunterfahren und sammeln
+                    mirror.shutdown(simTime);
+                    shutdownMirrors.add(mirror);
+
+                    // 3.4. Mirror aus Structure Node-Verwaltung entfernen
+                    removeFromStructureNodes(nodeToRemove);
+                }
+            }
+        }
+
+        // 3.5. Root-Update falls Root-Mirror heruntergefahren wurde
+        updateTreeRootAfterMirrorShutdown(shutdownMirrors, structureType);
+
+        return shutdownMirrors;
+    }
+
+    /**
+     * Sammelt alle Baum-Knoten eines spezifischen StructureTypes.
+     *
+     * @param structureType Der gewünschte Struktur-Typ
+     * @return Liste aller TreeMirrorNodes des angegebenen Typs
+     */
+    private List<TreeMirrorNode> getAllTreeNodesOfType(StructureNode.StructureType structureType) {
+        return getAllStructureNodes().stream()
+                .filter(node -> node instanceof TreeMirrorNode)
+                .map(node -> (TreeMirrorNode) node)
+                .filter(treeNode -> treeNode.hasNodeType(structureType))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Baum-spezifische Root-Update-Logik nach Mirror-Shutdown.
+     * Wählt den Knoten mit geringster Tiefe und niedrigster ID als neue Root.
+     *
+     * @param shutdownMirrors Set der heruntergefahrenen Mirrors
+     * @param structureType Struktur-Typ für Filterung
+     */
+    private void updateTreeRootAfterMirrorShutdown(Set<Mirror> shutdownMirrors,
+                                                   StructureNode.StructureType structureType) {
+        if (getCurrentStructureRoot() != null) {
+            Mirror rootMirror = getCurrentStructureRoot().getMirror();
+
+            // Prüfen, ob Root-Mirror heruntergefahren wurde
+            if (rootMirror != null && shutdownMirrors.contains(rootMirror)) {
+                // Neue Root aus verbleibenden Baum-Knoten wählen
+                List<TreeMirrorNode> remainingTreeNodes = getAllTreeNodesOfType(structureType);
+
+                if (!remainingTreeNodes.isEmpty()) {
+                    // Knoten mit geringster Tiefe und niedrigster ID als neue Root wählen
+                    TreeMirrorNode newRoot = remainingTreeNodes.stream()
+                            .min(Comparator
+                                    .comparingInt(TreeMirrorNode::getDepthInTree) // Geringste Tiefe zuerst
+                                    .thenComparingInt(MirrorNode::getId)) // Niedrigste ID zuerst
+                            .orElse(null);
+
+                    newRoot.setHead(true);
+                    setCurrentStructureRoot(newRoot);
+                } else {
+                    // Keine Baum-Knoten mehr vorhanden - Root auf null setzen
+                    setCurrentStructureRoot(null);
+                }
+            }
+        }
+    }
+
 }
