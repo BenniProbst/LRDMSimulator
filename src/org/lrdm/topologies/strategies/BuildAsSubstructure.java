@@ -392,9 +392,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         MirrorNode root = buildStructure(n.getNumMirrors(), props);
         if (root != null) {
             setCurrentStructureRoot(root);
-            Set<Link> links = buildAndUpdateLinks(root, props, simTime, getCurrentStructureType());
-            n.getLinks().addAll(links);
-            return links;
+            return buildAndUpdateLinks(root, props, simTime, getCurrentStructureType());
         }
 
         Set<Link> links = getAllLinksRecursive();
@@ -425,8 +423,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
-            Set<Link> newLinks = buildAndUpdateLinks(getCurrentStructureRoot(), props, 0, getCurrentStructureType());
-            n.getLinks().addAll(newLinks);
+            buildAndUpdateLinks(getCurrentStructureRoot(), props, 0, getCurrentStructureType());
         }
     }
 
@@ -566,13 +563,15 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         Set<Mirror> shutdownMirrors = new HashSet<>();
 
-        // 3.1. Mirrors der entkoppelten Knoten prüfen und herunterfahren
+        // 3.1. Mirrors der entkoppelten Knoten prüfen und herunterfahren, um Erkennung der neuen Wurzel zu ermöglichen
         for (Link touchedLink : linksToCheckForDisconnectedMirrors) {
-            if (touchedLink.getSource().getLinks().isEmpty()) {
+            if (touchedLink.getSource().getLinks()
+                    .stream().allMatch(link -> link.getState() == Link.State.CLOSED)) {
                 touchedLink.getSource().shutdown(simTime);
                 shutdownMirrors.add(touchedLink.getSource());
             }
-            if (touchedLink.getTarget().getLinks().isEmpty()) {
+            if (touchedLink.getTarget().getLinks()
+                    .stream().allMatch(link -> link.getState() == Link.State.CLOSED)) {
                 touchedLink.getTarget().shutdown(simTime);
                 shutdownMirrors.add(touchedLink.getTarget());
             }
@@ -813,6 +812,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 }
             }
         }
+
+        // alle Links müssen immer bekannt sein, um automatisch vom Netzwerk bereinigt zu werden (herunterfahren/crash)
+        network.getLinks().addAll(allLinks);
 
         return allLinks;
     }

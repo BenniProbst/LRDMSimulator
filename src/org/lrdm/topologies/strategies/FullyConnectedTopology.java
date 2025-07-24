@@ -361,4 +361,137 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         return new FullyConnectedMirrorNode(mirror.getID(), mirror);
     }
 
+
+    /**
+     * Liefert eine detaillierte String-Repräsentation der FullyConnectedTopology.
+     * Zeigt Topologie-Status, Struktur-Informationen und Netzwerk-Metriken.
+     * Debugger-freundlich: Vermeidet komplexe Methodenaufrufe, die Breakpoint-Probleme verursachen könnten.
+     *
+     * @return Formatierte String-Darstellung der aktuellen Topologie
+     */
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("FullyConnectedTopology{");
+
+        // ===== GRUNDLEGENDE INFORMATIONEN =====
+        sb.append("type=FULLY_CONNECTED");
+
+        // Netzwerk-Status
+        if (network != null) {
+            sb.append(", network=").append(network.getClass().getSimpleName());
+            sb.append(", mirrors=").append(network.getNumMirrors());
+            sb.append(", targetLinks=").append(network.getNumTargetLinks());
+            sb.append(", linksPerMirror=").append(network.getNumTargetLinksPerMirror());
+        } else {
+            sb.append(", network=null");
+        }
+
+        // ===== STRUKTUR-INFORMATIONEN =====
+        MirrorNode root = getCurrentStructureRoot();
+        if (root != null) {
+            sb.append(", structureRoot=").append(root.getId());
+            sb.append(", rootType=").append(root.getClass().getSimpleName());
+
+            // Head-Status
+            if (root.isHead()) {
+                sb.append(", head=true");
+            }
+        } else {
+            sb.append(", structureRoot=null");
+        }
+
+        // Anzahl der verwalteten StructureNodes
+        Collection<MirrorNode> allNodes = getAllStructureNodes();
+        if (allNodes != null) {
+            sb.append(", structureNodes=").append(allNodes.size());
+
+            // Typ-Verteilung der Knoten
+            long fullyConnectedNodes = allNodes.stream()
+                    .filter(node -> node instanceof FullyConnectedMirrorNode)
+                    .count();
+            sb.append(", fullyConnectedNodes=").append(fullyConnectedNodes);
+        } else {
+            sb.append(", structureNodes=0");
+        }
+
+        // ===== TOPOLOGIE-SPEZIFISCHE METRIKEN =====
+        if (network != null) {
+            int mirrors = network.getNumMirrors();
+
+            // Theoretische vs. tatsächliche Links
+            int theoreticalLinks = calculateExpectedLinks(mirrors);
+            int actualTargetLinks = network.getNumTargetLinks();
+            sb.append(", theoretical=").append(theoreticalLinks);
+            sb.append(", actual=").append(actualTargetLinks);
+
+            // Link-Effizienz
+            if (theoreticalLinks > 0) {
+                double efficiency = (double) actualTargetLinks / theoreticalLinks * 100.0;
+                sb.append(", efficiency=").append(String.format("%.1f%%", efficiency));
+            }
+
+            // Konnektivitäts-Grad
+            if (mirrors > 1) {
+                int connectivityDegree = mirrors - 1; // Fully connected = jeder mit jedem anderen
+                sb.append(", degree=").append(connectivityDegree);
+
+                // Graph-Dichte (für vollständigen Graph immer 1.0)
+                sb.append(", density=1.0");
+            }
+        }
+
+        // ===== ZUSTANDSINFORMATIONEN =====
+
+        // Mirror-Iterator Status
+        if (mirrorIterator != null) {
+            sb.append(", mirrorIterator=active");
+        } else {
+            sb.append(", mirrorIterator=null");
+        }
+
+        // Validierung (einfacher Check ohne komplexe Aufrufe)
+        boolean isValid = (root != null && allNodes != null && !allNodes.isEmpty());
+        sb.append(", valid=").append(isValid);
+
+        // ===== PERFORMANCE-INFORMATIONEN =====
+        if (network != null && network.getNumMirrors() > 0) {
+            int nodes = network.getNumMirrors();
+
+            // Komplexitäts-Kategorisierung
+            String complexity;
+            if (nodes <= 10) {
+                complexity = "SMALL";
+            } else if (nodes <= 50) {
+                complexity = "MEDIUM";
+            } else if (nodes <= 200) {
+                complexity = "LARGE";
+            } else {
+                complexity = "VERY_LARGE";
+            }
+            sb.append(", complexity=").append(complexity);
+
+            // Skalierung-Warnung für sehr große Netzwerke
+            if (nodes > 100) {
+                sb.append(", warning=HIGH_LINK_COUNT");
+            }
+        }
+
+        sb.append("}");
+        return sb.toString();
+    }
+
+    /**
+     * Berechnet die erwartete Link-Anzahl für eine gegebene Knotenzahl.
+     * Für vollständig vernetzte Topologie: n*(n-1)/2 Links für n Knoten.
+     * Hilfsmethode für toString() - statisch um Debugger-Probleme zu vermeiden.
+     *
+     * @param nodeCount Anzahl der Knoten
+     * @return Erwartete Anzahl der Links für vollständig vernetzte Topologie
+     */
+    private static int calculateExpectedLinks(int nodeCount) {
+        if (nodeCount <= 1) return 0;
+        return nodeCount * (nodeCount - 1) / 2;
+    }
+
 }
