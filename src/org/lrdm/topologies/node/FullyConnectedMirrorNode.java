@@ -335,33 +335,6 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     // ===== VOLLSTÄNDIG-VERNETZTE-NAVIGATION =====
 
     /**
-     * Gibt alle direkt verbundenen Knoten zurück.
-     * <p>
-     * In vollständigen Netzen ist jeder Knoten mit jedem anderen verbunden.
-     * Diese Methode sammelt alle anderen Knoten der Struktur.
-     * <p>
-     * Wiederverwendung:
-     * - findHead() für FULLY_CONNECTED-spezifische Head-Ermittlung
-     * - getAllNodesInStructure() für Strukturknotenzählung
-     *
-     * @return Set aller direkt verbundenen FullyConnectedMirrorNodes
-     */
-    public Set<FullyConnectedMirrorNode> getConnectedNodes() {
-        StructureType typeId = StructureType.FULLY_CONNECTED;
-        StructureNode head = findHead(typeId);
-        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head != null ? head : this);
-
-        Set<FullyConnectedMirrorNode> connectedNodes = new HashSet<>();
-        for (StructureNode node : allNodes) {
-            if (node != this && node instanceof FullyConnectedMirrorNode fcNode) {
-                connectedNodes.add(fcNode);
-            }
-        }
-
-        return connectedNodes;
-    }
-
-    /**
      * Findet den Head-Knoten der FULLY_CONNECTED-Struktur.
      * <p>
      * Nutzt findHead() mit expliziter FULLY_CONNECTED-Typ-ID für typsichere Suche

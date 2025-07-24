@@ -5,6 +5,7 @@ import org.lrdm.Network;
 import org.lrdm.effectors.*;
 import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
+import org.lrdm.topologies.node.StructureNode;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -209,10 +210,10 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         if (nodeToRemove == null) return;
 
         // Sammle alle verbundenen Knoten vor der Trennung
-        Set<FullyConnectedMirrorNode> connectedNodes = nodeToRemove.getConnectedNodes();
+        Set<StructureNode> connectedNodes = nodeToRemove.getAllNodesInStructure(StructureNode.StructureType.FULLY_CONNECTED,getCurrentStructureRoot());
 
         // **NUR STRUKTURPLANUNG**: Entferne bidirektionale StructureNode-Verbindungen
-        for (FullyConnectedMirrorNode connectedNode : connectedNodes) {
+        for (StructureNode connectedNode : connectedNodes) {
             // Entferne nodeToRemove aus den Kindern von connectedNode
             connectedNode.removeChild(nodeToRemove);
             // Entferne connectedNode aus den Kindern von nodeToRemove
@@ -251,10 +252,10 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      */
     private void removeNodeFromFullyConnectedStructure(FullyConnectedMirrorNode nodeToRemove) {
         // Sammle alle verbundenen Knoten
-        Set<FullyConnectedMirrorNode> connectedNodes = nodeToRemove.getConnectedNodes();
+        Set<StructureNode> connectedNodes = nodeToRemove.getAllNodesInStructure(StructureNode.StructureType.FULLY_CONNECTED,getCurrentStructureRoot());
 
         // Entferne bidirektionale Verbindungen
-        for (FullyConnectedMirrorNode connectedNode : connectedNodes) {
+        for (StructureNode connectedNode : connectedNodes) {
             // Entferne nodeToRemove aus den Kindern von connectedNode
             connectedNode.removeChild(nodeToRemove);
             // Entferne connectedNode aus den Kindern von nodeToRemove
