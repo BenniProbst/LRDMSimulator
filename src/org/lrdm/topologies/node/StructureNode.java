@@ -235,7 +235,7 @@ public class StructureNode {
     public Set<StructureNode> getAllNodesInStructure(StructureType typeId, StructureNode head) {
         if (head == null) return Set.of(this);
 
-        final int headId = head.getId(); // Head-ID einmal bestimmen und festhalten
+        int headId = head.getId(); // Head-ID einmal bestimmen und festhalten
         Set<StructureNode> result = new HashSet<>();
         Stack<StructureNode> stack = new Stack<>();
         stack.push(this);

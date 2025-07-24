@@ -63,8 +63,7 @@ public class Network {
 		}
 		mirrors.get(0).setRoot(true);
 		// create the links - default strategy: spanning tree
-		links = new HashSet<>();
-		strategy.initNetwork(this, props);
+		links = strategy.initNetwork(this, props);
 		log = Logger.getLogger(this.getClass().getName());
 		//put a new data package on the first mirror
 		DataPackage initialData = new DataPackage(fileSize);

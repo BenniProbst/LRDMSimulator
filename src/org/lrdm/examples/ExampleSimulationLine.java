@@ -40,13 +40,13 @@ public class ExampleSimulationLine {
 		int startMirrors = 15;
 		int count = 0;
 		for(int t = 200; t < 300; t += 10) {
-			effector.setMirrors(t,startMirrors - count++);
+			effector.setMirrors(startMirrors - count++,t);
 		}
 
 		startMirrors = 5;
 		count = 0;
 		for(int t = 300; t < 400; t += 10) {
-			effector.setMirrors(t,startMirrors + count);
+			effector.setMirrors(startMirrors + count,t);
 			count += max(1,count);
 		}
 
