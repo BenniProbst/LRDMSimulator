@@ -39,13 +39,13 @@ public class ExampleSimulationFullyConnected {
 
 		int startMirrors = 15;
 		int count = 0;
-		for(int t = 100; t < 200; t += 10) {
+		for(int t = 200; t < 300; t += 10) {
 			effector.setMirrors(t,startMirrors - count++);
 		}
 
 		startMirrors = 5;
 		count = 0;
-		for(int t = 200; t < 300; t += 10) {
+		for(int t = 300; t < 400; t += 10) {
 			effector.setMirrors(t,startMirrors + count);
 			count += max(1,count);
 		}
