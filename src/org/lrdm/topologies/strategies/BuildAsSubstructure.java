@@ -762,6 +762,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         Set<Link> allLinks = new HashSet<>();
 
+        //TODO: invert the function so we iterate over the Mirrors and their combinations that are registered to the network
+        // then Adapt the mirror configuration and the links to the plan or just shutdown all mirrors that were not mentinoned on the process
+
         // Erstelle Links zwischen allen Paaren von Knoten
         for (int i = 0; i < nodeList.size(); i++) {
             MirrorNode node1 = nodeList.get(i);
