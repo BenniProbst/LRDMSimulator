@@ -325,7 +325,7 @@ public class Network {
 		mirrors.removeAll(stoppedMirrors);
 	}
 
-	/**Remove all links from the network which are in CLOSED state and
+	/**Remove all links from the network that are in CLOSED state and
 	 * where source and target mirror are in STOPPED state.
 	 * Else calls {@link Link#timeStep(int)}.
 	 *

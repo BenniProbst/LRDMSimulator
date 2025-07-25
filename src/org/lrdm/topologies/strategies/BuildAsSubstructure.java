@@ -804,13 +804,13 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                     if (!node12_connect && !node21_connect) {
                         //sollte überhaupt nicht verbunden sein → Verbindung löschen
 
-                        Set<Link> links1 = node1.getMirror().getLinksTo(node2.getMirror());
+                        Set<Link> links1 = node1.getMirror().getJointMirrorLinks(node2.getMirror());
                         for(Link link1:links1){
                             link1.shutdown();
                             allLinks.add(link1);
                         }
 
-                        Set<Link> links2 = node2.getMirror().getLinksTo(node1.getMirror());
+                        Set<Link> links2 = node2.getMirror().getJointMirrorLinks(node1.getMirror());
                         for(Link link2:links2){
                             link2.shutdown();
                             allLinks.add(link2);
