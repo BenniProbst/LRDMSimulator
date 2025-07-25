@@ -438,7 +438,14 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         List<TreeMirrorNode> nodesToRemove = sortedForRemoval.subList(0, actualNodesToRemove);
 
         // 1.4. Structure Nodes auf Planungsebene entkoppeln (delegiert an Subklasse)
-        int actuallyRemovedFromStructure = removeNodesFromStructure(actualNodesToRemove);
+        nodesToRemove.forEach(this::removeFromStructureNodes);
+        for(TreeMirrorNode treeNode:allTreeNodes) {
+            for(StructureNode child:treeNode.getChildren()) {
+                if(nodesToRemove.contains(child)) {
+                    treeNode.removeChild(child);
+                }
+            }
+        }
 
         // ===== PHASE 2: LINK-UPDATE - Komplette Link-Neuerstellung =====
 
@@ -448,24 +455,9 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         }
 
         // ===== PHASE 3: MIRROR-SHUTDOWN - Unverbundene Mirrors sammeln und herunterfahren =====
-
-        Set<Mirror> shutdownMirrors = new HashSet<>();
-
-        // 3.1. Mirrors der entkoppelten Knoten prüfen und herunterfahren
-        for (TreeMirrorNode nodeToRemove : nodesToRemove) {
-            Mirror mirror = nodeToRemove.getMirror();
-            if (mirror != null) {
-                // 3.2. Prüfen, ob Mirror noch Links hat (durch buildAndUpdateLinks bestimmt)
-                if (mirror.getLinks().isEmpty()) {
-                    // 3.3. Mirror herunterfahren und sammeln
-                    mirror.shutdown(simTime);
-                    shutdownMirrors.add(mirror);
-
-                    // 3.4. Mirror aus Structure Node-Verwaltung entfernen
-                    removeFromStructureNodes(nodeToRemove);
-                }
-            }
-        }
+        Set<Mirror> shutdownMirrors = network.getMirrorsSortedById().stream()
+                .filter(mirror -> !mirror.isUsableForNetwork())
+                .collect(Collectors.toSet());
 
         // 3.5. Root-Update falls Root-Mirror heruntergefahren wurde
         updateTreeRootAfterMirrorShutdown(shutdownMirrors, structureType);

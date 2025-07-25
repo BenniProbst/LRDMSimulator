@@ -761,10 +761,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 .toList();
 
         Set<Link> allLinks = new HashSet<>();
-
-        //TODO: invert the function so we iterate over the Mirrors and their combinations that are registered to the network
-        // then Adapt the mirror configuration and the links to the plan or just shutdown all mirrors that were not mentinoned on the process
-
         // Erstelle Links zwischen allen Paaren von Knoten
         for (int i = 0; i < nodeList.size(); i++) {
             MirrorNode node1 = nodeList.get(i);
@@ -803,7 +799,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                     //Mirror verbunden, solle er nicht verbunden sein → Link löschen
                     if (!node12_connect && !node21_connect) {
                         //sollte überhaupt nicht verbunden sein → Verbindung löschen
-
                         Set<Link> links1 = node1.getMirror().getJointMirrorLinks(node2.getMirror());
                         for(Link link1:links1){
                             link1.shutdown();
@@ -819,6 +814,11 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 }
             }
         }
+
+        network.getMirrors()
+                .stream()
+                .filter(mirror -> nodeList.stream().noneMatch(node -> node.getMirror() == mirror))
+                .forEach(mirror -> mirror.shutdown(simTime));
 
         // alle Links müssen immer bekannt sein, um automatisch vom Netzwerk bereinigt zu werden (herunterfahren/crash)
         if(network != null && network.getLinks() != null) {
