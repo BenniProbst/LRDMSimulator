@@ -427,7 +427,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
-            buildAndUpdateLinks(getCurrentStructureRoot(), props, 0, getCurrentStructureType());
+            buildAndUpdateLinks(getCurrentStructureRoot(), props, simTime, getCurrentStructureType());
         }
     }
 
