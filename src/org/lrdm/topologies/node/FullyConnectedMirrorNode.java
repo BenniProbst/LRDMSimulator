@@ -430,9 +430,6 @@ public class FullyConnectedMirrorNode extends MirrorNode {
         Set<StructureNode> children = getChildren(typeId, headId);
         connectedNodes.addAll(children);
 
-        // Entferne sich selbst (falls versehentlich hinzugefügt)
-        connectedNodes.remove(this);
-
         return connectedNodes.size();
     }
 
