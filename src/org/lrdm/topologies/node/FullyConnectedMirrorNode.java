@@ -272,15 +272,64 @@ public class FullyConnectedMirrorNode extends MirrorNode {
 
 
     /**
+     * Prüft, ob zwei Knoten miteinander verbunden sind.
+     * <p>
+     * VOLLSTÄNDIG manuelle Implementierung ohne Hilfsfunktionen:
+     * - Prüft direkte Parent-Child-Beziehungen in beide Richtungen
+     * - Prüft Geschwister-Beziehungen über gemeinsamen Parent
+     * - Validiert Struktur-Zugehörigkeit für jede gefundene Verbindung
+     *
+     * @param nodeA Der erste Knoten
+     * @param nodeB Der zweite Knoten
+     * @param typeId Die Typ-ID der gewünschten Struktur
+     * @param headId Die Head-ID der gewünschten Struktur
+     * @return true, wenn die Knoten direkt verbunden sind
+     */
+    private boolean isConnectedTo(FullyConnectedMirrorNode nodeA, FullyConnectedMirrorNode nodeB,
+                                  StructureType typeId, int headId) {
+        if (nodeA == nodeB) return false; // Keine Selbstverbindung
+
+        // FALL 1: nodeA ist Parent von nodeB
+        if (nodeB.getParent() == nodeA) {
+            ChildRecord childRecord = nodeA.findChildRecordById(nodeB.getId());
+            if (childRecord != null && childRecord.belongsToStructure(typeId, headId)) {
+                return true;
+            }
+        }
+
+        // FALL 2: nodeB ist Parent von nodeA
+        if (nodeA.getParent() == nodeB) {
+            ChildRecord childRecord = nodeB.findChildRecordById(nodeA.getId());
+            if (childRecord != null && childRecord.belongsToStructure(typeId, headId)) {
+                return true;
+            }
+        }
+
+        // FALL 3: Beide sind Kinder des gleichen Parents (Geschwister)
+        if (nodeA.getParent() != null && nodeB.getParent() != null &&
+                nodeA.getParent() == nodeB.getParent()) {
+
+            StructureNode commonParent = nodeA.getParent();
+            ChildRecord recordA = commonParent.findChildRecordById(nodeA.getId());
+            ChildRecord recordB = commonParent.findChildRecordById(nodeB.getId());
+
+            if (recordA != null && recordB != null &&
+                    recordA.belongsToStructure(typeId, headId) &&
+                    recordB.belongsToStructure(typeId, headId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Prüft symmetrische Verbindungen in der vollständig-vernetzten-Struktur.
      * <p>
-     * Vollständige Netze erfordern bidirektionale Verbindungen:
-     * - Wenn A mit B verbunden ist, muss B auch mit A verbunden sein
-     * - Alle Knoten müssen mit allen anderen Knoten verbunden sein
-     * <p>
-     * Wiederverwendung:
-     * - getChildren() für strukturspezifische Kind-Navigation
-     * - getParent() für Parent-Zugriff
+     * VERBESSERTE Implementierung mit detailliertem Debugging:
+     * - Prüft jede Knotenpaarung einzeln
+     * - Validiert bidirektionale Verbindungen explizit
+     * - Sammelt fehlende Verbindungen für Debugging
      *
      * @param fcNodes Alle vollständig-vernetzten-Knoten der Struktur
      * @param typeId Der Strukturtyp
@@ -290,20 +339,39 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     private boolean hasSymmetricConnections(Set<FullyConnectedMirrorNode> fcNodes,
                                             StructureType typeId, FullyConnectedMirrorNode headNode) {
         final int headId = headNode.getId();
+        List<String> missingConnections = new ArrayList<>();
 
         for (FullyConnectedMirrorNode nodeA : fcNodes) {
             for (FullyConnectedMirrorNode nodeB : fcNodes) {
-                if (nodeA == nodeB) continue; // Selbstverbindungen sind nicht erforderlich
+                if (nodeA == nodeB) continue; // Keine Selbstverbindungen
 
-                // Prüfe, ob A mit B verbunden ist
-                boolean aConnectedToB = isConnectedTo(nodeA, nodeB, typeId, headId);
+                // Prüfe Verbindung A -> B
+                boolean aToB = isConnectedTo(nodeA, nodeB, typeId, headId);
 
-                // Prüfe, ob B mit A verbunden ist
-                boolean bConnectedToA = isConnectedTo(nodeB, nodeA, typeId, headId);
+                // Prüfe Verbindung B -> A
+                boolean bToA = isConnectedTo(nodeB, nodeA, typeId, headId);
 
-                // In einem vollständigen Netz müssen ALLE Knoten miteinander verbunden sein
-                if (!aConnectedToB || !bConnectedToA) {
-                    return false; // Fehlende Verbindung gefunden
+                // Debugging: Sammle fehlende Verbindungen
+                if (!aToB) {
+                    missingConnections.add(String.format("Missing: Node %d -> Node %d",
+                            nodeA.getId(), nodeB.getId()));
+                }
+                if (!bToA) {
+                    missingConnections.add(String.format("Missing: Node %d -> Node %d",
+                            nodeB.getId(), nodeA.getId()));
+                }
+
+                // In einem vollständigen Netz müssen ALLE Knoten bidirektional verbunden sein
+                if (!aToB || !bToA) {
+                    // Debug-Ausgabe für fehlende Verbindungen
+                    System.err.println("FullyConnected validation failed:");
+                    System.err.println("Node A: " + nodeA.getId() + ", Node B: " + nodeB.getId());
+                    System.err.println("A->B connected: " + aToB + ", B->A connected: " + bToA);
+
+                    // Detaillierte Struktur-Analyse
+                    debugNodeConnection(nodeA, nodeB, typeId, headId);
+
+                    return false;
                 }
             }
         }
@@ -312,19 +380,53 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     }
 
     /**
-     * Hilfsmethode: Prüft, ob nodeA mit nodeB verbunden ist.
-     *
-     * @param nodeA Startknoten
-     * @param nodeB Zielknoten
-     * @param typeId Strukturtyp
-     * @param headId Head-ID
-     * @return true wenn nodeA mit nodeB verbunden ist
+     * Debug-Hilfsmethode zur detaillierten Analyse von Knoten-Verbindungen.
+     * Gibt detaillierte Informationen über Parent-Child-Beziehungen aus.
      */
-    private boolean isConnectedTo(FullyConnectedMirrorNode nodeA, FullyConnectedMirrorNode nodeB,
-                                  StructureType typeId, int headId) {
-        // Prüfe Parent-Child-Beziehungen in beide Richtungen
-        return nodeA.getChildren(typeId, headId).contains(nodeB) ||
-                nodeA.getParent() == nodeB;
+    private void debugNodeConnection(FullyConnectedMirrorNode nodeA, FullyConnectedMirrorNode nodeB,
+                                     StructureType typeId, int headId) {
+        System.err.println("=== DEBUG NODE CONNECTION ===");
+        System.err.println("Node A ID: " + nodeA.getId() + ", Node B ID: " + nodeB.getId());
+
+        // Parent-Informationen für Node A
+        if (nodeA.getParent() != null) {
+            System.err.println("Node A Parent: " + nodeA.getParent().getId());
+            ChildRecord recordA = nodeA.getParent().findChildRecordById(nodeA.getId());
+            if (recordA != null) {
+                System.err.println("Node A ChildRecord found, belongs to structure: " +
+                        recordA.belongsToStructure(typeId, headId));
+            }
+        } else {
+            System.err.println("Node A has no parent");
+        }
+
+        // Parent-Informationen für Node B
+        if (nodeB.getParent() != null) {
+            System.err.println("Node B Parent: " + nodeB.getParent().getId());
+            ChildRecord recordB = nodeB.getParent().findChildRecordById(nodeB.getId());
+            if (recordB != null) {
+                System.err.println("Node B ChildRecord found, belongs to structure: " +
+                        recordB.belongsToStructure(typeId, headId));
+            }
+        } else {
+            System.err.println("Node B has no parent");
+        }
+
+        // Prüfe, ob sie den gleichen Parent haben
+        if (nodeA.getParent() != null && nodeB.getParent() != null) {
+            System.err.println("Same parent: " + (nodeA.getParent() == nodeB.getParent()));
+            if (nodeA.getParent() == nodeB.getParent()) {
+                System.err.println("Common parent ID: " + nodeA.getParent().getId());
+            }
+        }
+
+        // Prüfe Child-Records in beide Richtungen
+        ChildRecord aHasB = nodeA.findChildRecordById(nodeB.getId());
+        ChildRecord bHasA = nodeB.findChildRecordById(nodeA.getId());
+        System.err.println("Node A has B as child: " + (aHasB != null));
+        System.err.println("Node B has A as child: " + (bHasA != null));
+
+        System.err.println("=== END DEBUG ===");
     }
 
     // ===== VOLLSTÄNDIG-VERNETZTE-NAVIGATION =====
@@ -396,36 +498,92 @@ public class FullyConnectedMirrorNode extends MirrorNode {
     /**
      * Berechnet den Connectivity Degree für eine spezifische Struktur.
      * <p>
-     * Multi-Type-System Konnektivitätsberechnung:
-     * - Zählt nur direkte Verbindungen zu anderen Knoten der gleichen Struktur
-     * - Vermeidet Doppelzählung von bidirektionalen Verbindungen
-     * - Berücksichtigt sowohl Parent- als auch Child-Beziehungen
-     * <p>
-     * Wiederverwendung:
-     * - getParent() für Parent-Zugriff
-     * - getChildren() für strukturspezifische Kind-Zählung
-     * - belongsToStructure() für Struktur-Zugehörigkeitsprüfung
+     * VOLLSTÄNDIG manuelle Implementierung ohne Hilfsfunktionen:
+     * - Durchsucht ALLE Knoten der gesamten Struktur
+     * - Zählt direkte Verbindungen zu jedem anderen Knoten der gleichen Struktur
+     * - Verwendet direkte childRecords- und Parent-Zugriffe
+     * - Vermeidet komplexe Traversierungs- und Filtermethoden
      *
      * @param typeId Die Typ-ID der gewünschten Struktur
      * @param headId Die Head-ID der gewünschten Struktur
-     * @return Anzahl der Verbindungen für diese spezifische Struktur
+     * @return Anzahl der direkten Verbindungen für diese spezifische Struktur
      */
     private int getConnectivityDegree(StructureType typeId, int headId) {
-        Set<StructureNode> connectedNodes = new HashSet<>();
+        int connections = 0;
+        Set<Integer> connectedNodeIds = new HashSet<>();
 
-        // Prüfe Parent-Verbindung
-        if (getParent() != null) {
-            ChildRecord childRecord = getParent().findChildRecordById(getId());
-            if (childRecord != null && childRecord.belongsToStructure(typeId, headId)) {
-                connectedNodes.add(getParent());
+        // SCHRITT 1: Sammle ALLE Knoten der gesamten Struktur durch vollständige Traversierung
+        Set<StructureNode> allPossibleNodes = new HashSet<>();
+        Stack<StructureNode> toVisit = new Stack<>();
+        Set<StructureNode> visited = new HashSet<>();
+
+        toVisit.push(this);
+
+        while (!toVisit.isEmpty()) {
+            StructureNode current = toVisit.pop();
+            if (visited.contains(current)) continue;
+            visited.add(current);
+            allPossibleNodes.add(current);
+
+            // Parent hinzufügen
+            if (current.getParent() != null) {
+                toVisit.push(current.getParent());
+            }
+
+            // Alle Kinder hinzufügen (ohne Typ-Filter)
+            for (StructureNode child : current.getChildren()) {
+                toVisit.push(child);
             }
         }
 
-        // Sammle alle strukturspezifischen Kinder
-        Set<StructureNode> children = getChildren(typeId, headId);
-        connectedNodes.addAll(children);
+        // SCHRITT 2: Prüfe direkte Verbindungen zu jedem anderen Knoten
+        for (StructureNode otherNode : allPossibleNodes) {
+            if (otherNode == this) continue; // Keine Selbstverbindung
+            if (!(otherNode instanceof FullyConnectedMirrorNode)) continue; // Nur FullyConnected-Knoten
 
-        return connectedNodes.size();
+            boolean isConnected = false;
+
+            // FALL A: Bin ich Parent von otherNode?
+            if (otherNode.getParent() == this) {
+                // Prüfe, ob diese Parent-Child-Verbindung zur gewünschten Struktur gehört
+                ChildRecord childRecord = this.findChildRecordById(otherNode.getId());
+                if (childRecord != null && childRecord.belongsToStructure(typeId, headId)) {
+                    isConnected = true;
+                }
+            }
+
+            // FALL B: Ist otherNode mein Parent?
+            if (this.getParent() == otherNode) {
+                // Prüfe, ob diese Child-Parent-Verbindung zur gewünschten Struktur gehört
+                ChildRecord myRecord = otherNode.findChildRecordById(this.getId());
+                if (myRecord != null && myRecord.belongsToStructure(typeId, headId)) {
+                    isConnected = true;
+                }
+            }
+
+            // FALL C: Sind wir beide Kinder des gleichen Parents?
+            if (this.getParent() != null && otherNode.getParent() != null &&
+                    this.getParent() == otherNode.getParent()) {
+
+                StructureNode commonParent = this.getParent();
+                ChildRecord myRecord = commonParent.findChildRecordById(this.getId());
+                ChildRecord otherRecord = commonParent.findChildRecordById(otherNode.getId());
+
+                if (myRecord != null && otherRecord != null &&
+                        myRecord.belongsToStructure(typeId, headId) &&
+                        otherRecord.belongsToStructure(typeId, headId)) {
+                    isConnected = true;
+                }
+            }
+
+            // Verbindung gefunden und noch nicht gezählt?
+            if (isConnected && !connectedNodeIds.contains(otherNode.getId())) {
+                connections++;
+                connectedNodeIds.add(otherNode.getId());
+            }
+        }
+
+        return connections;
     }
 
     /**
