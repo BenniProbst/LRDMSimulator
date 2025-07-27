@@ -81,8 +81,12 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
                 // Füge bidirektionale StructureNode-Verbindung hinzu
                 sourceNode.addChild(targetNode);
                 targetNode.addChild(sourceNode);
+                if(sourceNode!=root)sourceNode.setParent(root);
+                if(targetNode!=root)targetNode.setParent(root);
             }
         }
+
+        root.setParent(null);
 
         return root;
     }

@@ -397,38 +397,43 @@ public class FullyConnectedMirrorNode extends MirrorNode {
 
     // ===== HILFSMETHODEN =====
 
+
     /**
      * Berechnet den Connectivity Degree für eine spezifische Struktur.
      * <p>
      * Multi-Type-System Konnektivitätsberechnung:
-     * - Zählt nur Verbindungen, die zur spezifischen FULLY_CONNECTED-Struktur gehören
-     * - Prüft ChildRecord für Struktur-Zugehörigkeit (typeId + headId)
-     * - Addiert Parent-Verbindung + Anzahl Kinder der Struktur
+     * - Zählt nur direkte Verbindungen zu anderen Knoten der gleichen Struktur
+     * - Vermeidet Doppelzählung von bidirektionalen Verbindungen
+     * - Berücksichtigt sowohl Parent- als auch Child-Beziehungen
      * <p>
      * Wiederverwendung:
      * - getParent() für Parent-Zugriff
-     * - findChildRecordById() für ChildRecord-Zugriff
-     * - belongsToStructure() für Struktur-Zugehörigkeitsprüfung
      * - getChildren() für strukturspezifische Kind-Zählung
+     * - belongsToStructure() für Struktur-Zugehörigkeitsprüfung
      *
      * @param typeId Die Typ-ID der gewünschten Struktur
      * @param headId Die Head-ID der gewünschten Struktur
      * @return Anzahl der Verbindungen für diese spezifische Struktur
      */
     private int getConnectivityDegree(StructureType typeId, int headId) {
-        int connections = 0;
+        Set<StructureNode> connectedNodes = new HashSet<>();
 
         // Prüfe Parent-Verbindung
         if (getParent() != null) {
-            ChildRecord parentRecord = getParent().findChildRecordById(getId());
-            if (parentRecord != null && parentRecord.belongsToStructure(typeId, headId)) {
-                connections++;
+            ChildRecord childRecord = getParent().findChildRecordById(getId());
+            if (childRecord != null && childRecord.belongsToStructure(typeId, headId)) {
+                connectedNodes.add(getParent());
             }
         }
 
-        // Addiere Kinder dieser Struktur
-        connections += getChildren(typeId, headId).size();
-        return connections;
+        // Sammle alle strukturspezifischen Kinder
+        Set<StructureNode> children = getChildren(typeId, headId);
+        connectedNodes.addAll(children);
+
+        // Entferne sich selbst (falls versehentlich hinzugefügt)
+        connectedNodes.remove(this);
+
+        return connectedNodes.size();
     }
 
     /**
