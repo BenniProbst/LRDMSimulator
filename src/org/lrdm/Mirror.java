@@ -173,7 +173,7 @@ public class Mirror {
 	}
 
 	public boolean isUsableForNetwork(){
-		return state != State.STOPPING && state != State.STOPPED;
+		return !(state == State.STOPPING || state == State.STOPPED);
 	}
 
 	private void handleDataTransfer(int currentSimTime) {

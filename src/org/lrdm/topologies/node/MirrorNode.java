@@ -357,7 +357,7 @@ public class MirrorNode extends StructureNode {
         Set<StructureNode> structureNodes = getAllNodesInStructure(typeId, head);
 
         for (StructureNode node : structureNodes) {
-            if (node instanceof MirrorNode mirrorNode && mirrorNode.getMirror() != null) {
+            if (node instanceof MirrorNode mirrorNode && mirrorNode.getMirror() != null && mirrorNode.getMirror().isUsableForNetwork()) {
                 mirrors.add(mirrorNode.getMirror());
             }
         }
@@ -497,10 +497,14 @@ public class MirrorNode extends StructureNode {
     private boolean isLinkOfStructure(Link link, Set<Mirror> structureMirrors) {
         if (link == null || structureMirrors == null) return false;
 
-        boolean sourceInStructure = structureMirrors.contains(link.getSource());
-        boolean targetInStructure = structureMirrors.contains(link.getTarget());
+        boolean sourceUsable = link.getSource().isUsableForNetwork();
+        boolean targetUsable = link.getTarget().isUsableForNetwork();
 
-        return sourceInStructure && targetInStructure;
+        if(!sourceUsable || !targetUsable){
+            return false;
+        }
+
+        return isValidLinkInStructure(link, structureMirrors);
     }
 
     /**
@@ -531,14 +535,10 @@ public class MirrorNode extends StructureNode {
             throw new IllegalArgumentException("Mirror of Link must have at least one link!");
         }
 
-        // check correct structure
-        boolean sourceInStructure = structureMirrors.contains(link.getSource());
-        boolean targetInStructure = structureMirrors.contains(link.getTarget());
-
         boolean isEdgeLink = (link.getSource().getLinks().size() == 1 && link.getSource().getLinks().contains(link))
                 ^ (link.getTarget().getLinks().size() == 1 && link.getTarget().getLinks().contains(link));
 
-        return sourceInStructure && targetInStructure && isEdgeLink; // XOR: nur einer ist in der Struktur
+        return isLinkOfStructure(link, structureMirrors) && isEdgeLink; // XOR: nur einer ist in der Struktur
     }
 
     /**
@@ -707,12 +707,9 @@ public class MirrorNode extends StructureNode {
     private boolean isValidLinkInStructure(Link link, Set<Mirror> structureMirrors) {
         if (link == null) return false;
 
-        Mirror source = link.getSource();
-        Mirror target = link.getTarget();
-
         // Beide Mirrors müssen zur Struktur gehören
-        boolean sourceInStructure = structureMirrors.contains(source);
-        boolean targetInStructure = structureMirrors.contains(target);
+        boolean sourceInStructure = structureMirrors.contains(link.getSource());
+        boolean targetInStructure = structureMirrors.contains(link.getTarget());
 
         return sourceInStructure && targetInStructure;
     }
