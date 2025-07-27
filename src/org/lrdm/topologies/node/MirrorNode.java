@@ -527,13 +527,18 @@ public class MirrorNode extends StructureNode {
     private boolean isEdgeLink(Link link, Set<Mirror> structureMirrors) {
         if (link == null || structureMirrors == null) return false;
 
-        //TODO: Edge Link definition is wrong, usually it is edge if a mirror has only one link where one side of the Link is connected
-        // to the mirror
+        if(link.getSource().getLinks().isEmpty() || link.getTarget().getLinks().isEmpty()){
+            throw new IllegalArgumentException("Mirror of Link must have at least one link!");
+        }
 
+        // check correct structure
         boolean sourceInStructure = structureMirrors.contains(link.getSource());
         boolean targetInStructure = structureMirrors.contains(link.getTarget());
 
-        return sourceInStructure != targetInStructure; // XOR: nur einer ist in der Struktur
+        boolean isEdgeLink = (link.getSource().getLinks().size() == 1 && link.getSource().getLinks().contains(link))
+                ^ (link.getTarget().getLinks().size() == 1 && link.getTarget().getLinks().contains(link));
+
+        return sourceInStructure && targetInStructure && isEdgeLink; // XOR: nur einer ist in der Struktur
     }
 
     /**
