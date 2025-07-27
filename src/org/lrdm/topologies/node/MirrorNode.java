@@ -535,10 +535,16 @@ public class MirrorNode extends StructureNode {
             throw new IllegalArgumentException("Mirror of Link must have at least one link!");
         }
 
-        boolean isEdgeLink = (link.getSource().getLinks().size() == 1 && link.getSource().getLinks().contains(link))
-                ^ (link.getTarget().getLinks().size() == 1 && link.getTarget().getLinks().contains(link));
+        boolean isEdgeLink = (linksUsableCount(link.getSource().getLinks()) == 1 && link.getSource().getLinks().contains(link))
+                ^ (linksUsableCount(link.getTarget().getLinks()) == 1 && link.getTarget().getLinks().contains(link));
 
-        return isLinkOfStructure(link, structureMirrors) && isEdgeLink; // XOR: nur einer ist in der Struktur
+        return isLinkOfStructure(link, structureMirrors) && isEdgeLink;
+    }
+
+    private int linksUsableCount(Set<Link> links){
+        return Math.toIntExact(links.stream()
+                .filter(link -> link.getSource().isUsableForNetwork() && link.getTarget().isUsableForNetwork())
+                .count());
     }
 
     /**
