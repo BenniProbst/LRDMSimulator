@@ -194,12 +194,9 @@ public class FullyConnectedMirrorNode extends MirrorNode {
         }
 
         // Prüfe symmetrische Verbindungen
-        if (!hasSymmetricConnections(fullyConnectedNodes, typeId, headNode)) {
-            return false;
-        }
+        return hasSymmetricConnections(fullyConnectedNodes, typeId, headNode);
 
         // Head-Node muss Edge-Links haben (Verbindung nach außen)
-        return true;
     }
 
     /**
