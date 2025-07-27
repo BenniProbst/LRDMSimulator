@@ -122,12 +122,23 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
             actuallyAdded++;
         }
 
+        FullyConnectedMirrorNode root = existingNodes.stream()
+                .filter(node -> node.getMirror() != null && node.isRoot())
+                .findFirst()
+                .orElse(null);
+
+        if (root == null) {
+            throw new IllegalStateException("No root node found in FullyConnected structure");
+        }
+
         // Verbinde jeden neuen Knoten mit allen bestehenden Knoten
         for (FullyConnectedMirrorNode newNode : newNodes) {
             for (FullyConnectedMirrorNode existingNode : existingNodes) {
                 // Bidirektionale StructureNode-Verbindungen
                 newNode.addChild(existingNode);
                 existingNode.addChild(newNode);
+                if(newNode!=root)newNode.setParent(root);
+                if(existingNode!=root)existingNode.setParent(root);
             }
 
             // Verbinde neue Knoten auch untereinander
@@ -135,9 +146,13 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
                 if (!newNode.equals(otherNewNode)) {
                     newNode.addChild(otherNewNode);
                     otherNewNode.addChild(newNode);
+                    if(newNode!=root)newNode.setParent(root);
+                    if(otherNewNode!=root)otherNewNode.setParent(root);
                 }
             }
         }
+
+        root.setParent(null);
 
         return actuallyAdded;
     }
