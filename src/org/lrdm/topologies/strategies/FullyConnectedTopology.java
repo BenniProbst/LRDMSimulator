@@ -135,13 +135,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
             }
         }
 
-        // Validiere die erweiterte Struktur
-        if (getCurrentStructureRoot() instanceof FullyConnectedMirrorNode fcRoot) {
-            if (!fcRoot.isValidStructure()) {
-                throw new IllegalStateException("FullyConnected structure became invalid after adding nodes");
-            }
-        }
-
         return actuallyAdded;
     }
 

@@ -825,6 +825,11 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             network.getLinks().addAll(allLinks);
         }
 
+        // Validiere die erweiterte Struktur
+        if(!validateTopology()){
+            throw new IllegalStateException("The constructed topology is not valid!");
+        }
+
         return allLinks;
     }
 

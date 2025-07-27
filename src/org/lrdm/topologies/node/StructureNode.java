@@ -965,8 +965,6 @@ public class StructureNode {
     private boolean isConnectedStructure(Set<StructureNode> allNodes) {
         if (allNodes.isEmpty()) return false;
 
-        //TODO: check structure at least one way connected
-
         // Starte von einem beliebigen Knoten
         StructureNode startNode = allNodes.iterator().next();
         Set<StructureNode> visited = new HashSet<>();

@@ -153,7 +153,7 @@ public class TreeMirrorNode extends MirrorNode {
 
         if (allNodes.isEmpty()) return false;
 
-        if (typeId != StructureType.TREE) {
+        if (typeId != StructureType.TREE && typeId != StructureType.BALANCED_TREE && typeId != StructureType.DEPTH_LIMIT_TREE) {
             return false;
         }
 

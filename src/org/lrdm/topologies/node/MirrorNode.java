@@ -57,7 +57,7 @@ public class MirrorNode extends StructureNode {
      * Setzt den Mirror für diesen Knoten.
      * Automatische Integration mit nodeTypes basierend auf der aktuellen MirrorNode-Instanz.
      * Sollte nur über Builder (TreeBuilder/RingBuilder/etc.) gesetzt werden, nicht direkt.
-     *
+     * <p>
      * Unterstützt alle verfügbaren StructureTypes:
      * - FullyConnectedMirrorNode -> FULLY_CONNECTED
      * - TreeMirrorNode -> TREE
@@ -526,6 +526,9 @@ public class MirrorNode extends StructureNode {
      */
     private boolean isEdgeLink(Link link, Set<Mirror> structureMirrors) {
         if (link == null || structureMirrors == null) return false;
+
+        //TODO: Edge Link definition is wrong, usually it is edge if a mirror has only one link where one side of the Link is connected
+        // to the mirror
 
         boolean sourceInStructure = structureMirrors.contains(link.getSource());
         boolean targetInStructure = structureMirrors.contains(link.getTarget());
