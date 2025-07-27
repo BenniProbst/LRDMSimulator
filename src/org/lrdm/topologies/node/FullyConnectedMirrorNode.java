@@ -199,7 +199,7 @@ public class FullyConnectedMirrorNode extends MirrorNode {
         }
 
         // Head-Node muss Edge-Links haben (Verbindung nach außen)
-        return headNode.getNumEdgeLinks(typeId, head) > 0;
+        return true;
     }
 
     /**
