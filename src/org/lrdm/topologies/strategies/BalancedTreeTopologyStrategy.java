@@ -114,6 +114,8 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
         int actuallyAdded = 0;
 
+        List<Mirror> tmpMirrorIterate = new ArrayList<>(nodesToAdd);
+        setMirrorIterator(tmpMirrorIterate.iterator());
         // Füge neue Knoten mit Balance-optimierter Strategie hinzu
         for (int i = 0; i < nodesToAdd.size(); i++) {
             // Erstelle neuen Knoten
@@ -131,6 +133,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
                 break;
             }
         }
+        setMirrorIterator(network.getMirrors().iterator());
 
         return actuallyAdded;
     }
