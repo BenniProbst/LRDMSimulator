@@ -313,7 +313,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
             }
         } else {
             // Füge zu bestehender Struktur hinzu
-            setMirrorIterator(addedMirrors.iterator());
+            setMirrorIterator(n.getMirrors().iterator());
             int actualAdded = addNodesToStructure(newMirrors);
 
             if (actualAdded > 0) {

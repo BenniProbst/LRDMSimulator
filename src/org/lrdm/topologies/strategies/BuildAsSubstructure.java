@@ -420,7 +420,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         // Setze Iterator für die neuen Mirrors - BuildAsSubstructure erwartet diesen
         // Iterator für neue Mirrors zu setzen
-        setMirrorIterator(addedMirrors.iterator());
+        setMirrorIterator(n.getMirrors().iterator());
 
         // Füge die neuen Knoten zur Struktur hinzu
         int actuallyAdded = addNodesToStructure(newMirrors);

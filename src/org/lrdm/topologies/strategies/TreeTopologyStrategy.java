@@ -237,7 +237,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         n.getMirrors().addAll(addedMirrors);
 
         // Setze Iterator für die neuen Mirrors
-        this.mirrorIterator = addedMirrors.iterator();
+        setMirrorIterator(n.getMirrors().iterator());
 
         // Füge die neuen Knoten zur Struktur hinzu
         int actuallyAdded = addNodesToStructure(newMirrors);
