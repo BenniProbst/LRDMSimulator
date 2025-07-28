@@ -1001,7 +1001,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     protected final MirrorNode getMirrorNodeFromIterator() {
         if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            Mirror mirror = mirrorIterator.next();
+            Mirror mirror = getNextMirror();
             MirrorNode node = createMirrorNodeForMirror(mirror);
             if (node != null) {
                 node.setMirror(mirror);

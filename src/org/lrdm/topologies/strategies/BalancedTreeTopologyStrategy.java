@@ -621,12 +621,27 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
     @Override
     public String toString() {
-        String baseString = super.toString();
-        double currentBalance = calculateCurrentTreeBalance();
-        boolean isBalanced = isCurrentTreeBalanced();
+        try {
+            String baseString = super.toString();
 
-        return baseString + "[targetLinksPerNode=" + targetLinksPerNode +
-                ", balance=" + String.format("%.2f", currentBalance) +
-                ", isBalanced=" + isBalanced + "]";
+            // Sicherheitsprüfungen für die Balance-Berechnung
+            BalancedTreeMirrorNode root = getBalancedTreeRoot();
+            if (root == null) {
+                return baseString + "[targetLinksPerNode=" + targetLinksPerNode +
+                        ", balance=undefined (no root), isBalanced=unknown]";
+            }
+
+            double currentBalance = calculateCurrentTreeBalance();
+            boolean isBalanced = isCurrentTreeBalanced();
+
+            return baseString + "[targetLinksPerNode=" + targetLinksPerNode +
+                    ", balance=" + String.format("%.2f", currentBalance) +
+                    ", isBalanced=" + isBalanced + "]";
+
+        } catch (Exception e) {
+            // Fallback für alle möglichen Exceptions bei der String-Erstellung
+            return getClass().getSimpleName() + "[targetLinksPerNode=" + targetLinksPerNode +
+                    ", status=error (" + e.getClass().getSimpleName() + ")]";
+        }
     }
 }
