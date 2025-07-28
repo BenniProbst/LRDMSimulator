@@ -6,7 +6,6 @@ import org.lrdm.effectors.*;
 import org.lrdm.topologies.node.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Eine spezialisierte {@link BuildAsSubstructure}, die Mirrors in einem tiefen-beschränkten Baum
@@ -118,6 +117,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
 
         // 1. Erstelle Root-Node mit dem ersten Mirror
         Mirror rootMirror = getNextMirror();
+        assert rootMirror != null;
         DepthLimitedTreeMirrorNode root = new DepthLimitedTreeMirrorNode(rootMirror.getID(), rootMirror, maxDepth);
 
         // 2. Registriere Root bei BuildAsSubstructure
@@ -152,14 +152,14 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
      * @return Tatsächliche Anzahl der hinzugefügten Knoten
      */
     @Override
-    protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0 || !hasNextMirror() || getCurrentStructureRoot() == null) {
+    protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
+        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null) {
             return 0;
         }
 
         int actuallyAdded = 0;
 
-        for (int i = 0; i < nodesToAdd && hasNextMirror(); i++) {
+        for (int i = 0; i < nodesToAdd.size() && hasNextMirror(); i++) {
             // 1. Finde den besten Einfügepunkt basierend auf Tiefenbeschränkung
             DepthLimitedTreeMirrorNode insertionPoint = findBestInsertionPointInStructure();
 
@@ -168,8 +168,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
             }
 
             // 2. Erstelle neuen Knoten
-            Mirror mirror = getNextMirror();
-            DepthLimitedTreeMirrorNode newNode = new DepthLimitedTreeMirrorNode(mirror.getID(), mirror, maxDepth);
+            DepthLimitedTreeMirrorNode newNode = getDepthMirrorNodeFromIterator();
 
             // 3. Registriere bei BuildAsSubstructure
             addToStructureNodes(newNode);
@@ -299,22 +298,6 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
     }
 
     /**
-     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
-     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
-     *
-     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
-     */
-    @Override
-    protected BalancedTreeMirrorNode getMirrorNodeFromIterator() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            BalancedTreeMirrorNode node = (BalancedTreeMirrorNode) super.getMirrorNodeFromIterator();
-            node.addNodeType(StructureNode.StructureType.DEPTH_LIMIT_TREE);
-            return node;
-        }
-        return null;
-    }
-
-    /**
      * Findet den besten Einfügepunkt für neue Knoten in der bestehenden Struktur.
      * Bevorzugt tiefere Knoten mit weniger Kindern innerhalb der Tiefenbeschränkung.
      *
@@ -417,6 +400,21 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
     private int countAvailableMirrors() {
         // Einfache Schätzung - da wir den Iterator nicht durchlaufen können ohne ihn zu verbrauchen
         return Integer.MAX_VALUE; // Optimistische Schätzung - wird durch while-Schleife begrenzt
+    }
+
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    protected DepthLimitedTreeMirrorNode getDepthMirrorNodeFromIterator() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            DepthLimitedTreeMirrorNode node = (DepthLimitedTreeMirrorNode) super.getMirrorNodeFromIterator();
+            node.addNodeType(StructureNode.StructureType.DEPTH_LIMIT_TREE);
+            return node;
+        }
+        return null;
     }
 
     /**

@@ -2,7 +2,6 @@
 package org.lrdm.topologies.strategies;
 
 import org.lrdm.effectors.TargetLinkChange;
-import org.lrdm.topologies.node.BalancedTreeMirrorNode;
 import org.lrdm.topologies.node.TreeMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StructureNode;
@@ -63,7 +62,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         int childrenPerParent = Integer.parseInt(props.getProperty("preferredChildrenPerParent", "2"));
 
         // 1. Erstelle Root-Node
-        TreeMirrorNode root = (TreeMirrorNode) getMirrorNodeFromIterator();
+        TreeMirrorNode root = getMirrorNodeFromIterator();
         if (root == null) return null;
 
         root.setHead(true);
@@ -72,7 +71,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         // 2. Erstelle restliche Knoten
         List<TreeMirrorNode> remainingNodes = new ArrayList<>();
         for (int i = 1; i < totalNodes; i++) {
-            TreeMirrorNode node = (TreeMirrorNode) getMirrorNodeFromIterator();
+            TreeMirrorNode node = getMirrorNodeFromIterator();
             if (node == null) break;
             remainingNodes.add(node);
         }
@@ -116,8 +115,10 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
      * @return Tatsächliche Anzahl der hinzugefügten Knoten
      */
     @Override
-    protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0) return 0;
+    protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
+        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null) {
+            return 0;
+        }
 
         TreeMirrorNode root = (TreeMirrorNode) getCurrentStructureRoot();
         if (root == null) return 0;
@@ -125,9 +126,9 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         int actuallyAdded = 0;
 
         // Füge neue Knoten mit Breadth-First-Strategie hinzu
-        for (int i = 0; i < nodesToAdd; i++) {
+        for (int i = 0; i < nodesToAdd.size(); i++) {
             // Erstelle neuen Knoten
-            TreeMirrorNode newNode = (TreeMirrorNode) getMirrorNodeFromIterator();
+            TreeMirrorNode newNode = getMirrorNodeFromIterator();
             if (newNode == null) break;
 
             // Finde optimalen Einfügepunkt
@@ -220,35 +221,6 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
     }
 
     // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
-
-    /**
-     * Adds the requested number of mirrors to the network and connects them accordingly.
-     *
-     * @param n the {@link Network}
-     * @param newMirrors number of mirrors to add
-     * @param props {@link Properties} of the simulation
-     * @param simTime current simulation time
-     */
-    @Override
-    public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
-        this.network = n;
-
-        // Verwende das offizielle Interface von TopologyStrategy
-        List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
-        n.getMirrors().addAll(addedMirrors);
-
-        // Setze Iterator für die neuen Mirrors
-        setMirrorIterator(n.getMirrors().iterator());
-
-        // Füge die neuen Knoten zur Struktur hinzu
-        int actuallyAdded = addNodesToStructure(newMirrors);
-
-        if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
-            // Baue nur die neuen Links auf
-            Set<Link> newLinks = buildAndUpdateLinks(getCurrentStructureRoot(), props, 0, StructureNode.StructureType.TREE);
-            n.getLinks().addAll(newLinks);
-        }
-    }
 
     /**
      * Berechnet die erwartete Anzahl der Links für Bäume.
@@ -389,7 +361,6 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
      *
      * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
      */
-    @Override
     protected TreeMirrorNode getMirrorNodeFromIterator() {
         if (mirrorIterator != null && mirrorIterator.hasNext()) {
             TreeMirrorNode node = (TreeMirrorNode) super.getMirrorNodeFromIterator();

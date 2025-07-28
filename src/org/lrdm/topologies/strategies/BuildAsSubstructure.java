@@ -4,7 +4,6 @@ import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
-import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StructureNode;
 import org.lrdm.util.IDGenerator;
@@ -184,7 +183,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Tupel-Klasse für MirrorNode-BuildAsSubstructure-Zuordnungen.
      * Ermöglicht die typsichere Rückgabe von Zuordnungspaaren.
      */
-    public static record SubstructureTuple(MirrorNode node, BuildAsSubstructure substructure) {
+    public record SubstructureTuple(MirrorNode node, BuildAsSubstructure substructure) {
         public SubstructureTuple {
             Objects.requireNonNull(node, "MirrorNode darf nicht null sein");
             Objects.requireNonNull(substructure, "BuildAsSubstructure darf nicht null sein");
@@ -414,20 +413,23 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @param simTime Aktuelle Simulationszeit
      */
     public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
+        if (newMirrors <= 0) {
+            return;
+        }
         // Verwende das offizielle Interface von TopologyStrategy
-        List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
-        n.getMirrors().addAll(addedMirrors);
+        Set<Mirror> mirrorsToAdd = createMirrors(newMirrors, simTime, props);
+        n.getMirrors().addAll(mirrorsToAdd);
 
         // Setze Iterator für die neuen Mirrors - BuildAsSubstructure erwartet diesen
         // Iterator für neue Mirrors zu setzen
         setMirrorIterator(n.getMirrors().iterator());
 
         // Füge die neuen Knoten zur Struktur hinzu
-        int actuallyAdded = addNodesToStructure(newMirrors);
+        int actuallyAdded = addNodesToStructure(mirrorsToAdd);
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
-            buildAndUpdateLinks(getCurrentStructureRoot(), props, simTime, getCurrentStructureType());
+            n.getLinks().addAll(buildAndUpdateLinks(getCurrentStructureRoot(), props, simTime, getCurrentStructureType()));
         }
     }
 
@@ -469,10 +471,10 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Fügt Knoten zu einer bestehenden Struktur hinzu.
      * Muss von Subklassen für spezifische Strukturlogik implementiert werden.
      *
-     * @param nodesToAdd Anzahl der hinzuzufügenden Knoten
+     * @param nodesToAdd Mirrors der hinzuzufügenden Knoten
      * @return Anzahl der tatsächlich hinzugefügten Knoten
      */
-    protected abstract int addNodesToStructure(int nodesToAdd);
+    protected abstract int addNodesToStructure(Set<Mirror> nodesToAdd);
 
     /**
      * Entfernt Knoten aus einer bestehenden Struktur.
@@ -955,18 +957,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
 
     // ===== HILFSMETHODEN =====
-
-    /**
-     * Erstellt neue Mirror-Instanzen.
-     */
-    protected final List<Mirror> createMirrors(int count, int simTime, Properties props) {
-        List<Mirror> mirrors = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            Mirror mirror = new Mirror(idGenerator.getNextID(), simTime, props);
-            mirrors.add(mirror);
-        }
-        return mirrors;
-    }
 
     /**
      * Gibt den nächsten verfügbaren Mirror aus dem Iterator zurück.

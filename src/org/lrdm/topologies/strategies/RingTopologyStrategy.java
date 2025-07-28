@@ -74,6 +74,7 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
             if (!hasNextMirror()) break;
 
             Mirror mirror = getNextMirror();
+            assert mirror != null;
             RingMirrorNode ringNode = new RingMirrorNode(mirror.getID(), mirror);
             ringNodes.add(ringNode);
             addToStructureNodes(ringNode);
@@ -98,8 +99,10 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
      * NUR STRUKTURPLANUNG - keine Mirror-Links!
      */
     @Override
-    protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0 || !allowRingExpansion) return 0;
+    protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
+        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null || !allowRingExpansion) {
+            return 0;
+        }
 
         RingMirrorNode head = getRingHead();
         if (head == null) return 0;
@@ -111,7 +114,7 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
         int insertionIndex = 0;
 
         // Ring-Erweiterung: Neue Knoten zwischen bestehenden Knoten einfügen
-        while (actuallyAdded < nodesToAdd && insertionIndex < ringNodes.size() && hasNextMirror()) {
+        while (actuallyAdded < nodesToAdd.size() && insertionIndex < ringNodes.size() && hasNextMirror()) {
             RingMirrorNode currentNode = ringNodes.get(insertionIndex);
             RingMirrorNode nextNode = ringNodes.get((insertionIndex + 1) % ringNodes.size());
 
@@ -305,6 +308,7 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
         if (!hasNextMirror()) return null;
 
         Mirror mirror = getNextMirror();
+        assert mirror != null;
         RingMirrorNode ringNode = new RingMirrorNode(mirror.getID(), mirror);
         addToStructureNodes(ringNode);
 

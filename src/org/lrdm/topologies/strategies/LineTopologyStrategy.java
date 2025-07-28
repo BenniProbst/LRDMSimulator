@@ -1,7 +1,6 @@
 
 package org.lrdm.topologies.strategies;
 
-import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.*;
@@ -74,6 +73,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
             if (!hasNextMirror()) break;
 
             Mirror mirror = getNextMirror();
+            assert mirror != null;
             LineMirrorNode lineNode = new LineMirrorNode(mirror.getID(), mirror);
             lineNodes.add(lineNode);
             addToStructureNodes(lineNode);
@@ -98,8 +98,10 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      * NUR STRUKTURPLANUNG - keine Mirror-Links!
      */
     @Override
-    protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0 || !allowLineExpansion) return 0;
+    protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
+        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null || !allowLineExpansion) {
+            return 0;
+        }
 
         LineMirrorNode head = getLineHead();
         if (head == null) return 0;
@@ -111,7 +113,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         int endpointIndex = 0;
 
         // Linien-Erweiterung: Neue Knoten an den Endpunkten anhängen
-        while (actuallyAdded < nodesToAdd && endpointIndex < endpoints.size() && hasNextMirror()) {
+        while (actuallyAdded < nodesToAdd.size() && endpointIndex < endpoints.size() && hasNextMirror()) {
             LineMirrorNode endpoint = endpoints.get(endpointIndex);
 
             // **NUR STRUKTURPLANUNG**: Erstelle neuen Knoten am Endpunkt
@@ -441,13 +443,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
     public int getNumTargetLinks(Network n) {
         int numMirrors = n.getNumMirrors();
         return Math.max(0, numMirrors - 1);
-    }
-
-    /**
-     * Prüft bestehende Mirror-Verbindungen.
-     */
-    private boolean isAlreadyConnected(Mirror mirror1, Mirror mirror2) {
-        return mirror1.isLinkedWith(mirror2);
     }
 
     // ===== LINIEN-ANALYSE =====

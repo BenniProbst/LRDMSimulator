@@ -25,6 +25,7 @@ public abstract class TopologyStrategy {
 		n.getMirrors().addAll(createMirrors(mirrorSet.size(), simTime, props));
 		return n.getLinks().stream().filter(Link::isActive).collect(Collectors.toSet());
 	}
+
 	public abstract void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime);
 
 	/**Remove the requested number of links from the network.
@@ -65,15 +66,15 @@ public abstract class TopologyStrategy {
 	 * @param numberOfMirrors the number of mirrors to add
 	 * @param simTime the current simulation time
 	 * @param props the {@link Properties} of the simulation
-	 * @return a list of added {@link Mirror}s
+	 * @return a set of added {@link Mirror}s
 	 */
-	protected List<Mirror> createMirrors(int numberOfMirrors, int simTime, Properties props) {
-		List<Mirror> addedMirrors = new ArrayList<>();
+	protected Set<Mirror> createMirrors(int numberOfMirrors, int simTime, Properties props) {
+		Set<Mirror> mirrors = new HashSet<>();
 		for(int i = 0; i < numberOfMirrors; i++) {
-			Mirror m = new Mirror(IDGenerator.getInstance().getNextID(), simTime, props);
-			addedMirrors.add(m);
+			Mirror mirror = new Mirror(IDGenerator.getInstance().getNextID(), simTime, props);
+			mirrors.add(mirror);
 		}
-		return addedMirrors;
+		return mirrors;
 	}
 
 	public abstract String toString();

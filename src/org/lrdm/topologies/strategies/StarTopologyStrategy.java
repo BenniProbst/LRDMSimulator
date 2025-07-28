@@ -72,6 +72,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
 
         // Erstelle das Zentrum des Sterns
         Mirror centerMirror = getNextMirror();
+        assert centerMirror != null;
         StarMirrorNode center = new StarMirrorNode(centerMirror.getID(), centerMirror);
         center.setHead(true);
         addToStructureNodes(center);
@@ -102,8 +103,10 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      * NUR STRUKTURPLANUNG - keine Mirror-Links!
      */
     @Override
-    protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0 || !allowStarExpansion) return 0;
+    protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
+        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null || !allowStarExpansion) {
+            return 0;
+        }
 
         StarMirrorNode center = getStarCenter();
         if (center == null) return 0;
@@ -111,7 +114,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         int actuallyAdded = 0;
 
         // Stern-Erweiterung: Neue Blätter am Zentrum anhängen
-        for (int i = 0; i < nodesToAdd && hasNextMirror(); i++) {
+        for (int i = 0; i < nodesToAdd.size() && hasNextMirror(); i++) {
             // **NUR STRUKTURPLANUNG**: Erstelle neues Blatt
             StarMirrorNode newLeaf = createStarNodeForStructure();
             if (newLeaf != null) {
@@ -288,6 +291,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         if (!hasNextMirror()) return null;
 
         Mirror mirror = getNextMirror();
+        assert mirror != null;
         StarMirrorNode starNode = new StarMirrorNode(mirror.getID(), mirror);
         addToStructureNodes(starNode);
 

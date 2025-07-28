@@ -6,7 +6,6 @@ import org.lrdm.effectors.*;
 import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StructureNode;
-import org.lrdm.topologies.node.TreeMirrorNode;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -100,8 +99,8 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      * @return Tatsächliche Anzahl der hinzugefügten Knoten
      */
     @Override
-    protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0 || getCurrentStructureRoot() == null) {
+    protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
+        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null) {
             return 0;
         }
 
@@ -113,13 +112,16 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         List<FullyConnectedMirrorNode> newNodes = new ArrayList<>();
         int actuallyAdded = 0;
 
+        List<Mirror> tmpMirrorIterate = new ArrayList<>(nodesToAdd);
+        setMirrorIterator(tmpMirrorIterate.iterator());
         // Erstelle neue FullyConnectedMirrorNodes - Verwende das saubere Interface
-        for (int i = 0; i < nodesToAdd && hasNextMirror(); i++) {
+        for (int i = 0; i < nodesToAdd.size() && hasNextMirror(); i++) {
             FullyConnectedMirrorNode newNode = getMirrorNodeFromIterator();
             newNodes.add(newNode);
             addToStructureNodes(newNode);
             actuallyAdded++;
         }
+        setMirrorIterator(network.getMirrors().iterator());
 
         FullyConnectedMirrorNode root = existingNodes.stream()
                 .filter(node -> node.getMirror() != null && node.isRoot())

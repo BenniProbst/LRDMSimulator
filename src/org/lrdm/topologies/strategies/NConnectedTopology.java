@@ -71,29 +71,25 @@ public class NConnectedTopology extends BuildAsSubstructure {
      * @return Tatsächliche Anzahl der hinzugefügten Knoten
      */
     @Override
-    protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0 || !hasNextMirror()) {
+    protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
+        if (nodesToAdd.isEmpty() || !hasNextMirror()) {
             return 0;
         }
 
         List<MirrorNode> newNodes = new ArrayList<>();
         List<MirrorNode> existingNodes = new ArrayList<>(getAllStructureNodes());
 
+        List<Mirror> tmpMirrorIterate = new ArrayList<>(nodesToAdd);
+        setMirrorIterator(tmpMirrorIterate.iterator());
         // Erstelle neue Knoten
         int actualAdded = 0;
-        for (int i = 0; i < nodesToAdd && hasNextMirror(); i++) {
-            Mirror mirror = getNextMirror();
-            if (mirror != null) {
-                MirrorNode newNode = new MirrorNode(mirror.getID(), mirror);
-                newNodes.add(newNode);
-                addToStructureNodes(newNode);
-                actualAdded++;
-            }
+        for (int i = 0; i < nodesToAdd.size() && hasNextMirror(); i++) {
+            NConnectedMirrorNode newNode = getMirrorNodeFromIterator();
+            newNodes.add(newNode);
+            addToStructureNodes(newNode);
+            actualAdded++;
         }
-
-        if (newNodes.isEmpty()) {
-            return 0;
-        }
+        setMirrorIterator(network.getMirrors().iterator());
 
         // Verbinde neue Knoten mit bestehenden Knoten
         if (network != null) {
@@ -163,8 +159,8 @@ public class NConnectedTopology extends BuildAsSubstructure {
         // **N-CONNECTED-SPEZIFISCH**: Sortiere nach Verbindungsanzahl (weniger Verbindungen zuerst)
         // Bei gleicher Verbindungsanzahl: höhere ID zuerst (deterministische Auswahl)
         candidatesForRemoval.sort((node1, node2) -> {
-            int connections1 = node1.getChildren().size();;
-            int connections2 = node2.getChildren().size();;
+            int connections1 = node1.getChildren().size();
+            int connections2 = node2.getChildren().size();
 
             if (connections1 != connections2) {
                 return Integer.compare(connections1, connections2); // Weniger Verbindungen zuerst
@@ -286,45 +282,6 @@ public class NConnectedTopology extends BuildAsSubstructure {
     }
 
     /**
-     * Adds the requested number of mirrors to the network and connects them accordingly.
-     *
-     * @param n the {@link Network}
-     * @param newMirrors number of mirrors to add
-     * @param props {@link Properties} of the simulation
-     * @param simTime current simulation time
-     */
-    @Override
-    public void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime) {
-        if (newMirrors <= 0) {
-            return;
-        }
-
-        // Erstelle und füge neue Mirrors hinzu
-        List<Mirror> addedMirrors = createMirrors(newMirrors, simTime, props);
-        n.getMirrors().addAll(addedMirrors);
-
-        // Initialisiere den internen Zustand, falls nötig
-        if (getCurrentStructureRoot() == null) {
-            initializeInternalState(n);
-            MirrorNode root = buildStructure(n.getNumMirrors(), props);
-            if (root != null) {
-                Set<Link> newLinks = buildAndUpdateLinks(root, props, 0, StructureNode.StructureType.N_CONNECTED);
-                n.getLinks().addAll(newLinks);
-            }
-        } else {
-            // Füge zu bestehender Struktur hinzu
-            setMirrorIterator(n.getMirrors().iterator());
-            int actualAdded = addNodesToStructure(newMirrors);
-
-            if (actualAdded > 0) {
-                // Erstelle Links für neue Verbindungen
-                Set<Link> newLinks = buildAndUpdateLinks(getCurrentStructureRoot(), props, simTime, StructureNode.StructureType.N_CONNECTED);
-                n.getLinks().addAll(newLinks);
-            }
-        }
-    }
-
-    /**
      * Eine Hilfsmethode für die Initialisierung des internen Zustands.
      * Verwendet die korrekte Methode aus BuildAsSubstructure.
      */
@@ -443,6 +400,21 @@ public class NConnectedTopology extends BuildAsSubstructure {
         return (numMirrors * linksPerMirror) / 2;
     }
 
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    @Override
+    protected NConnectedMirrorNode getMirrorNodeFromIterator() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            NConnectedMirrorNode node = (NConnectedMirrorNode) super.getMirrorNodeFromIterator();
+            node.addNodeType(StructureNode.StructureType.N_CONNECTED);
+            return node;
+        }
+        return null;
+    }
 
     @Override
     public String toString() {
@@ -516,7 +488,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
 
         // Prüfe, ob jeder Knoten die erwartete Anzahl Verbindungen hat
         for (MirrorNode node : getAllStructureNodes()) {
-            int nodeConnections = node.getChildren().size();;
+            int nodeConnections = node.getChildren().size();
             int expectedConnections = Math.min(linksPerMirror, getAllStructureNodes().size() - 1);
 
             if (nodeConnections != expectedConnections) {

@@ -12,6 +12,7 @@ import org.lrdm.topologies.node.StructureNode;
 import org.lrdm.topologies.validators.SnowflakeTopologyValidator;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Schneeflocken-Topologie-Strategie mit hierarchischer Multi-Topologie-Architektur.
@@ -108,8 +109,10 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      * Delegiert an die entsprechenden Substrukturen über BuildAsSubstructure.nodeToSubstructure.
      */
     @Override
-    protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0) return 0;
+    protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
+        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null) {
+            return 0;
+        }
 
         int actuallyAdded = 0;
 
@@ -118,19 +121,19 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         // Erweitere externe Baum-Strukturen zuerst
         for (BuildAsSubstructure substructure : allSubstructures) {
-            if (actuallyAdded >= nodesToAdd) break;
+            if (actuallyAdded >= nodesToAdd.size()) break;
             if (substructure instanceof DepthLimitTreeTopologyStrategy) {
-                int toAdd = Math.min(nodesToAdd - actuallyAdded, 3);
-                actuallyAdded += substructure.addNodesToStructure(toAdd);
+                int toAdd = Math.min(nodesToAdd.size() - actuallyAdded, 3);
+                actuallyAdded += substructure.addNodesToStructure(nodesToAdd.stream().limit(toAdd).collect(Collectors.toSet()));
             }
         }
 
         // Erweitere Ring-Strukturen
         for (BuildAsSubstructure substructure : allSubstructures) {
-            if (actuallyAdded >= nodesToAdd) break;
+            if (actuallyAdded >= nodesToAdd.size()) break;
             if (substructure instanceof RingTopologyStrategy) {
-                int toAdd = Math.min(nodesToAdd - actuallyAdded, 2);
-                actuallyAdded += substructure.addNodesToStructure(toAdd);
+                int toAdd = Math.min(nodesToAdd.size() - actuallyAdded, 2);
+                actuallyAdded += substructure.addNodesToStructure(nodesToAdd.stream().limit(toAdd).collect(Collectors.toSet()));
             }
         }
 

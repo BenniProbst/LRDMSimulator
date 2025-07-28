@@ -105,18 +105,19 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      * @return Tatsächliche Anzahl der hinzugefügten Knoten
      */
     @Override
-    protected int addNodesToStructure(int nodesToAdd) {
-        if (nodesToAdd <= 0) return 0;
+    protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
+        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null) {
+            return 0;
+        }
 
         BalancedTreeMirrorNode root = getBalancedTreeRoot();
-        if (root == null) return 0;
 
         int actuallyAdded = 0;
 
         // Füge neue Knoten mit Balance-optimierter Strategie hinzu
-        for (int i = 0; i < nodesToAdd; i++) {
+        for (int i = 0; i < nodesToAdd.size(); i++) {
             // Erstelle neuen Knoten
-            BalancedTreeMirrorNode newNode = (BalancedTreeMirrorNode) getMirrorNodeFromIterator();
+            BalancedTreeMirrorNode newNode = getBalancedMirrorNodeFromIterator();
             if (newNode == null) break;
 
             // Finde optimalen Balance-bewussten Einfügepunkt
@@ -380,7 +381,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
             // Füge Kinder hinzu
             for (int i = 0; i < optimalChildren && nodesCreated < remainingNodes; i++) {
-                BalancedTreeMirrorNode child = getMirrorNodeFromIterator();
+                BalancedTreeMirrorNode child = getBalancedMirrorNodeFromIterator();
                 if (child == null) break;
 
                 // Verbinde Kind mit Parent (nur Planungsebene)
@@ -400,8 +401,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      *
      * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
      */
-    @Override
-    protected BalancedTreeMirrorNode getMirrorNodeFromIterator() {
+    protected BalancedTreeMirrorNode getBalancedMirrorNodeFromIterator() {
         if (mirrorIterator != null && mirrorIterator.hasNext()) {
             BalancedTreeMirrorNode node = (BalancedTreeMirrorNode) super.getMirrorNodeFromIterator();
             node.addNodeType(StructureNode.StructureType.BALANCED_TREE);
