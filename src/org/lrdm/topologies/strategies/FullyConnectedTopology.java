@@ -6,6 +6,7 @@ import org.lrdm.effectors.*;
 import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StructureNode;
+import org.lrdm.topologies.node.TreeMirrorNode;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -114,9 +115,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
         // Erstelle neue FullyConnectedMirrorNodes - Verwende das saubere Interface
         for (int i = 0; i < nodesToAdd && hasNextMirror(); i++) {
-            Mirror mirror = getNextMirror();
-            assert mirror != null;
-            FullyConnectedMirrorNode newNode = new FullyConnectedMirrorNode(mirror.getID(), mirror);
+            FullyConnectedMirrorNode newNode = getMirrorNodeFromIterator();
             newNodes.add(newNode);
             addToStructureNodes(newNode);
             actuallyAdded++;
@@ -374,6 +373,21 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         return new FullyConnectedMirrorNode(mirror.getID(), mirror);
     }
 
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    @Override
+    protected FullyConnectedMirrorNode getMirrorNodeFromIterator() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            FullyConnectedMirrorNode node = (FullyConnectedMirrorNode) super.getMirrorNodeFromIterator();
+            node.addNodeType(StructureNode.StructureType.FULLY_CONNECTED);
+            return node;
+        }
+        return null;
+    }
 
     /**
      * Liefert eine detaillierte String-Repräsentation der FullyConnectedTopology.

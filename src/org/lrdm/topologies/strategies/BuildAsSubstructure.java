@@ -999,11 +999,12 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      *
      * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
      */
-    protected final MirrorNode getMirrorNodeFromIterator() {
+    protected MirrorNode getMirrorNodeFromIterator() {
         if (mirrorIterator != null && mirrorIterator.hasNext()) {
             Mirror mirror = getNextMirror();
             MirrorNode node = createMirrorNodeForMirror(mirror);
             if (node != null) {
+                node.addNodeType(StructureNode.StructureType.MIRROR);
                 node.setMirror(mirror);
                 addToStructureNodes(node); // Aktiv hinzufügen
             }

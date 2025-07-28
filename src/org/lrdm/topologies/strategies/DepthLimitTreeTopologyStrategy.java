@@ -287,7 +287,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
         int childrenToAdd = calculateOptimalChildrenPerParent(remainingNodes.size(), root.getRemainingDepth());
 
         for (int i = 0; i < childrenToAdd && !remainingNodes.isEmpty(); i++) {
-            DepthLimitedTreeMirrorNode child = remainingNodes.remove(0);
+            DepthLimitedTreeMirrorNode child = remainingNodes.remove(0);//TODO: kann nicht stimmen
 
             // NUR strukturelle StructureNode-Verbindung
             root.addChild(child);
@@ -296,6 +296,22 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
             // Rekursiver Abstieg für weiteren Strukturaufbau
             buildDepthLimitedTreeStructureOnly(child, remainingNodes);
         }
+    }
+
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    @Override
+    protected BalancedTreeMirrorNode getMirrorNodeFromIterator() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            BalancedTreeMirrorNode node = (BalancedTreeMirrorNode) super.getMirrorNodeFromIterator();
+            node.addNodeType(StructureNode.StructureType.DEPTH_LIMIT_TREE);
+            return node;
+        }
+        return null;
     }
 
     /**

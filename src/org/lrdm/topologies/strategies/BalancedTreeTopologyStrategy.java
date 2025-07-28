@@ -380,7 +380,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
             // Füge Kinder hinzu
             for (int i = 0; i < optimalChildren && nodesCreated < remainingNodes; i++) {
-                BalancedTreeMirrorNode child = (BalancedTreeMirrorNode) getMirrorNodeFromIterator();
+                BalancedTreeMirrorNode child = getMirrorNodeFromIterator();
                 if (child == null) break;
 
                 // Verbinde Kind mit Parent (nur Planungsebene)
@@ -392,6 +392,22 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
                 nodesCreated++;
             }
         }
+    }
+
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    @Override
+    protected BalancedTreeMirrorNode getMirrorNodeFromIterator() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            BalancedTreeMirrorNode node = (BalancedTreeMirrorNode) super.getMirrorNodeFromIterator();
+            node.addNodeType(StructureNode.StructureType.BALANCED_TREE);
+            return node;
+        }
+        return null;
     }
 
     /**

@@ -2,6 +2,7 @@
 package org.lrdm.topologies.strategies;
 
 import org.lrdm.effectors.TargetLinkChange;
+import org.lrdm.topologies.node.BalancedTreeMirrorNode;
 import org.lrdm.topologies.node.TreeMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StructureNode;
@@ -380,6 +381,22 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
     @Override
     protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
         return new TreeMirrorNode(mirror.getID(), mirror);
+    }
+
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    @Override
+    protected TreeMirrorNode getMirrorNodeFromIterator() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            TreeMirrorNode node = (TreeMirrorNode) super.getMirrorNodeFromIterator();
+            node.addNodeType(StructureNode.StructureType.TREE);
+            return node;
+        }
+        return null;
     }
 
     // ===== STRING REPRESENTATION =====
