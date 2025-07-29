@@ -478,14 +478,92 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /**
      * Entfernt Knoten aus einer bestehenden Struktur.
+     * Schaltet Mirror ab, die nicht mehr im Plan vorhanden sind.
      * Kann von Subklassen überschrieben werden.
      *
-     * @param nodesToRemove Anzahl der zu entfernenden Knoten
+     * @param totalNodes Mirrors der zu entfernenden Knoten
      * @return Anzahl der tatsächlich entfernten Knoten
      */
-    protected abstract int removeNodesFromStructure(int nodesToRemove);
+    protected Set<MirrorNode> removeNodesFromStructure(int totalNodes){
+        // ===== PHASE 1: PLANUNGSEBENE - Structure Nodes nach höchsten IDs entkoppeln =====
+
+        // 1.1. Alle aktuellen Structure Nodes sammeln und nach ID sortieren (höchste zuerst)
+        List<MirrorNode> allStructureNodes = getAllStructureNodes()
+                .stream()
+                .sorted((node1, node2) -> Integer.compare(node2.getId(), node1.getId())) // Absteigende Sortierung
+                .toList();
+
+        // 1.2. Zu entfernende Knoten basierend auf höchsten IDs auswählen
+        int actualNodesToRemove = Math.min(totalNodes, allStructureNodes.size());
+        Set<MirrorNode> outSet = new HashSet<>(allStructureNodes.subList(0, actualNodesToRemove));
+
+        // **NUR STRUKTURPLANUNG**: Entferne bidirektionale StructureNode-Verbindungen
+        for (MirrorNode nodeToRemove : outSet) {
+            removeNodeFromStructuralPlanning(nodeToRemove,
+                    Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR));
+        }
+
+        return outSet;
+    }
 
 
+    /**
+     * **PLANUNGSEBENE**: Entfernt Knoten aus struktureller Planung.
+     * Arbeitet ohne Zeitbezug - nur strukturelle Änderungen.
+     * KORRIGIERT: Verwendet die BuildAsSubstructure-API anstatt direkter Collection-Modifikation
+     *
+     * @param nodeToRemove Der zu entfernende Knoten
+     * @param types Identifizierung eines Strukturtypen, der nicht überlagert
+     */
+    protected void removeNodeFromStructuralPlanning(MirrorNode nodeToRemove, Set<StructureNode.StructureType> types) {
+        // **NUR STRUKTURPLANUNG**: Entferne bidirektionale StructureNode-Verbindungen
+        Set<StructureNode.StructureType> nodeToRemoveTypes = new HashSet<>(nodeToRemove.getNodeTypes());
+        if(!nodeToRemoveTypes.containsAll(types))return;
+
+        for(MirrorNode connectedNode : getAllStructureNodes()){
+            Set<StructureNode.StructureType> connectedNodeTypes = new HashSet<>(connectedNode.getNodeTypes());
+            if(!connectedNodeTypes.containsAll(types))continue;
+
+            // entweder die zu Entfernende oder die zu prüfende node kann bei Überlagerung ein Subset der anderen node sein
+            // Randfall: beide nodes haben keine Überlagerungen über die angefragten types hinaus
+            // Randfall2: beide nodes sind Überlagerungen und bereinigen gegenseitig nur die Typeneinträge
+
+            //boolean nodeToRemoveHasConnectedNodeSubset = !nodeToRemoveTypes.containsAll(connectedNodeTypes);
+            //boolean connectedNodeHasNodeToRemoveSubset = !connectedNodeTypes.containsAll(nodeToRemoveTypes);
+
+            // Beide nodes oder eine von beiden, haben je ein gemeinsames verbundenes Struktur Subset und können getrennt werden
+            Set<StructureNode.StructureType> surplusTypesInConnectedNode = new HashSet<>(connectedNodeTypes);
+            surplusTypesInConnectedNode.removeAll(types);
+            Set<StructureNode.StructureType> surplusTypesInNodeToRemove = new HashSet<>(nodeToRemoveTypes);
+            surplusTypesInNodeToRemove.removeAll(types);
+
+            if(surplusTypesInConnectedNode.stream().anyMatch(type -> !surplusTypesInNodeToRemove.contains(type))
+            && surplusTypesInNodeToRemove.stream().anyMatch(type -> !surplusTypesInConnectedNode.contains(type))){
+                // Fremde symmetrische Verbindung, daher nur Klassen-Struktur-Typen aus der zu entfernenden node entfernen.
+                // Aus dieser Struktur entfernen, aber nicht trennen
+                Set<StructureNode.StructureType> deleteSet = new HashSet<>(types);
+                deleteSet.remove(StructureNode.StructureType.DEFAULT);
+                deleteSet.remove(StructureNode.StructureType.MIRROR);
+
+                nodeToRemoveTypes.removeAll(deleteSet);
+            }
+            else{
+                // Entferne nodeToRemove aus den Kindern von connectedNode
+                connectedNode.removeChild(nodeToRemove);
+                // Entferne connectedNode aus den Kindern von nodeToRemove
+                nodeToRemove.removeChild(connectedNode);
+
+                // Parent-Verbindung nur für nodeToRemove trennen (falls vorhanden)
+                if (nodeToRemove.getParent() != null) {
+                    nodeToRemove.getParent().removeChild(nodeToRemove);
+                    nodeToRemove.setParent(null);
+                }
+            }
+
+        }
+        // 2. Entferne aus BuildAsSubstructure-Verwaltung
+        removeFromStructureNodes(nodeToRemove);
+    }
 
     // ===== INTERNE STRUCTURE BUILDER-HILFSMETHODEN (PROTECTED) =====
 
@@ -533,60 +611,30 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Arbeitet komplementär zu removeNodesFromStructure (Planungsebene).
      * Überschreibt komplexe Cleanup-Logik durch direkte Link-Neuerstellung.
      *
-     * @param n Das Netzwerk
+     * @param n             Das Netzwerk
      * @param removeMirrors Anzahl zu entfernender Mirrors
-     * @param props Properties der Simulation
-     * @param simTime Aktuelle Simulationszeit
-     * @return Set der heruntergefahrenen Mirrors
+     * @param props         Properties der Simulation
+     * @param simTime       Aktuelle Simulationszeit
      */
     @Override
-    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
         if (removeMirrors <= 0 || getCurrentStructureRoot() == null) {
-            return Set.of(); // Keine Entfernung erforderlich
+            return; // Keine Entfernung erforderlich
         }
 
-        // ===== PHASE 1: PLANUNGSEBENE - Structure Nodes nach höchsten IDs entkoppeln =====
-
-        // 1.1. Alle aktuellen Structure Nodes sammeln und nach ID sortieren (höchste zuerst)
-        List<MirrorNode> allStructureNodes = getAllStructureNodes()
-                .stream()
-                .sorted((node1, node2) -> Integer.compare(node2.getId(), node1.getId())) // Absteigende Sortierung
-                .toList();
-
-        // 1.2. Zu entfernende Knoten basierend auf höchsten IDs auswählen
-        int actualNodesToRemove = Math.min(removeMirrors, allStructureNodes.size());
-        List<MirrorNode> nodesToRemove = allStructureNodes.subList(0, actualNodesToRemove);
-
         // 1.3. Structure Nodes auf Planungsebene entkoppeln (removeNodesFromStructure)
-        int actuallyRemovedFromStructure = removeNodesFromStructure(actualNodesToRemove);
+        Set<MirrorNode> removePlanningMirrorNodes = removeNodesFromStructure(removeMirrors);
+
+        Set<Mirror> shutdownMirrors = new HashSet<>();
+        removePlanningMirrorNodes.forEach(node -> {shutdownMirrors.add(node.getMirror());});
 
         // ===== PHASE 2: LINK-UPDATE - komplette Link-Neuerstellung =====
 
         // 2.1. Alle bestehenden Links über buildAndUpdateLinks neu aufbauen
-        Set<Link> linksToCheckForDisconnectedMirrors = buildAndUpdateLinks(getCurrentStructureRoot(), props, simTime, getCurrentStructureType());
-
-        // ===== PHASE 3: MIRROR-SHUTDOWN - unverbundene Mirrors sammeln und herunterfahren =====
-
-        Set<Mirror> shutdownMirrors = new HashSet<>();
-
-        // 3.1. Mirrors der entkoppelten Knoten prüfen und herunterfahren, um Erkennung der neuen Wurzel zu ermöglichen
-        for (Link touchedLink : linksToCheckForDisconnectedMirrors) {
-            if (touchedLink.getSource().getLinks()
-                    .stream().allMatch(link -> link.getState() == Link.State.CLOSED)) {
-                touchedLink.getSource().shutdown(simTime);
-                shutdownMirrors.add(touchedLink.getSource());
-            }
-            if (touchedLink.getTarget().getLinks()
-                    .stream().allMatch(link -> link.getState() == Link.State.CLOSED)) {
-                touchedLink.getTarget().shutdown(simTime);
-                shutdownMirrors.add(touchedLink.getTarget());
-            }
-        }
+        n.getLinks().addAll(buildAndUpdateLinks(getCurrentStructureRoot(), props, simTime, getCurrentStructureType()));
 
         // 3.5. Root-Update falls Root-Mirror heruntergefahren wurde
         updateRootAfterMirrorShutdown(shutdownMirrors);
-
-        return shutdownMirrors;
     }
 
     /**
@@ -780,6 +828,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 }
 
                 // Prüfe, ob die Mirrors bereits verbunden sind
+                //TODO: für das Netzwerk zählen ungültige mirror als zu löschende Verbindungen
                 if (!node1.getMirror().isAlreadyConnected(node2.getMirror()) && !node2.getMirror().isAlreadyConnected(node1.getMirror())) {
                     //Mirror nicht verbunden, sollte er per Plan verbunden sein → Link erstellen
                     if (node12_connect) {
@@ -817,6 +866,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             }
         }
 
+        // ===== PHASE 3: MIRROR-SHUTDOWN - unverbundene Mirrors sammeln und herunterfahren =====
+
+        // 3.1. Mirrors der entkoppelten Knoten prüfen und herunterfahren, um Erkennung der neuen Wurzel zu ermöglichen
         network.getMirrors()
                 .stream()
                 .filter(mirror -> nodeList.stream().noneMatch(node -> node.getMirror() == mirror))

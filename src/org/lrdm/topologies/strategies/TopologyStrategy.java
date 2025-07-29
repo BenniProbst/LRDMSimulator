@@ -28,16 +28,17 @@ public abstract class TopologyStrategy {
 
 	public abstract void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime);
 
-	/**Remove the requested number of links from the network.
+	/**
+	 * Remove the requested number of links from the network.
 	 * The mirrors with the highest ID will be removed first.
 	 * Does not directly remove the mirrors, but calls {@link Mirror#shutdown(int)}.
 	 *
-	 * @param n the {@link Network}
+	 * @param n             the {@link Network}
 	 * @param removeMirrors the number of {@link Mirror}s to remove
-	 * @param props {@link Properties} of the simulation
-	 * @param simTime current simulation time
+	 * @param props         {@link Properties} of the simulation
+	 * @param simTime       current simulation time
 	 */
-	public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+	public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
 		Set<Mirror> cleanedMirrors = new HashSet<>();
 		for(int i = 0; i < removeMirrors; i++) {
 			Mirror m = n.getMirrorsSortedById().get(n.getNumMirrors()-1-i);

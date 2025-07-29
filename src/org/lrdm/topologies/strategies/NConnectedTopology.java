@@ -134,7 +134,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
      * @return Anzahl der tatsächlich entfernten Knoten
      */
     @Override
-    protected int removeNodesFromStructure(int nodesToRemove) {
+    protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
         if (nodesToRemove <= 0) return 0;
 
         List<MirrorNode> allNodes = getAllNConnectedNodes();
@@ -288,34 +288,6 @@ public class NConnectedTopology extends BuildAsSubstructure {
     private void initializeInternalState(Network n) {
         this.network = n;
         this.mirrorIterator = n.getMirrors().iterator();
-    }
-
-    /**
-     * Entfernt die angegebene Anzahl von Mirrors aus dem Netzwerk.
-     * Erweitert die BuildAsSubstructure-Implementierung um N-Connected-spezifische Logik.
-     *
-     * @param n Das Netzwerk
-     * @param removeMirrors Anzahl der zu entfernenden Mirrors
-     * @param props Simulation Properties
-     * @param simTime Aktuelle Simulationszeit
-     * @return Set der entfernten Mirrors
-     */
-    @Override
-    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        if (removeMirrors <= 0) {
-            return new HashSet<>();
-        }
-
-        // Verwende die BuildAsSubstructure-Implementierung, die bereits:
-        // 1. Mirror.shutdown() aufruft
-        // 2. StructureNode-Beziehungen bereinigt
-        // 3. Observer benachrichtigt
-        // 4. Set<Mirror> zurückgibt
-
-        // Falls N-Connected-spezifische Nachbearbeitung nötig wäre:
-        // rebalanceConnections();
-
-        return super.handleRemoveMirrors(n, removeMirrors, props, simTime);
     }
 
     /**

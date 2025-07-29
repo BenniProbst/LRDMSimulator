@@ -169,7 +169,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      * @return Anzahl der tatsächlich entfernten Knoten
      */
     @Override
-    protected int removeNodesFromStructure(int nodesToRemove) {
+    protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
         if (nodesToRemove <= 0) return 0;
 
         List<FullyConnectedMirrorNode> fullyConnectedNodes = getAllFullyConnectedNodes();
@@ -202,9 +202,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
             // 1. **NUR STRUKTURPLANUNG**: Entferne alle StructureNode-Verbindungen
             removeNodeFromFullyConnectedStructuralPlanning(nodeToRemove);
-
-            // 2. Entferne aus BuildAsSubstructure-Verwaltung
-            removeFromStructureNodes(nodeToRemove);
 
             actuallyRemoved++;
         }
@@ -239,6 +236,9 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
             nodeToRemove.setParent(null);
         }
 
+        // 2. Entferne aus BuildAsSubstructure-Verwaltung
+        removeFromStructureNodes(nodeToRemove);
+
         // KEINE Mirror-Link-Bereinigung hier! Nur Strukturplanung!
     }
 
@@ -255,25 +255,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
                 .filter(node -> node instanceof FullyConnectedMirrorNode)
                 .map(node -> (FullyConnectedMirrorNode) node)
                 .collect(Collectors.toList());
-    }
-
-    /**
-     * Entfernt einen Knoten vollständig aus der vollständig vernetzten Struktur.
-     * Bereinigt alle bidirektionalen Verbindungen zu anderen Knoten.
-     *
-     * @param nodeToRemove Der zu entfernende FullyConnectedMirrorNode
-     */
-    private void removeNodeFromFullyConnectedStructure(FullyConnectedMirrorNode nodeToRemove) {
-        // Sammle alle verbundenen Knoten
-        Set<StructureNode> connectedNodes = nodeToRemove.getAllNodesInStructure(StructureNode.StructureType.FULLY_CONNECTED,getCurrentStructureRoot());
-
-        // Entferne bidirektionale Verbindungen
-        for (StructureNode connectedNode : connectedNodes) {
-            // Entferne nodeToRemove aus den Kindern von connectedNode
-            connectedNode.removeChild(nodeToRemove);
-            // Entferne connectedNode aus den Kindern von nodeToRemove
-            nodeToRemove.removeChild(connectedNode);
-        }
     }
 
     // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====

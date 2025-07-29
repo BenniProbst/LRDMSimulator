@@ -139,7 +139,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      * Entfernt bevorzugt Endpunkte, um die Linien-Struktur zu erhalten.
      */
     @Override
-    protected int removeNodesFromStructure(int nodesToRemove) {
+    protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
         if (nodesToRemove <= 0) return 0;
 
         List<LineMirrorNode> lineNodes = getAllLineNodes();
@@ -185,14 +185,13 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      * Führt Mirror-Shutdown innerhalb der strukturellen Linien-Planungsgrenzen aus.
      * Arbeitet komplementär zu removeNodesFromStructure.
      *
-     * @param n Das Netzwerk
+     * @param n             Das Netzwerk
      * @param removeMirrors Anzahl zu entfernender Mirrors
-     * @param props Properties der Simulation
-     * @param simTime Aktuelle Simulationszeit
-     * @return Set der entfernten Mirrors
+     * @param props         Properties der Simulation
+     * @param simTime       Aktuelle Simulationszeit
      */
     @Override
-    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
         if (removeMirrors <= 0) {
             return new HashSet<>();
         }
@@ -224,7 +223,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         }
 
         // Synchronisiere Plannings- und Ausführungsebene
-        removeNodesFromStructure(actuallyRemoved);
+        removeNodesFromStructure(actuallyRemoved, );
 
         return cleanedMirrors;
     }

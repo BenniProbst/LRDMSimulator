@@ -222,8 +222,10 @@ public class Mirror {
 		// Verwende nur lesende Zugriffe - keine Modifikation
 		return mirror1.getLinks().stream()
 				.anyMatch(link ->
-						(link.getTarget().equals(mirror2) && link.getSource().equals(mirror1)) ||
-								(link.getTarget().equals(mirror1) && link.getSource().equals(mirror2)));
+						link.getSource().isUsableForNetwork() && link.getTarget().isUsableForNetwork()
+								&& link.getState() != Link.State.CLOSED
+								&& ((link.getTarget().equals(mirror2) && link.getSource().equals(mirror1)) ||
+								(link.getTarget().equals(mirror1) && link.getSource().equals(mirror2))));
 	}
 
 	public boolean isAlreadyConnected(Mirror target) {

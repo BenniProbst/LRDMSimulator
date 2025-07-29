@@ -192,7 +192,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
      * @return Tatsächliche Anzahl der entfernten Knoten
      */
     @Override
-    protected int removeNodesFromStructure(int nodesToRemove) {
+    protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
         if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
             return 0;
         }
@@ -219,14 +219,13 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
      * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für tiefen-beschränkte Bäume.
      * Delegiert an TreeTopologyStrategy mit DEPTH_LIMITED_TREE-Struktur-Typ.
      *
-     * @param n Das Netzwerk
+     * @param n             Das Netzwerk
      * @param removeMirrors Anzahl zu entfernender Mirrors
-     * @param props Properties der Simulation
-     * @param simTime Aktuelle Simulationszeit
-     * @return Set der entfernten Mirrors
+     * @param props         Properties der Simulation
+     * @param simTime       Aktuelle Simulationszeit
      */
     @Override
-    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
         // Delegiert an TreeTopologyStrategy mit spezifischem StructureType
         return handleRemoveMirrorsWithStructureType(n, removeMirrors, props, simTime,
                 StructureNode.StructureType.DEPTH_LIMIT_TREE);

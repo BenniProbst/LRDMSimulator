@@ -145,7 +145,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      * Entfernt zuerst aus externen Bäumen, dann aus äußeren Ringen.
      */
     @Override
-    protected int removeNodesFromStructure(int nodesToRemove) {
+    protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
         if (nodesToRemove <= 0) return 0;
 
         int actuallyRemoved = 0;
@@ -158,7 +158,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
             if (actuallyRemoved >= nodesToRemove) break;
             if (substructure instanceof DepthLimitTreeTopologyStrategy) {
                 int toRemove = Math.min(nodesToRemove - actuallyRemoved, 2);
-                actuallyRemoved += substructure.removeNodesFromStructure(toRemove);
+                actuallyRemoved += substructure.removeNodesFromStructure(toRemove, );
             }
         }
 
@@ -167,7 +167,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
             if (actuallyRemoved >= nodesToRemove) break;
             if (substructure instanceof RingTopologyStrategy && !isCentralRing(substructure)) {
                 int toRemove = Math.min(nodesToRemove - actuallyRemoved, 1);
-                actuallyRemoved += substructure.removeNodesFromStructure(toRemove);
+                actuallyRemoved += substructure.removeNodesFromStructure(toRemove, );
             }
         }
 

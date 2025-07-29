@@ -147,8 +147,8 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      * @return Anzahl der tatsächlich entfernten Knoten
      */
     @Override
-    protected int removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0) return 0;
+    protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
+        if (nodesToRemove <= 0) return new HashSet<>();
 
         List<BalancedTreeMirrorNode> balancedNodes = getAllBalancedTreeNodes();
         BalancedTreeMirrorNode root = getBalancedTreeRoot();
@@ -156,36 +156,34 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         if (balancedNodes.size() - nodesToRemove < 1) {
             nodesToRemove = balancedNodes.size() - 1;
         }
-        if (nodesToRemove <= 0) return 0;
 
-        int actuallyRemoved = 0;
+        Set<MirrorNode> outSet = new HashSet<>();
 
         // Balance-erhaltende Entfernung: Tiefste Blätter zuerst
         for (int i = 0; i < nodesToRemove; i++) {
             BalancedTreeMirrorNode nodeToRemove = findDeepestLeafForBalancedRemoval(root);
             if (nodeToRemove != null && nodeToRemove != root) {
                 removeNodeFromStructuralPlanning(nodeToRemove);
-                actuallyRemoved++;
+                outSet.add(nodeToRemove);
             } else {
                 break;
             }
         }
 
-        return actuallyRemoved;
+        return outSet;
     }
 
     /**
      * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für balancierte Bäume.
      * Delegiert an TreeTopologyStrategy mit BALANCED_TREE-Struktur-Typ.
      *
-     * @param n Das Netzwerk
+     * @param n             Das Netzwerk
      * @param removeMirrors Anzahl zu entfernender Mirrors
-     * @param props Properties der Simulation
-     * @param simTime Aktuelle Simulationszeit
-     * @return Set der entfernten Mirrors
+     * @param props         Properties der Simulation
+     * @param simTime       Aktuelle Simulationszeit
      */
     @Override
-    public Set<Mirror> handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
+    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
         // Delegiert an TreeTopologyStrategy mit spezifischem StructureType
         return handleRemoveMirrorsWithStructureType(n, removeMirrors, props, simTime,
                 StructureNode.StructureType.BALANCED_TREE);
