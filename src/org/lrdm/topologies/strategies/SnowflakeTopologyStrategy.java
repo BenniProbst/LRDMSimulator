@@ -146,28 +146,30 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0) return 0;
+        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
+            return new HashSet<>();
+        }
 
-        int actuallyRemoved = 0;
+        Set<MirrorNode> actuallyRemoved = new HashSet<>();
 
         // Finde alle Substrukturen
         Set<BuildAsSubstructure> allSubstructures = new HashSet<>(getNodeToSubstructureMapping().values());
 
         // Entferne aus Externen Baum-Strukturen zuerst
         for (BuildAsSubstructure substructure : allSubstructures) {
-            if (actuallyRemoved >= nodesToRemove) break;
+            if (actuallyRemoved.size() >= nodesToRemove) break;
             if (substructure instanceof DepthLimitTreeTopologyStrategy) {
-                int toRemove = Math.min(nodesToRemove - actuallyRemoved, 2);
-                actuallyRemoved += substructure.removeNodesFromStructure(toRemove, );
+                int toRemove = Math.min(nodesToRemove - actuallyRemoved.size(), 2);
+                actuallyRemoved.addAll(substructure.removeNodesFromStructure(toRemove));
             }
         }
 
         // Entferne aus Ring-Strukturen (nie den zentralen Ring)
         for (BuildAsSubstructure substructure : allSubstructures) {
-            if (actuallyRemoved >= nodesToRemove) break;
+            if (actuallyRemoved.size() >= nodesToRemove) break;
             if (substructure instanceof RingTopologyStrategy && !isCentralRing(substructure)) {
-                int toRemove = Math.min(nodesToRemove - actuallyRemoved, 1);
-                actuallyRemoved += substructure.removeNodesFromStructure(toRemove, );
+                int toRemove = Math.min(nodesToRemove - actuallyRemoved.size(), 1);
+                actuallyRemoved.addAll(substructure.removeNodesFromStructure(toRemove));
             }
         }
 

@@ -155,7 +155,9 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0) return new HashSet<>();
+        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
+            return new HashSet<>();
+        }
 
         List<TreeMirrorNode> treeNodes = getAllTreeNodes();
         TreeMirrorNode root = (TreeMirrorNode) getCurrentStructureRoot();
@@ -174,13 +176,16 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
                 })
                 .toList();
 
+        Set<MirrorNode> removedNodes = new HashSet<>();
         // Entferne die ersten N Kandidaten
         for (int i = 0; i < nodesToRemove && i < candidates.size(); i++) {
             TreeMirrorNode nodeToRemove = candidates.get(i);
-            removeFromStructureNodes(nodeToRemove);
+            removeNodeFromStructuralPlanning(nodeToRemove,
+                    Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.TREE));
+            removedNodes.add(nodeToRemove);
         }
 
-        return new HashSet<MirrorNode>(candidates);
+        return removedNodes;
     }
 
     /**

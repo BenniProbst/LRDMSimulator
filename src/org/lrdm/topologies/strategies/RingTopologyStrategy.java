@@ -8,6 +8,7 @@ import org.lrdm.effectors.TargetLinkChange;
 import org.lrdm.effectors.TopologyChange;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.RingMirrorNode;
+import org.lrdm.topologies.node.StructureNode;
 
 import java.util.*;
 
@@ -139,27 +140,29 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0) return 0;
+        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
+            return new HashSet<>();
+        }
 
         List<RingMirrorNode> ringNodes = getAllRingNodes();
         if (ringNodes.size() - nodesToRemove < minRingSize) {
             nodesToRemove = ringNodes.size() - minRingSize;
         }
-        if (nodesToRemove <= 0) return 0;
 
-        int actuallyRemoved = 0;
+        Set<MirrorNode> removedNodes = new HashSet<>();
 
         // Ring-Entfernung: Entferne Nicht-Head-Knoten
         for (int i = 0; i < nodesToRemove && !ringNodes.isEmpty(); i++) {
             RingMirrorNode nodeToRemove = selectNodeForRemoval(ringNodes);
             if (nodeToRemove != null) {
-                removeNodeFromRingStructuralPlanning(nodeToRemove);
+                removeNodeFromStructuralPlanning(nodeToRemove,
+                        Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.RING));
                 ringNodes.remove(nodeToRemove);
-                actuallyRemoved++;
+                removedNodes.add(nodeToRemove);
             }
         }
 
-        return actuallyRemoved;
+        return removedNodes;
     }
 
     @Override
@@ -177,54 +180,6 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
     @Override
     protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
         return new RingMirrorNode(mirror.getID(), mirror);
-    }
-
-    /**
-     * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für Ring-Erhaltung.
-     * Führt Mirror-Shutdown innerhalb der strukturellen Ring-Planungsgrenzen aus.
-     * Arbeitet komplementär zu removeNodesFromStructure.
-     *
-     * @param n             Das Netzwerk
-     * @param removeMirrors Anzahl zu entfernender Mirrors
-     * @param props         Properties der Simulation
-     * @param simTime       Aktuelle Simulationszeit
-     */
-    @Override
-    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        if (removeMirrors <= 0) {
-            return new HashSet<>();
-        }
-
-        List<RingMirrorNode> ringNodes = getAllRingNodes();
-        if (ringNodes.size() - removeMirrors < minRingSize) {
-            removeMirrors = ringNodes.size() - minRingSize;
-        }
-        if (removeMirrors <= 0) {
-            return new HashSet<>();
-        }
-
-        Set<Mirror> cleanedMirrors = new HashSet<>();
-        int actuallyRemoved = 0;
-
-        // Ausführungsebene: Ring-bewusste Mirror-Entfernung
-        for (int i = 0; i < removeMirrors && !ringNodes.isEmpty(); i++) {
-            RingMirrorNode targetNode = selectNodeForRemoval(ringNodes);
-            if (targetNode != null) {
-                Mirror targetMirror = targetNode.getMirror();
-                if (targetMirror != null) {
-                    // Mirror-Shutdown auf Ausführungsebene
-                    targetMirror.shutdown(simTime);
-                    cleanedMirrors.add(targetMirror);
-                    actuallyRemoved++;
-                    ringNodes.remove(targetNode);
-                }
-            }
-        }
-
-        // Synchronisiere Plannings- und Ausführungsebene
-        removeNodesFromStructure(actuallyRemoved, );
-
-        return cleanedMirrors;
     }
 
     // ===== TOPOLOGY STRATEGY METHODEN =====
@@ -349,49 +304,6 @@ public class RingTopologyStrategy extends BuildAsSubstructure {
 
         // Fallback: Erster verfügbarer Knoten (sollte nicht Head sein, wenn minRingSize > 1)
         return ringNodes.get(0);
-    }
-
-    /**
-     * **PLANUNGSEBENE**: Entfernt Knoten aus der Ring-Struktur-Planung.
-     * Stellt sicher, dass der Ring geschlossen bleibt.
-     */
-    private void removeNodeFromRingStructuralPlanning(RingMirrorNode nodeToRemove) {
-        if (nodeToRemove == null) return;
-
-        // Finde Vorgänger und Nachfolger
-        RingMirrorNode predecessor = findRingPredecessor(nodeToRemove);
-        RingMirrorNode successor = findRingSuccessor(nodeToRemove);
-
-        if (predecessor != null && successor != null) {
-            // Entferne Knoten aus der Kette
-            predecessor.removeChild(nodeToRemove);
-            nodeToRemove.removeChild(successor);
-
-            // Verbinde Vorgänger direkt mit Nachfolger (Ring bleibt geschlossen)
-            predecessor.addChild(successor);
-            if (successor.getParent() == nodeToRemove) {
-                successor.setParent(predecessor);
-            }
-        }
-
-        // Entferne Knoten aus der Struktur
-        removeFromStructureNodes(nodeToRemove);
-    }
-
-    /**
-     * Findet den Vorgänger eines Ring-Knotens.
-     */
-    private RingMirrorNode findRingPredecessor(RingMirrorNode node) {
-        if (node == null) return null;
-        return (RingMirrorNode) node.getParent();
-    }
-
-    /**
-     * Findet den Nachfolger eines Ring-Knotens.
-     */
-    private RingMirrorNode findRingSuccessor(RingMirrorNode node) {
-        if (node == null || node.getChildren().isEmpty()) return null;
-        return (RingMirrorNode) node.getChildren().iterator().next();
     }
 
     /**

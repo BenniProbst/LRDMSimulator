@@ -170,7 +170,9 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      */
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0) return 0;
+        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
+            return new HashSet<>();
+        }
 
         List<FullyConnectedMirrorNode> fullyConnectedNodes = getAllFullyConnectedNodes();
 
@@ -189,57 +191,24 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
         // Begrenze auf verfügbare Anzahl
         int actualRemovalCount = Math.min(nodesToRemove, candidatesForRemoval.size());
-        if (actualRemovalCount == 0) return 0;
+        if (actualRemovalCount == 0) return new HashSet<>();
 
         // **FULLY-CONNECTED-SPEZIFISCH**: Sortiere nach ID (höchste zuerst) für deterministische Entfernung
         candidatesForRemoval.sort((node1, node2) -> Integer.compare(node2.getId(), node1.getId()));
 
-        int actuallyRemoved = 0;
+        Set<MirrorNode> removedNodes = new HashSet<>();
 
         // **NUR PLANUNGSEBENE**: Entferne die ersten N Kandidaten
         for (int i = 0; i < actualRemovalCount; i++) {
             FullyConnectedMirrorNode nodeToRemove = candidatesForRemoval.get(i);
 
-            // 1. **NUR STRUKTURPLANUNG**: Entferne alle StructureNode-Verbindungen
-            removeNodeFromFullyConnectedStructuralPlanning(nodeToRemove);
+            removeNodeFromStructuralPlanning(nodeToRemove,
+                    Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.FULLY_CONNECTED));
 
-            actuallyRemoved++;
+            removedNodes.add(nodeToRemove);
         }
 
-        return actuallyRemoved;
-    }
-
-    /**
-     * **NUR PLANUNGSEBENE**: Entfernt einen Knoten vollständig aus der vollständig vernetzten Struktur.
-     * Bereinigt alle bidirektionalen StructureNode-Verbindungen zu anderen Knoten.
-     * Arbeitet ohne Zeitbezug - nur strukturelle Fully-Connected-Änderungen.
-     *
-     * @param nodeToRemove Der zu entfernende FullyConnectedMirrorNode
-     */
-    private void removeNodeFromFullyConnectedStructuralPlanning(FullyConnectedMirrorNode nodeToRemove) {
-        if (nodeToRemove == null) return;
-
-        // Sammle alle verbundenen Knoten vor der Trennung
-        Set<StructureNode> connectedNodes = nodeToRemove.getAllNodesInStructure(StructureNode.StructureType.FULLY_CONNECTED,getCurrentStructureRoot());
-
-        // **NUR STRUKTURPLANUNG**: Entferne bidirektionale StructureNode-Verbindungen
-        for (StructureNode connectedNode : connectedNodes) {
-            // Entferne nodeToRemove aus den Kindern von connectedNode
-            connectedNode.removeChild(nodeToRemove);
-            // Entferne connectedNode aus den Kindern von nodeToRemove
-            nodeToRemove.removeChild(connectedNode);
-        }
-
-        // Parent-Verbindung trennen (falls vorhanden)
-        if (nodeToRemove.getParent() != null) {
-            nodeToRemove.getParent().removeChild(nodeToRemove);
-            nodeToRemove.setParent(null);
-        }
-
-        // 2. Entferne aus BuildAsSubstructure-Verwaltung
-        removeFromStructureNodes(nodeToRemove);
-
-        // KEINE Mirror-Link-Bereinigung hier! Nur Strukturplanung!
+        return removedNodes;
     }
 
 // ===== TYPSICHERE HILFSMETHODEN =====
@@ -412,18 +381,14 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         }
 
         // Anzahl der verwalteten StructureNodes
-        Collection<MirrorNode> allNodes = getAllStructureNodes();
-        if (allNodes != null) {
-            sb.append(", structureNodes=").append(allNodes.size());
+        Set<MirrorNode> allNodes = getAllStructureNodes();
+        sb.append(", structureNodes=").append(allNodes.size());
 
-            // Typ-Verteilung der Knoten
-            long fullyConnectedNodes = allNodes.stream()
-                    .filter(node -> node instanceof FullyConnectedMirrorNode)
-                    .count();
-            sb.append(", fullyConnectedNodes=").append(fullyConnectedNodes);
-        } else {
-            sb.append(", structureNodes=0");
-        }
+        // Typ-Verteilung der Knoten
+        long fullyConnectedNodes = allNodes.stream()
+                .filter(node -> node instanceof FullyConnectedMirrorNode)
+                .count();
+        sb.append(", fullyConnectedNodes=").append(fullyConnectedNodes);
 
         // ===== TOPOLOGIE-SPEZIFISCHE METRIKEN =====
         if (network != null) {
@@ -461,7 +426,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         }
 
         // Validierung (einfacher Check ohne komplexe Aufrufe)
-        boolean isValid = (root != null && allNodes != null && !allNodes.isEmpty());
+        boolean isValid = root != null && !allNodes.isEmpty();
         sb.append(", valid=").append(isValid);
 
         // ===== PERFORMANCE-INFORMATIONEN =====

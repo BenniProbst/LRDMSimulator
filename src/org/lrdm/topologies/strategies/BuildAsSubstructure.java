@@ -626,7 +626,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         Set<MirrorNode> removePlanningMirrorNodes = removeNodesFromStructure(removeMirrors);
 
         Set<Mirror> shutdownMirrors = new HashSet<>();
-        removePlanningMirrorNodes.forEach(node -> {shutdownMirrors.add(node.getMirror());});
+        removePlanningMirrorNodes.forEach(node -> shutdownMirrors.add(node.getMirror()));
 
         // ===== PHASE 2: LINK-UPDATE - komplette Link-Neuerstellung =====
 
@@ -690,23 +690,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 .filter(node -> node.getMirror() == mirror)
                 .findFirst()
                 .orElse(null);
-    }
-
-
-    /**
-     * Ermittelt den anderen Mirror eines Links.
-     *
-     * @param link Der Link
-     * @param currentMirror Der aktuelle Mirror
-     * @return Der andere Mirror des Links
-     */
-    private Mirror getOtherMirror(Link link, Mirror currentMirror) {
-        if (link.getSource() == currentMirror) {
-            return link.getTarget();
-        } else if (link.getTarget() == currentMirror) {
-            return link.getSource();
-        }
-        return null;
     }
 
     /**
@@ -828,7 +811,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 }
 
                 // Prüfe, ob die Mirrors bereits verbunden sind
-                //TODO: für das Netzwerk zählen ungültige mirror als zu löschende Verbindungen
                 if (!node1.getMirror().isAlreadyConnected(node2.getMirror()) && !node2.getMirror().isAlreadyConnected(node1.getMirror())) {
                     //Mirror nicht verbunden, sollte er per Plan verbunden sein → Link erstellen
                     if (node12_connect) {

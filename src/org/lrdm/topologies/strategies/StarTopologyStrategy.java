@@ -9,6 +9,7 @@ import org.lrdm.effectors.TargetLinkChange;
 import org.lrdm.effectors.TopologyChange;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StarMirrorNode;
+import org.lrdm.topologies.node.StructureNode;
 
 import java.util.*;
 
@@ -133,27 +134,29 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0) return 0;
+        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
+            return new HashSet<>();
+        }
 
         List<StarMirrorNode> starNodes = getAllStarNodes();
         if (starNodes.size() - nodesToRemove < minStarSize) {
             nodesToRemove = starNodes.size() - minStarSize;
         }
-        if (nodesToRemove <= 0) return 0;
 
-        int actuallyRemoved = 0;
         List<StarMirrorNode> leaves = findStarLeaves();
+        Set<MirrorNode> removedNodes = new HashSet<>();
 
         // Stern-Entfernung: Entferne nur Blätter, nie das Zentrum
         for (int i = 0; i < nodesToRemove && i < leaves.size(); i++) {
             StarMirrorNode leafToRemove = leaves.get(i);
             if (leafToRemove != null) {
-                removeLeafFromStarStructuralPlanning(leafToRemove);
-                actuallyRemoved++;
+                removeNodeFromStructuralPlanning(leafToRemove,
+                        Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.STAR));
+                removedNodes.add(leafToRemove);
             }
         }
 
-        return actuallyRemoved;
+        return removedNodes;
     }
 
     @Override
@@ -171,54 +174,6 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
     @Override
     protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
         return new StarMirrorNode(mirror.getID(), mirror);
-    }
-
-    /**
-     * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für Stern-Erhaltung.
-     * Führt Mirror-Shutdown innerhalb der strukturellen Stern-Planungsgrenzen aus.
-     * Arbeitet komplementär zu removeNodesFromStructure.
-     *
-     * @param n             Das Netzwerk
-     * @param removeMirrors Anzahl zu entfernender Mirrors
-     * @param props         Properties der Simulation
-     * @param simTime       Aktuelle Simulationszeit
-     */
-    @Override
-    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        if (removeMirrors <= 0) {
-            return new HashSet<>();
-        }
-
-        List<StarMirrorNode> starNodes = getAllStarNodes();
-        if (starNodes.size() - removeMirrors < minStarSize) {
-            removeMirrors = starNodes.size() - minStarSize;
-        }
-        if (removeMirrors <= 0) {
-            return new HashSet<>();
-        }
-
-        Set<Mirror> cleanedMirrors = new HashSet<>();
-        int actuallyRemoved = 0;
-        List<StarMirrorNode> leaves = findStarLeaves();
-
-        // Ausführungsebene: Stern-bewusste Mirror-Entfernung (nur Blätter)
-        for (int i = 0; i < removeMirrors && i < leaves.size(); i++) {
-            StarMirrorNode targetLeaf = leaves.get(i);
-            if (targetLeaf != null) {
-                Mirror targetMirror = targetLeaf.getMirror();
-                if (targetMirror != null) {
-                    // Mirror-Shutdown auf Ausführungsebene
-                    targetMirror.shutdown(simTime);
-                    cleanedMirrors.add(targetMirror);
-                    actuallyRemoved++;
-                }
-            }
-        }
-
-        // Synchronisiere Plannings- und Ausführungsebene
-        removeNodesFromStructure(actuallyRemoved, );
-
-        return cleanedMirrors;
     }
 
     // ===== TOPOLOGY STRATEGY METHODEN =====
@@ -309,24 +264,6 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         newLeaf.setParent(center);
 
         // KEINE Mirror-Link-Erstellung hier! Nur Strukturplanung!
-    }
-
-    /**
-     * **PLANUNGSEBENE**: Entfernt ein Blatt aus der Stern-Struktur-Planung.
-     * Arbeitet ohne Zeitbezug - nur strukturelle Stern-Änderung.
-     */
-    private void removeLeafFromStarStructuralPlanning(StarMirrorNode leafToRemove) {
-        if (leafToRemove == null) return;
-
-        StarMirrorNode center = (StarMirrorNode) leafToRemove.getParent();
-        if (center != null) {
-            // Entferne Verbindung zwischen Zentrum und Blatt
-            center.removeChild(leafToRemove);
-            leafToRemove.setParent(null);
-        }
-
-        // Entferne Blatt aus der Struktur
-        removeFromStructureNodes(leafToRemove);
     }
 
     /**

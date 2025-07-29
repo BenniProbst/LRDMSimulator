@@ -5,7 +5,6 @@ import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.*;
 import org.lrdm.topologies.node.*;
-import org.lrdm.topologies.node.StructureNode.StructureType;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -140,27 +139,29 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0) return 0;
+        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
+            return new HashSet<>();
+        }
 
         List<LineMirrorNode> lineNodes = getAllLineNodes();
         if (lineNodes.size() - nodesToRemove < minLineSize) {
             nodesToRemove = lineNodes.size() - minLineSize;
         }
-        if (nodesToRemove <= 0) return 0;
 
-        int actuallyRemoved = 0;
+        Set<MirrorNode> removedMirrorNodes = new HashSet<>();
 
         // Linien-Entfernung: Entferne bevorzugt Endpunkte
         for (int i = 0; i < nodesToRemove && !lineNodes.isEmpty(); i++) {
             LineMirrorNode nodeToRemove = selectEndpointForRemoval(lineNodes);
             if (nodeToRemove != null) {
-                removeNodeFromLineStructuralPlanning(nodeToRemove);
+                removeNodeFromStructuralPlanning(nodeToRemove,
+                        Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.LINE));
                 lineNodes.remove(nodeToRemove);
-                actuallyRemoved++;
+                removedMirrorNodes.add(nodeToRemove);
             }
         }
 
-        return actuallyRemoved;
+        return removedMirrorNodes;
     }
 
     @Override
@@ -178,54 +179,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
     @Override
     protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
         return new LineMirrorNode(mirror.getID(), mirror);
-    }
-
-    /**
-     * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für Linien-Erhaltung.
-     * Führt Mirror-Shutdown innerhalb der strukturellen Linien-Planungsgrenzen aus.
-     * Arbeitet komplementär zu removeNodesFromStructure.
-     *
-     * @param n             Das Netzwerk
-     * @param removeMirrors Anzahl zu entfernender Mirrors
-     * @param props         Properties der Simulation
-     * @param simTime       Aktuelle Simulationszeit
-     */
-    @Override
-    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        if (removeMirrors <= 0) {
-            return new HashSet<>();
-        }
-
-        List<LineMirrorNode> lineNodes = getAllLineNodes();
-        if (lineNodes.size() - removeMirrors < minLineSize) {
-            removeMirrors = lineNodes.size() - minLineSize;
-        }
-        if (removeMirrors <= 0) {
-            return new HashSet<>();
-        }
-
-        Set<Mirror> cleanedMirrors = new HashSet<>();
-        int actuallyRemoved = 0;
-
-        // Ausführungsebene: Linien-bewusste Mirror-Entfernung
-        for (int i = 0; i < removeMirrors && !lineNodes.isEmpty(); i++) {
-            LineMirrorNode targetNode = selectEndpointForRemoval(lineNodes);
-            if (targetNode != null) {
-                Mirror targetMirror = targetNode.getMirror();
-                if (targetMirror != null) {
-                    // Mirror-Shutdown auf Ausführungsebene
-                    targetMirror.shutdown(simTime);
-                    cleanedMirrors.add(targetMirror);
-                    actuallyRemoved++;
-                    lineNodes.remove(targetNode);
-                }
-            }
-        }
-
-        // Synchronisiere Plannings- und Ausführungsebene
-        removeNodesFromStructure(actuallyRemoved, );
-
-        return cleanedMirrors;
     }
 
     // ===== FEHLENDE TOPOLOGY STRATEGY METHODEN =====
@@ -273,8 +226,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
             LineMirrorNode next = lineNodes.get(i + 1);
 
             // StructureNode-Verbindung
-            Set<StructureType> typeIds = new HashSet<>();
-            typeIds.add(StructureType.LINE);
             current.addChild(next);
             next.setParent(current);
 
@@ -289,6 +240,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         if (!hasNextMirror()) return null;
 
         Mirror mirror = getNextMirror();
+        assert mirror != null;
         LineMirrorNode lineNode = new LineMirrorNode(mirror.getID(), mirror);
         addToStructureNodes(lineNode);
 
@@ -303,8 +255,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         if (endpoint == null || newNode == null) return;
 
         // **NUR STRUKTURPLANUNG**: StructureNode-Verbindung (keine Mirror-Links!)
-        Set<StructureType> typeIds = new HashSet<>();
-        typeIds.add(StructureType.LINE);
         endpoint.addChild(newNode);
         newNode.setParent(endpoint);
 
@@ -333,36 +283,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
 
         // Fallback: Erster verfügbarer Endpunkt
         return endpoints.get(0);
-    }
-
-    /**
-     * **PLANUNGSEBENE**: Entfernt Knoten aus der Linien-Struktur-Planung.
-     * Arbeitet ohne Zeitbezug - nur strukturelle Linien-Änderungen.
-     */
-    private void removeNodeFromLineStructuralPlanning(LineMirrorNode nodeToRemove) {
-        if (nodeToRemove == null) return;
-
-        // 1. Parent-Kind-Verbindungen trennen
-        StructureNode parent = nodeToRemove.getParent();
-        if (parent != null) {
-            parent.removeChild(nodeToRemove);
-            nodeToRemove.setParent(null);
-        }
-
-        // 2. Kinder an Parent weiterleiten (falls vorhanden)
-        List<StructureNode> children = new ArrayList<>(nodeToRemove.getChildren());
-        for (StructureNode child : children) {
-            nodeToRemove.removeChild(child);
-            if (parent != null) {
-                Set<StructureType> typeIds = new HashSet<>();
-                typeIds.add(StructureType.LINE);
-                parent.addChild(child);
-                child.setParent(parent);
-            }
-        }
-
-        // 3. Entferne aus BuildAsSubstructure-Verwaltung
-        // Note: removeFromStructureNodes wird durch cleanupStructureNodes in removeNodesFromStructure gerufen
     }
 
     /**

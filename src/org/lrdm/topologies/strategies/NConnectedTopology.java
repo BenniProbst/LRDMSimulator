@@ -135,7 +135,9 @@ public class NConnectedTopology extends BuildAsSubstructure {
      */
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0) return 0;
+        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
+            return new HashSet<>();
+        }
 
         List<MirrorNode> allNodes = getAllNConnectedNodes();
 
@@ -145,7 +147,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
                 .filter(node -> !node.isHead()) // Head-Knoten bevorzugt beibehalten
                 .collect(Collectors.toList());
 
-        // Fallback: Wenn keine Nicht-Head-Kandidaten verfügbar, verwende alle Nicht-Root-Knoten
+        // Fallback: Wenn keine Nicht-Head-Kandidaten verfügbar sind, verwenden alle Nicht-Root-Knoten
         if (candidatesForRemoval.isEmpty()) {
             candidatesForRemoval = allNodes.stream()
                     .filter(node -> node != getCurrentStructureRoot())
@@ -154,7 +156,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
 
         // Begrenze auf verfügbare Anzahl
         int actualRemovalCount = Math.min(nodesToRemove, candidatesForRemoval.size());
-        if (actualRemovalCount == 0) return 0;
+        if (actualRemovalCount == 0) return new HashSet<>();
 
         // **N-CONNECTED-SPEZIFISCH**: Sortiere nach Verbindungsanzahl (weniger Verbindungen zuerst)
         // Bei gleicher Verbindungsanzahl: höhere ID zuerst (deterministische Auswahl)
@@ -170,57 +172,20 @@ public class NConnectedTopology extends BuildAsSubstructure {
             return Integer.compare(node2.getId(), node1.getId());
         });
 
-        int actuallyRemoved = 0;
-
         // **NUR PLANUNGSEBENE**: Entferne die ersten N Kandidaten
+        Set<MirrorNode> removedNodes = new HashSet<>();
+
         for (int i = 0; i < actualRemovalCount; i++) {
             MirrorNode nodeToRemove = candidatesForRemoval.get(i);
 
             // 1. **NUR STRUKTURPLANUNG**: Entferne alle StructureNode-Verbindungen
-            removeNodeFromNConnectedStructuralPlanning(nodeToRemove);
+            removeNodeFromStructuralPlanning(nodeToRemove,
+                    Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.N_CONNECTED));
 
-            // 2. Entferne aus BuildAsSubstructure-Verwaltung
-            removeFromStructureNodes(nodeToRemove);
-
-            actuallyRemoved++;
+            removedNodes.add(nodeToRemove);
         }
 
-        return actuallyRemoved;
-    }
-
-    /**
-     * **NUR PLANUNGSEBENE**: Entfernt einen Knoten vollständig aus der N-Connected-Struktur.
-     * Bereinigt alle bidirektionalen StructureNode-Verbindungen zu anderen Knoten.
-     * Arbeitet ohne Zeitbezug - nur strukturelle N-Connected-Änderungen.
-     *
-     * @param nodeToRemove Der zu entfernende MirrorNode
-     */
-    private void removeNodeFromNConnectedStructuralPlanning(MirrorNode nodeToRemove) {
-        if (nodeToRemove == null) return;
-
-        // Sammle alle verbundenen Knoten vor der Trennung
-        Set<MirrorNode> connectedNodes = new HashSet<>();
-        for (StructureNode child : nodeToRemove.getChildren()) {
-            if (child instanceof MirrorNode mirrorChild) {
-                connectedNodes.add(mirrorChild);
-            }
-        }
-
-        // **NUR STRUKTURPLANUNG**: Entferne bidirektionale StructureNode-Verbindungen
-        for (MirrorNode connectedNode : connectedNodes) {
-            // Entferne nodeToRemove aus den Kindern von connectedNode
-            connectedNode.removeChild(nodeToRemove);
-            // Entferne connectedNode aus den Kindern von nodeToRemove
-            nodeToRemove.removeChild(connectedNode);
-        }
-
-        // Parent-Verbindung trennen (falls vorhanden)
-        if (nodeToRemove.getParent() != null) {
-            nodeToRemove.getParent().removeChild(nodeToRemove);
-            nodeToRemove.setParent(null);
-        }
-
-        // KEINE Mirror-Link-Bereinigung hier! Nur Strukturplanung!
+        return removedNodes;
     }
 
 // ===== TYPSICHERE HILFSMETHODEN =====

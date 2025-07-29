@@ -39,13 +39,10 @@ public abstract class TopologyStrategy {
 	 * @param simTime       current simulation time
 	 */
 	public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-		Set<Mirror> cleanedMirrors = new HashSet<>();
 		for(int i = 0; i < removeMirrors; i++) {
 			Mirror m = n.getMirrorsSortedById().get(n.getNumMirrors()-1-i);
 			m.shutdown(simTime);
-			cleanedMirrors.add(m);
 		}
-		return cleanedMirrors;
 	}
 
 	/**Is meant to return the expected number of total links in the network according to the respective topology.

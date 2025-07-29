@@ -194,10 +194,10 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
         if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
-            return 0;
+            return new HashSet<>();
         }
 
-        int actuallyRemoved = 0;
+        Set<MirrorNode> removedNodes = new HashSet<>();
 
         for (int i = 0; i < nodesToRemove; i++) {
             // 1. Finde den tiefsten Blatt-Knoten
@@ -208,27 +208,12 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
             }
 
             // 2. Entferne aus der Struktur (nur StructureNode-Ebene)
-            removeNodeFromDepthLimitedTreeStructure(nodeToRemove);
-            actuallyRemoved++;
+            removeNodeFromStructuralPlanning(nodeToRemove,
+                    Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.DEPTH_LIMIT_TREE));
+            removedNodes.add(nodeToRemove);
         }
 
-        return actuallyRemoved;
-    }
-
-    /**
-     * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für tiefen-beschränkte Bäume.
-     * Delegiert an TreeTopologyStrategy mit DEPTH_LIMITED_TREE-Struktur-Typ.
-     *
-     * @param n             Das Netzwerk
-     * @param removeMirrors Anzahl zu entfernender Mirrors
-     * @param props         Properties der Simulation
-     * @param simTime       Aktuelle Simulationszeit
-     */
-    @Override
-    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        // Delegiert an TreeTopologyStrategy mit spezifischem StructureType
-        return handleRemoveMirrorsWithStructureType(n, removeMirrors, props, simTime,
-                StructureNode.StructureType.DEPTH_LIMIT_TREE);
+        return removedNodes;
     }
 
     // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
@@ -339,24 +324,6 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
         }
 
         return deepestLeaf;
-    }
-
-    /**
-     * **PLANUNGSEBENE**: Entfernt einen Knoten vollständig aus der tiefen-beschränkten Baum-Struktur.
-     * Bereinigt alle Parent-Child-Verbindungen und entfernt aus BuildAsSubstructure-Verwaltung.
-     *
-     * @param nodeToRemove Der zu entfernende DepthLimitedTreeMirrorNode
-     */
-    private void removeNodeFromDepthLimitedTreeStructure(DepthLimitedTreeMirrorNode nodeToRemove) {
-        // 1. Parent-Kind-Verbindung trennen
-        StructureNode parent = nodeToRemove.getParent();  // Das ist ein StructureNode!
-        if (parent != null) {
-            parent.removeChild(nodeToRemove);
-            nodeToRemove.setParent(null);
-        }
-
-        // 2. Entferne aus BuildAsSubstructure-Verwaltung
-        removeFromStructureNodes(nodeToRemove);
     }
 
     /**

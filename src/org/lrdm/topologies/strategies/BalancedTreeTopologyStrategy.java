@@ -148,7 +148,9 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      */
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0) return new HashSet<>();
+        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
+            return new HashSet<>();
+        }
 
         List<BalancedTreeMirrorNode> balancedNodes = getAllBalancedTreeNodes();
         BalancedTreeMirrorNode root = getBalancedTreeRoot();
@@ -163,7 +165,8 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         for (int i = 0; i < nodesToRemove; i++) {
             BalancedTreeMirrorNode nodeToRemove = findDeepestLeafForBalancedRemoval(root);
             if (nodeToRemove != null && nodeToRemove != root) {
-                removeNodeFromStructuralPlanning(nodeToRemove);
+                removeNodeFromStructuralPlanning(nodeToRemove,
+                        Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.BALANCED_TREE));
                 outSet.add(nodeToRemove);
             } else {
                 break;
@@ -171,22 +174,6 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         }
 
         return outSet;
-    }
-
-    /**
-     * **AUSFÜHRUNGSEBENE**: Überschreibt die Mirror-Entfernung für balancierte Bäume.
-     * Delegiert an TreeTopologyStrategy mit BALANCED_TREE-Struktur-Typ.
-     *
-     * @param n             Das Netzwerk
-     * @param removeMirrors Anzahl zu entfernender Mirrors
-     * @param props         Properties der Simulation
-     * @param simTime       Aktuelle Simulationszeit
-     */
-    @Override
-    public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        // Delegiert an TreeTopologyStrategy mit spezifischem StructureType
-        return handleRemoveMirrorsWithStructureType(n, removeMirrors, props, simTime,
-                StructureNode.StructureType.BALANCED_TREE);
     }
 
     // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
@@ -519,33 +506,6 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
                 collectBalancedLeaves(balancedChild, leaves);
             }
         }
-    }
-
-    /**
-     * **PLANUNGSEBENE**: Entfernt Knoten aus struktureller Planung.
-     * Arbeitet ohne Zeitbezug - nur strukturelle Änderungen.
-     * KORRIGIERT: Verwendet die BuildAsSubstructure-API anstatt direkter Collection-Modifikation
-     *
-     * @param nodeToRemove Der zu entfernende Knoten
-     */
-    private void removeNodeFromStructuralPlanning(BalancedTreeMirrorNode nodeToRemove) {
-        // Entferne aus Parent-Child-Beziehung
-        StructureNode parent = nodeToRemove.getParent();
-        if (parent != null) {
-            parent.removeChild(nodeToRemove);
-        }
-
-        // Verweise Kinder an Großeltern (Balance-erhaltend)
-        List<StructureNode> children = new ArrayList<>(nodeToRemove.getChildren());
-        for (StructureNode child : children) {
-            nodeToRemove.removeChild(child);
-            if (parent != null) {
-                parent.addChild(child);
-            }
-        }
-
-        // Entferne aus der StructureNode-Verwaltung
-        removeFromStructureNodes(nodeToRemove);
     }
 
     // ===== TYPSICHERE HILFSMETHODEN =====
