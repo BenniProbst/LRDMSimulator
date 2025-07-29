@@ -486,7 +486,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     protected Set<MirrorNode> removeNodesFromStructure(int totalNodes){
         // ===== PHASE 1: PLANUNGSEBENE - Structure Nodes nach höchsten IDs entkoppeln =====
-
         // 1.1. Alle aktuellen Structure Nodes sammeln und nach ID sortieren (höchste zuerst)
         List<MirrorNode> allStructureNodes = getAllStructureNodes()
                 .stream()

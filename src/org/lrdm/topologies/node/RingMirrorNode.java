@@ -195,7 +195,6 @@ public class RingMirrorNode extends MirrorNode {
         }
 
         // Head-Node muss Edge-Links haben (Verbindung nach außen)
-        final int headId = headNode.getId();
         return headNode.getNumEdgeLinks(typeId, head) > 0;
     }
 
@@ -436,71 +435,6 @@ public class RingMirrorNode extends MirrorNode {
         StructureType typeId = StructureType.RING;
         StructureNode head = findHead(typeId);
         return getAllNodesInStructure(typeId, head != null ? head : this).size();
-    }
-
-    /**
-     * Berechnet die Position dieses Knotens im Ring (0-basiert).
-     * <p>
-     * Startet beim Head-Knoten und zählt über Ring-Navigation bis zu diesem Knoten.
-     * Position 0 ist der Head-Knoten, Position 1 ist das erste Kind, etc.
-     * <p>
-     * Ring-sichere Navigation:
-     * - Nutzt getNextInRing() für sichere Traversierung
-     * - Begrenzt Iteration durch Ring-Größe (verhindert Endlos-Loops)
-     * - Erkennt Rückkehr zum Head (geschlossener Ring)
-     *
-     * @return Position im Ring (0-basiert) oder -1 wenn nicht gefunden
-     */
-    public int getPositionInRing() {
-        StructureType typeId = StructureType.RING;
-        StructureNode head = findHead(typeId);
-
-        if (!(head instanceof RingMirrorNode ringHead)) return -1;
-
-        RingMirrorNode current = ringHead;
-        int position = 0;
-        int maxNodes = getRingSize(); // Verhindere Endlos-Loops
-
-        do {
-            if (current == this) return position;
-            current = current.getNextInRing();
-            position++;
-        } while (current != null && current != ringHead && position < maxNodes);
-
-        return -1; // Knoten nicht im Ring gefunden
-    }
-
-    /**
-     * Sammelt alle Ring-Knoten in Navigationsreihenfolge.
-     * <p>
-     * Startet beim Head-Knoten und sammelt alle Knoten über Ring-Navigation
-     * in der Reihenfolge der Ring-Traversierung (Uhrzeigersinn).
-     * <p>
-     * Ring-sichere Sammlung:
-     * - Nutzt getNextInRing() für sichere Traversierung
-     * - Begrenzt Iteration durch Ring-Größe (verhindert Endlos-Loops)
-     * - Erkennt Rückkehr zum Head (geschlossener Ring)
-     * - Garantierte Reihenfolge der Navigation
-     *
-     * @return Liste aller Ring-Knoten in Navigationsreihenfolge
-     */
-    public List<RingMirrorNode> getAllRingNodes() {
-        List<RingMirrorNode> ringNodes = new ArrayList<>();
-        RingMirrorNode head = getRingHead();
-
-        if (head == null) return ringNodes;
-
-        RingMirrorNode current = head;
-        int maxNodes = getRingSize(); // Verhindere Endlos-Loops
-        int count = 0;
-
-        do {
-            ringNodes.add(current);
-            current = current.getNextInRing();
-            count++;
-        } while (current != null && current != head && count < maxNodes);
-
-        return ringNodes;
     }
 
     // ===== HILFSMETHODEN =====
