@@ -1,9 +1,6 @@
 package org.lrdm.topologies.strategies;
 
-import org.lrdm.topologies.node.BalancedTreeMirrorNode;
-import org.lrdm.topologies.node.FullyConnectedMirrorNode;
-import org.lrdm.topologies.node.MirrorNode;
-import org.lrdm.topologies.node.StructureNode;
+import org.lrdm.topologies.node.*;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 
@@ -74,7 +71,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         if (totalNodes <= 0) return null;
 
         // Erstelle Root-Node als BalancedTreeMirrorNode
-        BalancedTreeMirrorNode root = getMirrorNodeFromIterator();
+        BalancedTreeMirrorNode root = getNodeFromIterator();
         if (root == null) return null;
 
         setCurrentStructureRoot(root);
@@ -82,7 +79,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
         // Erstelle alle weiteren Knoten
         for (int i = 1; i < totalNodes; i++) {
-            BalancedTreeMirrorNode node = getMirrorNodeFromIterator();
+            BalancedTreeMirrorNode node = getNodeFromIterator();
             if (node != null) {
                 remainingNodes.add(node);
             }
@@ -220,7 +217,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
             for (int i = 0; i < maxChildren && nodeIterator.hasNext(); i++) {
                 BalancedTreeMirrorNode child = nodeIterator.next();
-                current.addChild(child, Set.of(typeId), Map.of(typeId, current.getId()));//TODO: bug
+                current.addChild(child);
                 queue.offer(child); // Für nächste Ebene
             }
         }
@@ -333,14 +330,32 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      *
      * @return Neuer BalancedTreeMirrorNode oder null, wenn keine Mirrors verfügbar sind
      */
-    @Override
-    protected BalancedTreeMirrorNode getMirrorNodeFromIterator() {
+    protected BalancedTreeMirrorNode getNodeFromIterator() {
         if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            BalancedTreeMirrorNode node = (BalancedTreeMirrorNode) super.getMirrorNodeFromIterator();
-            node.addNodeType(StructureNode.StructureType.BALANCED_TREE);
-            return node;
+            Mirror mirror = getNextMirror();
+            MirrorNode node = createMirrorNodeForMirror(mirror);
+            if (node != null) {
+                node.addNodeType(StructureNode.StructureType.MIRROR);
+                node.addNodeType(StructureNode.StructureType.TREE);
+                node.addNodeType(StructureNode.StructureType.BALANCED_TREE);
+                node.setMirror(mirror);
+                addToStructureNodes(node); // Aktiv hinzufügen
+            }
+            return (BalancedTreeMirrorNode) node;
         }
         return null;
+    }
+
+    /**
+     * Factory-Methode für baum-spezifische MirrorNode-Erstellung.
+     * Überschreibt BuildAsSubstructure für die TreeMirrorNode-Erstellung.
+     *
+     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
+     * @return Neuer TreeMirrorNode
+     */
+    @Override
+    protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
+        return new BalancedTreeMirrorNode(mirror.getID(), mirror, targetLinksPerNode, maxAllowedBalanceDeviation);
     }
 
     // ===== GETTER UND SETTER =====
