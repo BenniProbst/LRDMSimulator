@@ -86,6 +86,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         }
 
         // Baue balancierte Struktur mit Breadth-First-Ansatz
+        root.setHead(StructureNode.StructureType.BALANCED_TREE,true);
         buildBalancedTreeStructureOnly(root, remainingNodes);
 
         return root;

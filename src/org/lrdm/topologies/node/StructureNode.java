@@ -246,9 +246,19 @@ public class StructureNode {
             if (result.contains(current)) continue; // Bereits besucht - Ring-sicher
             result.add(current);
 
+            // Wenn fremder Head oder Node, die unsere Strukturkennung nicht enthält → fremde Struktur ignorieren
+            if((current.isHead(typeId)&&headId!=current.getId())||(!current.getNodeTypes().contains(typeId))){
+                continue;
+            }
+            // Kinder traversieren (wenn Typ-ID und Head-ID passen)
+            Set<StructureNode> structureChildren = current.getChildren(typeId, headId);
+            stack.addAll(structureChildren);
+
             // Head-Knoten stoppen hier - keine weitere Traversierung über Parent
             // Dies ermöglicht Substruktur-Abgrenzung bei verschachtelten Strukturen
-            if ((current.isHead(typeId) && current.getId() != this.getId()) || !current.getNodeTypes().contains(typeId)) continue;
+            if (current.isHead(typeId)&&headId==current.getId()){
+                continue;
+            }
 
             // Parent traversieren (wenn Typ-ID und Head-ID passen)
             if (current.parent != null) {
@@ -257,10 +267,6 @@ public class StructureNode {
                     stack.push(current.parent);
                 }
             }
-
-            // Kinder traversieren (wenn Typ-ID und Head-ID passen)
-            Set<StructureNode> structureChildren = current.getChildren(typeId, headId);
-            stack.addAll(structureChildren);
         }
 
         return result;
