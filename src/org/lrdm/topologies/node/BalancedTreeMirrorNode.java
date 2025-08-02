@@ -33,6 +33,72 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
     private int targetLinksPerNode;
     private double maxAllowedBalanceDeviation = 1.0;
 
+    // Map für die Balance-Berechnung nach Tiefe und Knotenverteilung
+    private Map<Integer, Map<BalancedTreeMirrorNode, BalanceInfo>> balanceMap = new HashMap<>();
+
+    /**
+     * Innere Klasse zur Speicherung der Balance-Informationen pro Knoten
+     */
+    private static class BalanceInfo {
+        int actualChildCount;      // Tatsächliche Anzahl der Kinder
+        int expectedChildCount;    // Erwartete Anzahl basierend auf targetLinksPerNode
+
+        public BalanceInfo(int actual, int expected) {
+            this.actualChildCount = actual;
+            this.expectedChildCount = expected;
+        }
+
+        public double getDeviation() {
+            return Math.abs(actualChildCount - expectedChildCount);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("actual=%d, expected=%d, deviation=%.2f",
+                    actualChildCount, expectedChildCount, getDeviation());
+        }
+    }
+
+    /**
+     * Aktualisiert die Balance-Map für den gesamten Baum.
+     * Dies sollte nach jeder strukturellen Änderung aufgerufen werden.
+     */
+    private void updateBalanceMap() {
+        balanceMap.clear();
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+
+        if (head == null) return;
+
+        // Sammle alle Knoten und analysiere deren Balance
+        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head);
+        Map<Integer, List<BalancedTreeMirrorNode>> nodesByDepth = new HashMap<>();
+
+        // Klassifiziere Knoten nach Tiefe
+        for (StructureNode node : allNodes) {
+            if (node instanceof BalancedTreeMirrorNode treeNode) {
+                int depth = treeNode.getDepthInTree();
+                nodesByDepth.computeIfAbsent(depth, k -> new ArrayList<>()).add(treeNode);
+            }
+        }
+
+        // Berechne Balance für jeden Knoten in jeder Tiefe
+        for (Map.Entry<Integer, List<BalancedTreeMirrorNode>> entry : nodesByDepth.entrySet()) {
+            int depth = entry.getKey();
+            List<BalancedTreeMirrorNode> nodesAtDepth = entry.getValue();
+            Map<BalancedTreeMirrorNode, BalanceInfo> balanceInfoMap = new HashMap<>();
+
+            for (BalancedTreeMirrorNode node : nodesAtDepth) {
+                int childCount = node.getChildren(typeId).size();
+                // Der erwartete Wert ist targetLinksPerNode, außer für die tiefsten Knoten (Blätter)
+                int expectedChildCount = node.isLeaf() ? 0 : node.targetLinksPerNode;
+                balanceInfoMap.put(node, new BalanceInfo(childCount, expectedChildCount));
+            }
+
+            balanceMap.put(depth, balanceInfoMap);
+        }
+    }
+
     // ===== KONSTRUKTOREN =====
 
     public BalancedTreeMirrorNode(int id) {
@@ -154,35 +220,89 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
     // ===== BALANCE-SPEZIFISCHE METHODEN =====
 
     /**
-     * Berechnet die Balance des Baums basierend auf der Tiefenverteilung.
-     * Eine niedrigere Zahl bedeutet bessere Balance.
+     * Berechnet ein Maß für die Balance des Baums.
+     * <p>
+     * Die Balance wird durch folgende Faktoren bestimmt:
+     * 1. Abweichung vom Zielwert (targetLinksPerNode) für jeden inneren Knoten
+     * 2. Einheitlichkeit der Knotenverteilung auf gleicher Ebene
+     *
+     * @return Ein Wert zwischen 0.0 (perfekt balanciert) und höheren Werten (weniger balanciert)
      */
     public double calculateTreeBalance() {
         StructureType typeId = deriveTypeId();
         StructureNode head = findHead(typeId);
 
-        if (head == null) return 0.0;
+        if (head == null) return 0.0; // Ein leerer Baum ist perfekt balanciert
 
-        Map<Integer, Integer> depthCounts = new HashMap<>();
-        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head);
+        // 1. Sammle Knoten nach Tiefe
+        Map<Integer, List<BalancedTreeMirrorNode>> nodesByDepth = new HashMap<>();
+        getAllNodesInStructure(typeId, head).stream()
+                .filter(node -> node instanceof BalancedTreeMirrorNode)
+                .map(node -> (BalancedTreeMirrorNode) node)
+                .forEach(node -> {
+                    int depth = node.getDepthInTree();
+                    nodesByDepth.computeIfAbsent(depth, k -> new ArrayList<>()).add(node);
+                });
 
-        for (StructureNode node : allNodes) {
-            if (node instanceof TreeMirrorNode treeNode) {
-                int depth = treeNode.getDepthInTree();
-                depthCounts.put(depth, depthCounts.getOrDefault(depth, 0) + 1);
+        // 2. Berechne die zwei Balance-Komponenten
+        double targetDeviation = calculateTargetDeviation(nodesByDepth, typeId);
+        double levelUniformity = calculateLevelUniformity(nodesByDepth, typeId);
+
+        // 3. Gewichtete Kombination der Komponenten (kann angepasst werden)
+        return (targetDeviation + levelUniformity) / 2.0;
+    }
+
+    /**
+     * Berechnet die durchschnittliche Abweichung vom targetLinksPerNode für alle inneren Knoten.
+     */
+    private double calculateTargetDeviation(Map<Integer, List<BalancedTreeMirrorNode>> nodesByDepth,
+                                            StructureType typeId) {
+        int totalNodes = 0;
+        double totalDeviation = 0.0;
+
+        for (List<BalancedTreeMirrorNode> nodes : nodesByDepth.values()) {
+            for (BalancedTreeMirrorNode node : nodes) {
+                // Blätter werden nicht berücksichtigt
+                if (!node.isLeaf()) {
+                    int childCount = node.getChildren(typeId).size();
+                    double deviation = Math.abs(childCount - targetLinksPerNode);
+                    totalDeviation += deviation;
+                    totalNodes++;
+                }
             }
         }
 
-        if (depthCounts.size() <= 1) return 0.0;
+        return totalNodes > 0 ? totalDeviation / totalNodes : 0.0;
+    }
 
-        double avgNodesPerDepth = depthCounts.values().stream()
-                .mapToInt(Integer::intValue).average().orElse(0.0);
+    /**
+     * Berechnet, wie einheitlich die Kinder auf gleicher Ebene verteilt sind.
+     */
+    private double calculateLevelUniformity(Map<Integer, List<BalancedTreeMirrorNode>> nodesByDepth,
+                                            StructureType typeId) {
+        double totalVariance = 0.0;
+        int levels = 0;
 
-        double variance = depthCounts.values().stream()
-                .mapToDouble(count -> Math.pow(count - avgNodesPerDepth, 2))
-                .average().orElse(0.0);
+        for (List<BalancedTreeMirrorNode> nodesAtLevel : nodesByDepth.values()) {
+            // Nur Ebenen mit mehreren Knoten berücksichtigen
+            if (nodesAtLevel.size() <= 1) continue;
 
-        return Math.sqrt(variance);
+            // Anzahl der Kinder für jeden Knoten auf dieser Ebene
+            List<Integer> childCounts = nodesAtLevel.stream()
+                    .map(node -> node.getChildren(typeId).size())
+                    .toList();
+
+            // Durchschnitt und Varianz berechnen
+            double average = childCounts.stream().mapToInt(Integer::intValue).average().orElse(0.0);
+            double variance = childCounts.stream()
+                    .mapToDouble(count -> Math.pow(count - average, 2))
+                    .average().orElse(0.0);
+
+            totalVariance += Math.sqrt(variance); // Standardabweichung verwenden
+            levels++;
+        }
+
+        return levels > 0 ? totalVariance / levels : 0.0;
     }
 
     /**
@@ -193,100 +313,127 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
     }
 
     /**
-     * Findet den optimalen Einfüge-Punkt für neue Knoten zur Erhaltung der Balance.
-     */
-    public List<BalancedTreeMirrorNode> findBalancedInsertionCandidates() {
-        StructureType typeId = deriveTypeId();
-        StructureNode head = findHead(typeId);
-
-        if (head == null) return new ArrayList<>();
-
-        List<BalancedTreeMirrorNode> candidates = new ArrayList<>();
-        Queue<BalancedTreeMirrorNode> queue = new LinkedList<>();
-
-        if (head instanceof BalancedTreeMirrorNode balancedHead) {
-            queue.offer(balancedHead);
-        }
-
-        // Breadth-First-Traversierung zur Kandidatensammlung
-        while (!queue.isEmpty()) {
-            BalancedTreeMirrorNode current = queue.poll();
-
-            if (current.canAcceptMoreChildren()) {
-                candidates.add(current);
-            }
-
-            for (StructureNode child : current.getChildren(typeId)) {
-                if (child instanceof BalancedTreeMirrorNode balancedChild) {
-                    queue.offer(balancedChild);
-                }
-            }
-        }
-
-        return candidates.stream()
-                .sorted(this::compareInsertionCandidates)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Findet die besten Kandidaten für die Balance-erhaltende Entfernung.
-     */
-    public List<BalancedTreeMirrorNode> findBalancedRemovalCandidates() {
-        StructureType typeId = deriveTypeId();
-        StructureNode head = findHead(typeId);
-
-        if (head == null) return new ArrayList<>();
-
-        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head);
-        List<BalancedTreeMirrorNode> candidates = allNodes.stream()
-                .filter(node -> node != head && node instanceof BalancedTreeMirrorNode)
-                .map(BalancedTreeMirrorNode.class::cast)
-                .filter(node -> node.canBeRemovedFromStructure(head))
-                .toList();
-
-        return candidates.stream()
-                .sorted(this::compareRemovalCandidates)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Berechnet den Balance-Impact, wenn dieser Knoten entfernt würde.
+     * Berechnet die Auswirkung der Entfernung dieses Knotens auf die Baum-Balance.
      */
     public double calculateRemovalBalanceImpact() {
         StructureType typeId = deriveTypeId();
 
+        // Aktuelle Balance vor der Entfernung
         double currentBalance = calculateTreeBalance();
 
+        // Temporäre Entfernung simulieren
         StructureNode originalParent = getParent();
         Set<StructureNode> originalChildren = new HashSet<>(getChildren(typeId));
 
         try {
+            // Entferne temporär den Knoten aus der Struktur
             if (originalParent != null) {
-                originalParent.removeChild(this, Set.of(typeId));
+                originalParent.removeChild(this);
             }
 
+            // Kinder zum Elternknoten hinzufügen (falls vorhanden)
             if (originalParent != null) {
                 for (StructureNode child : originalChildren) {
-                    originalParent.addChild(child, Set.of(typeId), Map.of(typeId, originalParent.getId()));
+                    this.removeChild(child);
+                    originalParent.addChild(child);
                 }
             }
 
+            // Neue Balance nach der Entfernung berechnen
+            updateBalanceMap(); // Map aktualisieren für die neue Struktur
             double newBalance = calculateTreeBalance();
+
+            // Auswirkung als absolute Differenz
             return Math.abs(newBalance - currentBalance);
 
         } finally {
+            // Struktur wiederherstellen
             if (originalParent != null) {
-                originalParent.addChild(this, Set.of(typeId), Map.of(typeId, originalParent.getId()));
+                // Kinder zurück zum ursprünglichen Knoten hinzufügen
                 for (StructureNode child : originalChildren) {
-                    originalParent.removeChild(child, Set.of(typeId));
-                    this.addChild(child, Set.of(typeId), Map.of(typeId, this.getId()));
+                    if (child.getParent() == originalParent) {
+                        originalParent.removeChild(child);
+                        this.addChild(child);
+                    }
                 }
+
+                // Knoten wieder zum Elternteil hinzufügen
+                originalParent.addChild(this);
             }
+
+            // Map-Aktualisierung nach Wiederherstellung
+            updateBalanceMap();
         }
     }
 
     /**
-     * Berechnet die Tiefenverteilung im Baum.
+     * Findet Knoten, die optimale Kandidaten für das Hinzufügen neuer Kinder sind.
+     * Diese sollten die Balance des Baums am wenigsten beeinträchtigen.
+     */
+    public List<BalancedTreeMirrorNode> findBalancedInsertionCandidates() {
+        updateBalanceMap();
+        StructureType typeId = deriveTypeId();
+
+        List<BalancedTreeMirrorNode> candidates = new ArrayList<>();
+
+        // Finde Knoten mit der größten negativen Abweichung (weniger Kinder als erwartet)
+        for (Map<BalancedTreeMirrorNode, BalanceInfo> depthMap : balanceMap.values()) {
+            for (Map.Entry<BalancedTreeMirrorNode, BalanceInfo> entry : depthMap.entrySet()) {
+                BalancedTreeMirrorNode node = entry.getKey();
+                BalanceInfo info = entry.getValue();
+
+                // Knoten mit weniger Kindern als erwartet sind gute Kandidaten
+                if (info.actualChildCount < info.expectedChildCount) {
+                    candidates.add(node);
+                }
+            }
+        }
+
+        // Sortiere nach der Abweichung (größte negative Abweichung zuerst)
+        candidates.sort(Comparator.comparingDouble(node -> {
+            int depth = ((BalancedTreeMirrorNode) node).getDepthInTree();
+            BalanceInfo info = balanceMap.get(depth).get(node);
+            return info.expectedChildCount - info.actualChildCount; // Negative Werte zuerst
+        }).reversed());
+
+        return candidates;
+    }
+
+    /**
+     * Findet Knoten, die optimale Kandidaten für das Entfernen sind.
+     * Diese sollten die Balance des Baums am wenigsten beeinträchtigen.
+     */
+    public List<BalancedTreeMirrorNode> findBalancedRemovalCandidates() {
+        updateBalanceMap();
+
+        List<BalancedTreeMirrorNode> candidates = new ArrayList<>();
+
+        // Finde Knoten mit der größten positiven Abweichung (mehr Kinder als erwartet)
+        for (Map<BalancedTreeMirrorNode, BalanceInfo> depthMap : balanceMap.values()) {
+            for (Map.Entry<BalancedTreeMirrorNode, BalanceInfo> entry : depthMap.entrySet()) {
+                BalancedTreeMirrorNode node = entry.getKey();
+                BalanceInfo info = entry.getValue();
+
+                // Knoten mit mehr Kindern als erwartet sind gute Kandidaten für Entfernung
+                if (info.actualChildCount > info.expectedChildCount) {
+                    candidates.add(node);
+                }
+            }
+        }
+
+        // Sortiere nach der Abweichung (größte positive Abweichung zuerst)
+        candidates.sort(Comparator.comparingDouble(node -> {
+            int depth = ((BalancedTreeMirrorNode) node).getDepthInTree();
+            BalanceInfo info = balanceMap.get(depth).get(node);
+            return info.actualChildCount - info.expectedChildCount; // Positive Werte zuerst
+        }).reversed());
+
+        return candidates;
+    }
+
+
+    /**
+     * Berechnet die Tiefen verteilung im Baum.
      */
     public Map<Integer, Integer> getDepthDistribution() {
         StructureType typeId = deriveTypeId();
@@ -388,15 +535,36 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
 
     // ===== STRING REPRESENTATION =====
 
+    /**
+     * Erweitertes toString() für die Darstellung des Balancierten Baums
+     */
     @Override
     public String toString() {
         String baseString = super.toString();
-        double balance = calculateTreeBalance();
-        boolean isBalanced = isBalanced();
-        StructureType typeId = deriveTypeId();
-        int childrenCount = getChildren(typeId).size();
+        updateBalanceMap(); // Sicherstellen, dass die Balance-Map aktuell ist
 
-        return baseString + String.format("[balance=%.2f, isBalanced=%s, children=%d/%d, maxDev=%.2f]",
-                balance, isBalanced, childrenCount, targetLinksPerNode, maxAllowedBalanceDeviation);
+        StringBuilder builder = new StringBuilder(baseString);
+        builder.append("\nBalance Information:\n");
+        builder.append(String.format("Balance Score: %.2f (max allowed: %.2f)\n",
+                calculateTreeBalance(), maxAllowedBalanceDeviation));
+        builder.append(String.format("Is Balanced: %s\n", isBalanced() ? "Yes" : "No"));
+        builder.append(String.format("Target Links Per Node: %d\n", targetLinksPerNode));
+
+        // Balance-Details nach Tiefe anzeigen
+        builder.append("Balance Details by Depth:\n");
+        for (Map.Entry<Integer, Map<BalancedTreeMirrorNode, BalanceInfo>> entry : balanceMap.entrySet()) {
+            int depth = entry.getKey();
+            Map<BalancedTreeMirrorNode, BalanceInfo> nodesAtDepth = entry.getValue();
+
+            builder.append(String.format("  Depth %d (%d nodes):\n", depth, nodesAtDepth.size()));
+            for (Map.Entry<BalancedTreeMirrorNode, BalanceInfo> nodeEntry : nodesAtDepth.entrySet()) {
+                BalancedTreeMirrorNode node = nodeEntry.getKey();
+                BalanceInfo info = nodeEntry.getValue();
+
+                builder.append(String.format("    Node %d: %s\n", node.getId(), info));
+            }
+        }
+
+        return builder.toString();
     }
 }
