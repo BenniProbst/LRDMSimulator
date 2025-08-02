@@ -260,7 +260,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
                 }
             }
 
-            // Sortiere nach Balance-Kriterien nur wenn Fallback verwendet wird
+            // Sortiere nach Balance-Kriterien nur, wenn Fallback verwendet wird
             candidates.sort(this::compareInsertionCandidates);
         }
 
