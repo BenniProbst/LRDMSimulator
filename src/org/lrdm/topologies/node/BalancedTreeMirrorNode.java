@@ -3,7 +3,6 @@ package org.lrdm.topologies.node;
 import org.lrdm.Mirror;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Spezialisierte MirrorNode-Implementation für balancierte Bäume.
