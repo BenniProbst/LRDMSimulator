@@ -201,6 +201,9 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
     private void buildBalancedTreeStructureOnly(BalancedTreeMirrorNode root, List<BalancedTreeMirrorNode> remainingNodes) {
         if (remainingNodes.isEmpty()) return;
 
+        int iterations = 0;
+        int maxIterations = remainingNodes.size() * 2; // Sicherheitslimit
+
         StructureNode.StructureType typeId = root.deriveTypeId();
         Queue<BalancedTreeMirrorNode> queue = new LinkedList<>();
         queue.offer(root);
@@ -208,13 +211,13 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         Iterator<BalancedTreeMirrorNode> nodeIterator = remainingNodes.iterator();
 
         // Breadth-First-Aufbau für optimale Balance
-        while (!queue.isEmpty() && nodeIterator.hasNext()) {
+        while (!queue.isEmpty() && nodeIterator.hasNext() && iterations < maxIterations) {
+            iterations++;
             BalancedTreeMirrorNode current = queue.poll();
 
             // Füge Kinder bis zur Kapazität hinzu
             int currentChildren = current.getChildren(typeId).size();
-            int maxChildren = Math.min(targetLinksPerNode,
-                    targetLinksPerNode - currentChildren);
+            int maxChildren = Math.max(0,targetLinksPerNode - currentChildren);
 
             for (int i = 0; i < maxChildren && nodeIterator.hasNext(); i++) {
                 BalancedTreeMirrorNode child = nodeIterator.next();

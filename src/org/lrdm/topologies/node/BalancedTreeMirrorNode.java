@@ -30,7 +30,7 @@ import java.util.*;
  */
 public class BalancedTreeMirrorNode extends TreeMirrorNode {
     private int targetLinksPerNode;
-    private double maxAllowedBalanceDeviation = 1.0;
+    private double maxAllowedBalanceDeviation;
 
     // Map für die Balance-Berechnung nach Tiefe und Knotenverteilung
     private Map<Integer, Map<BalancedTreeMirrorNode, BalanceInfo>> balanceMap = new HashMap<>();
@@ -271,7 +271,7 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
             }
         }
 
-        return totalNodes > 0 ? totalDeviation / totalNodes : 0.0;
+        return totalNodes > 0 ? totalDeviation / totalNodes / (targetLinksPerNode / 2.0) : 0.0;
     }
 
     /**
@@ -301,7 +301,7 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
             levels++;
         }
 
-        return levels > 0 ? totalVariance / levels : 0.0;
+        return levels > 0 ? totalVariance / levels / (targetLinksPerNode / 2.0) : 0.0;
     }
 
     /**
