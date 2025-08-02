@@ -226,37 +226,47 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
     /**
      * Findet Balance-optimierte Einfüge-Punkte in der bestehenden Struktur.
+     * Nutzt die Balance-spezifischen Methoden der BalancedTreeMirrorNode.
      *
      * @param root Root der Struktur
-     * @return Sortierte Liste der besten Einfüge-Punkte
+     * @return Sortierte Liste der besten Einfüge-Punkte basierend auf Balance-Optimierung
      */
     private List<BalancedTreeMirrorNode> findBalancedInsertionCandidates(BalancedTreeMirrorNode root) {
-        List<BalancedTreeMirrorNode> candidates = new ArrayList<>();
-        StructureNode.StructureType typeId = root.deriveTypeId();
-        Queue<BalancedTreeMirrorNode> queue = new LinkedList<>();
-        queue.offer(root);
+        // Nutze die Balance-spezifischen Methoden der BalancedTreeMirrorNode
+        List<BalancedTreeMirrorNode> candidates = root.findBalancedInsertionCandidates();
 
-        // Breadth-First-Sammlung verfügbarer Kandidaten
-        while (!queue.isEmpty()) {
-            BalancedTreeMirrorNode current = queue.poll();
+        // Falls keine Balance-optimierten Kandidaten gefunden werden,
+        // verwende Fallback-Logik mit grundlegender Traversierung
+        if (candidates.isEmpty()) {
+            candidates = new ArrayList<>();
+            StructureNode.StructureType typeId = root.deriveTypeId();
+            Queue<BalancedTreeMirrorNode> queue = new LinkedList<>();
+            queue.offer(root);
 
-            // Prüfe, ob die Knoten weitere Kinder akzeptieren können
-            if (current.canAcceptMoreChildren()) {
-                candidates.add(current);
-            }
+            // Breadth-First-Sammlung verfügbarer Kandidaten als Fallback
+            while (!queue.isEmpty()) {
+                BalancedTreeMirrorNode current = queue.poll();
 
-            // Füge Kinder zur Queue hinzu
-            for (StructureNode child : current.getChildren(typeId)) {
-                if (child instanceof BalancedTreeMirrorNode balancedChild) {
-                    queue.offer(balancedChild);
+                // Nutze Balance-spezifische canAcceptMoreChildren Implementierung
+                if (current.canAcceptMoreChildren()) {
+                    candidates.add(current);
+                }
+
+                // Füge Kinder zur Queue hinzu
+                for (StructureNode child : current.getChildren(typeId)) {
+                    if (child instanceof BalancedTreeMirrorNode balancedChild) {
+                        queue.offer(balancedChild);
+                    }
                 }
             }
+
+            // Sortiere nach Balance-Kriterien nur wenn Fallback verwendet wird
+            candidates.sort(this::compareInsertionCandidates);
         }
 
-        // Sortiere nach Balance-Kriterien
-        candidates.sort(this::compareInsertionCandidates);
         return candidates;
     }
+
 
     /**
      * Findet Balance-optimierte Entfernungskandidaten.
@@ -283,26 +293,75 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
     }
 
     /**
-     * Vergleicht Einfüge-Kandidaten für Balance-Optimierung.
+     * Vergleicht Einfüge-Kandidaten basierend auf Balance-Kriterien.
+     * Nutzt die Balance-Berechnungsmethoden der BalancedTreeMirrorNode.
+     *
+     * @param candidate1 Erster Kandidat
+     * @param candidate2 Zweiter Kandidat
+     * @return Vergleichsergebnis für Sortierung (niedrigere Werte = bessere Balance)
      */
     private int compareInsertionCandidates(BalancedTreeMirrorNode candidate1, BalancedTreeMirrorNode candidate2) {
+        // 1. Priorität: Knoten mit weniger Kindern als targetLinksPerNode
+        int childrenDiff1 = Math.max(0, candidate1.getChildren().size() - targetLinksPerNode);
+        int childrenDiff2 = Math.max(0, candidate2.getChildren().size() - targetLinksPerNode);
+
+        if (childrenDiff1 != childrenDiff2) {
+            return Integer.compare(childrenDiff1, childrenDiff2);
+        }
+
+        // 2. Priorität: Balance-Impact-Berechnung der BalancedTreeMirrorNode
+        try {
+            // Simuliere Hinzufügen eines Kindes und berechne Balance-Impact
+            double balanceImpact1 = calculateInsertionBalanceImpact(candidate1);
+            double balanceImpact2 = calculateInsertionBalanceImpact(candidate2);
+
+            int balanceComparison = Double.compare(balanceImpact1, balanceImpact2);
+            if (balanceComparison != 0) {
+                return balanceComparison;
+            }
+        } catch (Exception e) {
+            // Fallback bei Balance-Berechnungsfehlern
+        }
+
+        // 3. Priorität: Tiefe (flachere Knoten bevorzugen für Balance)
         StructureNode.StructureType typeId = candidate1.deriveTypeId();
+        StructureNode head1 = candidate1.findHead(typeId);
+        StructureNode head2 = candidate2.findHead(typeId);
 
-        // Bevorzuge flachere Ebenen (Breadth-First)
-        int depth1 = candidate1.getDepthInTree();
-        int depth2 = candidate2.getDepthInTree();
-        int depthCompare = Integer.compare(depth1, depth2);
-        if (depthCompare != 0) return depthCompare;
+        if (head1 != null && head2 != null) {
+            int depth1 = candidate1.getDepthInTree();
+            int depth2 = candidate2.getDepthInTree();
 
-        // Bei gleicher Tiefe: Bevorzuge Knoten mit weniger Kindern
-        int children1 = candidate1.getChildren(typeId).size();
-        int children2 = candidate2.getChildren(typeId).size();
-        int childrenCompare = Integer.compare(children1, children2);
-        if (childrenCompare != 0) return childrenCompare;
+            if (depth1 != depth2) {
+                return Integer.compare(depth1, depth2);
+            }
+        }
 
-        // Bei gleicher Kinderanzahl: Bevorzuge niedrigere IDs (deterministische Auswahl)
+        // 4. Fallback: ID-basierte Sortierung für Konsistenz
         return Integer.compare(candidate1.getId(), candidate2.getId());
     }
+
+    /**
+     * Berechnet den Balance-Impact beim Hinzufügen eines Kindes zu einem Kandidaten.
+     */
+    private double calculateInsertionBalanceImpact(BalancedTreeMirrorNode candidate) {
+        // Aktuelle Balance des gesamten Baums
+        BalancedTreeMirrorNode root = (BalancedTreeMirrorNode) candidate.findHead(candidate.deriveTypeId());
+        if (root == null) return Double.MAX_VALUE;
+
+        double currentBalance = root.calculateTreeBalance();
+
+        // Simuliere das Hinzufügen eines Kindes
+        int currentChildren = candidate.getChildren().size();
+        double predictedDeviation = Math.abs(currentChildren + 1 - targetLinksPerNode);
+
+        // Berücksichtige auch die Tiefe für Balance-Optimierung
+        int depth = candidate.getDepthInTree();
+        double depthPenalty = depth * 0.1; // Tiefere Knoten erhalten kleine Strafe
+
+        return predictedDeviation + depthPenalty;
+    }
+
 
     /**
      * Vergleicht Entfernungskandidaten für Balance-Optimierung.

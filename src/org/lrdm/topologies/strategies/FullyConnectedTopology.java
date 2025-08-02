@@ -50,7 +50,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
                 addToStructureNodes(node); // Registriere bei BuildAsSubstructure
                 if(mirror.isRoot()) {
                     setCurrentStructureRoot(node);
-                    node.setHead(true);
+                    node.setHead(StructureNode.StructureType.FULLY_CONNECTED,true);
                 }
             }
         }
