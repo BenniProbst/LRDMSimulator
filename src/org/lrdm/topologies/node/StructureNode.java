@@ -1,6 +1,7 @@
 package org.lrdm.topologies.node;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Abstrakte Basis-Klasse für strukturelle Knoten.
@@ -1065,10 +1066,33 @@ public class StructureNode {
      * @return Set aller Knoten in der Default-Struktur
      */
     public Set<StructureNode> getAllNodesInStructure() {
-        StructureType defaultType = StructureType.DEFAULT;
-        StructureNode head = findHead(defaultType);
-        if (head == null) head = this; // Fallback für Legacy-Kompatibilität
-        return getAllNodesInStructure(defaultType, head);
+        // Sammle alle verfügbaren Struktur-Typen aus dem headStatus
+        Set<StructureType> defaultTypes = new HashSet<>(headStatus.keySet());
+
+        // Verwende Tuple aus StructureType und Node-ID als Schlüssel
+        Map<AbstractMap.SimpleEntry<StructureType, Integer>, StructureNode> heads = defaultTypes.stream()
+                // Für jeden StructureType alle Heads finden
+                .flatMap(type -> {
+                    // Hier direkt die Heads für diesen Typ ermitteln
+                    List<StructureNode> headsForType = new ArrayList<>();
+                    StructureNode mainHead = findHead(type);
+                    if (mainHead != null) {
+                        headsForType.add(mainHead);
+                    }
+                    // Hier könnten weitere Heads für denselben Typ hinzugefügt werden
+
+                    // Erzeuge Einträge für jeden Head mit zusammengesetztem Schlüssel
+                    return headsForType.stream()
+                            .map(head -> Map.entry(
+                                    new AbstractMap.SimpleEntry<>(type, head.getId()),
+                                    head));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        // Sammle alle Knoten aus allen Strukturen und vereinige sie
+        return heads.entrySet().stream()
+                .flatMap(entry -> getAllNodesInStructure(entry.getKey().getKey(), entry.getValue()).stream())
+                .collect(Collectors.toSet());
     }
 
     /**
