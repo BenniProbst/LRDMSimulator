@@ -62,7 +62,7 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
      * Aktualisiert die Balance-Map für den gesamten Baum.
      * Dies sollte nach jeder strukturellen Änderung aufgerufen werden.
      */
-    private void updateBalanceMap() {
+    public void updateBalanceMap() {
         balanceMap.clear();
         StructureType typeId = deriveTypeId();
         StructureNode head = findHead(typeId);
@@ -366,72 +366,6 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
     }
 
     /**
-     * Findet Knoten, die optimale Kandidaten für das Hinzufügen neuer Kinder sind.
-     * Diese sollten die Balance des Baums am wenigsten beeinträchtigen.
-     */
-    public List<BalancedTreeMirrorNode> findBalancedInsertionCandidates() {
-        updateBalanceMap();
-        StructureType typeId = deriveTypeId();
-
-        List<BalancedTreeMirrorNode> candidates = new ArrayList<>();
-
-        // Finde Knoten mit der größten negativen Abweichung (weniger Kinder als erwartet)
-        for (Map<BalancedTreeMirrorNode, BalanceInfo> depthMap : balanceMap.values()) {
-            for (Map.Entry<BalancedTreeMirrorNode, BalanceInfo> entry : depthMap.entrySet()) {
-                BalancedTreeMirrorNode node = entry.getKey();
-                BalanceInfo info = entry.getValue();
-
-                // Knoten mit weniger Kindern als erwartet sind gute Kandidaten
-                if (info.actualChildCount < info.expectedChildCount) {
-                    candidates.add(node);
-                }
-            }
-        }
-
-        // Sortiere nach der Abweichung (größte negative Abweichung zuerst)
-        candidates.sort(Comparator.comparingDouble(node -> {
-            int depth = ((BalancedTreeMirrorNode) node).getDepthInTree();
-            BalanceInfo info = balanceMap.get(depth).get(node);
-            return info.expectedChildCount - info.actualChildCount; // Negative Werte zuerst
-        }).reversed());
-
-        return candidates;
-    }
-
-    /**
-     * Findet Knoten, die optimale Kandidaten für das Entfernen sind.
-     * Diese sollten die Balance des Baums am wenigsten beeinträchtigen.
-     */
-    public List<BalancedTreeMirrorNode> findBalancedRemovalCandidates() {
-        updateBalanceMap();
-
-        List<BalancedTreeMirrorNode> candidates = new ArrayList<>();
-
-        // Finde Knoten mit der größten positiven Abweichung (mehr Kinder als erwartet)
-        for (Map<BalancedTreeMirrorNode, BalanceInfo> depthMap : balanceMap.values()) {
-            for (Map.Entry<BalancedTreeMirrorNode, BalanceInfo> entry : depthMap.entrySet()) {
-                BalancedTreeMirrorNode node = entry.getKey();
-                BalanceInfo info = entry.getValue();
-
-                // Knoten mit mehr Kindern als erwartet sind gute Kandidaten für Entfernung
-                if (info.actualChildCount > info.expectedChildCount) {
-                    candidates.add(node);
-                }
-            }
-        }
-
-        // Sortiere nach der Abweichung (größte positive Abweichung zuerst)
-        candidates.sort(Comparator.comparingDouble(node -> {
-            int depth = ((BalancedTreeMirrorNode) node).getDepthInTree();
-            BalanceInfo info = balanceMap.get(depth).get(node);
-            return info.actualChildCount - info.expectedChildCount; // Positive Werte zuerst
-        }).reversed());
-
-        return candidates;
-    }
-
-
-    /**
      * Berechnet die Tiefen verteilung im Baum.
      */
     public Map<Integer, Integer> getDepthDistribution() {
@@ -451,67 +385,6 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
         }
 
         return depthCounts;
-    }
-
-    /**
-     * Findet den besten Einfüge-Punkt für neue Knoten basierend auf der Balance-Strategie.
-     */
-    public BalancedTreeMirrorNode findBestInsertionPoint() {
-        List<BalancedTreeMirrorNode> candidates = findBalancedInsertionCandidates();
-        return candidates.isEmpty() ? null : candidates.get(0);
-    }
-
-    /**
-     * Ermittelt die optimale Tiefe für neue Knoten basierend auf der aktuellen Balance.
-     */
-    public int getOptimalInsertionDepth() {
-        Map<Integer, Integer> depthDistribution = getDepthDistribution();
-
-        if (depthDistribution.isEmpty()) return 0;
-
-        return depthDistribution.entrySet().stream()
-                .min(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse(0);
-    }
-
-    // ===== HILFSMETHODEN FÜR BALANCE-OPTIMIERUNG =====
-
-    private int compareInsertionCandidates(BalancedTreeMirrorNode candidate1, BalancedTreeMirrorNode candidate2) {
-        int depthCompare = Integer.compare(candidate1.getDepthInTree(), candidate2.getDepthInTree());
-        if (depthCompare != 0) return depthCompare;
-
-        StructureType typeId = deriveTypeId();
-        int children1 = candidate1.getChildren(typeId).size();
-        int children2 = candidate2.getChildren(typeId).size();
-        int childrenCompare = Integer.compare(children1, children2);
-        if (childrenCompare != 0) return childrenCompare;
-
-        int capacity1 = candidate1.getTargetLinksPerNode() - children1;
-        int capacity2 = candidate2.getTargetLinksPerNode() - children2;
-        int capacityCompare = Integer.compare(capacity2, capacity1);
-        if (capacityCompare != 0) return capacityCompare;
-
-        return Integer.compare(candidate1.getId(), candidate2.getId());
-    }
-
-    private int compareRemovalCandidates(BalancedTreeMirrorNode candidate1, BalancedTreeMirrorNode candidate2) {
-        StructureType typeId = deriveTypeId();
-
-        int children1 = candidate1.getChildren(typeId).size();
-        int children2 = candidate2.getChildren(typeId).size();
-        int childrenCompare = Integer.compare(children1, children2);
-        if (childrenCompare != 0) return childrenCompare;
-
-        int depthCompare = Integer.compare(candidate2.getDepthInTree(), candidate1.getDepthInTree());
-        if (depthCompare != 0) return depthCompare;
-
-        double impact1 = candidate1.calculateRemovalBalanceImpact();
-        double impact2 = candidate2.calculateRemovalBalanceImpact();
-        int impactCompare = Double.compare(impact1, impact2);
-        if (impactCompare != 0) return impactCompare;
-
-        return Integer.compare(candidate2.getId(), candidate1.getId());
     }
 
     // ===== GETTER UND SETTER =====

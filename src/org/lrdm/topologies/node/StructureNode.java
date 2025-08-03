@@ -727,73 +727,161 @@ public class StructureNode {
     // Füge diese Methode zu StructureNode hinzu:
 
     /**
-     * Berechnet den Pfad von einer spezifischen Head-Node zu diesem Knoten.
-     * Berücksichtigt Typ-ID und Head-ID für korrekte Multi-Type-Traversierung.
-     * Verwendet BFS für den kürzesten Pfad in ungewichteten Strukturen.
+     * Findet alle möglichen gerichteten Pfade von der Head-Node zu diesem Knoten.
+     * Verwendet vollständigen Dijkstra-Algorithmus für alle Pfade ohne Loops und Schleifen.
+     * Sortiert nach Pfadlänge (kürzeste zuerst), dann nach Summe der Node-IDs.
      *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @param head Die Head-Node der gewünschten Struktur
-     * @return Liste der Knoten vom Head zu diesem Knoten (inklusive Head und this)
+     * @param typeId Struktur-Typ-ID zur Filterung der relevanten Kanten
+     * @param head   Start-Knoten (Head-Node)
+     * @return Liste aller möglichen Pfade, sortiert nach Länge und ID-Summe
      */
-    public List<StructureNode> getPathFromHead(StructureType typeId, StructureNode head) {
-        if (head == null) return List.of(this);
+    public List<List<StructureNode>> getPathFromHeadMulti(StructureType typeId, StructureNode head) {
+        if (head == null || typeId == null) {
+            return List.of();
+        }
 
-        List<StructureNode> path = new ArrayList<>();
-        Stack<StructureNode> stack = new Stack<>();
-        Map<StructureNode, StructureNode> parentMap = new HashMap<>();
-        Set<StructureNode> visited = new HashSet<>();
+        // Wenn head == this, gibt es einen leeren Pfad der Länge 1
+        if (head.equals(this)) {
+            return List.of(List.of(this));
+        }
 
-        // BFS von Head zu diesem Knoten für kürzesten Pfad
-        Queue<StructureNode> queue = new LinkedList<>();
-        queue.offer(head);
-        visited.add(head);
-        parentMap.put(head, null);
+        List<List<StructureNode>> allPaths = new ArrayList<>();
+
+        // Dijkstra-basierte Pfadsuche mit vollständiger Exploration
+        findAllPathsDijkstra(head, this, typeId, allPaths);
+
+        // Sortierung: 1. Pfadlänge, 2. Summe der Node-IDs
+        allPaths.sort((path1, path2) -> {
+            // Erste Priorität: Pfadlänge (kürzeste zuerst)
+            int lengthCompare = Integer.compare(path1.size(), path2.size());
+            if (lengthCompare != 0) {
+                return lengthCompare;
+            }
+
+            // Zweite Priorität: Summe aller Node-IDs im Pfad
+            long sum1 = path1.stream().mapToLong(StructureNode::getId).sum();
+            long sum2 = path2.stream().mapToLong(StructureNode::getId).sum();
+
+            return Long.compare(sum1, sum2);
+        });
+
+        return allPaths;
+    }
+
+    /**
+     * Berechnet den Pfad von der Head-Node zu diesem Knoten.
+     * Verwendet automatische Typ- und Head-Ermittlung.
+     * Gibt alle möglichen Pfade zurück, sortiert nach Länge und ID-Summe.
+     *
+     * @return Liste aller möglichen Pfade vom Head zu diesem Knoten
+     */
+    public List<List<StructureNode>> getPathFromHeadMulti() {
+        StructureType typeId = deriveTypeId();
+        StructureNode head = findHead(typeId);
+
+        if (head == null) {
+            return List.of(List.of(this));
+        }
+
+        return getPathFromHeadMulti(typeId, head);
+    }
+
+    /**
+     * Dijkstra-basierte Suche aller Pfade ohne Loops und Schleifen.
+     * Verwendet modifizierten Dijkstra-Algorithmus für vollständige Pfad-Exploration.
+     *
+     * @param start     Start-Knoten
+     * @param target    Ziel-Knoten
+     * @param typeId    Struktur-Typ-ID zur Kanten-Filterung
+     * @param allPaths  Sammlung aller gefundenen Pfade
+     */
+    private void findAllPathsDijkstra(StructureNode start, StructureNode target,
+                                      StructureType typeId, List<List<StructureNode>> allPaths) {
+
+        // Dijkstra-State für jeden Knoten: Liste aller möglichen Pfade zu diesem Knoten
+        Map<StructureNode, List<List<StructureNode>>> nodeToAllPaths = new HashMap<>();
+
+        // Priority Queue: Sortiert nach Pfadlänge, dann nach ID-Summe
+        PriorityQueue<List<StructureNode>> queue = new PriorityQueue<>((path1, path2) -> {
+            // Erste Priorität: Pfadlänge
+            int lengthCompare = Integer.compare(path1.size(), path2.size());
+            if (lengthCompare != 0) {
+                return lengthCompare;
+            }
+
+            // Zweite Priorität: Summe der Node-IDs
+            long sum1 = path1.stream().mapToLong(StructureNode::getId).sum();
+            long sum2 = path2.stream().mapToLong(StructureNode::getId).sum();
+
+            return Long.compare(sum1, sum2);
+        });
+
+        // Initialer Pfad: Nur start-Knoten
+        List<StructureNode> initialPath = new ArrayList<>();
+        initialPath.add(start);
+        queue.offer(initialPath);
+
+        // Set zur Vermeidung unendlicher Schleifen bei der Pfad-Exploration
+        Set<List<StructureNode>> exploredPaths = new HashSet<>();
 
         while (!queue.isEmpty()) {
-            StructureNode current = queue.poll();
+            List<StructureNode> currentPath = queue.poll();
+            StructureNode currentNode = currentPath.get(currentPath.size() - 1);
 
-            if (current == this) {
-                // Pfad rekonstruieren (rückwärts)
-                StructureNode pathNode = this;
-                while (pathNode != null) {
-                    stack.push(pathNode);
-                    pathNode = parentMap.get(pathNode);
-                }
+            // Vermeide zirkuläre Pfade
+            if (exploredPaths.contains(currentPath)) {
+                continue;
+            }
+            exploredPaths.add(new ArrayList<>(currentPath));
 
-                // Stack umkehren für korrekten Pfad (Head -> ... -> this)
-                while (!stack.isEmpty()) {
-                    path.add(stack.pop());
-                }
-
-                return path;
+            // Ziel erreicht: Pfad zu Ergebnissen hinzufügen
+            if (currentNode.equals(target)) {
+                allPaths.add(new ArrayList<>(currentPath));
+                continue;
             }
 
-            // Nur strukturspezifische Nachbarn besuchen
-            List<StructureNode> neighbors = new ArrayList<>();
-
-            // Parent, nur wenn er zur gleichen Struktur gehört
-            if (current.parent != null) {
-                // Prüfe, ob Parent zur selben Struktur gehört
-                Set<StructureNode> structureNodes = head.getAllNodesInStructure(typeId, head);
-                if (structureNodes.contains(current.parent)) {
-                    neighbors.add(current.parent);
-                }
-            }
-
-            // Nur Kinder der spezifischen Struktur
-            neighbors.addAll(current.getChildren(typeId, head.getId()));
+            // Erkunde alle Nachbarn (Kinder) des aktuellen Knotens
+            Set<StructureNode> neighbors = getNeighborsForTypeId(currentNode, typeId);
 
             for (StructureNode neighbor : neighbors) {
-                if (!visited.contains(neighbor)) {
-                    visited.add(neighbor);
-                    parentMap.put(neighbor, current);
-                    queue.offer(neighbor);
+                // Vermeide Loops: Knoten dürfen nicht bereits im aktuellen Pfad sein
+                if (currentPath.contains(neighbor)) {
+                    continue;
+                }
+
+                // Erstelle neuen Pfad mit dem Nachbarn
+                List<StructureNode> newPath = new ArrayList<>(currentPath);
+                newPath.add(neighbor);
+
+                // Prüfe, ob dieser Pfad bereits erkundet wurde
+                if (!exploredPaths.contains(newPath)) {
+                    queue.offer(newPath);
                 }
             }
         }
+    }
 
-        // Kein Pfad gefunden - zurück zu diesem Knoten allein
-        return List.of(this);
+    /**
+     * Ermittelt alle Nachbarn (Kinder und Parent) eines Knotens für die gegebene typeId.
+     * Diese Methode definiert die gerichteten Kanten im Graphen.
+     *
+     * @param node   Der Knoten, dessen Nachbarn ermittelt werden sollen
+     * @param typeId Die Struktur-Typ-ID zur Kanten-Filterung
+     * @return Set aller erreichbaren Nachbarn
+     */
+    private Set<StructureNode> getNeighborsForTypeId(StructureNode node, StructureType typeId) {
+
+        // Füge alle Kinder als Nachbarn hinzu (gerichtete Kante: Parent → Child)
+        Set<StructureNode> neighbors = new HashSet<>(node.getChildren(typeId));
+
+        // Füge Parent als Nachbarn hinzu (gerichtete Kante: Child -> Parent)
+        // OPTIONAL: Nur wenn bidirektionale Traversierung gewünscht ist
+        StructureNode parent = node.getParent();
+        if (parent != null && parent.hasNodeType(typeId)) {
+            neighbors.add(parent);
+        }
+
+        return neighbors;
     }
 
     /**
@@ -804,12 +892,30 @@ public class StructureNode {
      * @return Liste der Knoten vom Head zu diesem Knoten (inklusive Head und this)
      */
     public List<StructureNode> getPathFromHead() {
-        StructureType typeId = deriveTypeId();
-        StructureNode head = findHead(typeId);
+        List<List<StructureNode>> allPaths = getPathFromHeadMulti();
+        if (!allPaths.isEmpty()) {
+            return allPaths.get(0);
+        }
+        else{
+            return new ArrayList<>();
+        }
+    }
 
-        if (head == null) return List.of(this);
-
-        return getPathFromHead(typeId, head);
+    /**
+     * Berechnet den Pfad von der Head-Node zu diesem Knoten.
+     * Verwendet automatische Typ- und Head-Ermittlung.
+     * Verwendet BFS für den kürzesten Pfad in ungewichteten Strukturen.
+     *
+     * @return Liste der Knoten vom Head zu diesem Knoten (inklusive Head und this)
+     */
+    public List<StructureNode> getPathFromHead(StructureType typeId, StructureNode head) {
+        List<List<StructureNode>> allPaths = getPathFromHeadMulti(typeId, head);
+        if (!allPaths.isEmpty()) {
+            return allPaths.get(0);
+        }
+        else{
+            return new ArrayList<>();
+        }
     }
 
 
