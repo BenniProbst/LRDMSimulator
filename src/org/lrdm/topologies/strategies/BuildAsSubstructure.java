@@ -803,9 +803,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         Set<Link> allLinks = new HashSet<>();
         // Erstelle Links zwischen allen Paaren von Knoten
-        for (int i = 0; i < nodeList.size(); i++) {
-            MirrorNode node1 = nodeList.get(i);
-
+        for (MirrorNode node1 : nodeList) {
             for (MirrorNode node2 : nodeList) {
                 //self connect is forbidden
                 if (node1.equals(node2)) continue;

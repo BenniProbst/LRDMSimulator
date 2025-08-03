@@ -86,7 +86,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         }
 
         // Baue balancierte Struktur mit Breadth-First-Ansatz
-        root.setHead(StructureNode.StructureType.BALANCED_TREE,true);
+        root.setHead(StructureNode.StructureType.BALANCED_TREE, true);
         buildBalancedTreeStructureOnly(root, remainingNodes);
 
         return root;
@@ -109,17 +109,18 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
             return 0;
         }
 
+        this.setMirrorIterator(nodesToAdd.iterator());
+
         int addedCount = 0;
 
         // Sammle alle verfügbaren Einfüge-Punkte (Balance-optimiert)
         List<BalancedTreeMirrorNode> insertionCandidates = findBalancedInsertionCandidates((BalancedTreeMirrorNode) currentRoot);
 
-        for (Mirror mirror : nodesToAdd) {
+        for (int i = 0; i < nodesToAdd.size(); i++) {
             if (insertionCandidates.isEmpty()) break;
 
             // Erstelle neuen BalancedTreeMirrorNode
-            BalancedTreeMirrorNode newNode = new BalancedTreeMirrorNode(
-                    mirror.getID(), mirror, targetLinksPerNode, maxAllowedBalanceDeviation);
+            BalancedTreeMirrorNode newNode = getNodeFromIterator();
 
             // Finde besten Einfüge-Punkt basierend auf Balance
             BalancedTreeMirrorNode bestParent = insertionCandidates.get(0);
@@ -209,7 +210,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      * Baut die balancierte Baum-Struktur mit Breadth-First-Ansatz auf.
      * NUR StructureNode-Ebene - keine Mirror-Links!
      *
-     * @param root Root-Node der Struktur
+     * @param root           Root-Node der Struktur
      * @param remainingNodes Liste der noch zu verbindenden Knoten
      */
     private void buildBalancedTreeStructureOnly(BalancedTreeMirrorNode root, List<BalancedTreeMirrorNode> remainingNodes) {
@@ -249,6 +250,9 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      * Findet Balance-optimierte Einfüge-Punkte in der bestehenden Struktur.
      * Berücksichtigt targetLinksPerNode und maxAllowedBalanceDeviation für strikte Balance-Einhaltung.
      * Sammelt nur Kandidaten, die diese Balance-Grenzen respektieren.
+     * <p>
+     * WICHTIG: Umgeht isValidStructure-Prüfung in canAcceptMoreChildren(),
+     * da auf Planungsebene noch keine Mirror-Zuordnung existiert.
      *
      * @param root Root der Struktur
      * @return Sortierte Liste der besten Balance-konformen Einfüge-Punkte
@@ -263,24 +267,29 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
         for (StructureNode node : allNodes) {
             if (node instanceof BalancedTreeMirrorNode balancedNode) {
-                // 1. Basis-Prüfung: Kann der Knoten grundsätzlich mehr Kinder akzeptieren?
-                if (!balancedNode.canAcceptMoreChildren()) {
-                    continue;
-                }
+
+                // 1. PLANUNGSEBENE: Direkte Kinder-Zählung ohne isValidStructure-Prüfung
+                int currentChildren = balancedNode.getChildren(typeId).size();
 
                 // 2. Target-Links-Prüfung: Respektiert der Knoten die targetLinksPerNode-Grenze?
-                int currentChildren = balancedNode.getChildren(typeId).size();
                 if (currentChildren >= targetLinksPerNode) {
                     // Knoten hat bereits das Target erreicht oder überschritten
                     continue;
                 }
 
-                // 3. Balance-Deviation-Prüfung: Würde die Einfügung die erlaubte Abweichung überschreiten?
+                // 3. Strukturelle Basis-Prüfung: Kann der Knoten theoretisch mehr Kinder haben?
+                // Umgeht canAcceptMoreChildren() wegen isValidStructure-Problem
+                if (currentChildren >= balancedNode.getMaxChildren()) {
+                    // Knoten hat bereits die absolute maximale Anzahl erreicht
+                    continue;
+                }
+
+                // 4. Balance-Deviation-Prüfung: Würde die Einfügung die erlaubte Abweichung überschreiten?
                 if (!wouldInsertionRespectBalanceDeviation(balancedNode, root, typeId, currentTreeBalance)) {
                     continue;
                 }
 
-                // 4. Balance-Impact-Prüfung: Würde die Einfügung die Gesamtbalance verbessern oder neutral bleiben?
+                // 5. Balance-Impact-Prüfung: Würde die Einfügung die Gesamtbalance verbessern oder neutral bleiben?
                 double insertionImpact = calculateInsertionBalanceImpact(balancedNode, root, typeId);
                 if (insertionImpact > maxAllowedBalanceDeviation) {
                     // Einfügung würde Balance zu stark verschlechtern
@@ -297,13 +306,14 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         return candidates;
     }
 
+
     /**
      * Prüft, ob die Einfügung eines Kindes an diesem Knoten die erlaubte Balance-Abweichung respektiert.
      * Simuliert die Einfügung und prüft sowohl lokale als auch globale Balance-Auswirkungen.
      *
-     * @param candidate Der Kandidat für die Einfügung
-     * @param root Root der Struktur
-     * @param typeId Struktur-Typ-ID
+     * @param candidate          Der Kandidat für die Einfügung
+     * @param root               Root der Struktur
+     * @param typeId             Struktur-Typ-ID
      * @param currentTreeBalance Aktuelle Baum-Balance
      * @return true, wenn die Balance-Abweichung respektiert wird
      */
@@ -331,9 +341,9 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
     /**
      * Simuliert die Balance-Auswirkung einer Einfügung an einem Kandidaten.
      *
-     * @param candidate Der Einfüge-Kandidat
-     * @param root Root der Struktur
-     * @param typeId Struktur-Typ-ID
+     * @param candidate      Der Einfüge-Kandidat
+     * @param root           Root der Struktur
+     * @param typeId         Struktur-Typ-ID
      * @param currentBalance Aktuelle Baum-Balance (von root.calculateTreeBalance())
      * @return Simulierte Balance nach der Einfügung
      */
@@ -368,8 +378,8 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      * Niedrigere Werte bedeuten bessere Kandidaten (weniger negative Auswirkung auf Balance).
      *
      * @param candidate Der Einfüge-Kandidat
-     * @param root Root der Struktur
-     * @param typeId Struktur-Typ-ID
+     * @param root      Root der Struktur
+     * @param typeId    Struktur-Typ-ID
      * @return Balance-Impact-Wert (niedrigere Werte = bessere Kandidaten)
      */
     private double calculateInsertionBalanceImpact(BalancedTreeMirrorNode candidate,
@@ -405,7 +415,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
     }
 
     /**
-     * Vergleicht zwei Einfüge-Kandidaten basierend auf Balance-Kriterien.
+     * Vergleicht zwei Einfügekandidaten basierend auf Balance-Kriterien.
      * Bevorzugt Kandidaten, die die Balance am besten respektieren und verbessern.
      *
      * @param candidate1 Erster Kandidat
@@ -521,10 +531,10 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      * Redistributes children for optimal balance after node removal.
      * Verteilt Kinder eines entfernten Knotens optimal auf die verbleibende Struktur.
      *
-     * @param children Set der zu redistributionierenden Kinder
+     * @param children  Set der zu redistributionierenden Kinder
      * @param newParent Der neue Parent-Knoten
-     * @param root Root der Struktur
-     * @param typeId Struktur-Typ-ID
+     * @param root      Root der Struktur
+     * @param typeId    Struktur-Typ-ID
      */
     private void redistributeChildrenForOptimalBalance(Set<StructureNode> children,
                                                        BalancedTreeMirrorNode newParent,
