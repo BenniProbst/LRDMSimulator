@@ -401,7 +401,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         Set<Link> links = getAllLinksRecursive();
         n.getLinks().addAll(links);
 
-        //cleanup extra mirrors on network in case system failed to replace the crashed mirror
+        //clean up extra mirrors on the network in case a system failed to replace the crashed mirror
         Set<Mirror> unusedMirrorToShutdown = new HashSet<>(network.getMirrors());
         for(MirrorNode node:this.getAllStructureNodes()){
             if(node.getMirror()!=null){
@@ -796,7 +796,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
 
     protected Set<Link> buildAndUpdateLinks(MirrorNode root, Properties props, int simTime, StructureNode.StructureType structureType) {
-        // **TYPKOMPATIBILITÄT VALIDIEREN**: Root-Node-Typ muss mit StructureType kompatibel sein
+        // **TYP-KOMPATIBILITÄT VALIDIEREN**: Root-Node-Typ muss mit StructureType kompatibel sein
         validateNodeTypeCompatibility(root, structureType);
         // Sammle alle Knoten in der Struktur (generisch für alle Node-Typen)
         List<MirrorNode> nodeList = root.getAllNodesInStructure(structureType, root)
@@ -861,7 +861,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         // ===== PHASE 3: MIRROR-SHUTDOWN - unverbundene Mirrors sammeln und herunterfahren =====
 
-        // 3.1. Mirrors der entkoppelten Knoten prüfen und herunterfahren, um Erkennung der neuen Wurzel zu ermöglichen
+        // 3.1. Mirrors prüfen die entkoppelten Knoten und herunterfahren, um Erkennung der neuen Wurzel zu ermöglichen
         network.getMirrors()
                 .stream()
                 .filter(mirror -> nodeList.stream().noneMatch(node -> node.getMirror() == mirror))
