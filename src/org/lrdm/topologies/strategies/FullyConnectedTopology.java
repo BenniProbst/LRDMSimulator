@@ -43,15 +43,12 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
         // 1. Erstelle FullyConnectedMirrorNodes mit Mirror-Zuordnung
         for (int i = 0; i < totalNodes && hasNextMirror(); i++) {
-            Mirror mirror = getNextMirror();
-            if (mirror != null) {
-                FullyConnectedMirrorNode node = new FullyConnectedMirrorNode(mirror.getID(), mirror);
-                nodes.add(node);
-                addToStructureNodes(node); // Registriere bei BuildAsSubstructure
-                if(mirror.isRoot()) {
-                    setCurrentStructureRoot(node);
-                    node.setHead(StructureNode.StructureType.FULLY_CONNECTED,true);
-                }
+            FullyConnectedMirrorNode node = getMirrorNodeFromIterator();
+            nodes.add(node);
+            addToStructureNodes(node); // Registriere bei BuildAsSubstructure
+            if(node.getMirror().isRoot()) {
+                setCurrentStructureRoot(node);
+                node.setHead(StructureNode.StructureType.FULLY_CONNECTED,true);
             }
         }
 
@@ -71,12 +68,10 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
         // 3. Plane Strukturebene
         // vollständige Vernetzung: jeder mit jedem (außer sich selbst)
-        for (int i = 0; i < nodes.size(); i++) {
-            FullyConnectedMirrorNode sourceNode = nodes.get(i);
+        for (FullyConnectedMirrorNode sourceNode:nodes) {
 
-            for (int j = 0; j < nodes.size(); j++) {
-                if (i == j) continue;
-                FullyConnectedMirrorNode targetNode = nodes.get(j);
+            for (FullyConnectedMirrorNode targetNode:nodes) {
+                if (sourceNode == targetNode) continue;
 
                 // Füge bidirektionale StructureNode-Verbindung hinzu
                 sourceNode.addChild(targetNode);
@@ -115,13 +110,12 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         List<Mirror> tmpMirrorIterate = new ArrayList<>(nodesToAdd);
         setMirrorIterator(tmpMirrorIterate.iterator());
         // Erstelle neue FullyConnectedMirrorNodes - Verwende das saubere Interface
-        for (int i = 0; i < nodesToAdd.size() && hasNextMirror(); i++) {
+        for (int i = 0; i < nodesToAdd.size(); i++) {
             FullyConnectedMirrorNode newNode = getMirrorNodeFromIterator();
             newNodes.add(newNode);
             addToStructureNodes(newNode);
             actuallyAdded++;
         }
-        setMirrorIterator(network.getMirrors().iterator());
 
         FullyConnectedMirrorNode root = existingNodes.stream()
                 .filter(node -> node.getMirror() != null && node.isRoot())
@@ -197,14 +191,20 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         candidatesForRemoval.sort((node1, node2) -> Integer.compare(node2.getId(), node1.getId()));
 
         Set<MirrorNode> removedNodes = new HashSet<>();
+        FullyConnectedMirrorNode root = (FullyConnectedMirrorNode) getCurrentStructureRoot();
 
         // **NUR PLANUNGSEBENE**: Entferne die ersten N Kandidaten
         for (int i = 0; i < actualRemovalCount; i++) {
             FullyConnectedMirrorNode nodeToRemove = candidatesForRemoval.get(i);
 
-            removeNodeFromStructuralPlanning(nodeToRemove,
-                    Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.FULLY_CONNECTED));
+            for (StructureNode existingNode : nodeToRemove.getChildren(StructureNode.StructureType.FULLY_CONNECTED,root.getId())) {
+                existingNode.removeChild(nodeToRemove);
+            }
+            for(StructureNode childNode:nodeToRemove.getChildren(StructureNode.StructureType.FULLY_CONNECTED,root.getId())) {
+                nodeToRemove.removeChild(childNode);
+            }
 
+            removeFromStructureNodes(nodeToRemove);
             removedNodes.add(nodeToRemove);
         }
 
@@ -353,103 +353,46 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         StringBuilder sb = new StringBuilder();
         sb.append("FullyConnectedTopology{");
 
-        // ===== GRUNDLEGENDE INFORMATIONEN =====
-        sb.append("type=FULLY_CONNECTED");
+        try {
+            // Grundlegende Topology-Information
+            sb.append("substructureId=").append(getSubstructureId());
 
-        // Netzwerk-Status
-        if (network != null) {
-            sb.append(", network=").append(network.getClass().getSimpleName());
-            sb.append(", mirrors=").append(network.getNumMirrors());
-            sb.append(", targetLinks=").append(network.getNumTargetLinks());
-            sb.append(", linksPerMirror=").append(network.getNumTargetLinksPerMirror());
-        } else {
-            sb.append(", network=null");
-        }
+            // Sichere Struktur-Informationen
+            MirrorNode root = getCurrentStructureRoot();
+            if (root != null) {
+                sb.append(", rootId=").append(root.getId());
 
-        // ===== STRUKTUR-INFORMATIONEN =====
-        MirrorNode root = getCurrentStructureRoot();
-        if (root != null) {
-            sb.append(", structureRoot=").append(root.getId());
-            sb.append(", rootType=").append(root.getClass().getSimpleName());
+                // Sichere Node-Zählung
+                Set<MirrorNode> allNodes = getAllStructureNodes();
+                int nodeCount = (allNodes != null) ? allNodes.size() : 0;
+                sb.append(", nodes=").append(nodeCount);
 
-            // Head-Status
-            if (root.isHead()) {
-                sb.append(", head=true");
-            }
-        } else {
-            sb.append(", structureRoot=null");
-        }
+                // Berechne erwartete Links für vollständig vernetzte Topologie
+                int expectedLinks = calculateExpectedLinks(nodeCount);
+                sb.append(", expectedLinks=").append(expectedLinks);
 
-        // Anzahl der verwalteten StructureNodes
-        Set<MirrorNode> allNodes = getAllStructureNodes();
-        sb.append(", structureNodes=").append(allNodes.size());
+                // Struktur-Typ-Information
+                StructureNode.StructureType structureType = getCurrentStructureType();
+                if (structureType != null) {
+                    sb.append(", structureType=").append(structureType);
+                }
 
-        // Typ-Verteilung der Knoten
-        long fullyConnectedNodes = allNodes.stream()
-                .filter(node -> node instanceof FullyConnectedMirrorNode)
-                .count();
-        sb.append(", fullyConnectedNodes=").append(fullyConnectedNodes);
-
-        // ===== TOPOLOGIE-SPEZIFISCHE METRIKEN =====
-        if (network != null) {
-            int mirrors = network.getNumMirrors();
-
-            // Theoretische vs. tatsächliche Links
-            int theoreticalLinks = calculateExpectedLinks(mirrors);
-            int actualTargetLinks = network.getNumTargetLinks();
-            sb.append(", theoretical=").append(theoreticalLinks);
-            sb.append(", actual=").append(actualTargetLinks);
-
-            // Link-Effizienz
-            if (theoreticalLinks > 0) {
-                double efficiency = (double) actualTargetLinks / theoreticalLinks * 100.0;
-                sb.append(", efficiency=").append(String.format("%.1f%%", efficiency));
-            }
-
-            // Konnektivitäts-Grad
-            if (mirrors > 1) {
-                int connectivityDegree = mirrors - 1; // Fully connected = jeder mit jedem anderen
-                sb.append(", degree=").append(connectivityDegree);
-
-                // Graph-Dichte (für vollständigen Graph immer 1.0)
-                sb.append(", density=1.0");
-            }
-        }
-
-        // ===== ZUSTANDSINFORMATIONEN =====
-
-        // Mirror-Iterator Status
-        if (mirrorIterator != null) {
-            sb.append(", mirrorIterator=active");
-        } else {
-            sb.append(", mirrorIterator=null");
-        }
-
-        // Validierung (einfacher Check ohne komplexe Aufrufe)
-        boolean isValid = root != null && !allNodes.isEmpty();
-        sb.append(", valid=").append(isValid);
-
-        // ===== PERFORMANCE-INFORMATIONEN =====
-        if (network != null && network.getNumMirrors() > 0) {
-            int nodes = network.getNumMirrors();
-
-            // Komplexitäts-Kategorisierung
-            String complexity;
-            if (nodes <= 10) {
-                complexity = "SMALL";
-            } else if (nodes <= 50) {
-                complexity = "MEDIUM";
-            } else if (nodes <= 200) {
-                complexity = "LARGE";
             } else {
-                complexity = "VERY_LARGE";
+                sb.append(", status=NOT_INITIALIZED");
             }
-            sb.append(", complexity=").append(complexity);
 
-            // Skalierung-Warnung für sehr große Netzwerke
-            if (nodes > 100) {
-                sb.append(", warning=HIGH_LINK_COUNT");
+            // Network-Information (falls verfügbar)
+            if (network != null) {
+                try {
+                    sb.append(", networkMirrors=").append(network.getMirrors().size());
+                    sb.append(", networkLinks=").append(network.getNumLinks());
+                } catch (Exception e) {
+                    sb.append(", networkInfo=ERROR");
+                }
             }
+
+        } catch (Exception e) {
+            sb.append(", ERROR=").append(e.getMessage());
         }
 
         sb.append("}");
@@ -465,8 +408,10 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      * @return Erwartete Anzahl der Links für vollständig vernetzte Topologie
      */
     private static int calculateExpectedLinks(int nodeCount) {
-        if (nodeCount <= 1) return 0;
-        return nodeCount * (nodeCount - 1) / 2;
+        if (nodeCount <= 1) {
+            return 0;
+        }
+        return (nodeCount * (nodeCount - 1)) / 2;
     }
 
 }

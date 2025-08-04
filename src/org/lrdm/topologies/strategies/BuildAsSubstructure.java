@@ -426,6 +426,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         if (newMirrors <= 0) {
             return;
         }
+
+        initializeInternalState(n);
+
         // Verwende das offizielle Interface von TopologyStrategy
         Set<Mirror> mirrorsToAdd = createMirrors(newMirrors, simTime, props);
         n.getMirrors().addAll(mirrorsToAdd);
@@ -630,6 +633,8 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         if (removeMirrors <= 0 || getCurrentStructureRoot() == null) {
             return; // Keine Entfernung erforderlich
         }
+
+        initializeInternalState(n);
 
         // 1.3. Structure Nodes auf Planungsebene entkoppeln (removeNodesFromStructure)
         Set<MirrorNode> removePlanningMirrorNodes = removeNodesFromStructure(removeMirrors);
