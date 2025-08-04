@@ -6,6 +6,7 @@ import org.lrdm.effectors.*;
 import org.lrdm.topologies.node.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Eine spezialisierte {@link BuildAsSubstructure}, die Mirrors in einem tiefen-beschränkten Baum
@@ -107,36 +108,27 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes, Properties props) {
-        if (totalNodes <= 0 || !hasNextMirror() || getCurrentStructureRoot() == null) {
-            return null;
-        }
+        if (totalNodes <= 0) return null;
 
-        // Validierung der Eingabe
-        int actualNodes = Math.min(totalNodes, countAvailableMirrors());
-        actualNodes = Math.max(1, actualNodes); // Mindestens ein Knoten für Root
-
+        // Erstelle Root-Node als BalancedTreeMirrorNode
         // 1. Erstelle Root-Node mit dem ersten Mirror
         DepthLimitedTreeMirrorNode root = getNodeFromIterator();
+        if (root == null) return null;
         root.setMaxDepth(maxDepth);
 
         // 2. Registriere Root bei BuildAsSubstructure
-        addToStructureNodes(root);
         setCurrentStructureRoot(root);
-        root.setHead(true); // Markiere als Head für diese Struktur
 
         // 3. Sammle verbleibende Mirrors und erstelle DepthLimitedTreeMirrorNodes
         List<DepthLimitedTreeMirrorNode> remainingNodes = new ArrayList<>();
-        int createdNodes = 1;
 
-        while (hasNextMirror() && createdNodes < actualNodes) {
+        for (int i=1; i<totalNodes&&hasNextMirror(); i++) {
             DepthLimitedTreeMirrorNode node = getNodeFromIterator();
-            root.setMaxDepth(maxDepth);
-            addToStructureNodes(node);
             remainingNodes.add(node);
-            createdNodes++;
         }
 
         // 4. Baue NUR die StructureNode-basierte Baum-Struktur
+        root.setHead(StructureNode.StructureType.DEPTH_LIMIT_TREE,true); // Markiere als Head für diese Struktur
         buildDepthLimitedTreeStructureOnly(root, remainingNodes);
 
         return root;
@@ -151,12 +143,14 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
         if (mirrorIterator != null && mirrorIterator.hasNext()) {
             Mirror mirror = getNextMirror();
             MirrorNode node = createMirrorNodeForMirror(mirror);
+
             if (node != null) {
                 node.addNodeType(StructureNode.StructureType.MIRROR);
                 node.addNodeType(StructureNode.StructureType.TREE);
                 node.addNodeType(StructureNode.StructureType.DEPTH_LIMIT_TREE);
                 node.setMirror(mirror);
                 addToStructureNodes(node); // Aktiv hinzufügen
+                ((DepthLimitedTreeMirrorNode) node).setMaxDepth(maxDepth);
             }
             return (DepthLimitedTreeMirrorNode) node;
         }
@@ -291,9 +285,16 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
 
     // ===== TIEFENBESCHRÄNKUNGS-SPEZIFISCHE HILFSMETHODEN =====
 
+
     /**
-     * Baut die tiefen-beschränkte Baum-Struktur rekursiv auf - NUR StructureNode-Ebene.
+     * Baut die tiefen-beschränkte Baum-Struktur iterativ auf - NUR StructureNode-Ebene.
      * Respektiert die maximale Tiefe beim Strukturaufbau.
+     *
+     * **Algorithmus:**
+     * 1. Bestimme das Minimum der Kinderanzahl aller Knoten im Baum
+     * 2. Finde die tiefste Node mit dieser minimalen Kinderanzahl
+     * 3. Füge ein Kind zu dieser Node hinzu
+     * 4. Wiederhole bis alle Knoten verteilt sind oder maximale Tiefe erreicht
      *
      * @param root Root-Node der Struktur
      * @param remainingNodes Liste der noch zu verbindenden Knoten
@@ -304,18 +305,80 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
             return;
         }
 
-        // Berechne optimale Anzahl Kinder für diesen Parent
-        int childrenToAdd = calculateOptimalChildrenPerParent(remainingNodes.size(), root.getRemainingDepth());
+        // Iterativer Aufbau: Füge Knoten einzeln hinzu
+        while (!remainingNodes.isEmpty()) {
+            // 1. Finde die optimale Einfügeposition
+            DepthLimitedTreeMirrorNode targetParent = findOptimalInsertionParent(root);
 
-        for (int i = 0; i < childrenToAdd && !remainingNodes.isEmpty(); i++) {
-            DepthLimitedTreeMirrorNode child = remainingNodes.remove(0);//TODO: kann nicht stimmen
+            if (targetParent == null || !targetParent.canAddChildren()) {
+                // Keine weiteren Einfügungen möglich - maximale Tiefe erreicht
+                break;
+            }
 
-            // NUR strukturelle StructureNode-Verbindung
-            root.addChild(child);
-            child.setParent(root);
+            // 2. Entferne den nächsten Knoten aus der Liste
+            DepthLimitedTreeMirrorNode child = remainingNodes.remove(0);
 
-            // Rekursiver Abstieg für weiteren Strukturaufbau
-            buildDepthLimitedTreeStructureOnly(child, remainingNodes);
+            // 3. NUR strukturelle StructureNode-Verbindung
+            targetParent.addChild(child);
+        }
+    }
+
+    /**
+     * Findet die optimale Einfügeposition basierend auf dem beschriebenen Algorithmus:
+     * 1. Sammle nur Knoten, die tatsächlich noch Kinder aufnehmen können
+     * 2. Bestimme das Minimum der Kinderanzahl unter diesen gültigen Kandidaten
+     * 3. Unter allen Knoten mit minimaler Kinderanzahl, wähle den tiefsten
+     * 4. Bei Gleichstand in Tiefe, wähle den ersten gefundenen
+     *
+     * @param root Die Root-Node des Baums
+     * @return Die optimale Parent-Node für das nächste Kind oder null
+     */
+    private DepthLimitedTreeMirrorNode findOptimalInsertionParent(DepthLimitedTreeMirrorNode root) {
+        // 1. Sammle NUR Knoten, die noch Kinder haben können (filtert maximale Tiefe aus)
+        List<DepthLimitedTreeMirrorNode> candidateParents = new ArrayList<>();
+        collectValidCandidateParents(root, candidateParents);
+
+        if (candidateParents.isEmpty()) {
+            return null;
+        }
+
+        // 2. Bestimme die minimale Anzahl Kinder unter allen GÜLTIGEN Kandidaten
+        int minChildren = candidateParents.stream()
+                .mapToInt(node -> node.getChildren().size())
+                .min()
+                .orElse(Integer.MAX_VALUE);
+
+        // 3. Filtere Knoten mit minimaler Kinderanzahl
+        List<DepthLimitedTreeMirrorNode> nodesWithMinChildren = candidateParents.stream()
+                .filter(node -> node.getChildren().size() == minChildren)
+                .toList();
+
+        // 4. Finde den tiefsten unter diesen Knoten
+        return nodesWithMinChildren.stream()
+                .max(Comparator.comparingInt(DepthLimitedTreeMirrorNode::getDepthInTree))
+                .orElse(null);
+    }
+
+    /**
+     * Sammelt rekursiv NUR Knoten, die tatsächlich noch Kinder aufnehmen können.
+     * WICHTIG: Filtert Knoten in maximaler Tiefe bereits hier aus!
+     *
+     * @param current Der aktuelle Knoten
+     * @param candidates Liste der Kandidaten (wird befüllt)
+     */
+    private void collectValidCandidateParents(DepthLimitedTreeMirrorNode current,
+                                              List<DepthLimitedTreeMirrorNode> candidates) {
+        // WICHTIG: Prüfe ZUERST, ob dieser Knoten noch Kinder aufnehmen kann
+        // Dies filtert Knoten in maximaler Tiefe automatisch aus
+        if (current.canAddChildren()) {
+            candidates.add(current);
+        }
+
+        // Rekursiv alle Kinder durchsuchen
+        for (StructureNode child : current.getChildren()) {
+            if (child instanceof DepthLimitedTreeMirrorNode depthChild) {
+                collectValidCandidateParents(depthChild, candidates);
+            }
         }
     }
 
@@ -365,46 +428,9 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
     }
 
     /**
-     * Berechnet die optimale Anzahl von Kindern pro Parent basierend auf verbleibenden Knoten und Tiefe.
-     *
-     * @param remainingNodes Anzahl verbleibender Knoten
-     * @param remainingDepth Verbleibende Tiefe bis Maximum
-     * @return Optimale Anzahl Kinder
+     * Format-Template für die String-Repräsentation der Strategie.
      */
-    private int calculateOptimalChildrenPerParent(int remainingNodes, int remainingDepth) {
-        if (remainingDepth <= 0) {
-            return 0;
-        }
-
-        if (remainingDepth == 1) {
-            // Letzte Ebene - alle verbleibenden Knoten
-            return remainingNodes;
-        }
-
-        // Verteile gleichmäßig über verbleibende Tiefe
-        return Math.max(1, remainingNodes / remainingDepth);
-    }
-
-    /**
-     * Überladung für einfachere Verwendung.
-     *
-     * @param totalNodes Gesamtanzahl der Knoten
-     * @return Optimale Anzahl Kinder pro Parent
-     */
-    private int calculateOptimalChildrenPerParent(int totalNodes) {
-        return Math.max(1, (int) Math.ceil((double) totalNodes / maxDepth));
-    }
-
-    /**
-     * Zählt die verfügbaren Mirrors im Iterator.
-     * Hilfsmethode für Eingabevalidierung.
-     *
-     * @return Anzahl der verfügbaren Mirrors
-     */
-    private int countAvailableMirrors() {
-        // Einfache Schätzung - da wir den Iterator nicht durchlaufen können ohne ihn zu verbrauchen
-        return Integer.MAX_VALUE; // Optimistische Schätzung - wird durch while-Schleife begrenzt
-    }
+    private static final String TO_STRING_FORMAT = "DepthLimitTreeTopologyStrategy[maxDepth=%d, strategy=%s, optimization=%b]";
 
     /**
      * Gibt eine String-Repräsentation der Strategie zurück.
@@ -413,8 +439,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
      */
     @Override
     public String toString() {
-        return String.format("DepthLimitTreeTopologyStrategy[maxDepth=%d, strategy=%s, optimization=%s]",
-                maxDepth, insertionStrategy, enableDepthOptimization);
+        return String.format(TO_STRING_FORMAT, maxDepth, insertionStrategy, enableDepthOptimization);
     }
 
     // ===== GETTER UND KONFIGURATION =====

@@ -48,6 +48,14 @@ public class DepthLimitedTreeMirrorNode extends TreeMirrorNode {
     }
 
     /**
+     * Überschreibt die Typ-Ableitung für die korrekte BALANCED_TREE-Identifikation.
+     */
+    @Override
+    public StructureType deriveTypeId() {
+        return StructureType.DEPTH_LIMIT_TREE;
+    }
+
+    /**
      * Berechnet die verbleibende Tiefe bis zum Maximum.
      *
      * @return Anzahl der noch möglichen Tiefenebenen

@@ -36,7 +36,7 @@ public class ExampleSimulationDepthLimitTree {
 		effector.setStrategy(new DepthLimitTreeTopologyStrategy(), 40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
 		DepthLimitTreeTopologyStrategy topoS = new DepthLimitTreeTopologyStrategy();
-		topoS.setMaxDepth(3);
+		topoS.setMaxDepth(4);
 		effector.setStrategy(topoS, 80);
 
 		int startMirrors = 15;
