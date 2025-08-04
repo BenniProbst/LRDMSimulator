@@ -1,32 +1,64 @@
 
 package org.lrdm.topologies.strategies;
 
-import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.*;
-import org.lrdm.topologies.node.*;
+import org.lrdm.topologies.node.MirrorNode;
+import org.lrdm.topologies.node.NConnectedMirrorNode;
+import org.lrdm.topologies.node.StructureNode;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A {@link TopologyStrategy} which connects each mirror with exactly n other mirrors.
- * If n is the number of all mirrors - 1 this strategy equals the {@link FullyConnectedTopology}.
+ * Eine {@link TopologyStrategy}, die jede Node mit den ersten N Vorgänger-Nodes bidirektional verbindet.
  * <p>
- * Verwendet {@link MirrorNode} für Struktur-Management und erweitert {@link BuildAsSubstructure}
- * für konsistente StructureBuilder-Integration.
+ * **N-Connected-Eigenschaften**:
+ * - Jede Node wird mit den ersten N Vorgänger-Nodes vollständig bidirektional verbunden
+ * - targetLinksPerNode bestimmt die Anzahl der Vorgänger-Verbindungen
+ * - Neuere Nodes sind mit mehr Vorgängern verbunden als ältere
+ * - Verwendet {@link NConnectedMirrorNode} für Struktur-Management und -Validierung
+ * - Erweitert {@link BuildAsSubstructure} für konsistente StructureBuilder-Integration
+ * <p>
+ * **Verbindungslogik**:
+ * - Node 0: 0 Verbindungen (erste Node)
+ * - Node 1: 1 Verbindung zu Node 0
+ * - Node 2: min(2, targetLinksPerNode) Verbindungen zu Node 0,1
+ * - Node N: min(N, targetLinksPerNode) Verbindungen zu den ersten N Vorgängern
+ * <p>
+ * **Beispiel mit targetLinksPerNode=3**:
+ * - Node 0: []
+ * - Node 1: [0]
+ * - Node 2: [0,1]
+ * - Node 3: [0,1,2]
+ * - Node 4: [1,2,3] (nur die letzten 3 Vorgänger)
+ * - Node 5: [2,3,4] (nur die letzten 3 Vorgänger)
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class NConnectedTopology extends BuildAsSubstructure {
 
+    // ===== N-CONNECTED-SPEZIFISCHE KONFIGURATION =====
+    private int targetLinksPerNode = 2;
+
+    // ===== KONSTRUKTOREN =====
+
+    public NConnectedTopology() {
+        super();
+    }
+
+    public NConnectedTopology(int targetLinksPerNode) {
+        super();
+        this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
+    }
+
     // ===== BUILD SUBSTRUCTURE IMPLEMENTATION =====
 
     /**
      * Baut eine N-Connected-Struktur mit der angegebenen Anzahl von Knoten auf.
-     * Erstellt NConnectedMirrorNodes, weist Mirrors zu, baut StructureNode-Verbindungen
-     * und erstellt die echten Mirror-Links zur simTime.
+     * Jeder Knoten wird mit den ersten N Vorgänger-Knoten bidirektional verbunden.
+     * Erstellt sowohl StructureNode-Verbindungen als auch echte Mirror-Links.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
      * @param props      Properties der Simulation
@@ -34,308 +66,244 @@ public class NConnectedTopology extends BuildAsSubstructure {
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes, Properties props) {
-        if (totalNodes <= 0 || network == null) {
+        if (totalNodes <= 0 || !hasNextMirror()) {
             return null;
         }
 
-        int linksPerMirror = network.getNumTargetLinksPerMirror();
-        List<NConnectedMirrorNode> nodes = new ArrayList<>();
-
-        // 1. Erstelle NConnectedMirrorNodes mit Mirror-Zuordnung
-        for (int i = 0; i < totalNodes && hasNextMirror(); i++) {
-            Mirror mirror = getNextMirror();
-            if (mirror != null) {
-                NConnectedMirrorNode node = new NConnectedMirrorNode(mirror.getID(), mirror, linksPerMirror);
-                nodes.add(node);
-                addToStructureNodes(node); // Registriere bei BuildAsSubstructure
+        // Lese targetLinksPerNode aus Properties (falls vorhanden)
+        String linksPerNodeStr = props.getProperty("targetLinksPerNode");
+        if (linksPerNodeStr != null) {
+            try {
+                this.targetLinksPerNode = Math.max(1, Integer.parseInt(linksPerNodeStr));
+            } catch (NumberFormatException e) {
+                // Verwende Standard-Wert bei Parsing-Fehler
             }
         }
 
-        if (nodes.isEmpty()) {
+        // 1. Erstelle alle Knoten
+        List<NConnectedMirrorNode> allNodes = new ArrayList<>();
+        for (int i = 0; i < totalNodes && hasNextMirror(); i++) {
+            NConnectedMirrorNode node = getMirrorNodeFromIterator();
+            if (node == null) break;
+            allNodes.add(node);
+        }
+
+        if (allNodes.isEmpty()) {
             return null;
         }
 
-        // 2. Setze den ersten Knoten als Head und Root
-        NConnectedMirrorNode root = nodes.get(0);
+        // 2. Setze den ersten Knoten als Root
+        NConnectedMirrorNode root = allNodes.get(0);
         root.setHead(true);
         setCurrentStructureRoot(root);
+
+        // 3. Erstelle N-Connected-Verbindungen
+        buildNConnectedStructure(allNodes);
 
         return root;
     }
 
     /**
-     * Fügt neue Knoten zur bestehenden N-Connected-Struktur hinzu.
-     * Neue Knoten werden mit bestehenden Knoten basierend auf der N-Connected-Logik verbunden.
+     * Erstellt die N-Connected-Struktur: Jede Node wird mit den ersten N Vorgängern verbunden.
      *
-     * @param nodesToAdd Anzahl der hinzuzufügenden Knoten
+     * @param allNodes Liste aller Knoten in chronologischer Reihenfolge
+     */
+    private void buildNConnectedStructure(List<NConnectedMirrorNode> allNodes) {
+        StructureNode.StructureType typeId = StructureNode.StructureType.N_CONNECTED;
+        int headId = getCurrentStructureRoot().getId();
+
+        for (int i = 1; i < allNodes.size(); i++) {
+            NConnectedMirrorNode currentNode = allNodes.get(i);
+
+            // Berechne die Anzahl der Vorgänger, mit denen verbunden werden soll
+            int connectionsToMake = Math.min(i, targetLinksPerNode);
+
+            // Verbinde mit den letzten connectionsToMake Vorgängern
+            int startIndex = Math.max(0, i - connectionsToMake);
+            for (int j = startIndex; j < i; j++) {
+                NConnectedMirrorNode predecessorNode = allNodes.get(j);
+
+                // Bidirektionale Verbindung erstellen
+                currentNode.addChild(predecessorNode, Set.of(typeId), Map.of(typeId, headId));
+                predecessorNode.addChild(currentNode, Set.of(typeId), Map.of(typeId, headId));
+            }
+        }
+    }
+
+
+    /**
+     * Fügt neue Knoten zur bestehenden N-Connected-Struktur hinzu.
+     * Neue Knoten werden mit den letzten N bestehenden Knoten bidirektional verbunden.
+     *
+     * @param nodesToAdd Set der hinzuzufügenden Mirrors
      * @return Tatsächliche Anzahl der hinzugefügten Knoten
      */
     @Override
     protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
-        if (nodesToAdd.isEmpty() || !hasNextMirror()) {
+        if (nodesToAdd.isEmpty()) {
             return 0;
         }
 
-        List<MirrorNode> newNodes = new ArrayList<>();
-        List<MirrorNode> existingNodes = new ArrayList<>(getAllStructureNodes());
+        // Hole alle bestehenden Knoten sortiert nach ID
+        List<MirrorNode> existingNodes = getAllNConnectedNodes()
+                .stream()
+                .sorted(Comparator.comparingInt(MirrorNode::getId))
+                .collect(Collectors.toList());
 
-        List<Mirror> tmpMirrorIterate = new ArrayList<>(nodesToAdd);
-        setMirrorIterator(tmpMirrorIterate.iterator());
-        // Erstelle neue Knoten
-        int actualAdded = 0;
-        for (int i = 0; i < nodesToAdd.size() && hasNextMirror(); i++) {
-            NConnectedMirrorNode newNode = getMirrorNodeFromIterator();
-            newNodes.add(newNode);
-            addToStructureNodes(newNode);
-            actualAdded++;
-        }
-        setMirrorIterator(network.getMirrors().iterator());
+        int addedCount = 0;
+        StructureNode.StructureType typeId = StructureNode.StructureType.N_CONNECTED;
+        int headId = getCurrentStructureRoot().getId();
 
-        // Verbinde neue Knoten mit bestehenden Knoten
-        if (network != null) {
-            int linksPerMirror = network.getNumTargetLinksPerMirror();
+        for (Mirror mirror : nodesToAdd) {
+            NConnectedMirrorNode newNode = (NConnectedMirrorNode) createMirrorNodeForMirror(mirror);
+            if (newNode == null) continue;
 
-            for (MirrorNode newNode : newNodes) {
-                connectNodeToExistingNodes(newNode, existingNodes, linksPerMirror);
-            }
-        }
+            // Verbinde mit den letzten targetLinksPerNode bestehenden Knoten
+            int connectionsToMake = Math.min(existingNodes.size(), targetLinksPerNode);
+            int startIndex = Math.max(0, existingNodes.size() - connectionsToMake);
 
-        return actualAdded;
-    }
+            for (int i = startIndex; i < existingNodes.size(); i++) {
+                NConnectedMirrorNode existingNode = (NConnectedMirrorNode) existingNodes.get(i);
 
-    /**
-     * Verbindet einen neuen Knoten mit bestehenden Knoten basierend auf N-Connected-Logik.
-     */
-    private void connectNodeToExistingNodes(MirrorNode newNode, List<MirrorNode> existingNodes, int linksPerMirror) {
-        int connectionsAdded = 0;
-
-        for (MirrorNode existingNode : existingNodes) {
-            if (connectionsAdded >= linksPerMirror) {
-                break;
+                // Bidirektionale Verbindung erstellen
+                newNode.addChild(existingNode, Set.of(typeId), Map.of(typeId, headId));
+                existingNode.addChild(newNode, Set.of(typeId), Map.of(typeId, headId));
             }
 
-            // Prüfe, ob der bestehende Knoten noch Kapazität hat
-            if (existingNode.getChildren().size() < linksPerMirror) {
-                // Füge bidirektionale Verbindung hinzu
-                newNode.addChild(existingNode);
-                existingNode.addChild(newNode);
-                connectionsAdded++;
-            }
+            existingNodes.add(newNode);
+            addedCount++;
         }
+
+        return addedCount;
     }
 
     /**
      * **PLANUNGSEBENE**: Entfernt Knoten aus der N-Connected-Struktur.
-     * N-Connected-Entfernung: Bevorzugt Knoten mit wenigen Verbindungen (minimale Störung).
-     * Bei gleicher Verbindungsanzahl werden Knoten mit höheren IDs bevorzugt entfernt.
+     * N-Connected-Entfernung: Bevorzugt Knoten mit höchsten IDs (neueste zuerst).
+     * Dies minimiert die Störung der Vorgänger-Verbindungslogik.
      * NUR STRUKTURPLANUNG - keine Mirror-Links!
      *
      * @param nodesToRemove Anzahl der zu entfernenden Knoten
-     * @return Anzahl der tatsächlich entfernten Knoten
+     * @return Set der tatsächlich entfernten Knoten
      */
     @Override
     protected Set<MirrorNode> removeNodesFromStructure(int nodesToRemove) {
-        if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
+        if (nodesToRemove <= 0) {
             return new HashSet<>();
         }
 
-        List<MirrorNode> allNodes = getAllNConnectedNodes();
+        // Hole alle entfernbaren Knoten (außer Root) sortiert nach ID (höchste zuerst)
+        List<MirrorNode> candidatesForRemoval = getAllStructureNodes()
+                .stream()
+                .filter(node -> node != getCurrentStructureRoot())
+                .sorted((node1, node2) -> Integer.compare(node2.getId(), node1.getId()))
+                .toList();
 
-        // Sammle Kandidaten für Entfernung (außer Root)
-        List<MirrorNode> candidatesForRemoval = allNodes.stream()
-                .filter(node -> node != getCurrentStructureRoot()) // Root nie entfernen
-                .filter(node -> !node.isHead()) // Head-Knoten bevorzugt beibehalten
-                .collect(Collectors.toList());
+        // Begrenze auf tatsächlich verfügbare Knoten
+        int actualNodesToRemove = Math.min(nodesToRemove, candidatesForRemoval.size());
 
-        // Fallback: Wenn keine Nicht-Head-Kandidaten verfügbar sind, verwenden alle Nicht-Root-Knoten
-        if (candidatesForRemoval.isEmpty()) {
-            candidatesForRemoval = allNodes.stream()
-                    .filter(node -> node != getCurrentStructureRoot())
-                    .collect(Collectors.toList());
-        }
+        // Nimm nur die ersten actualNodesToRemove Knoten
+        Set<MirrorNode> removedNodes = candidatesForRemoval.stream()
+                .limit(actualNodesToRemove)
+                .collect(Collectors.toSet());
 
-        // Begrenze auf verfügbare Anzahl
-        int actualRemovalCount = Math.min(nodesToRemove, candidatesForRemoval.size());
-        if (actualRemovalCount == 0) return new HashSet<>();
-
-        // **N-CONNECTED-SPEZIFISCH**: Sortiere nach Verbindungsanzahl (weniger Verbindungen zuerst)
-        // Bei gleicher Verbindungsanzahl: höhere ID zuerst (deterministische Auswahl)
-        candidatesForRemoval.sort((node1, node2) -> {
-            int connections1 = node1.getChildren().size();
-            int connections2 = node2.getChildren().size();
-
-            if (connections1 != connections2) {
-                return Integer.compare(connections1, connections2); // Weniger Verbindungen zuerst
-            }
-
-            // Bei gleicher Verbindungsanzahl: höhere ID zuerst
-            return Integer.compare(node2.getId(), node1.getId());
-        });
-
-        // **NUR PLANUNGSEBENE**: Entferne die ersten N Kandidaten
-        Set<MirrorNode> removedNodes = new HashSet<>();
-
-        for (int i = 0; i < actualRemovalCount; i++) {
-            MirrorNode nodeToRemove = candidatesForRemoval.get(i);
-
-            // 1. **NUR STRUKTURPLANUNG**: Entferne alle StructureNode-Verbindungen
+        // **NUR STRUKTURPLANUNG**: Entferne bidirektionale StructureNode-Verbindungen
+        for (MirrorNode nodeToRemove : removedNodes) {
             removeNodeFromStructuralPlanning(nodeToRemove,
-                    Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.N_CONNECTED));
-
-            removedNodes.add(nodeToRemove);
+                    Set.of(StructureNode.StructureType.DEFAULT,
+                            StructureNode.StructureType.MIRROR,
+                            StructureNode.StructureType.N_CONNECTED));
         }
 
         return removedNodes;
     }
 
-// ===== TYPSICHERE HILFSMETHODEN =====
+    // ===== TYPSICHERE HILFSMETHODEN =====
 
     /**
      * Gibt alle N-Connected-Knoten als typisierte Liste zurück.
      * Erweitert die BuildAsSubstructure-Funktionalität um Typ-Sicherheit.
      *
-     * @return Liste aller MirrorNodes in der N-Connected-Struktur
+     * @return Liste aller NConnectedMirrorNodes in der Struktur
      */
-    private List<MirrorNode> getAllNConnectedNodes() {
-        return new ArrayList<>(getAllStructureNodes());
+    private List<NConnectedMirrorNode> getAllNConnectedNodes() {
+        return getAllStructureNodes()
+                .stream()
+                .filter(node -> node instanceof NConnectedMirrorNode)
+                .map(node -> (NConnectedMirrorNode) node)
+                .collect(Collectors.toList());
     }
 
     // ===== TOPOLOGY STRATEGY INTERFACE IMPLEMENTATION =====
 
     /**
-     * Initializes the network by connecting mirrors according to N-Connected topology.
-     *
-     * @param n the {@link Network}
-     * @param props {@link Properties} of the simulation
-     * @return {@link Set} of all {@link Link}s created
-     */
-    @Override
-    public Set<Link> initNetwork(Network n, Properties props) {
-        // Initialisiere den internen Zustand
-        initializeInternalState(n);
-
-        MirrorNode root = buildStructure(n.getNumMirrors(), props);
-
-        if (root == null) {
-            return new HashSet<>();
-        }
-
-        return buildAndUpdateLinks(root, props, 0, StructureNode.StructureType.N_CONNECTED);
-    }
-
-
-    /**
-     * Startet das Netzwerk komplett neu mit der aktuellen Topologie.
-     *
-     * @param n       Das Netzwerk
-     * @param props   Simulation Properties
-     * @param simTime Aktuelle Simulationszeit
-     * @return {@link Set} of all {@link Link}s created
-     */
-    @Override
-    public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
-        // Initialisiere den internen Zustand
-        initializeInternalState(n);
-
-        MirrorNode root = buildStructure(n.getNumMirrors(), props);
-
-        if (root == null) {
-            return new HashSet<>();
-        }
-
-        return buildAndUpdateLinks(root, props, simTime, StructureNode.StructureType.N_CONNECTED);
-    }
-
-    /**
-     * Eine Hilfsmethode für die Initialisierung des internen Zustands.
-     * Verwendet die korrekte Methode aus BuildAsSubstructure.
-     */
-    private void initializeInternalState(Network n) {
-        this.network = n;
-        this.mirrorIterator = n.getMirrors().iterator();
-    }
-
-    /**
-     * Returns the number of links expected for the overall network according to this strategy.
-     * If the number of mirrors is less than twice the number of links per mirror, we compute this like for the fully connected topology.
-     * For a fully connected network this can be computed as (n * (n -1)) / 2, where n is the number of mirrors.
-     * Else, the number of links can be simply computed by multiplying the number of links per mirror with the number of mirrors.
      * Berechnet die erwartete Anzahl der Links im aktuellen Netzwerk.
+     * Für N-Connected mit targetLinksPerNode: Summe aller Vorgänger-Verbindungen.
      *
      * @param n Das Netzwerk
      * @return Anzahl der erwarteten Links
      */
     @Override
     public int getNumTargetLinks(Network n) {
-        return calculateNConnectedLinks(n.getNumMirrors(), n.getNumTargetLinksPerMirror());
+        int numMirrors = n.getMirrors().size();
+        return calculateNConnectedLinks(numMirrors, targetLinksPerNode);
     }
+
 
     /**
      * Berechnet die erwartete Anzahl der Links, wenn die gegebene Aktion ausgeführt wird.
-     * N-Connected-spezifische Implementierung basierend auf den drei Action-Typen.
-     * Überschreibt die abstrakte Methode aus TopologyStrategy.
+     * Behandelt drei verschiedene Action-Typen:
+     * 1. MirrorChange: Berechnet Links für neue Mirror-Anzahl
+     * 2. TargetLinkChange: Berechnet Links basierend auf neuen Links pro Mirror
+     * 3. TopologyChange: Delegiert an neue Topology-Strategie
      */
     @Override
     public int getPredictedNumTargetLinks(Action a) {
-        if (a == null) {
-            return network != null ? getNumTargetLinks(network) : 0;
+        if (a instanceof MirrorChange mc) {
+            return calculateNConnectedLinks(mc.getNewMirrors(), targetLinksPerNode);
+        } else if (a instanceof TargetLinkChange tlc) {
+            // Verwende aktuelle Mirror-Anzahl mit neuen Links pro Mirror
+            int currentMirrors = (network != null) ? network.getMirrors().size() : 0;
+            return calculateNConnectedLinks(currentMirrors, tlc.getNewLinksPerMirror());
+        } else if (a instanceof TopologyChange tc) {
+            // Delegiere an neue Topology-Strategie
+            int currentMirrors = (network != null) ? network.getMirrors().size() : 0;
+            return tc.getNewTopology().getNumTargetLinks(network); // Dummy MirrorChange
         }
 
-        // 1. MirrorChange: Anzahl der Mirrors ändert sich
-        if (a instanceof MirrorChange mirrorChange) {
-            int newMirrorCount = mirrorChange.getNewMirrors();
-            int linksPerMirror = network != null ? network.getNumTargetLinksPerMirror() : 2;
-            return calculateNConnectedLinks(newMirrorCount, linksPerMirror);
-        }
+        // Fallback: aktuelle Konfiguration
+        int currentMirrors = (network != null) ? network.getMirrors().size() : 0;
+        return calculateNConnectedLinks(currentMirrors, targetLinksPerNode);
+    }
 
-        // 2. TargetLinkChange: Links pro Mirror ändern sich
-        if (a instanceof TargetLinkChange targetLinkChange) {
-            Network targetNetwork = targetLinkChange.getNetwork();
-            int currentMirrors = targetNetwork.getNumMirrors();
-            int newLinksPerMirror = targetLinkChange.getNewLinksPerMirror();
-            return calculateNConnectedLinks(currentMirrors, newLinksPerMirror);
-        }
 
-        // 3. TopologyChange: Komplette Topologie-Rekonstruktion
-        if (a instanceof TopologyChange topologyChange) {
-            TopologyStrategy newTopology = topologyChange.getNewTopology();
-            if (network != null) {
-                return newTopology.getNumTargetLinks(network);
-            }
+    /**
+     * Berechnet die Anzahl der Links für eine N-Connected-Topologie mit Vorgänger-Logik.
+     * <p>
+     * Formel: Summe von min(i, targetLinksPerNode) für i = 0 bis numMirrors-1
+     * - Node 0: 0 Links
+     * - Node 1: min(1, N) Links
+     * - Node 2: min(2, N) Links
+     * - ...
+     * - Node k: min(k, N) Links
+     *
+     * @param numMirrors Anzahl der Mirrors/Knoten
+     * @param targetLinksPerNode Anzahl der Vorgänger-Verbindungen pro Node
+     * @return Tatsächliche Anzahl der möglichen Links
+     */
+    private int calculateNConnectedLinks(int numMirrors, int targetLinksPerNode) {
+        if (numMirrors <= 1 || targetLinksPerNode <= 0) {
             return 0;
         }
 
-        // Fallback: Aktueller Zustand beibehält
-        return network != null ? getNumTargetLinks(network) : 0;
-    }
-
-    /**
-     * Berechnet die Anzahl der Links für eine N-Connected-Topologie mit Graphentheorie.
-     * <p>
-     * Zwei Grenzfälle:
-     * 1. Wenn n < 2*linksPerMirror: Nicht genug Knoten → Vollständiger Graph = n*(n-1)/2
-     * 2. Wenn n >= 2*linksPerMirror: Regulärer Graph möglich → n*linksPerMirror/2
-     *
-     * @param numMirrors Anzahl der Mirrors/Knoten
-     * @param linksPerMirror Gewünschte Links pro Mirror/Knotengrad
-     * @return Tatsächliche Anzahl der möglichen Links
-     */
-    private int calculateNConnectedLinks(int numMirrors, int linksPerMirror) {
-        if (numMirrors <= 1) {
-            return 0; // Keine Links möglich
+        int totalLinks = 0;
+        for (int i = 1; i < numMirrors; i++) {
+            totalLinks += Math.min(i, targetLinksPerNode);
         }
 
-        // Grenzfall: Nicht genug Knoten für gewünschten Grad
-        // → Fallback auf vollständigen Graphen
-        if (numMirrors < 2 * linksPerMirror) {
-            return numMirrors * (numMirrors - 1) / 2;
-        }
-
-        // Regulärer Fall: n-regulärer Graph ist möglich.
-        // Jeder Knoten hat genau linksPerMirror Verbindungen
-        // Gesamtzahl Links = (Anzahl Knoten × Grad) / 2
-        return (numMirrors * linksPerMirror) / 2;
+        return totalLinks;
     }
+
 
     /**
      * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
@@ -353,60 +321,75 @@ public class NConnectedTopology extends BuildAsSubstructure {
         return null;
     }
 
+    // ===== GETTER UND SETTER =====
+
+    public int getTargetLinksPerNode() {
+        return targetLinksPerNode;
+    }
+
+    public void setTargetLinksPerNode(int targetLinksPerNode) {
+        this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
+    }
+
+    // ===== STRING REPRESENTATION =====
+
+    /**
+     * Liefert eine detaillierte String-Repräsentation der NConnectedTopology.
+     * Zeigt Topologie-Status, Struktur-Informationen und Netzwerk-Metriken.
+     * Debugger-freundlich: Vermeidet komplexe Methodenaufrufe.
+     *
+     * @return Formatierte String-Darstellung der aktuellen Topologie
+     */
     @Override
     public String toString() {
-        int currentNodes = getAllStructureNodes().size();
-        int currentLinks = network != null ? network.getLinks().size() : 0;
-        int targetLinks = network != null ? getNumTargetLinks(network) : 0;
-        int linksPerMirror = network != null ? network.getNumTargetLinksPerMirror() : 0;
+        StringBuilder sb = new StringBuilder();
+        sb.append("NConnectedTopology{");
 
-        String topologyType = determineTopologyType(currentNodes, linksPerMirror);
-        boolean isRegular = isRegularGraphPossible(currentNodes, linksPerMirror);
-        double efficiency = calculateLinkEfficiency(currentLinks, currentNodes);
+        try {
+            // Grundlegende Topology-Information
+            sb.append("substructureId=").append(getSubstructureId());
+            sb.append(", targetLinksPerNode=").append(targetLinksPerNode);
 
-        return String.format("NConnectedTopology{type=%s, nodes=%d, links=%d/%d, linksPerMirror=%d, " +
-                        "regularGraph=%s, efficiency=%.1f%%, density=%.3f}",
-                topologyType,
-                currentNodes,
-                currentLinks, targetLinks,
-                linksPerMirror,
-                isRegular,
-                efficiency,
-                calculateGraphDensity(currentLinks, currentNodes));
-    }
+            // Sichere Struktur-Informationen
+            MirrorNode root = getCurrentStructureRoot();
+            if (root != null) {
+                sb.append(", rootId=").append(root.getId());
 
-    /**
-     * Bestimmt den effektiven Topologie-Typ basierend auf der aktuellen Konfiguration.
-     */
-    private String determineTopologyType(int nodes, int linksPerMirror) {
-        if (nodes <= 1) return "Empty";
-        if (linksPerMirror >= nodes - 1) return "FullyConnected";
-        if (nodes < 2 * linksPerMirror) return "PartiallyConnected";
-        return "N-Regular";
-    }
+                // Sichere Node-Zählung
+                Set<MirrorNode> allNodes = getAllStructureNodes();
+                int nodeCount = allNodes.size();
+                sb.append(", nodes=").append(nodeCount);
 
-    /**
-     * Prüft, ob ein regulärer Graph mit der aktuellen Konfiguration möglich ist.
-     */
-    private boolean isRegularGraphPossible(int nodes, int linksPerMirror) {
-        return nodes >= 2 * linksPerMirror && nodes > 1;
-    }
+                // Berechne erwartete Links für N-Connected-Topologie
+                int expectedLinks = calculateNConnectedLinks(nodeCount, targetLinksPerNode);
+                sb.append(", expectedLinks=").append(expectedLinks);
 
-    /**
-     * Berechnet die Link-Effizienz (aktuelle Links / maximal mögliche Links).
-     */
-    private double calculateLinkEfficiency(int currentLinks, int nodes) {
-        if (nodes <= 1) return 0.0;
-        int maxPossibleLinks = nodes * (nodes - 1) / 2;
-        return maxPossibleLinks > 0 ? (currentLinks * 100.0) / maxPossibleLinks : 0.0;
-    }
+                // Struktur-Typ-Information
+                StructureNode.StructureType structureType = getCurrentStructureType();
+                if (structureType != null) {
+                    sb.append(", structureType=").append(structureType);
+                }
 
-    /**
-     * Berechnet die Graphendichte (2 * Links) / (Knoten * (Knoten-1)).
-     */
-    private double calculateGraphDensity(int links, int nodes) {
-        if (nodes <= 1) return 0.0;
-        return (2.0 * links) / (nodes * (nodes - 1));
+            } else {
+                sb.append(", status=NOT_INITIALIZED");
+            }
+
+            // Network-Information (falls verfügbar)
+            if (network != null) {
+                try {
+                    sb.append(", networkMirrors=").append(network.getMirrors().size());
+                    sb.append(", networkLinks=").append(network.getNumLinks());
+                } catch (Exception e) {
+                    sb.append(", networkInfo=ERROR");
+                }
+            }
+
+        } catch (Exception e) {
+            sb.append(", ERROR=").append(e.getMessage());
+        }
+
+        sb.append("}");
+        return sb.toString();
     }
 
     @Override
@@ -415,24 +398,19 @@ public class NConnectedTopology extends BuildAsSubstructure {
         return new NConnectedMirrorNode(mirror.getID(), mirror, linksPerMirror);
     }
 
+    /**
+     * Validiert die aktuelle N-Connected-Struktur.
+     *
+     * @return true, wenn die Struktur gültig ist
+     */
     @Override
     protected boolean validateTopology() {
-        if (network == null || getCurrentStructureRoot() == null) return false;
-
-        int expectedLinks = getNumTargetLinks(network);
-        int actualLinks = network.getLinks().size();
-        int linksPerMirror = network.getNumTargetLinksPerMirror();
-
-        // Prüfe, ob jeder Knoten die erwartete Anzahl Verbindungen hat
-        for (MirrorNode node : getAllStructureNodes()) {
-            int nodeConnections = node.getChildren().size();
-            int expectedConnections = Math.min(linksPerMirror, getAllStructureNodes().size() - 1);
-
-            if (nodeConnections != expectedConnections) {
-                return false;
-            }
+        MirrorNode root = getCurrentStructureRoot();
+        if (!(root instanceof NConnectedMirrorNode)) {
+            return false;
         }
 
-        return Math.abs(actualLinks - expectedLinks) <= 1; // Toleranz für Rundungsfehler
+        Set<StructureNode> allNodes = new HashSet<>(getAllStructureNodes());
+        return root.isValidStructure(allNodes);
     }
 }

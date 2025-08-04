@@ -3,6 +3,7 @@ package org.lrdm.examples;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
+import org.lrdm.topologies.strategies.DepthLimitTreeTopologyStrategy;
 import org.lrdm.topologies.strategies.NConnectedTopology;
 import org.lrdm.topologies.strategies.FullyConnectedTopology;
 
@@ -35,7 +36,8 @@ public class ExampleSimulationNConnected {
 		effector.setStrategy(new FullyConnectedTopology(), 20);
 		effector.setStrategy(new NConnectedTopology(), 40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
-		effector.setStrategy(new NConnectedTopology(), 80);
+		NConnectedTopology topoS = new NConnectedTopology(5);
+		effector.setStrategy(topoS, 80);
 
 		int startMirrors = 15;
 		int count = 0;
