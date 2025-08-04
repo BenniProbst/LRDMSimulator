@@ -227,7 +227,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
 
         for (int i = 0; i < nodesToRemove; i++) {
             // 1. Finde den tiefsten Blatt-Knoten
-            DepthLimitedTreeMirrorNode nodeToRemove = findDeepestLeafNode();
+            DepthLimitedTreeMirrorNode nodeToRemove = findOptimalNodeForRemoval();
 
             if (nodeToRemove == null || nodeToRemove == getCurrentStructureRoot()) {
                 break; // Keine entfernbaren Knoten oder nur Root übrig
@@ -397,34 +397,82 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
     }
 
     /**
-     * Findet den tiefsten Blatt-Knoten (ohne Kinder) in der Struktur.
-     * Bevorzugt Knoten auf den tiefsten Ebenen für die Entfernung.
+     * Findet den optimalen Knoten für die Entfernung basierend auf umgekehrter Logik zu buildDepthLimitedTreeStructureOnly.
      *
-     * @return Der tiefste Blatt-Knoten oder null
+     * **Algorithmus (umgekehrt zum Aufbau)**:
+     * 1. Bestimme das Maximum der Kinderanzahl aller Knoten im Baum
+     * 2. Finde die tiefste Node mit dieser maximalen Kinderanzahl
+     * 3. Bei Gleichstand: Finde die flachste Node mit der minimalen Kinderanzahl
+     * 4. Entferne ein Kind von dieser Node
+     *
+     * Dies sorgt dafür, dass die Gleichverteilung erhalten bleibt: Knoten mit vielen Kindern
+     * werden zuerst "entlastet", bevor Knoten mit wenigen Kindern betroffen werden.
+     *
+     * @return Der optimale Knoten für die Entfernung oder null
      */
-    private DepthLimitedTreeMirrorNode findDeepestLeafNode() {
+    private DepthLimitedTreeMirrorNode findOptimalNodeForRemoval() {
         if (!(getCurrentStructureRoot() instanceof DepthLimitedTreeMirrorNode root)) {
             return null;
         }
 
-        DepthLimitedTreeMirrorNode deepestLeaf = null;
-        int maxDepthFound = -1;
+        // 1. Sammle alle entfernbaren Knoten (nicht die Root, da diese erhalten bleiben muss)
+        List<DepthLimitedTreeMirrorNode> removableCandidates = new ArrayList<>();
+        collectRemovableCandidates(root, removableCandidates);
 
-        // Durchsuche alle Struktur-Knoten
-        for (MirrorNode node : getAllStructureNodes()) {
-            if (node instanceof DepthLimitedTreeMirrorNode depthNode) {
-                // Prüfe ob es ein Blatt ist (keine Kinder)
-                if (depthNode.getChildren().isEmpty() && depthNode != root) {
-                    int nodeDepth = depthNode.getDepthInTree();
-                    if (nodeDepth > maxDepthFound) {
-                        maxDepthFound = nodeDepth;
-                        deepestLeaf = depthNode;
-                    }
-                }
-            }
+        if (removableCandidates.isEmpty()) {
+            return null;
         }
 
-        return deepestLeaf;
+        // 2. Bestimme die MAXIMALE Anzahl Kinder unter allen entfernbaren Kandidaten
+        int maxChildren = removableCandidates.stream()
+                .mapToInt(node -> node.getChildren().size())
+                .max()
+                .orElse(0);
+
+        // 3. Filtere Knoten mit maximaler Kinderanzahl
+        List<DepthLimitedTreeMirrorNode> nodesWithMaxChildren = removableCandidates.stream()
+                .filter(node -> node.getChildren().size() == maxChildren)
+                .toList();
+
+        if (!nodesWithMaxChildren.isEmpty()) {
+            // 4a. Unter den Knoten mit maximaler Kinderanzahl: Wähle den TIEFSTEN
+            return nodesWithMaxChildren.stream()
+                    .max(Comparator.comparingInt(DepthLimitedTreeMirrorNode::getDepthInTree))
+                    .orElse(null);
+        }
+
+        // 4b. Fallback: Bei Gleichverteilung, wähle den FLACHSTEN mit MINIMALER Kinderanzahl
+        int minChildren = removableCandidates.stream()
+                .mapToInt(node -> node.getChildren().size())
+                .min()
+                .orElse(Integer.MAX_VALUE);
+
+        return removableCandidates.stream()
+                .filter(node -> node.getChildren().size() == minChildren)
+                .min(Comparator.comparingInt(DepthLimitedTreeMirrorNode::getDepthInTree))
+                .orElse(null);
+    }
+
+    /**
+     * Sammelt rekursiv alle Knoten, die entfernt werden können.
+     * Schließt die Root-Node aus, da diese erhalten bleiben muss.
+     *
+     * @param current Der aktuelle Knoten
+     * @param candidates Liste der Kandidaten (wird befüllt)
+     */
+    private void collectRemovableCandidates(DepthLimitedTreeMirrorNode current,
+                                            List<DepthLimitedTreeMirrorNode> candidates) {
+        // Alle Knoten außer Root sind entfernbar
+        if (current != getCurrentStructureRoot()) {
+            candidates.add(current);
+        }
+
+        // Rekursiv alle Kinder durchsuchen
+        for (StructureNode child : current.getChildren()) {
+            if (child instanceof DepthLimitedTreeMirrorNode depthChild) {
+                collectRemovableCandidates(depthChild, candidates);
+            }
+        }
     }
 
     /**
