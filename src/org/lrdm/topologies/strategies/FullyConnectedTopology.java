@@ -69,10 +69,8 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         // 3. Plane Strukturebene
         // vollständige Vernetzung: jeder mit jedem (außer sich selbst)
         for (FullyConnectedMirrorNode sourceNode:nodes) {
-
             for (FullyConnectedMirrorNode targetNode:nodes) {
                 if (sourceNode == targetNode) continue;
-
                 // Füge bidirektionale StructureNode-Verbindung hinzu
                 sourceNode.addChild(targetNode);
                 targetNode.addChild(sourceNode);
@@ -182,6 +180,9 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
                     .filter(node -> node != getCurrentStructureRoot())
                     .collect(Collectors.toList());
         }
+        candidatesForRemoval = candidatesForRemoval.stream()
+                .limit(nodesToRemove)
+                .collect(Collectors.toList());
 
         // Begrenze auf verfügbare Anzahl
         int actualRemovalCount = Math.min(nodesToRemove, candidatesForRemoval.size());
@@ -194,9 +195,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         FullyConnectedMirrorNode root = (FullyConnectedMirrorNode) getCurrentStructureRoot();
 
         // **NUR PLANUNGSEBENE**: Entferne die ersten N Kandidaten
-        for (int i = 0; i < actualRemovalCount; i++) {
-            FullyConnectedMirrorNode nodeToRemove = candidatesForRemoval.get(i);
-
+        for (FullyConnectedMirrorNode nodeToRemove : candidatesForRemoval) {
             for (StructureNode existingNode : nodeToRemove.getChildren(StructureNode.StructureType.FULLY_CONNECTED,root.getId())) {
                 existingNode.removeChild(nodeToRemove);
             }
