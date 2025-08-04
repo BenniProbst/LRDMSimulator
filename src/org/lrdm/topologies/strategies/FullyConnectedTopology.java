@@ -42,7 +42,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         List<FullyConnectedMirrorNode> nodes = new ArrayList<>();
 
         // 1. Erstelle FullyConnectedMirrorNodes mit Mirror-Zuordnung
-        for (int i = 0; i < totalNodes && hasNextMirror(); i++) {
+        for (int i = 0; i < totalNodes; i++) {
             FullyConnectedMirrorNode node = getMirrorNodeFromIterator();
             nodes.add(node);
             addToStructureNodes(node); // Registriere bei BuildAsSubstructure
@@ -363,7 +363,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
 
                 // Sichere Node-Zählung
                 Set<MirrorNode> allNodes = getAllStructureNodes();
-                int nodeCount = (allNodes != null) ? allNodes.size() : 0;
+                int nodeCount = allNodes.size();
                 sb.append(", nodes=").append(nodeCount);
 
                 // Berechne erwartete Links für vollständig vernetzte Topologie

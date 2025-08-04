@@ -64,18 +64,21 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes, Properties props) {
-        if (totalNodes < minLineSize || !hasNextMirror()) return null;
+        if (totalNodes <= 0 || network == null) {
+            return null;
+        }
 
         // Erstelle alle Linien-Knoten
         List<LineMirrorNode> lineNodes = new ArrayList<>();
-        for (int i = 0; i < totalNodes; i++) {
-            if (!hasNextMirror()) break;
 
-            Mirror mirror = getNextMirror();
-            assert mirror != null;
-            LineMirrorNode lineNode = new LineMirrorNode(mirror.getID(), mirror);
+        for (int i = 0; i < totalNodes; i++) {
+            LineMirrorNode lineNode = getMirrorNodeFromIterator();
             lineNodes.add(lineNode);
             addToStructureNodes(lineNode);
+            if (lineNode.getMirror().isRoot()) {
+                setCurrentStructureRoot(lineNode);
+                lineNode.setHead(StructureNode.StructureType.LINE, true);
+            }
         }
 
         if (lineNodes.size() < minLineSize) return null;
@@ -84,9 +87,12 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         buildLineStructurePlanning(lineNodes);
 
         // Setze erste Knoten als Head und Root
-        LineMirrorNode root = lineNodes.get(0);
-        root.setHead(true);
-        setCurrentStructureRoot(root);
+        // 2. Setze den ersten Knoten als Head und Root
+        LineMirrorNode root = lineNodes.stream()
+                .filter(node -> node.getMirror() != null && node.isRoot())
+                .findFirst()
+                .orElse(null);
+        if (root != null) root.setParent(null);
 
         return root;
     }
@@ -105,28 +111,17 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         LineMirrorNode head = getLineHead();
         if (head == null) return 0;
 
-        List<LineMirrorNode> endpoints = findLineEndpoints(head);
-        if (endpoints.isEmpty()) return 0;
-
+        setMirrorIterator(nodesToAdd.iterator());
+        List<LineMirrorNode> lineNodes = getAllLineNodes();
         int actuallyAdded = 0;
-        int endpointIndex = 0;
 
-        // Linien-Erweiterung: Neue Knoten an den Endpunkten anhängen
-        while (actuallyAdded < nodesToAdd.size() && endpointIndex < endpoints.size() && hasNextMirror()) {
-            LineMirrorNode endpoint = endpoints.get(endpointIndex);
-
-            // **NUR STRUKTURPLANUNG**: Erstelle neuen Knoten am Endpunkt
-            LineMirrorNode newNode = createLineNodeForStructure();
-            if (newNode != null) {
-                // **NUR STRUKTURPLANUNG**: Erweiterte Linie am Endpunkt (keine Mirror-Links!)
-                extendLineAtEndpointStructuralPlanning(endpoint, newNode);
-                actuallyAdded++;
-
-                // Aktualisiere Endpunkt-Liste für Round-Robin
-                endpoints = findLineEndpoints(head);
+        for(int i = 0; i < nodesToAdd.size(); i++) {
+            LineMirrorNode nodeAtEnd = selectEndpoint(lineNodes);
+            if(nodeAtEnd!=null)nodeAtEnd.addChild(getMirrorNodeFromIterator());
+            else{
+                continue;
             }
-
-            endpointIndex = (endpointIndex + 1) % endpoints.size();
+            actuallyAdded++;
         }
 
         return actuallyAdded;
@@ -152,12 +147,14 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
 
         // Linien-Entfernung: Entferne bevorzugt Endpunkte
         for (int i = 0; i < nodesToRemove && !lineNodes.isEmpty(); i++) {
-            LineMirrorNode nodeToRemove = selectEndpointForRemoval(lineNodes);
+            LineMirrorNode nodeToRemove = selectEndpoint(lineNodes);
             if (nodeToRemove != null) {
-                removeNodeFromStructuralPlanning(nodeToRemove,
-                        Set.of(StructureNode.StructureType.DEFAULT,StructureNode.StructureType.MIRROR,StructureNode.StructureType.LINE));
-                lineNodes.remove(nodeToRemove);
+                LineMirrorNode parentLineNode = (LineMirrorNode) nodeToRemove.getParent();
+                if (parentLineNode == null) continue;
+                parentLineNode.removeChild(nodeToRemove);
+                removeFromStructureNodes(nodeToRemove);
                 removedMirrorNodes.add(nodeToRemove);
+                lineNodes.remove(nodeToRemove);
             }
         }
 
@@ -179,6 +176,22 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
     @Override
     protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
         return new LineMirrorNode(mirror.getID(), mirror);
+    }
+
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    @Override
+    protected LineMirrorNode getMirrorNodeFromIterator() {
+        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+            LineMirrorNode node = (LineMirrorNode) super.getMirrorNodeFromIterator();
+            node.addNodeType(StructureNode.StructureType.LINE);
+            return node;
+        }
+        return null;
     }
 
     // ===== FEHLENDE TOPOLOGY STRATEGY METHODEN =====
@@ -227,9 +240,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
 
             // StructureNode-Verbindung
             current.addChild(next);
-            next.setParent(current);
-
-            // KEINE Mirror-Link-Erstellung hier! Nur Strukturplanung!
         }
     }
 
@@ -265,24 +275,25 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      * Wählt einen Endpunkt für die Entfernung aus der Linie aus.
      * Bevorzugt Nicht-Head-Endpunkte, wenn möglich.
      */
-    private LineMirrorNode selectEndpointForRemoval(List<LineMirrorNode> lineNodes) {
+    private LineMirrorNode selectEndpoint(List<LineMirrorNode> lineNodes) {
         if (lineNodes.isEmpty()) return null;
 
-        List<LineMirrorNode> endpoints = lineNodes.stream()
+        List<LineMirrorNode> endpoints = new ArrayList<>(lineNodes.stream()
                 .filter(this::isLineEndpoint)
-                .toList();
+                .toList());
 
         if (endpoints.isEmpty()) return null;
 
-        // Bevorzuge Nicht-Head-Endpunkte
-        for (LineMirrorNode endpoint : endpoints) {
-            if (!endpoint.isHead()) {
-                return endpoint;
-            }
+        LineMirrorNode currentHead = endpoints.get(0);
+
+        while (!currentHead.getChildren(StructureNode.StructureType.LINE).isEmpty()) {
+            if (endpoints.isEmpty()) return null;
+            currentHead = (LineMirrorNode) currentHead.getChildren().stream().findFirst().orElse(null);
+            endpoints.remove(currentHead);
+            if (currentHead == null) return null;
         }
 
-        // Fallback: Erster verfügbarer Endpunkt
-        return endpoints.get(0);
+        return currentHead;
     }
 
     /**
