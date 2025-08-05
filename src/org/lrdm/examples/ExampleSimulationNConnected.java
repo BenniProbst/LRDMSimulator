@@ -34,7 +34,7 @@ public class ExampleSimulationNConnected {
 			mirrors -= 4;
 		}
 		effector.setStrategy(new FullyConnectedTopology(), 20);
-		effector.setStrategy(new NConnectedTopology(), 40);
+		effector.setStrategy(new NConnectedTopology(3), 40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
 		NConnectedTopology topoS = new NConnectedTopology(5);
 		effector.setStrategy(topoS, 80);

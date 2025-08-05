@@ -4,12 +4,15 @@ package org.lrdm.topologies.strategies;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.*;
+import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.NConnectedMirrorNode;
 import org.lrdm.topologies.node.StructureNode;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static java.lang.Math.min;
 
 /**
  * Eine {@link TopologyStrategy}, die jede Node mit den ersten N Vorgänger-Nodes bidirektional verbindet.
@@ -40,7 +43,7 @@ import java.util.stream.Collectors;
 public class NConnectedTopology extends BuildAsSubstructure {
 
     // ===== N-CONNECTED-SPEZIFISCHE KONFIGURATION =====
-    private int targetLinksPerNode = 2;
+    private int targetLinksPerNode = 2;//start with a circle
 
     // ===== KONSTRUKTOREN =====
 
@@ -70,32 +73,32 @@ public class NConnectedTopology extends BuildAsSubstructure {
             return null;
         }
 
-        // Lese targetLinksPerNode aus Properties (falls vorhanden)
-        String linksPerNodeStr = props.getProperty("targetLinksPerNode");
-        if (linksPerNodeStr != null) {
-            try {
-                this.targetLinksPerNode = Math.max(1, Integer.parseInt(linksPerNodeStr));
-            } catch (NumberFormatException e) {
-                // Verwende Standard-Wert bei Parsing-Fehler
-            }
-        }
-
         // 1. Erstelle alle Knoten
         List<NConnectedMirrorNode> allNodes = new ArrayList<>();
-        for (int i = 0; i < totalNodes && hasNextMirror(); i++) {
+        for (int i = 0; i < totalNodes; i++) {
             NConnectedMirrorNode node = getMirrorNodeFromIterator();
-            if (node == null) break;
             allNodes.add(node);
+            addToStructureNodes(node); // Registriere bei BuildAsSubstructure
+            if(node.getMirror().isRoot()) {
+                setCurrentStructureRoot(node);
+                node.setHead(StructureNode.StructureType.N_CONNECTED,true);
+            }
         }
 
         if (allNodes.isEmpty()) {
             return null;
         }
 
-        // 2. Setze den ersten Knoten als Root
-        NConnectedMirrorNode root = allNodes.get(0);
-        root.setHead(true);
-        setCurrentStructureRoot(root);
+        // 2. Setze den ersten Knoten als Head und Root
+        NConnectedMirrorNode root = allNodes.stream()
+                .filter(node -> node.getMirror() != null && node.isRoot())
+                .findFirst()
+                .orElse(null);
+
+        if (root == null) {
+            throw new IllegalStateException("No root node found in FullyConnected structure");
+        }
+
 
         // 3. Erstelle N-Connected-Verbindungen
         buildNConnectedStructure(allNodes);
@@ -109,25 +112,27 @@ public class NConnectedTopology extends BuildAsSubstructure {
      * @param allNodes Liste aller Knoten in chronologischer Reihenfolge
      */
     private void buildNConnectedStructure(List<NConnectedMirrorNode> allNodes) {
-        StructureNode.StructureType typeId = StructureNode.StructureType.N_CONNECTED;
-        int headId = getCurrentStructureRoot().getId();
 
-        for (int i = 1; i < allNodes.size(); i++) {
-            NConnectedMirrorNode currentNode = allNodes.get(i);
+        allNodes.sort(Comparator.comparingInt(MirrorNode::getId));
+        int overshift = min(targetLinksPerNode,allNodes.size()*2) - 1;
+
+        for (int i = 1; i < allNodes.size()+overshift; i++) {
+            NConnectedMirrorNode currentNode = allNodes.get(i%allNodes.size());
 
             // Berechne die Anzahl der Vorgänger, mit denen verbunden werden soll
-            int connectionsToMake = Math.min(i, targetLinksPerNode);
+            int connectionsToMake = min(i, overshift);
 
             // Verbinde mit den letzten connectionsToMake Vorgängern
             int startIndex = Math.max(0, i - connectionsToMake);
             for (int j = startIndex; j < i; j++) {
-                NConnectedMirrorNode predecessorNode = allNodes.get(j);
+                NConnectedMirrorNode predecessorNode = allNodes.get(j%allNodes.size());
 
                 // Bidirektionale Verbindung erstellen
-                currentNode.addChild(predecessorNode, Set.of(typeId), Map.of(typeId, headId));
-                predecessorNode.addChild(currentNode, Set.of(typeId), Map.of(typeId, headId));
+                predecessorNode.addChild(currentNode);
             }
         }
+        //TODO: create link from root to last node
+
     }
 
 
@@ -159,7 +164,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
             if (newNode == null) continue;
 
             // Verbinde mit den letzten targetLinksPerNode bestehenden Knoten
-            int connectionsToMake = Math.min(existingNodes.size(), targetLinksPerNode);
+            int connectionsToMake = min(existingNodes.size(), targetLinksPerNode);
             int startIndex = Math.max(0, existingNodes.size() - connectionsToMake);
 
             for (int i = startIndex; i < existingNodes.size(); i++) {
@@ -200,7 +205,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
                 .toList();
 
         // Begrenze auf tatsächlich verfügbare Knoten
-        int actualNodesToRemove = Math.min(nodesToRemove, candidatesForRemoval.size());
+        int actualNodesToRemove = min(nodesToRemove, candidatesForRemoval.size());
 
         // Nimm nur die ersten actualNodesToRemove Knoten
         Set<MirrorNode> removedNodes = candidatesForRemoval.stream()
@@ -298,7 +303,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
 
         int totalLinks = 0;
         for (int i = 1; i < numMirrors; i++) {
-            totalLinks += Math.min(i, targetLinksPerNode);
+            totalLinks += min(i, targetLinksPerNode);
         }
 
         return totalLinks;
@@ -406,11 +411,9 @@ public class NConnectedTopology extends BuildAsSubstructure {
     @Override
     protected boolean validateTopology() {
         MirrorNode root = getCurrentStructureRoot();
-        if (!(root instanceof NConnectedMirrorNode)) {
-            return false;
+        if (root instanceof NConnectedMirrorNode nConRoot) {
+            return nConRoot.isValidStructure();
         }
-
-        Set<StructureNode> allNodes = new HashSet<>(getAllStructureNodes());
-        return root.isValidStructure(allNodes);
+        return false;
     }
 }

@@ -313,11 +313,9 @@ public class FullyConnectedMirrorNode extends MirrorNode {
             ChildRecord recordA = commonParent.findChildRecordById(nodeA.getId());
             ChildRecord recordB = commonParent.findChildRecordById(nodeB.getId());
 
-            if (recordA != null && recordB != null &&
+            return recordA != null && recordB != null &&
                     recordA.belongsToStructure(typeId, headId) &&
-                    recordB.belongsToStructure(typeId, headId)) {
-                return true;
-            }
+                    recordB.belongsToStructure(typeId, headId);
         }
 
         return false;
@@ -359,6 +357,12 @@ public class FullyConnectedMirrorNode extends MirrorNode {
                 if (!bToA) {
                     missingConnections.add(String.format("Missing: Node %d -> Node %d",
                             nodeB.getId(), nodeA.getId()));
+                }
+
+                for(String s : missingConnections) {
+                    System.err.println(s);
+                    System.err.println("Node A: " + nodeA.getId() + ", Node B: " + nodeB.getId());
+                    System.err.println("A->B connected: " + aToB + ", B->A connected: " + bToA);
                 }
 
                 // In einem vollständigen Netz müssen ALLE Knoten bidirektional verbunden sein

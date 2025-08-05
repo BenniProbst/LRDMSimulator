@@ -44,8 +44,8 @@ public class NConnectedMirrorNode extends MirrorNode {
      */
     public NConnectedMirrorNode(int id, int connectivityDegree) {
         super(id);
-        if (connectivityDegree < 1) {
-            throw new IllegalArgumentException("Connectivity degree must be at least 1, got: " + connectivityDegree);
+        if (connectivityDegree < 2) {
+            throw new IllegalArgumentException("Connectivity degree must be at least 2, got: " + connectivityDegree);
         }
         this.connectivityDegree = connectivityDegree;
     }
@@ -55,8 +55,8 @@ public class NConnectedMirrorNode extends MirrorNode {
      */
     public NConnectedMirrorNode(int id, Mirror mirror, int connectivityDegree) {
         super(id, mirror);
-        if (connectivityDegree < 1) {
-            throw new IllegalArgumentException("Connectivity degree must be at least 1, got: " + connectivityDegree);
+        if (connectivityDegree < 2) {
+            throw new IllegalArgumentException("Connectivity degree must be at least 2, got: " + connectivityDegree);
         }
         this.connectivityDegree = connectivityDegree;
     }
@@ -270,7 +270,7 @@ public class NConnectedMirrorNode extends MirrorNode {
                 return false;
             }
 
-            if (!isValidNConnectedNode(nConnectedNode, head, typeId, allNodes)) {
+            if (isInvalidNConnectedNode(nConnectedNode, head, typeId, allNodes)) {
                 return false;
             }
         }
@@ -288,46 +288,62 @@ public class NConnectedMirrorNode extends MirrorNode {
     public boolean isValidStructure() {
         StructureType typeId = deriveTypeId();
         StructureNode head = findHead(typeId);
-        Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head != null ? head : this);
+        Set<StructureNode> allNodes = getAllNodesInStructure();
+        for(NConnectedMirrorNode nConnectedNode : getConnectedNodes()){
+            if(isInvalidNConnectedNode(nConnectedNode, head, typeId, allNodes)){
+                return false;
+            }
+        }
         return isValidStructure(allNodes, typeId, head != null ? head : this);
     }
 
+
     /**
      * Validiert einen einzelnen N-Connected-Knoten.
-     * Vereinfachte Version, die bereits existierende StructureNode-Methoden verwendet.
+     * Alle Knoten in einer N-Connected-Struktur müssen den gleichen Konnektivitätsgrad haben.
+     * Verwendet bereits existierende StructureNode-Methoden für konsistente Validierung.
      */
-    private boolean isValidNConnectedNode(NConnectedMirrorNode nConnectedNode, StructureNode headNode,
-                                          StructureType typeId, Set<StructureNode> allNodes) {
+    private boolean isInvalidNConnectedNode(NConnectedMirrorNode nConnectedNode, StructureNode headNode,
+                                            StructureType typeId, Set<StructureNode> allNodes) {
         final int headId = headNode.getId();
 
-        // Erwarteter Grad: min(connectivityDegree, n-1)
-        int expectedDegree = Math.min(connectivityDegree, allNodes.size() - 1);
-        int actualDegree = nConnectedNode.getConnectivityDegree(typeId, headId);
+        // WICHTIG: Alle Knoten müssen den gleichen erwarteten Konnektivitätsgrad haben
+        // Berechne erwarteten Grad basierend auf der Strukturgröße und dem konfigurierten Grad
+        int structureSize = allNodes.size();
+        int expectedDegree = Math.min(nConnectedNode.getConnectivityDegree(), structureSize - 1);
 
+        // Tatsächlicher Grad dieses Knotens in der N-Connected-Struktur
+        int actualDegree = nConnectedNode.getConnectivityDegree(typeId, headId);
+        if (actualDegree < 0) actualDegree = 0;
+
+        // Alle Knoten müssen exakt den gleichen Konnektivitätsgrad haben
         if (actualDegree != expectedDegree) {
-            return false;
+            return true;
         }
 
         StructureNode parent = nConnectedNode.getParent();
 
         if (nConnectedNode == headNode) {
-            // Head-Node darf einen externen Parent haben
+            // Head-Node darf einen externen Parent haben (Verbindung zu anderen Strukturen)
             if (parent != null) {
-                return !allNodes.contains(parent);
+                // Parent muss außerhalb der N-Connected-Struktur sein
+                return allNodes.contains(parent);
             }
         } else {
-            // Normale N-Connected-Knoten: müssen struktur internen Parent haben
-            if (parent == null) return false;
+            // Normale N-Connected-Knoten: müssen struktur-internen Parent haben
+            if (parent == null) return true;
 
+            // Validiere dass Parent-Child-Beziehung zur N-Connected-Struktur gehört
             ChildRecord parentRecord = parent.findChildRecordById(nConnectedNode.getId());
             if (parentRecord == null || !parentRecord.belongsToStructure(typeId, headId)) {
-                return false;
+                return true;
             }
 
-            return allNodes.contains(parent);
+            // Parent muss innerhalb der N-Connected-Struktur sein
+            return !allNodes.contains(parent);
         }
 
-        return true;
+        return false;
     }
 
     /**
