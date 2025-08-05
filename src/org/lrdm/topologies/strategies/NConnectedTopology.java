@@ -113,13 +113,13 @@ public class NConnectedTopology extends BuildAsSubstructure {
     private void buildNConnectedStructure(List<NConnectedMirrorNode> allNodes) {
 
         allNodes.sort(Comparator.comparingInt(MirrorNode::getId));
-        int overshift = min(targetLinksPerNode, allNodes.size() * 2) - 1;
+        int possibleTargetLinks = min(targetLinksPerNode, allNodes.size() * 2) - 1;
 
-        for (int i = 1; i < allNodes.size() + overshift; i++) {
+        for (int i = 1; i < allNodes.size() + possibleTargetLinks; i++) {
             NConnectedMirrorNode currentNode = allNodes.get(i % allNodes.size());
 
             // Berechne die Anzahl der Vorgänger, mit denen verbunden werden soll
-            int connectionsToMake = min(i, overshift);
+            int connectionsToMake = min(i, possibleTargetLinks);
 
             // Verbinde mit den letzten connectionsToMake Vorgängern
             int startIndex = Math.max(0, i - connectionsToMake);
@@ -127,7 +127,12 @@ public class NConnectedTopology extends BuildAsSubstructure {
                 NConnectedMirrorNode predecessorNode = allNodes.get(j % allNodes.size());
 
                 // Bidirektionale Verbindung erstellen
-                predecessorNode.addChild(currentNode);
+                if(predecessorNode.getParent()!=currentNode){
+                    predecessorNode.addChild(currentNode);
+                }
+            }
+            if(currentNode.getChildren().contains(currentNode.getParent())){
+                currentNode.removeChild(currentNode.getParent());
             }
         }
     }
