@@ -307,17 +307,18 @@ public class NConnectedMirrorNode extends MirrorNode {
                                             StructureType typeId, Set<StructureNode> allNodes) {
         final int headId = headNode.getId();
 
-        // WICHTIG: Alle Knoten müssen den gleichen erwarteten Konnektivitätsgrad haben
+        // WICHTIG: Alle Knoten müssen den gleichen erwarteten Konnektivitätsgrad haben.
         // Berechne erwarteten Grad basierend auf der Strukturgröße und dem konfigurierten Grad
         int structureSize = allNodes.size();
-        int expectedDegree = Math.min(nConnectedNode.getConnectivityDegree(), structureSize - 1);
+        int nConnectedDegree = nConnectedNode.getConnectivityDegree(typeId,headId);
+        int expectedDegree = Math.min(nConnectedDegree, structureSize - 1);
 
         // Tatsächlicher Grad dieses Knotens in der N-Connected-Struktur
-        int actualDegree = nConnectedNode.getConnectivityDegree(typeId, headId);
-        if (actualDegree < 0) actualDegree = 0;
+
+        if (nConnectedDegree < 0) nConnectedDegree = 0;
 
         // Alle Knoten müssen exakt den gleichen Konnektivitätsgrad haben
-        if (actualDegree != expectedDegree) {
+        if (nConnectedDegree != expectedDegree) {
             return true;
         }
 
@@ -326,7 +327,7 @@ public class NConnectedMirrorNode extends MirrorNode {
         // Normale N-Connected-Knoten: müssen struktur-internen Parent haben
         if (parent == null) return true;
 
-        // Validiere dass Parent-Child-Beziehung zur N-Connected-Struktur gehört
+        // Validiere, dass Parent-Child-Beziehung zur N-Connected-Struktur gehört
         ChildRecord parentRecord = parent.findChildRecordById(nConnectedNode.getId());
         if (!parentRecord.belongsToStructure(typeId, headId)) {
             return true;

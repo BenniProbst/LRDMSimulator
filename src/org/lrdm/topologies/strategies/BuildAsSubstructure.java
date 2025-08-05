@@ -767,6 +767,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     private void initializeInternalState(Network n) {
         this.network = n;
+        this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
         this.mirrorIterator = n.getMirrors().iterator();
     }
 
