@@ -4,7 +4,6 @@ package org.lrdm.topologies.strategies;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.*;
-import org.lrdm.topologies.node.FullyConnectedMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.NConnectedMirrorNode;
 import org.lrdm.topologies.node.StructureNode;
@@ -79,9 +78,9 @@ public class NConnectedTopology extends BuildAsSubstructure {
             NConnectedMirrorNode node = getMirrorNodeFromIterator();
             allNodes.add(node);
             addToStructureNodes(node); // Registriere bei BuildAsSubstructure
-            if(node.getMirror().isRoot()) {
+            if (node.getMirror().isRoot()) {
                 setCurrentStructureRoot(node);
-                node.setHead(StructureNode.StructureType.N_CONNECTED,true);
+                node.setHead(StructureNode.StructureType.N_CONNECTED, true);
             }
         }
 
@@ -114,10 +113,10 @@ public class NConnectedTopology extends BuildAsSubstructure {
     private void buildNConnectedStructure(List<NConnectedMirrorNode> allNodes) {
 
         allNodes.sort(Comparator.comparingInt(MirrorNode::getId));
-        int overshift = min(targetLinksPerNode,allNodes.size()*2) - 1;
+        int overshift = min(targetLinksPerNode, allNodes.size() * 2) - 1;
 
-        for (int i = 1; i < allNodes.size()+overshift; i++) {
-            NConnectedMirrorNode currentNode = allNodes.get(i%allNodes.size());
+        for (int i = 1; i < allNodes.size() + overshift; i++) {
+            NConnectedMirrorNode currentNode = allNodes.get(i % allNodes.size());
 
             // Berechne die Anzahl der Vorgänger, mit denen verbunden werden soll
             int connectionsToMake = min(i, overshift);
@@ -125,7 +124,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
             // Verbinde mit den letzten connectionsToMake Vorgängern
             int startIndex = Math.max(0, i - connectionsToMake);
             for (int j = startIndex; j < i; j++) {
-                NConnectedMirrorNode predecessorNode = allNodes.get(j%allNodes.size());
+                NConnectedMirrorNode predecessorNode = allNodes.get(j % allNodes.size());
 
                 // Bidirektionale Verbindung erstellen
                 predecessorNode.addChild(currentNode);
@@ -180,10 +179,12 @@ public class NConnectedTopology extends BuildAsSubstructure {
         return addedCount;
     }
 
+
     /**
      * **PLANUNGSEBENE**: Entfernt Knoten aus der N-Connected-Struktur.
      * N-Connected-Entfernung: Bevorzugt Knoten mit höchsten IDs (neueste zuerst).
-     * Dies minimiert die Störung der Vorgänger-Verbindungslogik.
+     * WICHTIG: Nach der Entfernung wird die gesamte Struktur neu verkabelt,
+     * um sicherzustellen, dass alle verbleibenden Knoten wieder die gleiche Konnektivität haben.
      * NUR STRUKTURPLANUNG - keine Mirror-Links!
      *
      * @param nodesToRemove Anzahl der zu entfernenden Knoten
@@ -195,30 +196,64 @@ public class NConnectedTopology extends BuildAsSubstructure {
             return new HashSet<>();
         }
 
-        // Hole alle entfernbaren Knoten (außer Root) sortiert nach ID (höchste zuerst)
-        List<MirrorNode> candidatesForRemoval = getAllStructureNodes()
+        List<NConnectedMirrorNode> allNodes = getAllNConnectedNodes()
                 .stream()
-                .filter(node -> node != getCurrentStructureRoot())
-                .sorted((node1, node2) -> Integer.compare(node2.getId(), node1.getId()))
-                .toList();
+                .sorted(Comparator.comparingInt(MirrorNode::getId)).toList();
 
-        // Begrenze auf tatsächlich verfügbare Knoten
-        int actualNodesToRemove = min(nodesToRemove, candidatesForRemoval.size());
-
-        // Nimm nur die ersten actualNodesToRemove Knoten
-        Set<MirrorNode> removedNodes = candidatesForRemoval.stream()
-                .limit(actualNodesToRemove)
-                .collect(Collectors.toSet());
-
-        // **NUR STRUKTURPLANUNG**: Entferne bidirektionale StructureNode-Verbindungen
-        for (MirrorNode nodeToRemove : removedNodes) {
-            removeNodeFromStructuralPlanning(nodeToRemove,
-                    Set.of(StructureNode.StructureType.DEFAULT,
-                            StructureNode.StructureType.MIRROR,
-                            StructureNode.StructureType.N_CONNECTED));
+        if (allNodes.isEmpty()) {
+            return new HashSet<>();
         }
 
+        // Berechne tatsächliche Anzahl der zu entfernenden Knoten
+        int actualNodesToRemove = Math.min(nodesToRemove, allNodes.size() - 2); // Mindestens 2 Knoten behalten
+        if (actualNodesToRemove <= 0) {
+            return new HashSet<>();
+        }
+
+        // Sammle zu entfernende Knoten (höchste IDs zuerst, aber nie die Root)
+        Set<MirrorNode> removedNodes = new HashSet<>();
+        List<NConnectedMirrorNode> remainingNodes = new ArrayList<>();
+
+        // Entferne die Knoten mit höchsten IDs
+        for (int i = allNodes.size() - 1; i >= 0; i--) {
+            NConnectedMirrorNode nodeToRemove = allNodes.get(i);
+
+            // Entferne alle Verbindungen dieses Knotens
+            removeNodeAndAllConnections(nodeToRemove);
+
+            if (i < allNodes.size() - actualNodesToRemove) {
+                remainingNodes.add(nodeToRemove);
+            } else {
+                // Entferne aus structureNodes
+                removeFromStructureNodes(nodeToRemove);
+                removedNodes.add(nodeToRemove);
+            }
+        }
+
+        buildNConnectedStructure(remainingNodes);
+
         return removedNodes;
+    }
+
+    /**
+     * Entfernt einen Knoten und alle Verbindungen aus der N-Connected-Struktur.
+     * Die Hilfsmethode für removeNodesFromStructure.
+     */
+    private void removeNodeAndAllConnections(NConnectedMirrorNode nodeToRemove) {
+        StructureNode.StructureType typeId = StructureNode.StructureType.N_CONNECTED;
+        int headId = getCurrentStructureRoot().getId();
+
+        // Entferne alle Kind-Verbindungen
+        Set<StructureNode> children = new HashSet<>(nodeToRemove.getChildren(typeId, headId));
+        for (StructureNode child : children) {
+            nodeToRemove.removeChild(child);
+        }
+
+        // Entferne eine Parent-Verbindung
+        StructureNode parent = nodeToRemove.getParent();
+        if (parent != null) {
+            parent.removeChild(nodeToRemove);
+        }
     }
 
     // ===== TYPSICHERE HILFSMETHODEN =====
@@ -271,7 +306,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
         } else if (a instanceof TopologyChange tc) {
             // Delegiere an neue Topology-Strategie
             int currentMirrors = (network != null) ? network.getMirrors().size() : 0;
-            return tc.getNewTopology().getNumTargetLinks(network); // Dummy MirrorChange
+            return tc.getNewTopology().getNumTargetLinks(network); // Fake MirrorChange
         }
 
         // Fallback: aktuelle Konfiguration
@@ -290,7 +325,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
      * - ...
      * - Node k: min(k, N) Links
      *
-     * @param numMirrors Anzahl der Mirrors/Knoten
+     * @param numMirrors         Anzahl der Mirrors/Knoten
      * @param targetLinksPerNode Anzahl der Vorgänger-Verbindungen pro Node
      * @return Tatsächliche Anzahl der möglichen Links
      */
