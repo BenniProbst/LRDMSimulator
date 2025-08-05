@@ -276,7 +276,7 @@ public class NConnectedMirrorNode extends MirrorNode {
         }
 
         // Verwende bereits existierende StructureNode-Methoden für weitere Validierung
-        return !hasClosedCycle(allNodes, typeId, head) && // Bereits existiert in StructureNode
+        return hasClosedCycle(allNodes, typeId, head) && // Bereits existiert in StructureNode
                 hasCorrectTotalLinkCount(allNodes) &&
                 hasValidHeadEdgeLinks(head, typeId);
     }
@@ -323,27 +323,17 @@ public class NConnectedMirrorNode extends MirrorNode {
 
         StructureNode parent = nConnectedNode.getParent();
 
-        if (nConnectedNode == headNode) {
-            // Head-Node darf einen externen Parent haben (Verbindung zu anderen Strukturen)
-            if (parent != null) {
-                // Parent muss außerhalb der N-Connected-Struktur sein
-                return allNodes.contains(parent);
-            }
-        } else {
-            // Normale N-Connected-Knoten: müssen struktur-internen Parent haben
-            if (parent == null) return true;
+        // Normale N-Connected-Knoten: müssen struktur-internen Parent haben
+        if (parent == null) return true;
 
-            // Validiere dass Parent-Child-Beziehung zur N-Connected-Struktur gehört
-            ChildRecord parentRecord = parent.findChildRecordById(nConnectedNode.getId());
-            if (parentRecord == null || !parentRecord.belongsToStructure(typeId, headId)) {
-                return true;
-            }
-
-            // Parent muss innerhalb der N-Connected-Struktur sein
-            return !allNodes.contains(parent);
+        // Validiere dass Parent-Child-Beziehung zur N-Connected-Struktur gehört
+        ChildRecord parentRecord = parent.findChildRecordById(nConnectedNode.getId());
+        if (!parentRecord.belongsToStructure(typeId, headId)) {
+            return true;
         }
 
-        return false;
+        // Parent muss innerhalb der N-Connected-Struktur sein
+        return !allNodes.contains(parent);
     }
 
     /**

@@ -131,8 +131,6 @@ public class NConnectedTopology extends BuildAsSubstructure {
                 predecessorNode.addChild(currentNode);
             }
         }
-        //TODO: create link from root to last node
-
     }
 
 
