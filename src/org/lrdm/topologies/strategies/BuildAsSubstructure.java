@@ -318,6 +318,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     @Override
     public Set<Link> initNetwork(Network n, Properties props) {
         initializeInternalState(n);
+        resetInternalStateStructureOnly();
 
         int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
                 .filter(Mirror::isUsableForNetwork).count());
@@ -389,6 +390,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         // Komplett neu initialisieren
         initializeInternalState(n);
+        resetInternalStateStructureOnly();
 
         int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
                 .filter(Mirror::isUsableForNetwork).count());
@@ -430,7 +432,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         initializeInternalState(n);
 
         // Verwende das offizielle Interface von TopologyStrategy
-        Set<Mirror> mirrorsToAdd = createMirrors(newMirrors, simTime, props);
+        Set<Mirror> creatingMirrors = createMirrors(newMirrors, simTime, props);
+        List<Mirror> mirrorsToAdd = new ArrayList<>(creatingMirrors);
+        mirrorsToAdd.sort(Comparator.comparingInt(Mirror::getID));
         n.getMirrors().addAll(mirrorsToAdd);
 
         // Setze Iterator für die neuen Mirrors - BuildAsSubstructure erwartet diesen
@@ -438,7 +442,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         setMirrorIterator(n.getMirrors().iterator());
 
         // Füge die neuen Knoten zur Struktur hinzu
-        int actuallyAdded = addNodesToStructure(mirrorsToAdd);
+        int actuallyAdded = addNodesToStructure(creatingMirrors);
 
         if (actuallyAdded > 0 && getCurrentStructureRoot() != null) {
             // Baue nur die neuen Links auf
@@ -805,6 +809,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 .filter(node -> node instanceof MirrorNode)
                 .map(node -> (MirrorNode) node)
                 .distinct()
+                .sorted(Comparator.comparingInt(MirrorNode::getId))
                 .toList();
 
         Set<Link> allLinks = new HashSet<>();

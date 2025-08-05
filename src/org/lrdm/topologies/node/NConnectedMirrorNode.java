@@ -285,7 +285,7 @@ public class NConnectedMirrorNode extends MirrorNode {
         // Verwende bereits existierende StructureNode-Methoden für weitere Validierung
         return hasClosedCycle(allNodes, typeId, head) && // Bereits existiert in StructureNode
                 hasCorrectTotalLinkCount(allNodes) &&
-                hasValidHeadEdgeLinks(head, typeId);
+                hasNoEdgeLinks(head, typeId);
     }
 
     /**
@@ -363,13 +363,13 @@ public class NConnectedMirrorNode extends MirrorNode {
      * Prüft, ob der Head-Knoten gültige Edge-Links hat.
      * Verwendet bereits existierende MirrorNode-Methoden.
      */
-    private boolean hasValidHeadEdgeLinks(StructureNode head, StructureType typeId) {
+    private boolean hasNoEdgeLinks(StructureNode head, StructureType typeId) {
         if (!(head instanceof NConnectedMirrorNode headNode)) {
             return false;
         }
 
         // Verwende bereits existierende MirrorNode-Methode
-        return headNode.getNumEdgeLinks(typeId, head) >= 0;
+        return headNode.getNumEdgeLinks(typeId, head) == 0;
     }
 
     // ===== N-CONNECTED CONVENIENCE-METHODEN =====
