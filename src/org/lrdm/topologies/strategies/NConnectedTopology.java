@@ -146,37 +146,35 @@ public class NConnectedTopology extends BuildAsSubstructure {
             return 0;
         }
 
-        // Hole alle bestehenden Knoten sortiert nach ID
-        List<MirrorNode> existingNodes = getAllNConnectedNodes()
+        List<NConnectedMirrorNode> allNodes = new ArrayList<>(getAllNConnectedNodes()
                 .stream()
-                .sorted(Comparator.comparingInt(MirrorNode::getId))
-                .collect(Collectors.toList());
+                .sorted(Comparator.comparingInt(MirrorNode::getId)).toList());
 
-        int addedCount = 0;
-        StructureNode.StructureType typeId = StructureNode.StructureType.N_CONNECTED;
-        int headId = getCurrentStructureRoot().getId();
-
-        for (Mirror mirror : nodesToAdd) {
-            NConnectedMirrorNode newNode = (NConnectedMirrorNode) createMirrorNodeForMirror(mirror);
-            if (newNode == null) continue;
-
-            // Verbinde mit den letzten targetLinksPerNode bestehenden Knoten
-            int connectionsToMake = min(existingNodes.size(), targetLinksPerNode);
-            int startIndex = Math.max(0, existingNodes.size() - connectionsToMake);
-
-            for (int i = startIndex; i < existingNodes.size(); i++) {
-                NConnectedMirrorNode existingNode = (NConnectedMirrorNode) existingNodes.get(i);
-
-                // Bidirektionale Verbindung erstellen
-                newNode.addChild(existingNode, Set.of(typeId), Map.of(typeId, headId));
-                existingNode.addChild(newNode, Set.of(typeId), Map.of(typeId, headId));
-            }
-
-            existingNodes.add(newNode);
-            addedCount++;
+        if (allNodes.isEmpty()) {
+            return 0;
         }
 
-        return addedCount;
+        // Sammle zu entfernende Knoten (höchste IDs zuerst, aber nie die Root)
+        int addedNodes = 0;
+
+        // Entferne die Knoten mit höchsten IDs
+        for (int i = allNodes.size() - 1; i >= 0; i--) {
+            NConnectedMirrorNode nodeToRemove = allNodes.get(i);
+
+            // Entferne alle Verbindungen dieses Knotens
+            removeNodeAndAllConnections(nodeToRemove);
+        }
+
+        setMirrorIterator(nodesToAdd.iterator());
+
+        for(int i = 0; i < nodesToAdd.size(); i++) {
+            allNodes.add(getMirrorNodeFromIterator());
+            addedNodes++;
+        }
+
+        buildNConnectedStructure(allNodes);
+
+        return addedNodes;
     }
 
 
