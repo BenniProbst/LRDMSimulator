@@ -159,10 +159,10 @@ public class NConnectedTopology extends BuildAsSubstructure {
 
         // Entferne die Knoten mit höchsten IDs
         for (int i = allNodes.size() - 1; i >= 0; i--) {
-            NConnectedMirrorNode nodeToRemove = allNodes.get(i);
+            NConnectedMirrorNode existingNode = allNodes.get(i);
 
             // Entferne alle Verbindungen dieses Knotens
-            removeNodeAndAllConnections(nodeToRemove);
+            removeNodeAndAllConnections(existingNode);
         }
 
         setMirrorIterator(nodesToAdd.iterator());
@@ -172,6 +172,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
             addedNodes++;
         }
 
+        allNodes.sort(Comparator.comparingInt(MirrorNode::getId));
         buildNConnectedStructure(allNodes);
 
         return addedNodes;
