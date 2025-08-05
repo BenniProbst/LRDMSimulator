@@ -34,10 +34,12 @@ public class ExampleSimulationNConnected {
 			mirrors -= 4;
 		}
 		effector.setStrategy(new FullyConnectedTopology(), 20);
-		effector.setStrategy(new NConnectedTopology(3), 40);
+		effector.setStrategy(new NConnectedTopology(), 40);
+        effector.setTargetLinksPerMirror(3,40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
-		NConnectedTopology topoS = new NConnectedTopology(5);
+		NConnectedTopology topoS = new NConnectedTopology();
 		effector.setStrategy(topoS, 80);
+        effector.setTargetLinksPerMirror(5,80);
 
 		int startMirrors = 15;
 		int count = 0;

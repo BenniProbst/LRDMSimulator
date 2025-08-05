@@ -169,7 +169,7 @@ public class Network {
 	public void setNumTargetedLinksPerMirror(int numTargetLinksPerMirror, int timeStep) {
 		log.log(Level.INFO,"setNumTargetedLinksPerMirror({0},{1})", new Object[] { numTargetLinksPerMirror,timeStep});
 		this.numTargetLinksPerMirror = numTargetLinksPerMirror;
-		if(timeStep > 0) {
+        if(timeStep > 0) {
 			strategy.restartNetwork(this, props, timeStep);
 		}
 	}

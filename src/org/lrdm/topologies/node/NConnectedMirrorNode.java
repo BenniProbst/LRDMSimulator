@@ -27,7 +27,7 @@ import java.util.*;
  */
 public class NConnectedMirrorNode extends MirrorNode {
 
-    private final int connectivityDegree;
+    private int connectivityDegree;
     private static final int DEFAULT_CONNECTIVITY_DEGREE = 2; // Standard: 2-Connected
 
     // ===== KONSTRUKTOREN =====
@@ -78,6 +78,13 @@ public class NConnectedMirrorNode extends MirrorNode {
      */
     public int getConnectivityDegree() {
         return connectivityDegree;
+    }
+
+    /**
+     * Gibt den konfigurierten Vernetzungsgrad zurück.
+     */
+    public void setConnectivityDegree(int connectivityDegree) {
+        this.connectivityDegree = connectivityDegree;
     }
 
     /**

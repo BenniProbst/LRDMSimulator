@@ -40,19 +40,15 @@ import static java.lang.Math.min;
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  */
 public class NConnectedTopology extends BuildAsSubstructure {
-
-    // ===== N-CONNECTED-SPEZIFISCHE KONFIGURATION =====
-    private int targetLinksPerNode = 2;//start with a circle
-
     // ===== KONSTRUKTOREN =====
 
     public NConnectedTopology() {
         super();
     }
 
-    public NConnectedTopology(int targetLinksPerNode) {
+    public NConnectedTopology(int targetLinksPerNode, int simTime) {
         super();
-        this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
+        this.network.setNumTargetedLinksPerMirror(Math.max(1, targetLinksPerNode),simTime);
     }
 
     // ===== BUILD SUBSTRUCTURE IMPLEMENTATION =====
@@ -113,7 +109,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
     private void buildNConnectedStructure(List<NConnectedMirrorNode> allNodes) {
 
         allNodes.sort(Comparator.comparingInt(MirrorNode::getId));
-        int possibleTargetLinks = min(targetLinksPerNode, allNodes.size() * 2) - 1;
+        int possibleTargetLinks = min(network.getNumTargetLinksPerMirror(), allNodes.size() * 2) - 1;
 
         for (int i = 1; i < allNodes.size() + possibleTargetLinks; i++) {
             NConnectedMirrorNode currentNode = allNodes.get(i % allNodes.size());
@@ -288,7 +284,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
     @Override
     public int getNumTargetLinks(Network n) {
         int numMirrors = n.getMirrors().size();
-        return calculateNConnectedLinks(numMirrors, targetLinksPerNode);
+        return calculateNConnectedLinks(numMirrors, n.getNumTargetLinksPerMirror());
     }
 
 
@@ -302,7 +298,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
     @Override
     public int getPredictedNumTargetLinks(Action a) {
         if (a instanceof MirrorChange mc) {
-            return calculateNConnectedLinks(mc.getNewMirrors(), targetLinksPerNode);
+            return calculateNConnectedLinks(mc.getNewMirrors(), network.getNumTargetLinksPerMirror());
         } else if (a instanceof TargetLinkChange tlc) {
             // Verwende aktuelle Mirror-Anzahl mit neuen Links pro Mirror
             int currentMirrors = (network != null) ? network.getMirrors().size() : 0;
@@ -315,7 +311,8 @@ public class NConnectedTopology extends BuildAsSubstructure {
 
         // Fallback: aktuelle Konfiguration
         int currentMirrors = (network != null) ? network.getMirrors().size() : 0;
-        return calculateNConnectedLinks(currentMirrors, targetLinksPerNode);
+        assert network != null;
+        return calculateNConnectedLinks(currentMirrors, network.getNumTargetLinksPerMirror());
     }
 
 
@@ -366,11 +363,11 @@ public class NConnectedTopology extends BuildAsSubstructure {
     // ===== GETTER UND SETTER =====
 
     public int getTargetLinksPerNode() {
-        return targetLinksPerNode;
+        return network.getNumTargetLinksPerMirror();
     }
 
-    public void setTargetLinksPerNode(int targetLinksPerNode) {
-        this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
+    public void setTargetLinksPerNode(int targetLinksPerNode, int simTime) {
+        this.network.setNumTargetedLinksPerMirror(Math.max(1, targetLinksPerNode),simTime);
     }
 
     // ===== STRING REPRESENTATION =====
@@ -390,7 +387,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
         try {
             // Grundlegende Topology-Information
             sb.append("substructureId=").append(getSubstructureId());
-            sb.append(", targetLinksPerNode=").append(targetLinksPerNode);
+            sb.append(", targetLinksPerNode=").append(network.getNumTargetLinksPerMirror());
 
             // Sichere Struktur-Informationen
             MirrorNode root = getCurrentStructureRoot();
@@ -403,7 +400,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
                 sb.append(", nodes=").append(nodeCount);
 
                 // Berechne erwartete Links für N-Connected-Topologie
-                int expectedLinks = calculateNConnectedLinks(nodeCount, targetLinksPerNode);
+                int expectedLinks = calculateNConnectedLinks(nodeCount, network.getNumTargetLinksPerMirror());
                 sb.append(", expectedLinks=").append(expectedLinks);
 
                 // Struktur-Typ-Information
