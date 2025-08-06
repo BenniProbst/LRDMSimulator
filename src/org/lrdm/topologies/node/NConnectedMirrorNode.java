@@ -3,6 +3,7 @@ package org.lrdm.topologies.node;
 import org.lrdm.Mirror;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Spezialisierte MirrorNode für N-Connected-Strukturen.
@@ -293,14 +294,9 @@ public class NConnectedMirrorNode extends MirrorNode {
      * Verwendet bereits existierende StructureNode-Methoden.
      */
     public boolean isValidStructure() {
-        StructureType typeId = deriveTypeId();
+        StructureType typeId = StructureType.N_CONNECTED;
         StructureNode head = findHead(typeId);
         Set<StructureNode> allNodes = getAllNodesInStructure();
-        for(NConnectedMirrorNode nConnectedNode : getConnectedNodes()){
-            if(isInvalidNConnectedNode(nConnectedNode, head, typeId, allNodes)){
-                return false;
-            }
-        }
         return isValidStructure(allNodes, typeId, head != null ? head : this);
     }
 
@@ -426,9 +422,9 @@ public class NConnectedMirrorNode extends MirrorNode {
 
     @Override
     public String toString() {
-        return String.format("NConnectedMirrorNode{id=%d, connectivityDegree=%d, mirror=%s, actualConnections=%d, networkSize=%d}",
+        return String.format("NConnectedMirrorNode{id=%d, connectivityDegree=%d, mirror=%s, actualConnections=%d, networkSize=%d, typeIDs=%d}",
                 getId(), connectivityDegree, getMirror() != null ? getMirror().getID() : "null",
-                getNumImplementedLinks(), getNetworkSize());
+                getNumImplementedLinks(), getNetworkSize(), nodeTypes.size());
     }
 
     @Override

@@ -74,7 +74,7 @@ public class StructureNode {
          * Prüft, ob dieses Kind zu einer bestimmten Struktur (Typ + Head-ID) gehört.
          */
         public boolean belongsToStructure(StructureType typeId, int headId) {
-            return typeIds.contains(typeId) && headIds.get(typeId) != null && headIds.get(typeId) == headId;
+            return typeIds.contains(typeId) && headIds.containsKey(typeId) && headIds.get(typeId) == headId;
         }
 
         /**

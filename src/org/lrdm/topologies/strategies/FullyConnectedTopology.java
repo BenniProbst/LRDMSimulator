@@ -128,8 +128,8 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         for (FullyConnectedMirrorNode newNode : newNodes) {
             for (FullyConnectedMirrorNode existingNode : existingNodes) {
                 // Bidirektionale StructureNode-Verbindungen
-                newNode.addChild(existingNode);
                 existingNode.addChild(newNode);
+                newNode.addChild(existingNode);
                 if(newNode!=root)newNode.setParent(root);
                 if(existingNode!=root)existingNode.setParent(root);
             }

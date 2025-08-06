@@ -355,6 +355,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
         if (mirrorIterator != null && mirrorIterator.hasNext()) {
             NConnectedMirrorNode node = (NConnectedMirrorNode) super.getMirrorNodeFromIterator();
             node.addNodeType(StructureNode.StructureType.N_CONNECTED);
+
             return node;
         }
         return null;
