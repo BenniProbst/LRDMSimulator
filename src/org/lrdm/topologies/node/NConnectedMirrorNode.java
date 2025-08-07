@@ -101,6 +101,11 @@ public class NConnectedMirrorNode extends MirrorNode {
             if (parentRecord != null && parentRecord.belongsToStructure(typeId, headId)) {
                 connections++;
             }
+        } else {
+            Set<StructureNode> allNodes = getAllNodesInStructure(typeId, findNodeById(headId));
+            connections += (int) allNodes.stream()
+                    .filter(node -> node.getChildren(typeId, headId).contains(this))
+                    .count();
         }
 
         // Kind-Verbindungen zählen (bereits existierende Methode verwenden)
@@ -313,7 +318,7 @@ public class NConnectedMirrorNode extends MirrorNode {
         int configuredDegree = this.connectivityDegree; // oder nConnectedNode.getConnectivityDegree()
         int actualDegree = nConnectedNode.getConnectivityDegree(typeId, headId);
 
-        // FALL 1: Vollständig verbunden (n ≤ targetLinksPerNode)
+        // FALL 1: Vollständig verbunden (n <= targetLinksPerNode)
         if (structureSize - 1 <= configuredDegree) {
             // Jeder Knoten muss mit allen anderen verbunden sein
             int expectedDegree = structureSize - 1;
@@ -326,21 +331,15 @@ public class NConnectedMirrorNode extends MirrorNode {
 
             if (nConnectedNode == headNode) {
                 // Head darf externen Parent haben
-                if (parent != null && structureNodes.contains(parent)) {
-                    return true; // Head muss entweder keinen Parent oder einen externen haben
-                }
+                return parent != null && structureNodes.contains(parent); // Head muss entweder keinen Parent oder einen externen haben
             } else {
                 // Alle anderen müssen Head als Parent oder Parent in Struktur haben
-                if (parent == null || !structureNodes.contains(parent)) {
-                    return true;
-                }
-            }
-            return false; // FullyConnected, alles erfüllt
+                return !structureNodes.contains(parent);
+            }// FullyConnected, alles erfüllt
         }
 
         // FALL 2: Regulärer N-Connected-Modus (n > targetLinksPerNode)
         int expectedDegree = Math.min(configuredDegree, structureSize - 1); // klassisch
-
         if (actualDegree != expectedDegree) {
             return true;
         }
@@ -408,6 +407,7 @@ public class NConnectedMirrorNode extends MirrorNode {
         return !allNodes.contains(parent);
     }
 */
+
     /**
      * Prüft, ob die Gesamtanzahl der Links korrekt ist.
      * Vereinfachte Implementierung.
