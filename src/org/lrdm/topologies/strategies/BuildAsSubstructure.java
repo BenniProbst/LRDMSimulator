@@ -410,7 +410,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 unusedMirrorToShutdown.remove(node.getMirror());
             }
         }
-        unusedMirrorToShutdown.forEach(mirror -> {mirror.shutdown(simTime);});
+        unusedMirrorToShutdown.forEach(mirror -> mirror.shutdown(simTime));
 
         return links;
     }
@@ -601,6 +601,25 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             structureNodes.add(node);
             nodeToSubstructure.put(node, this);
         }
+    }
+
+    /*
+     * Verschmilzt die root Node einer unterzuordnenden Struktur mit einer gewünschten host node
+     */
+    protected final void connectToStructureNodes(MirrorNode hostSubstructureNode, MirrorNode buildRoot, BuildAsSubstructure buildExtern) {
+        if (hostSubstructureNode != null && buildRoot != null) {
+            // merge buildRoot into hostSubstructureNode
+            nodeToSubstructure.put(hostSubstructureNode,buildExtern);
+        }
+    }
+
+    /*
+     * Trennt eine host node nach Eingabe der betroffenen Struktur wieder in die betreffende Struktur root node und die ursprüngliche Host node auf
+     */
+    protected final MirrorNode disconnectFromStructureNodes(MirrorNode hostSubstructureNode, BuildAsSubstructure buildExtern) {
+        MirrorNode headNode = buildExtern.getCurrentStructureRoot();
+
+        return headNode;
     }
 
     /**

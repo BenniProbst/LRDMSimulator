@@ -35,7 +35,7 @@ import java.util.*;
 public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
     // ===== BALANCE-SPEZIFISCHE KONFIGURATION =====
-    private int targetLinksPerNode = 2;
+
     private double maxAllowedBalanceDeviation = 1.0;
 
     // ===== KONSTRUKTOREN =====
@@ -44,14 +44,8 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         super();
     }
 
-    public BalancedTreeTopologyStrategy(int targetLinksPerNode) {
+    public BalancedTreeTopologyStrategy(double maxAllowedBalanceDeviation) {
         super();
-        this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
-    }
-
-    public BalancedTreeTopologyStrategy(int targetLinksPerNode, double maxAllowedBalanceDeviation) {
-        super();
-        this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
         this.maxAllowedBalanceDeviation = Math.max(0.1, maxAllowedBalanceDeviation);
     }
 
@@ -234,7 +228,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
             // Füge Kinder bis zur Kapazität hinzu
             int currentChildren = current.getChildren(typeId).size();
-            int maxChildren = Math.max(0, targetLinksPerNode - currentChildren);
+            int maxChildren = Math.max(0, network.getNumTargetLinksPerMirror() - currentChildren);
 
             for (int i = 0; i < maxChildren && nodeIterator.hasNext(); i++) {
                 BalancedTreeMirrorNode child = nodeIterator.next();
@@ -272,7 +266,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
                 int currentChildren = balancedNode.getChildren(typeId).size();
 
                 // 2. Target-Links-Prüfung: Respektiert der Knoten die targetLinksPerNode-Grenze?
-                if (currentChildren >= targetLinksPerNode) {
+                if (currentChildren >= network.getNumTargetLinksPerMirror()) {
                     // Knoten hat bereits das Target erreicht oder überschritten
                     continue;
                 }
@@ -325,7 +319,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         int childrenAfterInsertion = currentChildren + 1;
 
         // 1. Lokale Balance-Abweichung prüfen
-        double localDeviation = Math.abs(childrenAfterInsertion - targetLinksPerNode) / (double) targetLinksPerNode;
+        double localDeviation = Math.abs(childrenAfterInsertion - network.getNumTargetLinksPerMirror()) / (double) network.getNumTargetLinksPerMirror();
         if (localDeviation > maxAllowedBalanceDeviation) {
             return false;
         }
@@ -357,8 +351,8 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
             int childrenAfterInsertion = currentChildren + 1;
 
             // Berechne lokale Abweichungsänderung
-            double currentLocalDeviation = Math.abs(currentChildren - targetLinksPerNode) / (double) targetLinksPerNode;
-            double newLocalDeviation = Math.abs(childrenAfterInsertion - targetLinksPerNode) / (double) targetLinksPerNode;
+            double currentLocalDeviation = Math.abs(currentChildren - network.getNumTargetLinksPerMirror()) / (double) network.getNumTargetLinksPerMirror();
+            double newLocalDeviation = Math.abs(childrenAfterInsertion - network.getNumTargetLinksPerMirror()) / (double) network.getNumTargetLinksPerMirror();
             double localDeviationChange = newLocalDeviation - currentLocalDeviation;
 
             // Schätze globale Auswirkung (vereinfacht)
@@ -390,8 +384,8 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
             int childrenAfterInsertion = currentChildren + 1;
 
             // 1. Berechne lokale Balance-Verbesserung/Verschlechterung
-            double currentDeviation = Math.abs(currentChildren - targetLinksPerNode);
-            double newDeviation = Math.abs(childrenAfterInsertion - targetLinksPerNode);
+            double currentDeviation = Math.abs(currentChildren - network.getNumTargetLinksPerMirror());
+            double newDeviation = Math.abs(childrenAfterInsertion - network.getNumTargetLinksPerMirror());
             double localImpact = newDeviation - currentDeviation;
 
             // 2. Berücksichtige Tiefe (flachere Einfügungen sind besser für Balance)
@@ -400,9 +394,9 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
             // 3. Berücksichtige Nähe zum Optimal-Wert
             double optimalityBonus = 0.0;
-            if (childrenAfterInsertion == targetLinksPerNode) {
+            if (childrenAfterInsertion == network.getNumTargetLinksPerMirror()) {
                 optimalityBonus = -0.5; // Bonus für Erreichen des Optimal-Werts
-            } else if (currentChildren < targetLinksPerNode && childrenAfterInsertion <= targetLinksPerNode) {
+            } else if (currentChildren < network.getNumTargetLinksPerMirror() && childrenAfterInsertion <= network.getNumTargetLinksPerMirror()) {
                 optimalityBonus = -0.2; // Bonus für Annäherung an Optimal-Wert
             }
 
@@ -441,8 +435,8 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         int children1 = candidate1.getChildren(typeId).size();
         int children2 = candidate2.getChildren(typeId).size();
 
-        double targetDistance1 = Math.abs(children1 - targetLinksPerNode);
-        double targetDistance2 = Math.abs(children2 - targetLinksPerNode);
+        double targetDistance1 = Math.abs(children1 - network.getNumTargetLinksPerMirror());
+        double targetDistance2 = Math.abs(children2 - network.getNumTargetLinksPerMirror());
 
         int targetCompare = Double.compare(targetDistance1, targetDistance2);
         if (targetCompare != 0) {
@@ -547,7 +541,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
         for (StructureNode child : childrenList) {
             // Prüfe ob newParent noch Kapazität hat
-            if (newParent.getChildren(typeId).size() < targetLinksPerNode) {
+            if (newParent.getChildren(typeId).size() < network.getNumTargetLinksPerMirror()) {
                 newParent.addChild(child, Set.of(typeId), Map.of(typeId, newParent.getId()));
             } else {
                 // Finde alternativen Balance-optimierten Parent
@@ -555,7 +549,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
                 boolean childPlaced = false;
                 for (BalancedTreeMirrorNode candidate : alternativeCandidates) {
-                    if (candidate.getChildren(typeId).size() < targetLinksPerNode) {
+                    if (candidate.getChildren(typeId).size() < network.getNumTargetLinksPerMirror()) {
                         candidate.addChild(child, Set.of(typeId), Map.of(typeId, candidate.getId()));
                         childPlaced = true;
                         break;
@@ -584,7 +578,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
         // Simuliere das Hinzufügen eines Kindes
         int currentChildren = candidate.getChildren().size();
-        double predictedDeviation = Math.abs(currentChildren + 1 - targetLinksPerNode);
+        double predictedDeviation = Math.abs(currentChildren + 1 - network.getNumTargetLinksPerMirror());
 
         // Berücksichtige auch die Tiefe für Balance-Optimierung
         int depth = candidate.getDepthInTree();
@@ -651,7 +645,7 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
 
         if (parent instanceof BalancedTreeMirrorNode balancedParent) {
             int parentChildren = balancedParent.getChildren(typeId).size();
-            int parentCapacity = Math.max(0, targetLinksPerNode - parentChildren);
+            int parentCapacity = Math.max(0, network.getNumTargetLinksPerMirror() - parentChildren);
 
             // Höherer Impact wenn Parent keine Kapazität für Kinder-Redistribution hat
             if (childrenCount > parentCapacity) {
@@ -692,18 +686,10 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      */
     @Override
     protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
-        return new BalancedTreeMirrorNode(mirror.getID(), mirror, targetLinksPerNode, maxAllowedBalanceDeviation);
+        return new BalancedTreeMirrorNode(mirror.getID(), mirror, network.getNumTargetLinksPerMirror(), maxAllowedBalanceDeviation);
     }
 
     // ===== GETTER UND SETTER =====
-
-    public int getTargetLinksPerNode() {
-        return targetLinksPerNode;
-    }
-
-    public void setTargetLinksPerNode(int targetLinksPerNode) {
-        this.targetLinksPerNode = Math.max(1, targetLinksPerNode);
-    }
 
     public double getMaxAllowedBalanceDeviation() {
         return maxAllowedBalanceDeviation;
@@ -716,6 +702,6 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
     @Override
     public String toString() {
         return String.format("BalancedTreeTopologyStrategy[targetLinks=%d, maxDev=%.2f]",
-                targetLinksPerNode, maxAllowedBalanceDeviation);
+                network.getNumTargetLinksPerMirror(), maxAllowedBalanceDeviation);
     }
 }

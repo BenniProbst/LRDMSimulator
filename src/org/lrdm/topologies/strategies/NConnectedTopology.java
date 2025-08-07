@@ -46,11 +46,6 @@ public class NConnectedTopology extends BuildAsSubstructure {
         super();
     }
 
-    public NConnectedTopology(int targetLinksPerNode, int simTime) {
-        super();
-        this.network.setNumTargetedLinksPerMirror(Math.max(1, targetLinksPerNode),simTime);
-    }
-
     // ===== BUILD SUBSTRUCTURE IMPLEMENTATION =====
 
     /**

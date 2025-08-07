@@ -3,8 +3,8 @@ package org.lrdm.examples;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.strategies.SnowflakeTopologyStrategy;
-import org.lrdm.topologies.strategies.FullyConnectedTopology;
+import org.lrdm.topologies.strategies.*;
+import org.lrdm.topologies.strategies.SnowflakeTopologyStrategy.SnowflakeProperties;
 
 import java.util.List;
 
@@ -33,9 +33,32 @@ public class ExampleSimulationSnowflake {
 			mirrors -= 4;
 		}
 		effector.setStrategy(new FullyConnectedTopology(), 20);
-		effector.setStrategy(new SnowflakeTopologyStrategy(), 40);
+        effector.setTargetLinksPerMirror(2,20);
+        List<BuildAsSubstructure> hostedStructures = List.of(
+                new DepthLimitTreeTopologyStrategy(3),
+                new BalancedTreeTopologyStrategy(),
+                new StarTopologyStrategy()
+        );
+		effector.setStrategy(new SnowflakeTopologyStrategy(
+                new SnowflakeProperties(
+                        0.3,
+                        2
+                ),
+                hostedStructures
+        ), 40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
-		effector.setStrategy(new SnowflakeTopologyStrategy(), 80);
+        effector.setTargetLinksPerMirror(4,60);
+        List<BuildAsSubstructure> hostedStructures2 = List.of(
+                new NConnectedTopology(),
+                new FullyConnectedTopology()
+        );
+		effector.setStrategy(new SnowflakeTopologyStrategy(
+                new SnowflakeProperties(
+                        0.6,
+                        3
+                ),
+                hostedStructures2
+        ), 80);
 
 		int startMirrors = 15;
 		int count = 0;
