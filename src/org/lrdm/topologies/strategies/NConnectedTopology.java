@@ -107,16 +107,15 @@ public class NConnectedTopology extends BuildAsSubstructure {
      * @param allNodes Liste aller Knoten in chronologischer Reihenfolge
      */
     private void buildNConnectedStructure(List<NConnectedMirrorNode> allNodes) {
-
-        //TODO: generate in circles
         allNodes.sort(Comparator.comparingInt(MirrorNode::getId));
         int possibleTargetLinks = min(network.getNumTargetLinksPerMirror(), allNodes.size()) - 1;
 
         NConnectedMirrorNode root = null;
 
-        for(int secondNodeShift = 1; secondNodeShift < possibleTargetLinks; secondNodeShift++){
+        for(int secondNodeShift = 1; secondNodeShift <= possibleTargetLinks; secondNodeShift++){
             for(int firstNode = 0; firstNode < allNodes.size(); firstNode++) {
                 int secondNodeIndex = (firstNode + secondNodeShift)%allNodes.size();
+                StructureNode SecondNodeParent = allNodes.get(secondNodeIndex).getParent();
                 if(!allNodes.get(firstNode).getChildren().contains(allNodes.get(secondNodeIndex))){
                     allNodes.get(firstNode).addChild(allNodes.get(secondNodeIndex));
                 }
@@ -124,6 +123,9 @@ public class NConnectedTopology extends BuildAsSubstructure {
                     setCurrentStructureRoot(allNodes.get(firstNode));
                     allNodes.get(firstNode).setHead(StructureNode.StructureType.N_CONNECTED, true);
                     root = allNodes.get(firstNode);
+                }
+                if(secondNodeShift > 1){
+                    allNodes.get(secondNodeIndex).setParent(SecondNodeParent);
                 }
             }
         }
