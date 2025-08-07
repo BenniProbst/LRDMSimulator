@@ -103,9 +103,12 @@ public class NConnectedMirrorNode extends MirrorNode {
             }
         } else {
             Set<StructureNode> allNodes = getAllNodesInStructure(typeId, findNodeById(headId));
-            connections += (int) allNodes.stream()
+            int inwardConnections = (int) allNodes.stream()
                     .filter(node -> node.getChildren(typeId, headId).contains(this))
                     .count();
+            if(inwardConnections>0){
+                connections++;
+            }
         }
 
         // Kind-Verbindungen zählen (bereits existierende Methode verwenden)
@@ -314,52 +317,35 @@ public class NConnectedMirrorNode extends MirrorNode {
     private boolean isInvalidNConnectedNode(NConnectedMirrorNode nConnectedNode, StructureNode headNode,
                                             StructureType typeId, Set<StructureNode> allNodes) {
         final int headId = headNode.getId();
-        int structureSize = allNodes.size();
-        int configuredDegree = this.connectivityDegree; // oder nConnectedNode.getConnectivityDegree()
-        int actualDegree = nConnectedNode.getConnectivityDegree(typeId, headId);
 
-        // FALL 1: Vollständig verbunden (n <= targetLinksPerNode)
-        if (structureSize - 1 <= configuredDegree) {
-            // Jeder Knoten muss mit allen anderen verbunden sein
-            int expectedDegree = structureSize - 1;
-            if (actualDegree != expectedDegree) {
+        // WICHTIG: Alle Knoten müssen den gleichen erwarteten Konnektivitätsgrad haben.
+        // Berechne erwarteten Grad basierend auf der Strukturgröße und dem konfigurierten Grad
+        int structureSize = allNodes.size();
+        int nConnectedDegree = nConnectedNode.getConnectivityDegree(typeId,headId);
+        int expectedDegree = Math.min(nConnectedDegree, structureSize);
+
+        // Tatsächlicher Grad dieses Knotens in der N-Connected-Struktur
+
+        if (nConnectedDegree < 0) nConnectedDegree = 0;
+
+        // Alle Knoten müssen exakt den gleichen Konnektivitätsgrad haben
+        if (nConnectedDegree != expectedDegree) {
+            return true;
+        }
+
+        if(nConnectedNode.getParent() != null && nConnectedNode.getParent() instanceof NConnectedMirrorNode){
+            StructureNode parent = nConnectedNode.getParent();
+
+            // Validiere, dass Parent-Child-Beziehung zur N-Connected-Struktur gehört
+            ChildRecord parentRecord = parent.findChildRecordById(nConnectedNode.getId());
+            if (!parentRecord.belongsToStructure(typeId, headId)) {
                 return true;
             }
-            // Prüfe Parent- und Kindverbindungen weiter, wie im FullyConnectedMirrorNode
-            StructureNode parent = nConnectedNode.getParent();
-            Set<StructureNode> structureNodes = nConnectedNode.getAllNodesInStructure(typeId, headNode);
-
-            if (nConnectedNode == headNode) {
-                // Head darf externen Parent haben
-                return parent != null && structureNodes.contains(parent); // Head muss entweder keinen Parent oder einen externen haben
-            } else {
-                // Alle anderen müssen Head als Parent oder Parent in Struktur haben
-                return !structureNodes.contains(parent);
-            }// FullyConnected, alles erfüllt
+            return !allNodes.contains(parent);
         }
 
-        // FALL 2: Regulärer N-Connected-Modus (n > targetLinksPerNode)
-        int expectedDegree = Math.min(configuredDegree, structureSize - 1); // klassisch
-        if (actualDegree != expectedDegree) {
-            return true;
-        }
-        StructureNode parent = nConnectedNode.getParent();
-        if (parent == null) {
-            List<StructureNode> nConnectedParent = allNodes.stream()
-                    .filter(node -> node.getChildren(typeId, headId).contains(nConnectedNode)).toList();
-            int childCount = 0;
-            for (StructureNode node : nConnectedParent) {
-                if (node.getChildren(typeId, headId).contains(nConnectedNode)) {
-                    childCount++;
-                }
-            }
-            return expectedDegree != childCount;
-        }
-        ChildRecord parentRecord = parent.findChildRecordById(nConnectedNode.getId());
-        if (!parentRecord.belongsToStructure(typeId, headId)) {
-            return true;
-        }
-        return !allNodes.contains(parent);
+        // Parent muss innerhalb der N-Connected-Struktur sein
+        return !allNodes.contains(nConnectedNode);
     }
 
     /*
