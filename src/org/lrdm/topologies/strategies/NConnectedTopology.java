@@ -108,29 +108,39 @@ public class NConnectedTopology extends BuildAsSubstructure {
      */
     private void buildNConnectedStructure(List<NConnectedMirrorNode> allNodes) {
 
+        //TODO: generate in circles
         allNodes.sort(Comparator.comparingInt(MirrorNode::getId));
-        int possibleTargetLinks = min(network.getNumTargetLinksPerMirror(), allNodes.size() * 2) - 1;
+        int possibleTargetLinks = min(network.getNumTargetLinksPerMirror(), allNodes.size()) - 1;
 
-        for (int i = 1; i < allNodes.size() + possibleTargetLinks; i++) {
-            NConnectedMirrorNode currentNode = allNodes.get(i % allNodes.size());
+        NConnectedMirrorNode root = null;
 
-            // Berechne die Anzahl der Vorgänger, mit denen verbunden werden soll
-            int connectionsToMake = min(i, possibleTargetLinks);
-
-            // Verbinde mit den letzten connectionsToMake Vorgängern
-            int startIndex = Math.max(0, i - connectionsToMake);
-            for (int j = startIndex; j < i; j++) {
-                NConnectedMirrorNode predecessorNode = allNodes.get(j % allNodes.size());
-
-                // Bidirektionale Verbindung erstellen
-                if(predecessorNode.getParent()!=currentNode){
-                    predecessorNode.addChild(currentNode);
+        for(int secondNodeShift = 1; secondNodeShift < possibleTargetLinks; secondNodeShift++){
+            for(int firstNode = 0; firstNode < allNodes.size(); firstNode++) {
+                int secondNodeIndex = (firstNode + secondNodeShift)%allNodes.size();
+                if(!allNodes.get(firstNode).getChildren().contains(allNodes.get(secondNodeIndex))){
+                    allNodes.get(firstNode).addChild(allNodes.get(secondNodeIndex));
+                }
+                if(secondNodeShift == 1 && allNodes.get(firstNode).isRoot()){
+                    setCurrentStructureRoot(allNodes.get(firstNode));
+                    allNodes.get(firstNode).setHead(StructureNode.StructureType.N_CONNECTED, true);
+                    root = allNodes.get(firstNode);
                 }
             }
-            if(currentNode.getChildren().contains(currentNode.getParent())){
-                currentNode.removeChild(currentNode.getParent());
-            }
         }
+
+        int pastIndex = 0;
+        for(int i = 1; i < allNodes.size()*possibleTargetLinks+possibleTargetLinks; i++) {
+            allNodes.get(pastIndex%allNodes.size()).addChild(allNodes.get(i%allNodes.size()));
+            addToStructureNodes(allNodes.get(pastIndex%allNodes.size()));
+            if(allNodes.get(pastIndex%allNodes.size()).isRoot() && i < allNodes.size()){
+                setCurrentStructureRoot(allNodes.get(pastIndex%allNodes.size()));
+                allNodes.get(pastIndex%allNodes.size()).setHead(StructureNode.StructureType.N_CONNECTED, true);
+                root = allNodes.get(pastIndex%allNodes.size());
+            }
+            pastIndex = i-(i/allNodes.size());
+        }
+        assert root != null;
+        root.setParent(null);
     }
 
 

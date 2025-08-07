@@ -328,7 +328,17 @@ public class NConnectedMirrorNode extends MirrorNode {
         StructureNode parent = nConnectedNode.getParent();
 
         // Normale N-Connected-Knoten: müssen struktur-internen Parent haben
-        if (parent == null) return true;
+        if (parent == null){
+            List<StructureNode> nConnectedParent = allNodes.stream()
+                    .filter(node -> node.getChildren(typeId, headId).contains(nConnectedNode)).toList();
+            int childCount = 0;
+            for(StructureNode node : nConnectedParent){
+                if(node.getChildren(typeId, headId).contains(nConnectedNode)){
+                    childCount++;
+                }
+            }
+            return expectedDegree != childCount;
+        }
 
         // Validiere, dass Parent-Child-Beziehung zur N-Connected-Struktur gehört
         ChildRecord parentRecord = parent.findChildRecordById(nConnectedNode.getId());
