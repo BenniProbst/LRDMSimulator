@@ -128,17 +128,6 @@ public class NConnectedTopology extends BuildAsSubstructure {
             }
         }
 
-        int pastIndex = 0;
-        for(int i = 1; i < allNodes.size()*possibleTargetLinks+possibleTargetLinks; i++) {
-            allNodes.get(pastIndex%allNodes.size()).addChild(allNodes.get(i%allNodes.size()));
-            addToStructureNodes(allNodes.get(pastIndex%allNodes.size()));
-            if(allNodes.get(pastIndex%allNodes.size()).isRoot() && i < allNodes.size()){
-                setCurrentStructureRoot(allNodes.get(pastIndex%allNodes.size()));
-                allNodes.get(pastIndex%allNodes.size()).setHead(StructureNode.StructureType.N_CONNECTED, true);
-                root = allNodes.get(pastIndex%allNodes.size());
-            }
-            pastIndex = i-(i/allNodes.size());
-        }
         assert root != null;
         root.setParent(null);
     }
