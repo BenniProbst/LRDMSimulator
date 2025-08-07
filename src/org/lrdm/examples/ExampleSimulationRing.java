@@ -3,8 +3,8 @@ package org.lrdm.examples;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.strategies.RingTopologyStrategy;
 import org.lrdm.topologies.strategies.FullyConnectedTopology;
+import org.lrdm.topologies.strategies.NConnectedTopology;
 
 import java.util.List;
 
@@ -20,7 +20,7 @@ public class ExampleSimulationRing {
 		System.setProperty("java.util.logging.SimpleFormatter.format",
 				"[%1$tF %1$tT] [%4$-7s] %5$s %n");
 		TimedRDMSim sim = new TimedRDMSim();
-		sim.initialize(new RingTopologyStrategy());
+		sim.initialize(new NConnectedTopology());
 		Effector effector = sim.getEffector();
 		int mirrors = 10;
 		for(int t = 0; t < 100; t += 10) {
@@ -33,9 +33,9 @@ public class ExampleSimulationRing {
 			mirrors -= 4;
 		}
 		effector.setStrategy(new FullyConnectedTopology(), 20);
-		effector.setStrategy(new RingTopologyStrategy(), 40);
+		effector.setStrategy(new NConnectedTopology(), 40);
 		effector.setStrategy(new FullyConnectedTopology(), 60);
-		effector.setStrategy(new RingTopologyStrategy(), 80);
+		effector.setStrategy(new NConnectedTopology(), 80);
 
 		int startMirrors = 15;
 		int count = 0;

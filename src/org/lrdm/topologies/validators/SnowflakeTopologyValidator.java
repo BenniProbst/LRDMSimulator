@@ -10,22 +10,23 @@ public class SnowflakeTopologyValidator {
     /**
      * Validiert alle Ring-Parameter
      */
-    public static void validateRingParameters(int ringBridgeStepOnRing, 
+    public static void validateRingParameters(/*int ringBridgeStepOnRing,
                                             int ringBridgeOffset, 
                                             int ringBridgeMirrorNumHeight, 
-                                            int maxRingLayers, 
+                                            int maxRingLayers, */
                                             int minimalRingMirrorCount) {
         
-        validateRingBridgeStepOnRing(ringBridgeStepOnRing);
+        /*validateRingBridgeStepOnRing(ringBridgeStepOnRing);
         validateRingBridgeOffset(ringBridgeOffset);
         validateRingBridgeMirrorNumHeight(ringBridgeMirrorNumHeight);
-        validateMaxRingLayers(maxRingLayers);
+        validateMaxRingLayers(maxRingLayers);*/
         validateMinimalRingMirrorCount(minimalRingMirrorCount);
     }
-    
+
     /**
      * Validiert alle Stern-Parameter
      */
+    /*
     public static void validateStarParameters(int externStarMaxTreeDepth, 
                                             int bridgeToExternStarDistance, 
                                             double externStarRatio) {
@@ -34,7 +35,8 @@ public class SnowflakeTopologyValidator {
         validateBridgeToExternStarDistance(bridgeToExternStarDistance);
         validateExternStarRatio(externStarRatio);
     }
-    
+    */
+
     /**
      * Validiert Mirror-Verteilung
      */
@@ -85,6 +87,7 @@ public class SnowflakeTopologyValidator {
     }
     
     // Private Validierungsmethoden für einzelne Parameter
+    /*
     private static void validateRingBridgeStepOnRing(int value) {
         if (value < 0) {
             throw new InvalidRingParameterException("RING_BRIDGE_STEP_ON_RING", value, "muss mindestens 0 sein");
@@ -108,28 +111,31 @@ public class SnowflakeTopologyValidator {
             throw new InvalidRingParameterException("MAX_RING_LAYERS", value, "muss mindestens 1 sein");
         }
     }
+     */
     
     private static void validateMinimalRingMirrorCount(int value) {
         if (value < 3) {
             throw new InvalidRingParameterException("MINIMAL_RING_MIRROR_COUNT", value, "muss mindestens 3 sein (Dreieck-Minimum)");
         }
     }
-    
+
+    /*
     private static void validateExternStarMaxTreeDepth(int value) {
         if (value < 1) {
             throw new InvalidStarParameterException("EXTERN_STAR_MAX_TREE_DEPTH", value, "muss mindestens 1 sein");
         }
     }
-    
+
     private static void validateBridgeToExternStarDistance(int value) {
         if (value < 0) {
             throw new InvalidStarParameterException("BRIDGE_TO_EXTERN_STAR_DISTANCE", value, "muss mindestens 0 sein");
         }
     }
-    
+
     private static void validateExternStarRatio(double value) {
         if (value < 0.0 || value > 1.0) {
             throw new InvalidStarParameterException("EXTERN_STAR_RATIO", value, "muss zwischen 0.0 und 1.0 liegen");
         }
     }
+    */
 }

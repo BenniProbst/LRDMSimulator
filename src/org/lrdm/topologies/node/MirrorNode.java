@@ -83,10 +83,6 @@ public class MirrorNode extends StructureNode {
             else if (this instanceof TreeMirrorNode && !hasNodeType(StructureType.TREE)) {
                 addNodeType(StructureType.TREE);
             }
-            // RingMirrorNode - Ring-Strukturen
-            else if (this instanceof RingMirrorNode && !hasNodeType(StructureType.RING)) {
-                addNodeType(StructureType.RING);
-            }
             // LineMirrorNode - Linien-Strukturen
             else if (this instanceof LineMirrorNode && !hasNodeType(StructureType.LINE)) {
                 addNodeType(StructureType.LINE);

@@ -33,13 +33,13 @@ public class StructureNode {
         DEFAULT(0),
         MIRROR(1),
         TREE(2),
-        RING(3),
-        LINE(4),
-        STAR(5),
-        FULLY_CONNECTED(6),
-        N_CONNECTED(7),
-        BALANCED_TREE(8),
-        DEPTH_LIMIT_TREE(9);
+        LINE(3),
+        STAR(4),
+        FULLY_CONNECTED(5),
+        N_CONNECTED(6),
+        BALANCED_TREE(7),
+        DEPTH_LIMIT_TREE(8),
+        SNOWFLAKE(9);
 
         private final int id;
 
@@ -938,11 +938,7 @@ public class StructureNode {
         // Für Bäume: n Knoten = n-1 Links
         // für Ringe: n Knoten = n Links
         // für andere Strukturen kann dies überschrieben werden
-        if (typeId == StructureType.RING) {
-            return allNodes.size(); // Ring: Jeder Knoten hat genau einen ausgehenden Link
-        } else {
-            return allNodes.size() - 1; // Baum/Standard: n-1 Links
-        }
+        return allNodes.size() - 1; // Baum/Standard: n-1 Links
     }
 
     /**
