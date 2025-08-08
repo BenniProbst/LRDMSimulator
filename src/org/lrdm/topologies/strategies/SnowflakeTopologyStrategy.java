@@ -150,7 +150,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      * Verwendet andere TopologyStrategy-Klassen als Bausteine.
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes) {
         validateParameters();
         if (totalNodes < getMinimumRequiredMirrors()) {
             throw new IllegalArgumentException(
@@ -164,7 +164,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         MirrorDistributionResult snowflakeResult = calculateSnowflakeDistribution(totalNodes, snowflakeProperties);
 
         // **SCHRITT 1**: Erstelle zentralen Ring und füge ihn in die Snowflake hinzu
-        MirrorNode nConNodeRoot = internNConnectedTopologie.buildStructure(snowflakeResult.ringMirrors, props);
+        MirrorNode nConNodeRoot = internNConnectedTopologie.buildStructure(snowflakeResult.ringMirrors);
         setCurrentStructureRoot(nConNodeRoot);
         // Ring eingliedern
         internNConnectedTopologie.connectToStructureNodes(
@@ -181,7 +181,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 int externStructureTypeIndex = count / snowflakeProperties.ringBridgeGap % externHostedStructures.size();
                 BuildAsSubstructure localBuild = externHostedStructures.get(externStructureTypeIndex);
                 MirrorNode externRoot = localBuild
-                        .buildStructure(snowflakeResult.externalTreeMirrors.get(count), props);
+                        .buildStructure(snowflakeResult.externalTreeMirrors.get(count));
                 // Füge externe Struktur auch in die Snowflake für alle Strukturen und MirrorNode hierarchisch hinzu
                 connectToStructureNodes(nConNode, externRoot, localBuild);
             }

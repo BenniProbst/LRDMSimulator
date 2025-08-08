@@ -54,11 +54,10 @@ public class NConnectedTopology extends BuildAsSubstructure {
      * Erstellt sowohl StructureNode-Verbindungen als auch echte Mirror-Links.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param props      Properties der Simulation
      * @return Die Root-Node der erstellten Struktur
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes) {
         if (totalNodes <= 0 || !hasNextMirror()) {
             return null;
         }

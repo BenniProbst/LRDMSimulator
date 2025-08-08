@@ -63,7 +63,7 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      * NUR STRUKTURPLANUNG - keine Mirror-Links!
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes) {
         if (totalNodes <= 0 || network == null) {
             return null;
         }

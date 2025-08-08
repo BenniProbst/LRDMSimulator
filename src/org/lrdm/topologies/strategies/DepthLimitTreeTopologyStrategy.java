@@ -102,11 +102,10 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
      * Verwendet DepthLimitedTreeMirrorNode anstatt TreeMirrorNode.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param props      Properties der Simulation
      * @return Die Root-Node der erstellten tiefen-beschränkten Struktur
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes) {
         if (totalNodes <= 0) return null;
 
         // Erstelle Root-Node als BalancedTreeMirrorNode

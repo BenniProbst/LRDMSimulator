@@ -322,7 +322,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
                 .filter(Mirror::isUsableForNetwork).count());
-        MirrorNode root = buildStructure(usableMirrorCount, props);
+        MirrorNode root = buildStructure(usableMirrorCount);
         if (root != null) {
             setCurrentStructureRoot(root);
             return buildAndUpdateLinks(root, props, 0, getCurrentStructureType());
@@ -394,7 +394,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
                 .filter(Mirror::isUsableForNetwork).count());
-        MirrorNode root = buildStructure(usableMirrorCount, props);
+        MirrorNode root = buildStructure(usableMirrorCount);
         if (root != null) {
             setCurrentStructureRoot(root);
             return buildAndUpdateLinks(root, props, simTime, getCurrentStructureType());
@@ -479,10 +479,9 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Wird erst durch einen Simulationszeitpunkt durch das Bauen von Links aktiviert.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param props      Properties der Simulation
      * @return Root-Knoten der erstellten Struktur
      */
-    protected abstract MirrorNode buildStructure(int totalNodes, Properties props);
+    protected abstract MirrorNode buildStructure(int totalNodes);
 
     /**
      * Fügt Knoten zu einer bestehenden Struktur hinzu.

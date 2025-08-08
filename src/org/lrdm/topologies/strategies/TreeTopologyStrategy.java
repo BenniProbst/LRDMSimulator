@@ -48,17 +48,16 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
      * Integriert die gesamte Baum-Aufbau-Logik direkt.
      *
      * @param totalNodes Anzahl der zu erstellenden Knoten
-     * @param props      Properties der Simulation
      * @return Die Root-Node der erstellten Baum-Struktur
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes) {
         if (totalNodes < 1 || !hasNextMirror()) {
             return null;
         }
 
         // Lese Konfiguration aus Properties
-        int childrenPerParent = Integer.parseInt(props.getProperty("preferredChildrenPerParent", "2"));
+        int childrenPerParent = network.getNumTargetLinksPerMirror() - 1;
 
         // 1. Erstelle Root-Node
         TreeMirrorNode root = getMirrorNodeFromIterator();

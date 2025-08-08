@@ -68,7 +68,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      * NUR STRUKTURPLANUNG - keine Mirror-Links!
      */
     @Override
-    protected MirrorNode buildStructure(int totalNodes, Properties props) {
+    protected MirrorNode buildStructure(int totalNodes) {
         if (totalNodes < minStarSize || !hasNextMirror()) return null;
 
         // Erstelle das Zentrum des Sterns
