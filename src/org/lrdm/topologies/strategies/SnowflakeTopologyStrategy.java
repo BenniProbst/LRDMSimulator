@@ -245,25 +245,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         // **SCHRITT 2**: Port Strukturen aus Ring herauslösen und speichern
 
         // Der Ring ist nach ID sortiert, daher ist auch die Reihenfolge der Substrukturen nach ID sortierbar
-        List<BuildAsSubstructure.SubstructureTuple> connectedStructures =
-                new ArrayList<>(internNConnectedTopologie.getAllSubstructureTuples().stream()
-                        .sorted(Comparator.comparingInt(SubstructureTuple::getNodeId)).toList());
-
-        List<BuildAsSubstructure.SubstructureTuple> disconnectedSubstructures = new ArrayList<>();
-
-        for (BuildAsSubstructure.SubstructureTuple substructureTuple : connectedStructures) {
-            // Disconnect entfernt auch alle StructureNodes von unserer Struktur
-            MirrorNode disconnectedRoot = disconnectFromStructureNodes(substructureTuple.node(), substructureTuple.substructure());
-            // ring is managed separately from external structures, so we can add them to the snowflake
-            if (disconnectedRoot == null) {
-                disconnectedSubstructures.add(substructureTuple);
-            }
-            if (substructureTuple.substructure() == internNConnectedTopologie) {
-                continue;
-            }
-            disconnectedSubstructures.add(new BuildAsSubstructure.SubstructureTuple(disconnectedRoot, substructureTuple.substructure()));
-        }
-        connectedStructures.clear();
+        List<BuildAsSubstructure.SubstructureTuple> disconnectedSubstructures = disconnectAllStructuresFromRing();
 
         // **SCHRITT 3**: Ring unter neuen Mirrors erstellen, dabei jede Struktur einzeln updaten und wieder eingliedern
 
@@ -342,6 +324,30 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         return actuallyAdded;
     }
 
+    private List<BuildAsSubstructure.SubstructureTuple> disconnectAllStructuresFromRing(){
+        List<BuildAsSubstructure.SubstructureTuple> connectedStructures =
+                new ArrayList<>(internNConnectedTopologie.getAllSubstructureTuples().stream()
+                        .sorted(Comparator.comparingInt(SubstructureTuple::getNodeId)).toList());
+
+        List<BuildAsSubstructure.SubstructureTuple> disconnectedSubstructures = new ArrayList<>();
+
+        for (BuildAsSubstructure.SubstructureTuple substructureTuple : connectedStructures) {
+            // Disconnect entfernt auch alle StructureNodes von unserer Struktur
+            MirrorNode disconnectedRoot = disconnectFromStructureNodes(substructureTuple.node(), substructureTuple.substructure());
+            // ring is managed separately from external structures, so we can add them to the snowflake
+            if (disconnectedRoot == null) {
+                disconnectedSubstructures.add(substructureTuple);
+            }
+            if (substructureTuple.substructure() == internNConnectedTopologie) {
+                continue;
+            }
+            disconnectedSubstructures.add(new BuildAsSubstructure.SubstructureTuple(disconnectedRoot, substructureTuple.substructure()));
+        }
+        connectedStructures.clear();
+
+        return disconnectedSubstructures;
+    }
+
     private Set<Mirror> nodeSubset(Set<Mirror> inputSubset, int take){
         Set<Mirror> newNodes = new HashSet<>();
         for (int i = 0; i < take; i++) {
@@ -361,36 +367,77 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         if (nodesToRemove <= 0 || getCurrentStructureRoot() == null) {
             return new HashSet<>();
         }
-
-        // **SCHRITT 1**: Ermittle derzeitige Anzahl der Knoten und Ports
-
-        // **SCHRITT 2**: Vergleiche derzeitige Struktur und dokumentiere Menge an ports
-
-        // **SCHRITT 3**: Schrumpfe den Ring und entferne Port Strukturen bei Bedarf
-
-        // **SCHRITT 4**: Wenn rest nodes angefallen sind, verteile diese nach Plan auf den Ring und die verbleibenden Port strukturen
-
         Set<MirrorNode> actuallyRemoved = new HashSet<>();
 
-        // Finde alle Substrukturen
-        Set<BuildAsSubstructure> allSubstructures = new HashSet<>(getNodeToSubstructureMapping().values());
+        validateParameters();
+        // **SCHRITT 1**: Ermittle derzeitige Anzahl der Knoten und Ports
 
-        // Entferne aus Externen Baum-Strukturen zuerst
-        for (BuildAsSubstructure substructure : allSubstructures) {
-            if (actuallyRemoved.size() >= nodesToRemove) break;
-            if (substructure instanceof DepthLimitTreeTopologyStrategy) {
-                int toRemove = Math.min(nodesToRemove - actuallyRemoved.size(), 2);
-                actuallyRemoved.addAll(substructure.removeNodesFromStructure(toRemove));
+        // Berechne Mirror-Verteilung
+        int oldTotalNodes = getAllStructureNodes().size();
+        int totalNodes = oldTotalNodes - nodesToRemove;
+        MirrorDistributionResult oldSnowflakeResult = calculateSnowflakeDistribution(oldTotalNodes, snowflakeProperties);
+        MirrorDistributionResult snowflakeResult = calculateSnowflakeDistribution(totalNodes, snowflakeProperties);
+
+        if (totalNodes < getMinimumRequiredMirrors()) {
+            throw new IllegalArgumentException(
+                    "Insufficient mirrors for snowflake: " + totalNodes + " < " + getMinimumRequiredMirrors()
+            );
+        }
+
+        // **SCHRITT 2**: Vergleiche derzeitige Struktur und dokumentiere die Menge an ports.
+        // Der Ring ist nach ID sortiert, daher ist auch die Reihenfolge der Substrukturen nach ID sortierbar
+        List<BuildAsSubstructure.SubstructureTuple> disconnectedSubstructures = disconnectAllStructuresFromRing();
+
+        // **SCHRITT 3**: Schrumpfe den Ring und entferne Port Strukturen bei Bedarf, updates an bestehende Strukturen
+
+        // Ring selbst ausgliedern
+        disconnectFromStructureNodes(internNConnectedTopologie.getCurrentStructureRoot(), internNConnectedTopologie);
+
+        // Ring update und structureNodes updaten
+        int ringDiff = snowflakeResult.ringMirrors - oldSnowflakeResult.ringMirrors;
+        if (ringDiff < 0) {
+            actuallyRemoved.addAll(internNConnectedTopologie.removeNodesFromStructure(Math.abs(ringDiff)));
+        }
+
+        // Ring nach Update wieder eingliedern
+        internNConnectedTopologie.connectToStructureNodes(
+                internNConnectedTopologie.getCurrentStructureRoot(),
+                getCurrentStructureRoot(),
+                internNConnectedTopologie);
+
+        // **SCHRITT 4**: Externe Strukturen am Ring neu ausrichten
+        // ermittle alle StructureNodes im Ring
+        // only get existing nodes from ring and analyze connected external structures by disconnecting them
+        List<MirrorNode> existingRingNodes = internNConnectedTopologie.getAllStructureNodes().stream()
+                .sorted(Comparator.comparing(MirrorNode::getId))
+                .toList();
+
+        // External Structure update
+        for (int i = 0; i < snowflakeResult.ringMirrors; i++) {
+            // **SCHRITT 4**: Entferne geplante node Strukutren wenn das Muster aktiv wird
+            if(i%snowflakeProperties.ringBridgeGap==0){
+                MirrorNode current = existingRingNodes.get(i);
+                BuildAsSubstructure.SubstructureTuple strucTup = disconnectedSubstructures.stream().findFirst().orElse(null);
+                assert strucTup != null;
+                disconnectedSubstructures.remove(strucTup);
+
+                int externNodesDiff = snowflakeResult.externalTreeMirrors.get(i) - oldSnowflakeResult.externalTreeMirrors.get(i);
+                if (externNodesDiff < 0) {
+                    actuallyRemoved.addAll(strucTup.substructure().removeNodesFromStructure(Math.abs(externNodesDiff)));
+                }
+
+                // Externe Struktur wieder eingliedern
+                strucTup.substructure().connectToStructureNodes(
+                        current,
+                        strucTup.node(),
+                        strucTup.substructure());
+                disconnectedSubstructures.remove(strucTup);
             }
         }
 
-        // Entferne aus Ring-Strukturen (nie den zentralen Ring)
-        for (BuildAsSubstructure substructure : allSubstructures) {
-            if (actuallyRemoved.size() >= nodesToRemove) break;
-            if (substructure instanceof NConnectedTopology) {
-                int toRemove = Math.min(nodesToRemove - actuallyRemoved.size(), 1);
-                actuallyRemoved.addAll(substructure.removeNodesFromStructure(toRemove));
-            }
+        // Lösche alle übrigen überflüssigen externen Strukturen, da sie nicht mehr benötigt oder geupdated werden
+        for(BuildAsSubstructure.SubstructureTuple subTup:disconnectedSubstructures){
+            actuallyRemoved.addAll(subTup.substructure().getAllStructureNodes());
         }
 
         return actuallyRemoved;
