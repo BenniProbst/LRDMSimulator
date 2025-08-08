@@ -611,6 +611,12 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             // merge buildRoot into hostSubstructureNode
             nodeToSubstructure.put(hostSubstructureNode,buildExtern);
         }
+
+        // bestimme type id der externen struktur
+
+        // Setzte Kinder der buildRoot in die host node ein
+
+        // füge externe type id in die host node ein
     }
 
     /*
@@ -618,6 +624,15 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     protected final MirrorNode disconnectFromStructureNodes(MirrorNode hostSubstructureNode, BuildAsSubstructure buildExtern) {
         MirrorNode headNode = buildExtern.getCurrentStructureRoot();
+        // Entferne alle StructureNodes von unserer Struktur
+
+        // Entferne Struktur von gespeicherten Strukturen
+
+        // erstelle geeignete root node über abstract factory methode
+
+        // ersetze die host node mit der neuen node
+
+        // Lösche den Strukturtypen der Gaststruktur aus dem Host
 
         return headNode;
     }
