@@ -317,6 +317,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     @Override
     public Set<Link> initNetwork(Network n, Properties props) {
+        // TODO also init substructure templates that were added, take those topology templates here
         initializeInternalState(n);
         resetInternalStateStructureOnly();
 
@@ -385,7 +386,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @return created links
      */
     public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
-
+        // TODO also init substructure templates that were added, take those topology templates here
         super.restartNetwork(n, props, simTime);
 
         // Komplett neu initialisieren
@@ -460,6 +461,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     @Override
     public abstract int getNumTargetLinks(Network n);
 
+    // TODO: use snowflake function for generalization of target link prediction
     /**
      * Gibt die vorhergesagte Anzahl von Links zurück, falls die Action ausgeführt wird.
      * Muss von Subklassen implementiert werden.
@@ -806,6 +808,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         this.network = n;
         this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
         this.mirrorIterator = n.getMirrors().iterator();
+        //TODO: also reset network for all substructures
     }
 
     /**

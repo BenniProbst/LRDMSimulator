@@ -467,7 +467,6 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         int totalLinks = 0;
 
         // Summiere Links aus allen Substrukturen
-        // TODO: Take current count of mirrors for each substructure an sum up the Links
         // take all substructures and the ring into account
         for (BuildAsSubstructure substructure : getNodeToSubstructureMapping().values()) {
             totalLinks += substructure.getNumTargetLinks(n);
@@ -485,23 +484,80 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         if (a == null) {
             return network != null ? getNumTargetLinks(network) : 0;
         }
-        //TODO: walk down the ring and create new Actions like on adding or removing Mirrors depending on the
-        // difference on change that would occur
+        // Walk down the ring and create new Actions like on adding or removing Mirrors depending on the
+        // difference on change that would occur; We assume that the same network was used for all the substructures, so it will synchronize adjustments
 
-        // **1. MirrorChange**: Neue Mirror-Anzahl → Schneeflocken-Links berechnen
-        if (a instanceof MirrorChange mirrorChange) {
-            int newMirrorCount = mirrorChange.getNewMirrors();
-            MirrorDistributionResult snowflakeResult = calculateSnowflakeDistribution(newMirrorCount, snowflakeProperties);
-            return calculateSnowflakeLinksForMirrorCount(newMirrorCount);
-        }
+        // only get extern structures
+        List<BuildAsSubstructure.SubstructureTuple> connectedStructures =
+                new ArrayList<>(internNConnectedTopologie.getAllSubstructureTuples().stream()
+                        .sorted(Comparator.comparingInt(SubstructureTuple::getNodeId)).toList());
 
-        // **2. TargetLinkChange**: Links pro Mirror ändern sich
-        if (a instanceof TargetLinkChange targetLinkChange) {
-            Network targetNetwork = targetLinkChange.getNetwork();
-            int currentMirrors = targetNetwork.getNumMirrors();
-            MirrorDistributionResult snowflakeResult =
-                    calculateSnowflakeDistribution(targetNetwork.getNumTargetMirrors(), snowflakeProperties);
-            return calculateSnowflakeLinksForMirrorCount(currentMirrors);
+        List<MirrorNode> allRingNodes = internNConnectedTopologie.getAllStructureNodes().stream()
+                .sorted(Comparator.comparingInt(StructureNode::getId)).toList();
+
+        int outlinks = 0;
+
+        if (a instanceof MirrorChange || a instanceof TargetLinkChange) {
+
+            MirrorDistributionResult newSnowflakeEstimateResult = null;
+
+            if(a instanceof MirrorChange mirrorChange){
+                newSnowflakeEstimateResult = calculateSnowflakeDistribution(mirrorChange.getNewMirrors(), snowflakeProperties);
+            }
+            else{
+                newSnowflakeEstimateResult = calculateSnowflakeDistribution(network.getNumTargetMirrors(), snowflakeProperties);
+            }
+
+            for (int i = 0; i < allRingNodes.size(); i++) {
+                // **SCHRITT 4**: Entferne geplante node Strukutren wenn das Muster aktiv wird
+                if(i%snowflakeProperties.ringBridgeGap==0){
+                    // Filter the correct substructure, adjust network properties and finally calculate target links of structure
+                    MirrorNode current = allRingNodes.get(i);
+                    BuildAsSubstructure  subStructure = Objects.requireNonNull(connectedStructures.stream()
+                            .filter(tuple -> tuple.node() == current).findFirst().orElse(null)).substructure();
+
+                    // **1. MirrorChange**: Neue Mirror-Anzahl → Schneeflocken-Links berechnen
+                    if (a instanceof MirrorChange mirrorChange) {
+                        // create a derived action that matches the changes for a substructure
+                        MirrorChange subMirrorChange = new MirrorChange(
+                                network,
+                                idGenerator.getNextID(),
+                                mirrorChange.getTime(),
+                                newSnowflakeEstimateResult.externalTreeMirrors().get(i)
+                        );
+                        outlinks += subStructure.getPredictedNumTargetLinks(subMirrorChange);
+                    }
+
+                    // **2. TargetLinkChange**: Links pro Mirror ändern sich
+                    if (a instanceof TargetLinkChange targetLinkChange) {
+                        // create a derived action that matches the changes for a substructure
+                        // links are not devided by structure and substructure hierarchy
+                        outlinks += subStructure.getPredictedNumTargetLinks(targetLinkChange);
+                    }
+                }
+            }
+
+            // Bewerte die Anzahl der Links im Ring selbst
+            // **1. MirrorChange**: Neue Mirror-Anzahl → Schneeflocken-Links berechnen
+            if (a instanceof MirrorChange mirrorChange) {
+                // create a derived action that matches the changes for a substructure
+                MirrorChange subMirrorChange = new MirrorChange(
+                        network,
+                        idGenerator.getNextID(),
+                        mirrorChange.getTime(),
+                        newSnowflakeEstimateResult.ringMirrors()
+                );
+                outlinks += internNConnectedTopologie.getPredictedNumTargetLinks(subMirrorChange);
+            }
+
+            // **2. TargetLinkChange**: Links pro Mirror ändern sich
+            if (a instanceof TargetLinkChange targetLinkChange) {
+                // create a derived action that matches the changes for a substructure
+                // links are not devided by structure and substructure hierarchy
+                outlinks += internNConnectedTopologie.getPredictedNumTargetLinks(targetLinkChange);
+            }
+
+            return outlinks;
         }
 
         // **3. TopologyChange**: KEINE SELBSTAUFRUFE!
