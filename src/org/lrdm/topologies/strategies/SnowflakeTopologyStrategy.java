@@ -166,9 +166,8 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         // **SCHRITT 1**: Erstelle zentralen Ring und füge ihn in die Snowflake hinzu
         MirrorNode nConNodeRoot = internNConnectedTopologie.buildStructure(snowflakeResult.ringMirrors);
         setCurrentStructureRoot(nConNodeRoot);
-        // Ring eingliedern
-        internNConnectedTopologie.connectToStructureNodes(
-                nConNodeRoot,
+        // Ring in Snowflake eingliedern
+        connectToStructureNodes(
                 nConNodeRoot,
                 internNConnectedTopologie);
         // **SCHRITT 2**: Erstelle im Wechsel gehostete Strukturen an einer host node
@@ -183,7 +182,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 MirrorNode externRoot = localBuild
                         .buildStructure(snowflakeResult.externalTreeMirrors.get(count));
                 // Füge externe Struktur auch in die Snowflake für alle Strukturen und MirrorNode hierarchisch hinzu
-                connectToStructureNodes(nConNode, externRoot, localBuild);
+                connectToStructureNodes(nConNode, localBuild);
             }
             count++;
         }
@@ -250,7 +249,9 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         // **SCHRITT 3**: Ring unter neuen Mirrors erstellen, dabei jede Struktur einzeln updaten und wieder eingliedern
 
         // Ring selbst ausgliedern
-        disconnectFromStructureNodes(internNConnectedTopologie.getCurrentStructureRoot(), internNConnectedTopologie);
+        internNConnectedTopologie.setCurrentStructureRoot(
+                disconnectFromStructureNodes(getCurrentStructureRoot(), internNConnectedTopologie)
+        );
 
         // Ring update und structureNodes updaten
         int ringDiff = snowflakeResult.ringMirrors - oldSnowflakeResult.ringMirrors;
@@ -264,9 +265,8 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         }
 
         // Ring nach Update wieder eingliedern
-        internNConnectedTopologie.connectToStructureNodes(
+        connectToStructureNodes(
                 internNConnectedTopologie.getCurrentStructureRoot(),
-                getCurrentStructureRoot(),
                 internNConnectedTopologie);
 
         // ermittle alle StructureNodes im Ring
@@ -285,11 +285,10 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                     int topologyIndex = i % externHostedStructures.size();
                     BuildAsSubstructure newExternStructure = externHostedStructures.get(topologyIndex);
                     int mirrorCountExternalStructure = snowflakeResult.externalTreeMirrors.get(i);
-                    MirrorNode rootExtern = newExternStructure.buildStructure(mirrorCountExternalStructure);
+                    newExternStructure.buildStructure(mirrorCountExternalStructure);
                     // Externe Struktur eingliedern
                     connectToStructureNodes(
                             current,
-                            rootExtern,
                             newExternStructure);
                     actuallyAdded += mirrorCountExternalStructure;
                 }
@@ -314,7 +313,6 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                     // Externe Struktur wieder eingliedern
                     strucTup.substructure().connectToStructureNodes(
                             current,
-                            strucTup.node(),
                             strucTup.substructure());
                     disconnectedSubstructures.remove(strucTup);
                 }
@@ -400,9 +398,8 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         }
 
         // Ring nach Update wieder eingliedern
-        internNConnectedTopologie.connectToStructureNodes(
+        connectToStructureNodes(
                 internNConnectedTopologie.getCurrentStructureRoot(),
-                getCurrentStructureRoot(),
                 internNConnectedTopologie);
 
         // **SCHRITT 4**: Externe Strukturen am Ring neu ausrichten
@@ -427,9 +424,8 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 }
 
                 // Externe Struktur wieder eingliedern
-                strucTup.substructure().connectToStructureNodes(
+                connectToStructureNodes(
                         current,
-                        strucTup.node(),
                         strucTup.substructure());
                 disconnectedSubstructures.remove(strucTup);
             }
@@ -583,6 +579,13 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      */
     private int getMinimumRequiredMirrors() {
         return MINIMAL_RING_SIZE + 2;
+    }
+
+    /**
+     * Zusammengesetzte Topologien müssen ihren Strukturtypen statisch definieren.
+     */
+    public StructureNode.StructureType getCurrentStructureType(){
+        return StructureNode.StructureType.SNOWFLAKE;
     }
 
     @Override

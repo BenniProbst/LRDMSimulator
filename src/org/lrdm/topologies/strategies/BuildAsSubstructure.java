@@ -101,7 +101,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      *
      * @return Der StructureType der aktuellen Substruktur oder null, wenn nicht, initialisiert
      */
-    public final StructureNode.StructureType getCurrentStructureType() {
+    public StructureNode.StructureType getCurrentStructureType() {
         if (currentStructureRoot == null) {
             return null;
         }
@@ -317,9 +317,13 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     @Override
     public Set<Link> initNetwork(Network n, Properties props) {
-        // TODO also init substructure templates that were added, take those topology templates here
         initializeInternalState(n);
         resetInternalStateStructureOnly();
+
+        // Also init substructure templates that were added, take those topology templates here
+        for(BuildAsSubstructure subStructure : nodeToSubstructure.values()){
+            subStructure.initNetwork(n,props);
+        }
 
         int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
                 .filter(Mirror::isUsableForNetwork).count());
@@ -386,7 +390,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @return created links
      */
     public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
-        // TODO also init substructure templates that were added, take those topology templates here
         super.restartNetwork(n, props, simTime);
 
         // Komplett neu initialisieren
@@ -461,7 +464,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     @Override
     public abstract int getNumTargetLinks(Network n);
 
-    // TODO: use snowflake function for generalization of target link prediction
     /**
      * Gibt die vorhergesagte Anzahl von Links zurück, falls die Action ausgeführt wird.
      * Muss von Subklassen implementiert werden.
@@ -607,17 +609,43 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     /*
      * Verschmilzt die root Node einer unterzuordnenden Struktur mit einer gewünschten host node
      */
-    protected final void connectToStructureNodes(MirrorNode hostSubstructureNode, MirrorNode buildRoot, BuildAsSubstructure buildExtern) {
-        if (hostSubstructureNode != null && buildRoot != null) {
-            // merge buildRoot into hostSubstructureNode
-            nodeToSubstructure.put(hostSubstructureNode,buildExtern);
+    protected final void connectToStructureNodes(MirrorNode hostSubstructureNode, BuildAsSubstructure buildExtern) {
+        if(hostSubstructureNode == null || buildExtern == null)return;
+        if(!getAllStructureNodes().contains(hostSubstructureNode) && getAllStructureNodes().isEmpty()){
+            setCurrentStructureRoot(hostSubstructureNode);
+        }
+        if(!getAllStructureNodes().contains(hostSubstructureNode)){
+            throw new IllegalArgumentException("Host Substructure Node is not part of the current network structure!");
         }
 
-        // bestimme type id der externen struktur
+        // Bestimme die extern root aus ihrer externen Struktur
+        MirrorNode externRoot = buildExtern.getCurrentStructureRoot();
+        if(externRoot == null)return;
+
+        // get previous construction types
+        Set<StructureNode.StructureType> externRootNodeStructureTypes = externRoot.getNodeTypes();
+        StructureNode.StructureType externStructureType = buildExtern.getCurrentStructureType();
+        Set<MirrorNode> externStructureAllNodes = buildExtern.getAllStructureNodes();
+
+        // Setze und ergänze die Strukturtypen in die host node,
+        // damit nun alle notwendigen überlappenden Typen aufgeführt werden
+        externRootNodeStructureTypes.forEach(hostSubstructureNode::addNodeType);
 
         // Setzte Kinder der buildRoot in die host node ein
+        externRoot.getChildren().forEach(hostSubstructureNode::addChild);
+        hostSubstructureNode.setParent(externRoot.getParent());
 
-        // füge externe type id in die host node ein
+        // Füge übergreifende type id in alle nodes der Zielstruktur
+        externStructureAllNodes
+                .forEach(node -> {node.addNodeType(getCurrentStructureType());});
+
+        // Ersetze die aktuelle extern Root der build extern Struktur durch die vorgegebene hostSubstructureNode
+        buildExtern.removeFromStructureNodes(externRoot);
+        buildExtern.setCurrentStructureRoot(hostSubstructureNode);
+        hostSubstructureNode.setHead(externStructureType,true);
+
+        // merge buildRoot into hostSubstructureNode
+        nodeToSubstructure.put(hostSubstructureNode,buildExtern);
     }
 
     /*
@@ -625,6 +653,11 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     protected final MirrorNode disconnectFromStructureNodes(MirrorNode hostSubstructureNode, BuildAsSubstructure buildExtern) {
         MirrorNode headNode = buildExtern.getCurrentStructureRoot();
+
+        // Analysiere die externe Struktur und lösche alle ihre Strukutr nodes aus der ganzheitlichen Struktur
+
+
+
         // Entferne alle StructureNodes von unserer Struktur
 
         // Entferne Struktur von gespeicherten Strukturen
