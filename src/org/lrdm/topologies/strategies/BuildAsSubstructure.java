@@ -596,47 +596,52 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
     /*
      * Verschmilzt die root Node einer unterzuordnenden Struktur mit einer gewünschten host node
+     * Setzt für eingehende zu verbindende Struktur/deren nodes zusätzlich den Typeintrag dieser Struktur
+     * Ersetzt die hostSubstructureNode mit der Root der externen Struktur
      */
     protected final void connectToStructureNodes(MirrorNode hostSubstructureNode, BuildAsSubstructure buildExtern) {
         if(hostSubstructureNode == null || buildExtern == null)return;
+        // Bestimme die extern root aus ihrer externen Struktur
+        MirrorNode externRoot = buildExtern.getCurrentStructureRoot();
+        if(externRoot == null)return;
         // Ist unsere Struktur Topologie noch leer gehen wir in der ersten Verbindung eine Identität mit der ersten fremden Struktur ein
         if(!getAllStructureNodes().contains(hostSubstructureNode) && getAllStructureNodes().isEmpty()){
-            setCurrentStructureRoot(hostSubstructureNode);
+            setCurrentStructureRoot(externRoot);
         }
         if(!getAllStructureNodes().contains(hostSubstructureNode)){
             throw new IllegalArgumentException("Host Substructure Node is not part of the current network structure!");
         }
-
-        // Bestimme die extern root aus ihrer externen Struktur
-        MirrorNode externRoot = buildExtern.getCurrentStructureRoot();
-        if(externRoot == null)return;
-
-        // get previous construction types
-        Set<StructureNode.StructureType> externRootNodeStructureTypes = externRoot.getNodeTypes();
-        StructureNode.StructureType externStructureType = buildExtern.getCurrentStructureType();
+        // get extern all nodes
         Set<MirrorNode> externStructureAllNodes = buildExtern.getAllStructureNodes();
 
-        // Setze und ergänze die Strukturtypen in die host node,
+        // Setze den Typen dieser Struktur in die neu anzugliedernde Struktur und deren Nodes ein, die nun an dieser Strukutr teilnimmt
+        externStructureAllNodes.forEach(node -> node.addNodeType(getCurrentStructureType()));
+
+        // Setze und ergänze die Strukturtypen in die host node, falls hostSubstructureNode und neue buildExtern root nicht identisch sind
         // damit nun alle notwendigen überlappenden Typen aufgeführt werden
-        externRootNodeStructureTypes.forEach(hostSubstructureNode::addNodeType);
+        // externRootNodeStructureTypes.forEach(hostSubstructureNode::addNodeType);
 
-        // Setzte Kinder der buildRoot in die host node ein
-        externRoot.getChildren().forEach(hostSubstructureNode::addChild);
-        hostSubstructureNode.setParent(externRoot.getParent());
+        // Setze die fehlenden Typen der hostSubstructureNode in die externe Root ein
+        externRoot.setNodeTypes(hostSubstructureNode.getNodeTypes());
 
-        // Füge übergreifende type id in alle nodes der Zielstruktur
-        externStructureAllNodes
-                .forEach(node -> {node.addNodeType(getCurrentStructureType());});
+        // Setzte Kinder der external Root mit den Kindern der hostSubstructureNode
+        hostSubstructureNode.getChildren().forEach(externRoot::addChild);
 
-        // Ersetze die aktuelle extern Root der build extern Struktur durch die vorgegebene hostSubstructureNode
-        buildExtern.removeFromStructureNodes(externRoot);
-        // Notify that extern Root was eliminated into the host node
+        // dont remove root from external structure since it is still a complete node block
 
-        buildExtern.setCurrentStructureRoot(hostSubstructureNode);
-        hostSubstructureNode.setHead(externStructureType,true);
+        // Ersetze alle Kinder dieser Struktur von hostSubstructureNode nach externRoot und lösche hostSubstructureNode aus der Strukutur
+        structureNodes.stream()
+                .filter(node -> node.getChildren().contains(hostSubstructureNode))
+                .forEach(node -> {
+                    node.removeChild(hostSubstructureNode);
+                    node.addChild(externRoot);
+                });
+        externRoot.setParent(hostSubstructureNode.getParent());
 
-        // merge buildRoot into hostSubstructureNode
-        nodeToSubstructure.put(hostSubstructureNode,buildExtern);
+        // merge intern build root as root for external structure
+        nodeToSubstructure.put(externRoot,buildExtern);
+        // add all external nodes also to this structure
+        structureNodes.addAll(externStructureAllNodes);
     }
 
     /*
