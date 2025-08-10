@@ -203,9 +203,6 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
             }
             count++;
         }
-        // Deklariere alle Teilstrukturen auch als Snowflake-Strukturen
-        getAllStructureNodes()
-                .forEach(node -> node.addNodeType(StructureNode.StructureType.SNOWFLAKE));
 
         return nConNodeRoot;
 
