@@ -215,7 +215,6 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         for (StarMirrorNode leaf : leaves) {
             // Zentrum → Blatt (Parent-Child-Beziehung)
             center.addChild(leaf);
-            leaf.setParent(center);
         }
 
         // KEINE Mirror-Link-Erstellung hier! Nur Strukturplanung!
