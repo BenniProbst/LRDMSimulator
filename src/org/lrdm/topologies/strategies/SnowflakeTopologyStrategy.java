@@ -12,6 +12,7 @@ import org.lrdm.topologies.validators.SnowflakeTopologyValidator;
 import org.lrdm.util.IDGenerator;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Schneeflocken-Topologie-Strategie mit hierarchischer Multi-Topologie-Architektur.
@@ -189,7 +190,9 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 nConNodeRoot,
                 internNConnectedTopologie);
         // **SCHRITT 2**: Erstelle im Wechsel gehostete Strukturen an einer host node
-        Set<MirrorNode> allNConNodes = internNConnectedTopologie.getAllStructureNodes();
+        List<MirrorNode> allNConNodes = internNConnectedTopologie.getAllStructureNodes().stream()
+                .sorted(Comparator.comparingInt(MirrorNode::getId))
+                .toList();
 
         int count = 0;
         for (MirrorNode nConNode : allNConNodes) {

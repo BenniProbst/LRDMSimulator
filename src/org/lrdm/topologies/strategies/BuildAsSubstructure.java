@@ -619,6 +619,15 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         Set<MirrorNode> externStructureAllNodes = buildExtern.getAllStructureNodes();
         // Setze den Typen dieser Struktur in die neu anzugliedernde Struktur und deren Nodes ein, die nun an dieser Strukutr teilnimmt
         externStructureAllNodes.forEach(node -> node.addNodeType(getCurrentStructureType()));
+        // Update aller Abhängigkeiten der Parents gegenüber der Strukturtypen ihrer Kinder
+        externStructureAllNodes.forEach(
+            node -> node.updateChildRecordMergeStructureHead(
+                Map.of(
+                        getCurrentStructureType(),getCurrentStructureRoot().getId(),
+                        buildExtern.getCurrentStructureType(),externRoot.getId()
+                )
+            )
+        );
 
         if(setFirstStructure){
             // Setze und ergänze die Strukturtypen in die host node, falls hostSubstructureNode und neue buildExtern root nicht identisch sind
@@ -644,6 +653,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         }
         else{
             hostSubstructureNode.addChild(externRoot);
+            externRoot.setHead(buildExtern.getCurrentStructureType(),true);
         }
 
         // merge intern build root as root for external structure

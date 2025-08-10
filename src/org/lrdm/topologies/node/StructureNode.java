@@ -64,6 +64,13 @@ public class StructureNode {
         }
 
         /**
+         * @return Child Structure Node
+         */
+        public StructureNode getChild(){
+            return child;
+        }
+
+        /**
          * Prüft, ob dieses Kind zu einem bestimmten Strukturtyp gehört.
          */
         public boolean hasType(StructureType typeId) {
@@ -572,6 +579,26 @@ public class StructureNode {
     }
 
     // ===== KIND-ZUGRIFF =====
+
+    /**
+     * Updated die Informationen in ChildRecord über direkten Zugriff auf das Kind
+     */
+    public void updateChildRecordMergeStructureHead(Map<StructureType, Integer> headIds) {
+        HashMap<StructureType, Integer> copyHeadIds = new HashMap<>(headIds);
+        HashSet<ChildRecord> copyChildRecordsForUpdate = new HashSet<>();
+
+        for(ChildRecord c:children){
+            HashMap<StructureType, Integer> copyHeadIdsLocal = new HashMap<>(c.getHeadIds());
+            copyHeadIdsLocal.putAll(copyHeadIds);
+            ChildRecord newChildRecord = new ChildRecord(
+                    c.getChild(),
+                    c.getChild().getNodeTypes(),
+                    copyHeadIdsLocal);
+            copyChildRecordsForUpdate.add(newChildRecord);
+            children.remove(c);
+        }
+        children.addAll(copyChildRecordsForUpdate);
+    }
 
     /**
      * Gibt alle direkten Kindknoten zurück (ohne Typ-Filter).
