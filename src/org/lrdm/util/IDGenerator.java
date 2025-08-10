@@ -20,7 +20,7 @@ public class IDGenerator {
 	}
 	
 	public int getNextID() {
-		return currentID++;
+        return currentID++;
 	}
 	
 }

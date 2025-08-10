@@ -148,7 +148,7 @@ public class MirrorCursor {
         Iterator<Mirror> tmpOldIterator = mirrorIterator;
         mirrorIterator = created.iterator();
         int oldIteratorSpot = 0;
-        while(mirrorIterator != tmpOldIterator && mirrorIterator.hasNext()) {
+        while(tmpOldIterator!=null && mirrorIterator != tmpOldIterator && mirrorIterator.hasNext()) {
             mirrorIterator.next();
             oldIteratorSpot++;
         }
@@ -161,9 +161,6 @@ public class MirrorCursor {
             mirrorIterator.next();
             oldIteratorSpot--;
         }
-
-        // optional: Iterator aktualisieren, falls weiterhin benötigt
-        this.mirrorIterator = this.mirrors.iterator();
 
         return created;
     }
