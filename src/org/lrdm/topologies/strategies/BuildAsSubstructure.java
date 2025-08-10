@@ -711,12 +711,21 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 })
                 .toList();
 
-        // Entfernen in separater Schleife (keine ConcurrentModification)
-        toRemove.forEach(entry -> entry.getKey().removeChild(entry.getValue()));
+        // Entfernen in separater Schleife (keine ConcurrentModification), nur nodes die eindeutig extern sind
+        toRemove.stream()
+                .filter(node -> !nodeToSubstructure.containsKey(node.getKey()))
+                .forEach(entry -> entry.getKey().removeChild(entry.getValue()));
 
-        // ChildRecords der nodes in der zu entfernenden Struktur säubern
+        // Für alle sich überschneidenden nodes noch bestehender Substrukturen Verbindungen kappen die nach buildExtern gehen
+
+
+        // ChildRecords der nodes in der zu entfernenden Struktur für alle nodes gleichzeitig säubern
         // die root node der entfernten Struktur, steht keine der anderen Substrukturen mehr zur Verfügung, auch hier
-
+        Set<StructureNode> externalStructureSet = new HashSet<>(externStructureAllNodes);
+        externStructureAllNodes
+                .forEach(node -> node.updateChildRecordRemoveStructureHead(
+                        Set.of(getCurrentStructureType()),externalStructureSet)
+                );
 
 
         // Erstelle geeignete root node über abstract factory methode

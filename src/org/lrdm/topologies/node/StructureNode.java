@@ -611,7 +611,9 @@ public class StructureNode {
      * löscht Typen
      */
     public void updateChildRecordRemoveStructureHead(Set<StructureType> typeIds, Set<StructureNode> childrenNodes) {
-
+        //TODO: remove ChildRecord types from childrenNodes
+        HashSet<ChildRecord> copyChildRecordsForUpdate = new HashSet<>();
+        HashSet<ChildRecord> removeChildRecord = new HashSet<>();
     }
 
     /**
