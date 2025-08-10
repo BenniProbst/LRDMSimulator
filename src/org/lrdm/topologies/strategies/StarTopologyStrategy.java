@@ -331,13 +331,39 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         return null;
     }
 
+    // java
     @Override
     public String toString() {
-        return "StarTopologyStrategy{" +
-                "minStarSize=" + minStarSize +
-                ", allowStarExpansion=" + true +
-                ", nodes=" + getAllStarNodes().size() +
-                ", center=" + (getStarCenter() != null ? getStarCenter().getId() : "none") +
-                '}';
+        StringBuilder sb = new StringBuilder("StarTopologyStrategy{");
+        try {
+            sb.append("minStarSize=").append(minStarSize);
+
+            // Sicher alle Knoten holen (liefert leeres Set, wenn noch nicht initialisiert)
+            Set<MirrorNode> allNodes = getAllStructureNodes();
+
+            long starNodeCount = allNodes.stream()
+                    .filter(n -> n instanceof StarMirrorNode)
+                    .count();
+            sb.append(", nodes=").append(starNodeCount);
+
+            // Zentrum robust ermitteln, ohne getCurrentStructureRoot() aufzurufen
+            Integer centerId = allNodes.stream()
+                    .filter(n -> n instanceof StarMirrorNode)
+                    .filter(n -> n.isHead(StructureNode.StructureType.STAR))
+                    .map(StructureNode::getId)
+                    .map(Integer::valueOf)
+                    .findFirst()
+                    .orElse(null);
+            sb.append(", center=").append(centerId != null ? centerId : "none");
+
+            // Einfache Init-Info
+            sb.append(", initialized=").append(starNodeCount > 0);
+        } catch (Exception e) {
+            // Niemals Exception nach außen werfen
+            sb.append("error=").append(e.getClass().getSimpleName())
+                    .append(":").append(e.getMessage());
+        }
+        sb.append('}');
+        return sb.toString();
     }
 }

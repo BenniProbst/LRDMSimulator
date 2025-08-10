@@ -197,8 +197,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 // build and interlink substructure with estimated mirrors
                 int externStructureTypeIndex = count / snowflakeProperties.ringBridgeGap % externHostedStructures.size();
                 BuildAsSubstructure localBuild = externHostedStructures.get(externStructureTypeIndex);
-                MirrorNode externRoot = localBuild
-                        .buildStructure(snowflakeResult.externalTreeMirrors.get(count));
+                localBuild.buildStructure(snowflakeResult.externalTreeMirrors.get(count));
                 // Füge externe Struktur auch in die Snowflake für alle Strukturen und MirrorNode hierarchisch hinzu
                 connectToStructureNodes(nConNode, localBuild);
             }

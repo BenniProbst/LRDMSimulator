@@ -627,7 +627,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         // Setzte Kinder der external Root mit den Kindern der hostSubstructureNode
         hostSubstructureNode.getChildren().forEach(externRoot::addChild);
 
-        // dont remove root from external structure since it is still a complete node block
+        // don't remove root from the external structure since it is still a complete node block
 
         // Ersetze alle Kinder dieser Struktur von hostSubstructureNode nach externRoot und lösche hostSubstructureNode aus der Strukutur
         structureNodes.stream()
