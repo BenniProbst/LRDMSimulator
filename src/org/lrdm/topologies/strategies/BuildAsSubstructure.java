@@ -599,6 +599,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     protected final void connectToStructureNodes(MirrorNode hostSubstructureNode, BuildAsSubstructure buildExtern) {
         if(hostSubstructureNode == null || buildExtern == null)return;
+        // Ist unsere Struktur Topologie noch leer gehen wir in der ersten Verbindung eine Identität mit der ersten fremden Struktur ein
         if(!getAllStructureNodes().contains(hostSubstructureNode) && getAllStructureNodes().isEmpty()){
             setCurrentStructureRoot(hostSubstructureNode);
         }
