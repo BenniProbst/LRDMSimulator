@@ -61,8 +61,8 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
 
         // Erstelle das Zentrum des Sterns
         StarMirrorNode center = getMirrorNodeFromIterator();
-        center.setHead(StructureNode.StructureType.STAR,true);
         setCurrentStructureRoot(center);
+        center.setHead(StructureNode.StructureType.STAR,true);
 
         // Erstelle Blätter für den Stern
         List<StarMirrorNode> leaves = new ArrayList<>();
