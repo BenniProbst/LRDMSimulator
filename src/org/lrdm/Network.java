@@ -195,7 +195,7 @@ public class Network {
 		return links.size();
 	}
 
-	/**Get the number of links, which are currently in ACTIVE state.
+	/**Get the number of links which are currently in the ACTIVE state.
 	 *
 	 * @return current number of active links
 	 */
@@ -304,7 +304,7 @@ public class Network {
 		currentTimeStep = simTime;
 	}
 
-	/**Inspect the network for mirrors in STOPPED state to remove them from the network.
+	/**Inspect the network for mirrors in the STOPPED state to remove them from the network.
 	 * Else calls {@link Mirror#timeStep(int)}
 	 *
 	 * @param simTime current simulation time

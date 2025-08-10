@@ -861,7 +861,8 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
     protected void initializeInternalState(Network n) {
         this.network = n;
-        this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
+        // TODO: sort network on copy of mirrors
+        //this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
         this.mirrorIterator = n.getMirrors().iterator();
     }
 
@@ -887,7 +888,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @param simTime Zeitpunkt der Simulation
      * @param structureType Der erwartete StructureType für Validierung
      * @return Set aller erstellten Links
-     * @throws IllegalStateException wenn Root-Node-Typ nicht mit StructureType kompatibel ist
+     * @throws IllegalStateException Wenn Root-Node-Typ nicht mit StructureType kompatibel ist
      */
 
     protected Set<Link> buildAndUpdateLinks(MirrorNode root, Properties props, int simTime, StructureNode.StructureType structureType) {

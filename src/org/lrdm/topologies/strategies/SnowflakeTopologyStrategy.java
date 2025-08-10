@@ -157,7 +157,8 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      */
     protected void initializeInternalState(Network n) {
         this.network = n;
-        this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
+        // TODO: sort network on copy of mirrors
+        //this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
         this.mirrorIterator = n.getMirrors().iterator();
 
         internNConnectedTopologie.initializeInternalState(n);
@@ -181,8 +182,6 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                     "Insufficient mirrors for snowflake: " + totalNodes + " < " + getMinimumRequiredMirrors()
             );
         }
-
-        resetInternalStateStructureOnly();
 
         // Berechne Mirror-Verteilung
         MirrorDistributionResult snowflakeResult = calculateSnowflakeDistribution(totalNodes, snowflakeProperties);
