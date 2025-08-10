@@ -571,7 +571,7 @@ public class StructureNode {
      * Findet einen ChildRecord anhand der Knoten-ID.
      * Hilfsmethode für interne Kind-Verwaltung.
      */
-    protected ChildRecord findChildRecordById(int childId) {
+    public ChildRecord findChildRecordById(int childId) {
         return children.stream()
                 .filter(record -> record.child().getId() == childId)
                 .findFirst()
@@ -582,6 +582,7 @@ public class StructureNode {
 
     /**
      * Updated die Informationen in ChildRecord über direkten Zugriff auf das Kind
+     * Fügt zusätzliche Typen ein
      */
     public void updateChildRecordMergeStructureHead(Map<StructureType, Integer> headIds, Set<StructureNode> childrenNodes) {
         HashMap<StructureType, Integer> copyHeadIds = new HashMap<>(headIds);
@@ -603,6 +604,14 @@ public class StructureNode {
         }
         children.removeAll(removeChildRecord);
         children.addAll(copyChildRecordsForUpdate);
+    }
+
+    /**
+     * Updated die Informationen in ChildRecord über direkten Zugriff auf das Kind
+     * löscht Typen
+     */
+    public void updateChildRecordRemoveStructureHead(Set<StructureType> typeIds, Set<StructureNode> childrenNodes) {
+
     }
 
     /**

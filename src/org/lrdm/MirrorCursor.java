@@ -73,8 +73,7 @@ public class MirrorCursor {
     public int getNumUsableMirrors() {
         int usable = 0;
 
-        for(int currentIndex = mirrorIterator + 1; currentIndex < mirrors.size(); currentIndex++){
-            Mirror m = mirrors.get(currentIndex);
+        for (Mirror m : mirrors) {
             if (m.isUsableForNetwork()) {
                 usable++;
             }

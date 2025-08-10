@@ -355,7 +355,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
     private List<SubstructureTuple> disconnectAllStructuresFromRing() {
         List<SubstructureTuple> connectedStructures =
-                new ArrayList<>(internNConnectedTopologie.getAllSubstructureTuples().stream()
+                new ArrayList<>(getAllSubstructureTuples().stream()
                         .sorted(Comparator.comparingInt(SubstructureTuple::getNodeId)).toList());
 
         List<SubstructureTuple> disconnectedSubstructures = new ArrayList<>();

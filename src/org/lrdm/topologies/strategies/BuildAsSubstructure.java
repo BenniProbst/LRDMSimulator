@@ -669,24 +669,55 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     }
 
     /*
-     * Trennt eine host node nach Eingabe der betroffenen Struktur wieder in die betreffende Struktur root node und die ursprüngliche Host node auf
+     * Trennt eine host node nach Eingabe der betroffenen Struktur wieder in die betreffende Struktur root node und der ursprüngliche Host node auf
      * Gibt neu gesetzte und nun separate Wurzel einer eingehenden Struktur aus.
      */
     protected final MirrorNode disconnectFromStructureNodes(MirrorNode hostSubstructureNode, BuildAsSubstructure buildExtern) {
         if(buildExtern.getCurrentStructureRoot() != hostSubstructureNode){
             throw new IllegalArgumentException("Host Substructure Node is not part of the current network structure!");
         }
+        if(!nodeToSubstructure.containsValue(buildExtern)){
+            throw new IllegalArgumentException("The given buildAsSubstructure is not part of the current network structure!");
+        }
 
         // Analysiere die externe Struktur und lösche alle ihre Struktur nodes aus der ganzheitlichen Struktur, außer die Root node
-        MirrorNode externRoot = buildExtern.getCurrentStructureRoot();
-        Set<MirrorNode> externStructureAllNodes = buildExtern.getAllStructureNodes().stream()
-                .filter(node -> !node.equals(externRoot)).collect(Collectors.toSet());
+        List<MirrorNode> externStructureAllNodes = buildExtern.getAllStructureNodes().stream()
+                .sorted(Comparator.comparingInt(MirrorNode::getId)).toList();
 
-        // Entferne alle StructureNodes von unserer Struktur
-        externStructureAllNodes.forEach(this::removeFromStructureNodes);
+        // Entferne alle StructureNodes von unserer Struktur, nodes verbleiben nur in der externen Struktur
+        // Entferne aber nur, wenn die node nicht in einer anderen Substruktur unserer Struktur teilnimmt
+        externStructureAllNodes.stream()
+                .filter(node -> !nodeToSubstructure.containsKey(node))
+                .forEach(this::removeFromStructureNodes);
 
-        // Entferne Struktur von gespeicherten Strukturen
-        removeSubstructureForNode(externRoot);
+        //TODO: remove ChildRecord information from all nodes in the structure
+        // externStructureAllNodes.forEach(node -> node.removeChildRecordMergeStructureHead(Map.of(getCurrentStructureType(),externRoot.getId())));
+
+        // Entferne den Strukturtypen dieser Struktur aus der externen Struktur
+        externStructureAllNodes.forEach(node -> node.removeNodeType(getCurrentStructureType()));
+        // Entferne alle übrigen Kinder aus den nodes der externen Struktur
+        StructureNode.StructureType externType = buildExtern.getCurrentStructureType();
+
+        List<Map.Entry<MirrorNode, StructureNode>> toRemove = externStructureAllNodes.stream()
+                // baue Paare (parent, child)
+                .flatMap(parent -> parent.getChildren().stream()
+                        .map(child -> Map.entry(parent, child)))
+                // Filter: ChildRecord fehlt ODER hat den externen Typ nicht
+                .filter(entry -> {
+                    StructureNode parent = entry.getKey();
+                    StructureNode child  = entry.getValue();
+                    StructureNode.ChildRecord rec = parent.findChildRecordById(child.getId());
+                    return rec == null || !rec.hasType(externType);
+                })
+                .toList();
+
+        // Entfernen in separater Schleife (keine ConcurrentModification)
+        toRemove.forEach(entry -> entry.getKey().removeChild(entry.getValue()));
+
+        // ChildRecords der nodes in der zu entfernenden Struktur säubern
+        // die root node der entfernten Struktur, steht keine der anderen Substrukturen mehr zur Verfügung, auch hier
+
+
 
         // Erstelle geeignete root node über abstract factory methode
         // Erfrage timestep über network und schreibe Rückmeldung an Nutzer
