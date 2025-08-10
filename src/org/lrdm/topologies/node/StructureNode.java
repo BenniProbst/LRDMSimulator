@@ -586,6 +586,7 @@ public class StructureNode {
     public void updateChildRecordMergeStructureHead(Map<StructureType, Integer> headIds, Set<StructureNode> childrenNodes) {
         HashMap<StructureType, Integer> copyHeadIds = new HashMap<>(headIds);
         HashSet<ChildRecord> copyChildRecordsForUpdate = new HashSet<>();
+        HashSet<ChildRecord> removeChildRecord = new HashSet<>();
 
         for(ChildRecord c:children){
             if(!childrenNodes.contains(c.child())){
@@ -598,8 +599,9 @@ public class StructureNode {
                     c.getChild().getNodeTypes(),
                     copyHeadIdsLocal);
             copyChildRecordsForUpdate.add(newChildRecord);
-            children.remove(c);
+            removeChildRecord.add(c);
         }
+        children.removeAll(removeChildRecord);
         children.addAll(copyChildRecordsForUpdate);
     }
 
