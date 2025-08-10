@@ -583,11 +583,14 @@ public class StructureNode {
     /**
      * Updated die Informationen in ChildRecord über direkten Zugriff auf das Kind
      */
-    public void updateChildRecordMergeStructureHead(Map<StructureType, Integer> headIds) {
+    public void updateChildRecordMergeStructureHead(Map<StructureType, Integer> headIds, Set<StructureNode> childrenNodes) {
         HashMap<StructureType, Integer> copyHeadIds = new HashMap<>(headIds);
         HashSet<ChildRecord> copyChildRecordsForUpdate = new HashSet<>();
 
         for(ChildRecord c:children){
+            if(!childrenNodes.contains(c.child())){
+                continue;
+            }
             HashMap<StructureType, Integer> copyHeadIdsLocal = new HashMap<>(c.getHeadIds());
             copyHeadIdsLocal.putAll(copyHeadIds);
             ChildRecord newChildRecord = new ChildRecord(

@@ -625,7 +625,8 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 Map.of(
                         getCurrentStructureType(),getCurrentStructureRoot().getId(),
                         buildExtern.getCurrentStructureType(),externRoot.getId()
-                )
+                ),
+                    node.getChildren()
             )
         );
 
@@ -653,7 +654,13 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         }
         else{
             hostSubstructureNode.addChild(externRoot);
-            externRoot.setHead(buildExtern.getCurrentStructureType(),true);
+            hostSubstructureNode.updateChildRecordMergeStructureHead(
+                    Map.of(
+                            getCurrentStructureType(),getCurrentStructureRoot().getId(),
+                            buildExtern.getCurrentStructureType(),externRoot.getId()
+                    ),
+                    Set.of(externRoot)
+            );
         }
 
         // merge intern build root as root for external structure
