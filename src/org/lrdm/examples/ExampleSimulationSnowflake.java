@@ -1,12 +1,16 @@
 package org.lrdm.examples;
 
+import org.lrdm.SubstructureFactory;
 import org.lrdm.TimedRDMSim;
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
+import org.lrdm.topologies.node.StructureNode;
 import org.lrdm.topologies.strategies.*;
 import org.lrdm.topologies.strategies.SnowflakeTopologyStrategy.SnowflakeProperties;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 import static java.lang.Math.max;
 
@@ -17,7 +21,18 @@ import static java.lang.Math.max;
  */
 public class ExampleSimulationSnowflake {
 	public static void main(String[] args) {
-		System.setProperty("java.util.logging.SimpleFormatter.format",
+
+        Map<StructureNode.StructureType, Supplier<BuildAsSubstructure>> suppliers = Map.of(
+                StructureNode.StructureType.STAR,               StarTopologyStrategy::new,
+                StructureNode.StructureType.FULLY_CONNECTED,    FullyConnectedTopology::new,
+                StructureNode.StructureType.N_CONNECTED,        NConnectedTopology::new,
+                StructureNode.StructureType.DEPTH_LIMIT_TREE,   () -> new DepthLimitTreeTopologyStrategy(3),
+                StructureNode.StructureType.BALANCED_TREE,      BalancedTreeTopologyStrategy::new
+        );
+
+        SubstructureFactory substructureFactory = SubstructureFactory.fromSuppliers(suppliers);
+
+        System.setProperty("java.util.logging.SimpleFormatter.format",
 				"[%1$tF %1$tT] [%4$-7s] %5$s %n");
 		TimedRDMSim sim = new TimedRDMSim();
 		sim.initialize(new SnowflakeTopologyStrategy());
@@ -34,30 +49,39 @@ public class ExampleSimulationSnowflake {
 		}
 		effector.setStrategy(new FullyConnectedTopology(), 20);
         effector.setTargetLinksPerMirror(2,20);
-        List<BuildAsSubstructure> hostedStructures = List.of(
-                new DepthLimitTreeTopologyStrategy(3),
-                new BalancedTreeTopologyStrategy(),
-                new StarTopologyStrategy()
+
+        // Reihenfolge der zyklischen Rotation (frei wählbar)
+        List<StructureNode.StructureType> rotation1 = List.of(
+                StructureNode.StructureType.DEPTH_LIMIT_TREE,
+                StructureNode.StructureType.BALANCED_TREE,
+                StructureNode.StructureType.STAR
         );
-		effector.setStrategy(new SnowflakeTopologyStrategy(
+
+
+        effector.setStrategy(new SnowflakeTopologyStrategy(
                 new SnowflakeProperties(
                         0.3,
                         2
                 ),
-                hostedStructures
+                substructureFactory,
+                rotation1
         ), 40);
+
 		effector.setStrategy(new FullyConnectedTopology(), 60);
         effector.setTargetLinksPerMirror(4,60);
-        List<BuildAsSubstructure> hostedStructures2 = List.of(
-                new NConnectedTopology(),
-                new FullyConnectedTopology()
+
+        List<StructureNode.StructureType> rotation2 = List.of(
+                StructureNode.StructureType.N_CONNECTED,
+                StructureNode.StructureType.FULLY_CONNECTED
         );
+
 		effector.setStrategy(new SnowflakeTopologyStrategy(
                 new SnowflakeProperties(
                         0.6,
                         3
                 ),
-                hostedStructures2
+                substructureFactory,
+                rotation2
         ), 80);
 
 		int startMirrors = 15;

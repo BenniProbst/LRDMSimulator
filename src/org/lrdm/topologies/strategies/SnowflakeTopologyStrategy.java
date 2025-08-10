@@ -2,6 +2,7 @@ package org.lrdm.topologies.strategies;
 
 import org.lrdm.Mirror;
 import org.lrdm.Network;
+import org.lrdm.SubstructureFactory;
 import org.lrdm.effectors.Action;
 import org.lrdm.effectors.MirrorChange;
 import org.lrdm.effectors.TargetLinkChange;
@@ -12,7 +13,7 @@ import org.lrdm.topologies.validators.SnowflakeTopologyValidator;
 import org.lrdm.util.IDGenerator;
 
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 
 /**
  * Schneeflocken-Topologie-Strategie mit hierarchischer Multi-Topologie-Architektur.
@@ -44,13 +45,14 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
     public record MirrorDistributionResult(
             int ringMirrors,
-            List<Integer> externalTreeMirrors
+            List<Integer> externalStructureMirrors
     ) {
     }
 
     SnowflakeProperties snowflakeProperties;
     NConnectedTopology internNConnectedTopologie = new NConnectedTopology();
-    List<BuildAsSubstructure> externHostedStructures;
+    SubstructureFactory substructureFactory;
+    List<StructureNode.StructureType> substructureRotation;
 
     // ===== SCHNEEFLOCKEN-PARAMETER =====
     //PLANNED: private static final int RING_BRIDGE_GAP_ON_RING = 3; // Modulo für Bridge-Positionen
@@ -68,22 +70,39 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         this(new SnowflakeProperties(
                 0.5,
                 2
-        ), null);
+        ));
     }
 
     public SnowflakeTopologyStrategy(SnowflakeProperties snowflakeProperties) {
-        this(snowflakeProperties, null);
+        super();
+        Map<StructureNode.StructureType, Supplier<BuildAsSubstructure>> suppliers = Map.of(
+                StructureNode.StructureType.STAR,               StarTopologyStrategy::new,
+                StructureNode.StructureType.FULLY_CONNECTED,    FullyConnectedTopology::new,
+                StructureNode.StructureType.N_CONNECTED,        NConnectedTopology::new,
+                StructureNode.StructureType.DEPTH_LIMIT_TREE,   () -> new DepthLimitTreeTopologyStrategy(2),
+                StructureNode.StructureType.BALANCED_TREE,      BalancedTreeTopologyStrategy::new,
+                StructureNode.StructureType.LINE,               LineTopologyStrategy::new,
+                StructureNode.StructureType.TREE,               TreeTopologyStrategy::new
+        );
+
+        SubstructureFactory subFac = SubstructureFactory.fromSuppliers(suppliers);
+
+        // Reihenfolge der zyklischen Rotation (frei wählbar)
+        List<StructureNode.StructureType> rotation1 = List.of(
+                StructureNode.StructureType.STAR
+        );
+
+        this.snowflakeProperties = snowflakeProperties;
+        this.substructureFactory = subFac;
+        this.substructureRotation = rotation1;
     }
 
-    public SnowflakeTopologyStrategy(SnowflakeProperties snowflakeProperties, List<BuildAsSubstructure> externHostedStructures) {
+    public SnowflakeTopologyStrategy(SnowflakeProperties snowflakeProperties, SubstructureFactory substructureFactory,
+                                     List<StructureNode.StructureType> rotation) {
         super();
         this.snowflakeProperties = snowflakeProperties;
-        if(externHostedStructures == null || externHostedStructures.isEmpty()){
-            this.externHostedStructures = List.of(new StarTopologyStrategy());
-        }
-        else{
-            this.externHostedStructures = externHostedStructures;
-        }
+        this.substructureFactory = substructureFactory;
+        this.substructureRotation = rotation;
     }
 
     private MirrorDistributionResult calculateSnowflakeDistribution(int totalMirrors, SnowflakeProperties snowflakeProperties) {
@@ -155,19 +174,6 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
     // ===== ÜBERSCHREIBUNG DER BUILD-AS-SUBSTRUCTURE-METHODEN =====
 
     /**
-     * Initialisiert den internen Zustand für ein Netzwerk.
-     */
-    protected void initializeInternalState(Network n) {
-        this.network = n;
-
-        internNConnectedTopologie.initializeInternalState(n);
-
-        for(BuildAsSubstructure buildAsSubstructure : externHostedStructures){
-            buildAsSubstructure.initializeInternalState(n);
-        }
-    }
-
-    /**
      * **PLANUNGSEBENE**: Erstellt die hierarchische Schneeflocken-Struktur.
      * Verwendet andere TopologyStrategy-Klassen als Bausteine.
      */
@@ -198,9 +204,10 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         for (MirrorNode nConNode : allNConNodes) {
             if (count % snowflakeProperties.ringBridgeGap == 0) {
                 // build and interlink substructure with estimated mirrors
-                int externStructureTypeIndex = count / snowflakeProperties.ringBridgeGap % externHostedStructures.size();
-                BuildAsSubstructure localBuild = externHostedStructures.get(externStructureTypeIndex);
-                localBuild.buildStructure(snowflakeResult.externalTreeMirrors.get(count));
+                int externStructureTypeIndex = count / snowflakeProperties.ringBridgeGap;
+                BuildAsSubstructure localBuild = substructureFactory.createCycled(externStructureTypeIndex,substructureRotation);
+                localBuild.initializeInternalState(network);
+                localBuild.buildStructure(snowflakeResult.externalStructureMirrors.get(count));
                 // Füge externe Struktur auch in die Snowflake für alle Strukturen und MirrorNode hierarchisch hinzu
                 connectToStructureNodes(nConNode, localBuild);
             }
@@ -299,15 +306,17 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 // Index übersteigt alte Ring-Struktur: neue externe Strukturen erstellen und eingliedern
                 if(i%snowflakeProperties.ringBridgeGap==0){
                     MirrorNode current = existingRingNodes.get(i);
-                    int topologyIndex = i % externHostedStructures.size();
-                    BuildAsSubstructure newExternStructure = externHostedStructures.get(topologyIndex);
-                    int mirrorCountExternalStructure = snowflakeResult.externalTreeMirrors.get(i);
-                    newExternStructure.buildStructure(mirrorCountExternalStructure);
+
+                    int externStructureTypeIndex = i / snowflakeProperties.ringBridgeGap;
+                    BuildAsSubstructure localBuild = substructureFactory.createCycled(externStructureTypeIndex,substructureRotation);
+                    localBuild.initializeInternalState(network);
+
+                    localBuild.buildStructure(snowflakeResult.externalStructureMirrors.get(i));
                     // Externe Struktur eingliedern
                     connectToStructureNodes(
                             current,
-                            newExternStructure);
-                    actuallyAdded += mirrorCountExternalStructure;
+                            localBuild);
+                    actuallyAdded += snowflakeResult.externalStructureMirrors.get(i);
                 }
             } else {
                 // Wenn Muster aktiv wird, nehme erste nicht verbundene Struktur aus der Liste, update und eingliedern
@@ -317,7 +326,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                     assert strucTup != null;
                     disconnectedSubstructures.remove(strucTup);
 
-                    int externNodesDiff = snowflakeResult.externalTreeMirrors.get(i) - oldSnowflakeResult.externalTreeMirrors.get(i);
+                    int externNodesDiff = snowflakeResult.externalStructureMirrors.get(i) - oldSnowflakeResult.externalStructureMirrors.get(i);
                     if (externNodesDiff > 0) {
                         Set<Mirror> newNodes = nodeSubset(nodesToAdd, externNodesDiff);
                         strucTup.substructure().addNodesToStructure(newNodes);
@@ -435,7 +444,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 assert strucTup != null;
                 disconnectedSubstructures.remove(strucTup);
 
-                int externNodesDiff = snowflakeResult.externalTreeMirrors.get(i) - oldSnowflakeResult.externalTreeMirrors.get(i);
+                int externNodesDiff = snowflakeResult.externalStructureMirrors.get(i) - oldSnowflakeResult.externalStructureMirrors.get(i);
                 if (externNodesDiff < 0) {
                     actuallyRemoved.addAll(strucTup.substructure().removeNodesFromStructure(Math.abs(externNodesDiff)));
                 }
@@ -536,7 +545,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                                 network,
                                 IDGenerator.getInstance().getNextID(),
                                 mirrorChange.getTime(),
-                                newSnowflakeEstimateResult.externalTreeMirrors().get(i)
+                                newSnowflakeEstimateResult.externalStructureMirrors().get(i)
                         );
                         outlinks += subStructure.getPredictedNumTargetLinks(subMirrorChange);
                     }
