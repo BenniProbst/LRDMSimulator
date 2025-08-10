@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 public class MirrorCursor {
     private int numTargetMirrors;
     private final List<Mirror> mirrors;
-    private Iterator<Mirror> mirrorIterator;
+    private int mirrorIterator = -1;
     private final Properties props;
     private final double faultProbability; // = 0.01;
     private final Random random;
@@ -25,7 +25,7 @@ public class MirrorCursor {
         this.props = props;
 
         // create the mirrors and put a new data package on the first mirror
-        mirrors.addAll(createMirrors(numMirrors, 0));
+        createMirrors(numMirrors, 0);
         mirrors.get(0).setRoot(true);
 
         DataPackage initialData = new DataPackage(fileSize);
@@ -71,16 +71,15 @@ public class MirrorCursor {
      *         Hinweis: Der Iterator steht danach am Ende.
      */
     public int getNumUsableMirrors() {
-        if (mirrorIterator == null) {
-            mirrorIterator = mirrors.iterator();
-        }
         int usable = 0;
-        while (mirrorIterator.hasNext()) {
-            Mirror m = mirrorIterator.next();
+
+        for(int currentIndex = mirrorIterator + 1; currentIndex < mirrors.size(); currentIndex++){
+            Mirror m = mirrors.get(currentIndex);
             if (m.isUsableForNetwork()) {
                 usable++;
             }
         }
+
         return usable;
     }
 
@@ -145,33 +144,18 @@ public class MirrorCursor {
             created.add(mirror);
         }
 
-        Iterator<Mirror> tmpOldIterator = mirrorIterator;
-        mirrorIterator = created.iterator();
-        int oldIteratorSpot = 0;
-        while(tmpOldIterator!=null && mirrorIterator != tmpOldIterator && mirrorIterator.hasNext()) {
-            mirrorIterator.next();
-            oldIteratorSpot++;
-        }
         // zur internen Liste hinzufügen und stabil sortieren
         this.mirrors.addAll(created);
         this.mirrors.sort(Comparator.comparingInt(Mirror::getID));
-        mirrorIterator = created.iterator();
-
-        while(mirrorIterator.hasNext() && oldIteratorSpot > 0) {
-            mirrorIterator.next();
-            oldIteratorSpot--;
-        }
 
         return created;
     }
 
     /**
      * Reset the mirror cursor to the beginning.
-     * @return the new iterator
      */
-    public Iterator<Mirror> resetMirrorCursor() {
-        mirrorIterator = mirrors.iterator();
-        return mirrorIterator;
+    public void resetMirrorCursor() {
+        mirrorIterator = -1;
     }
 
     /**
@@ -181,9 +165,10 @@ public class MirrorCursor {
      * @return Der nächste verfügbare Mirror oder null, wenn kein Mirror verfügbar ist
      */
     public final Mirror getNextMirror() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            while (mirrorIterator.hasNext()) {
-                Mirror mirror = mirrorIterator.next();
+        if (hasNextMirror()) {
+            while (hasNextMirror()) {
+                mirrorIterator++;
+                Mirror mirror = mirrors.get(mirrorIterator);
                 if(mirror.isUsableForNetwork())return mirror;
             }
         }
@@ -196,6 +181,6 @@ public class MirrorCursor {
      * @return true, wenn weitere Mirrors verfügbar sind
      */
     public final boolean hasNextMirror() {
-        return mirrorIterator != null && mirrorIterator.hasNext();
+        return mirrorIterator < mirrors.size() - 1;
     }
 }

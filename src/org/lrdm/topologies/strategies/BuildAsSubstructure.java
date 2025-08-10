@@ -321,8 +321,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             subStructure.initNetwork(n,props);
         }
 
-        int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
-                .filter(Mirror::isUsableForNetwork).count());
+        int usableMirrorCount = network.getMirrorCursor().getNumUsableMirrors();
         MirrorNode root = buildStructure(usableMirrorCount);
         if (root != null) {
             setCurrentStructureRoot(root);

@@ -184,7 +184,6 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         // **SCHRITT 1**: Erstelle zentralen Ring und füge ihn in die Snowflake hinzu
         MirrorNode nConNodeRoot = internNConnectedTopologie.buildStructure(snowflakeResult.ringMirrors);
-        setCurrentStructureRoot(nConNodeRoot);
         // Ring in Snowflake eingliedern
         connectToStructureNodes(
                 nConNodeRoot,
