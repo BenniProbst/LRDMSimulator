@@ -4,7 +4,6 @@ import org.lrdm.Link;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.Action;
-import org.lrdm.util.IDGenerator;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,12 +23,12 @@ public abstract class TopologyStrategy {
         Set<Mirror> mirrorSet = n.getMirrors().stream()
                 .filter(mirror -> !mirror.isRoot() && mirror.isUsableForNetwork()).collect(Collectors.toSet());
         mirrorSet.forEach(mirror -> mirror.shutdown(simTime));
-        n.getMirrors().addAll(createMirrors(mirrorSet.size(), simTime, props));
+        n.getMirrorCursor().createMirrors(mirrorSet.size(), simTime);
         //replace crashed mirrors with new ones
         int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
                 .filter(Mirror::isUsableForNetwork).count());
         while (usableMirrorCount < n.getNumTargetMirrors()) {
-            n.getMirrors().addAll(createMirrors(1, simTime, props));
+            n.getMirrorCursor().createMirrors(1, simTime);
             usableMirrorCount++;
         }
         return n.getLinks().stream().filter(Link::isActive).collect(Collectors.toSet());
@@ -69,23 +68,6 @@ public abstract class TopologyStrategy {
      * @return number of predicted total links
      */
     public abstract int getPredictedNumTargetLinks(Action a);
-
-    /**
-     * Creates the given number of mirrors and adds them to the network.
-     *
-     * @param numberOfMirrors the number of mirrors to add
-     * @param simTime         the current simulation time
-     * @param props           the {@link Properties} of the simulation
-     * @return a set of added {@link Mirror}s
-     */
-    protected Set<Mirror> createMirrors(int numberOfMirrors, int simTime, Properties props) {
-        Set<Mirror> mirrors = new HashSet<>();
-        for (int i = 0; i < numberOfMirrors; i++) {
-            Mirror mirror = new Mirror(IDGenerator.getInstance().getNextID(), simTime, props);
-            mirrors.add(mirror);
-        }
-        return mirrors;
-    }
 
     public abstract String toString();
 }

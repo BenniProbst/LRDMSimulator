@@ -35,9 +35,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     private final int substructureId;
 
     // ===== STRUCTURE BUILDER-INTEGRATION (PROTECTED) =====
-    protected IDGenerator idGenerator;
     protected Network network;
-    protected Iterator<Mirror> mirrorIterator;
 
     // ===== MIRROR NODE-BASIERTE SUBSTRUKTUR-VERWALTUNG (PRIVATE) =====
     private final Map<MirrorNode, BuildAsSubstructure> nodeToSubstructure = new HashMap<>();
@@ -50,12 +48,10 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     // ===== KONSTRUKTOR =====
 
     public BuildAsSubstructure() {
-        this.idGenerator = IDGenerator.getInstance();
-        this.substructureId = idGenerator.getNextID();
+        this.substructureId = IDGenerator.getInstance().getNextID();
     }
 
     public BuildAsSubstructure(IDGenerator idGenerator) {
-        this.idGenerator = idGenerator;
         this.substructureId = idGenerator.getNextID();
     }
 
@@ -436,14 +432,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         initializeInternalState(n);
 
         // Verwende das offizielle Interface von TopologyStrategy
-        Set<Mirror> creatingMirrors = createMirrors(newMirrors, simTime, props);
-        List<Mirror> mirrorsToAdd = new ArrayList<>(creatingMirrors);
-        mirrorsToAdd.sort(Comparator.comparingInt(Mirror::getID));
-        n.getMirrors().addAll(mirrorsToAdd);
-
-        // Setze Iterator für die neuen Mirrors - BuildAsSubstructure erwartet diesen
-        // Iterator für neue Mirrors zu setzen
-        setMirrorIterator(n.getMirrors().iterator());
+        Set<Mirror> creatingMirrors = n.getMirrorCursor().createMirrors(newMirrors, simTime);
 
         // Füge die neuen Knoten zur Struktur hinzu
         int actuallyAdded = addNodesToStructure(creatingMirrors);
@@ -672,11 +661,8 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         // Erstelle geeignete root node über abstract factory methode
         // Erfrage timestep über network und schreibe Rückmeldung an Nutzer
-        Set<Mirror> newRoot = createMirrors(1,network.getCurrentTimeStep(),network.getProps());
-        Iterator<Mirror> oldIterator = this.mirrorIterator;
-        this.mirrorIterator = newRoot.iterator();
+        network.getMirrorCursor().createMirrors(1,network.getCurrentTimeStep());
         MirrorNode newRootForExternalStructure = buildExtern.getMirrorNodeFromIterator();
-        this.mirrorIterator = oldIterator;
         // Füge die Kinder aus der host root node in die externe root node hinzu
         Set<StructureNode> nodeChildrenToExtern = hostSubstructureNode.getChildren(buildExtern.getCurrentStructureType());
         nodeChildrenToExtern
@@ -848,22 +834,11 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         observers.remove(observer);
     }
 
-
-    /**
-     * Setzt den Iterator für verfügbare Mirrors.
-     */
-    protected final void setMirrorIterator(Iterator<Mirror> mirrorIterator) {
-        this.mirrorIterator = mirrorIterator;
-    }
-
     /**
      * Initialisiert den internen Zustand für ein Netzwerk.
      */
     protected void initializeInternalState(Network n) {
         this.network = n;
-        // TODO: sort network on copy of mirrors
-        //this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
-        this.mirrorIterator = n.getMirrors().iterator();
     }
 
     /**
@@ -922,14 +897,14 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 if (!node1.getMirror().isAlreadyConnected(node2.getMirror()) && !node2.getMirror().isAlreadyConnected(node1.getMirror())) {
                     //Mirror nicht verbunden, sollte er per Plan verbunden sein → Link erstellen
                     if (node12_connect) {
-                        Link link = new Link(idGenerator.getNextID(), node1.getMirror(), node2.getMirror(),
+                        Link link = new Link(IDGenerator.getInstance().getNextID(), node1.getMirror(), node2.getMirror(),
                                 simTime, props);
                         node1.getMirror().addLink(link);
                         node2.getMirror().addLink(link);
                         allLinks.add(link);
                     } else {
                         if (node21_connect) {
-                            Link link = new Link(idGenerator.getNextID(), node2.getMirror(), node1.getMirror(),
+                            Link link = new Link(IDGenerator.getInstance().getNextID(), node2.getMirror(), node1.getMirror(),
                                     simTime, props);
                             node2.getMirror().addLink(link);
                             node1.getMirror().addLink(link);
@@ -1101,39 +1076,14 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     // ===== HILFSMETHODEN =====
 
     /**
-     * Gibt den nächsten verfügbaren Mirror aus dem Iterator zurück.
-     * Vereinfacht die Interface-Trennung zwischen BuildAsSubstructure und Topology-Implementierungen.
-     *
-     * @return Der nächste verfügbare Mirror oder null, wenn kein Mirror verfügbar ist
-     */
-    protected final Mirror getNextMirror() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            while (mirrorIterator.hasNext()) {
-                Mirror mirror = mirrorIterator.next();
-                if(mirror.isUsableForNetwork())return mirror;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Prüft, ob weitere Mirrors im Iterator verfügbar sind.
-     *
-     * @return true, wenn weitere Mirrors verfügbar sind
-     */
-    protected final boolean hasNextMirror() {
-        return mirrorIterator != null && mirrorIterator.hasNext();
-    }
-
-    /**
      * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
      * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
      *
      * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
      */
     protected MirrorNode getMirrorNodeFromIterator() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            Mirror mirror = getNextMirror();
+        if (network.getMirrorCursor().hasNextMirror()) {
+            Mirror mirror = network.getMirrorCursor().getNextMirror();
             MirrorNode node = createMirrorNodeForMirror(mirror);
             if (node != null) {
                 node.addNodeType(StructureNode.StructureType.MIRROR);
@@ -1153,7 +1103,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * @return Neuer strukturspezifischer MirrorNode
      */
     protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
-        return new MirrorNode(idGenerator.getNextID(), mirror);
+        return new MirrorNode(IDGenerator.getInstance().getNextID(), mirror);
     }
 
     /**

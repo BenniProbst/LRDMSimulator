@@ -40,24 +40,12 @@ import java.util.*;
 public class StarTopologyStrategy extends BuildAsSubstructure {
 
     // ===== STERN-SPEZIFISCHE KONFIGURATION =====
-    private int minStarSize = 3;
-    private boolean allowStarExpansion = true;
+    private int minStarSize = 1;
 
     // ===== KONSTRUKTOREN =====
 
     public StarTopologyStrategy() {
         super();
-    }
-
-    public StarTopologyStrategy(int minStarSize) {
-        super();
-        this.minStarSize = Math.max(3, minStarSize);
-    }
-
-    public StarTopologyStrategy(int minStarSize, boolean allowStarExpansion) {
-        super();
-        this.minStarSize = Math.max(3, minStarSize);
-        this.allowStarExpansion = allowStarExpansion;
     }
 
     // ===== ÜBERSCHREIBUNG DER BUILD-AS-SUBSTRUCTURE-METHODEN =====
@@ -69,23 +57,18 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes) {
-        if (totalNodes < minStarSize || !hasNextMirror()) return null;
+        if (totalNodes < minStarSize) return null;
 
         // Erstelle das Zentrum des Sterns
-        Mirror centerMirror = getNextMirror();
-        assert centerMirror != null;
-        StarMirrorNode center = new StarMirrorNode(centerMirror.getID(), centerMirror);
+        StarMirrorNode center = getMirrorNodeFromIterator();
         center.setHead(true);
-        addToStructureNodes(center);
         setCurrentStructureRoot(center);
 
         // Erstelle Blätter für den Stern
         List<StarMirrorNode> leaves = new ArrayList<>();
         for (int i = 1; i < totalNodes; i++) {
-            if (!hasNextMirror()) break;
-
-            Mirror leafMirror = getNextMirror();
-            StarMirrorNode leaf = new StarMirrorNode(leafMirror.getID(), leafMirror);
+            if (!network.getMirrorCursor().hasNextMirror()) break;
+            StarMirrorNode leaf = getMirrorNodeFromIterator();
             leaves.add(leaf);
             addToStructureNodes(leaf);
         }
@@ -105,7 +88,7 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     protected int addNodesToStructure(Set<Mirror> nodesToAdd) {
-        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null || !allowStarExpansion) {
+        if (nodesToAdd.isEmpty() || getCurrentStructureRoot() == null) {
             return 0;
         }
 
@@ -115,9 +98,9 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         int actuallyAdded = 0;
 
         // Stern-Erweiterung: Neue Blätter am Zentrum anhängen
-        for (int i = 0; i < nodesToAdd.size() && hasNextMirror(); i++) {
+        for (int i = 0; i < nodesToAdd.size(); i++) {
             // **NUR STRUKTURPLANUNG**: Erstelle neues Blatt
-            StarMirrorNode newLeaf = createStarNodeForStructure();
+            StarMirrorNode newLeaf = getMirrorNodeFromIterator();
             if (newLeaf != null) {
                 // **NUR STRUKTURPLANUNG**: Verbinde Blatt mit Zentrum
                 attachLeafToCenterStructuralPlanning(center, newLeaf);
@@ -239,20 +222,6 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
     }
 
     /**
-     * **NUR PLANUNGSEBENE**: Erstellt einen neuen Stern-Knoten mit struktureller Planung.
-     */
-    private StarMirrorNode createStarNodeForStructure() {
-        if (!hasNextMirror()) return null;
-
-        Mirror mirror = getNextMirror();
-        assert mirror != null;
-        StarMirrorNode starNode = new StarMirrorNode(mirror.getID(), mirror);
-        addToStructureNodes(starNode);
-
-        return starNode;
-    }
-
-    /**
      * **NUR PLANUNGSEBENE**: Verbindet ein neues Blatt mit dem Zentrum.
      * Erstellt KEINE Mirror-Links - nur StructureNode-Verbindungen!
      */
@@ -346,19 +315,27 @@ public class StarTopologyStrategy extends BuildAsSubstructure {
         this.minStarSize = Math.max(3, minStarSize);
     }
 
-    public boolean isAllowStarExpansion() {
-        return allowStarExpansion;
-    }
-
-    public void setAllowStarExpansion(boolean allowStarExpansion) {
-        this.allowStarExpansion = allowStarExpansion;
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    @Override
+    protected StarMirrorNode getMirrorNodeFromIterator() {
+        if (network.getMirrorCursor().hasNextMirror()) {
+            StarMirrorNode node = (StarMirrorNode) super.getMirrorNodeFromIterator();
+            node.addNodeType(StructureNode.StructureType.STAR);
+            return node;
+        }
+        return null;
     }
 
     @Override
     public String toString() {
         return "StarTopologyStrategy{" +
                 "minStarSize=" + minStarSize +
-                ", allowStarExpansion=" + allowStarExpansion +
+                ", allowStarExpansion=" + true +
                 ", nodes=" + getAllStarNodes().size() +
                 ", center=" + (getStarCenter() != null ? getStarCenter().getId() : "none") +
                 '}';

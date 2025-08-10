@@ -58,7 +58,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes) {
-        if (totalNodes <= 0 || !hasNextMirror()) {
+        if (totalNodes <= 3) {
             return null;
         }
 
@@ -160,8 +160,6 @@ public class NConnectedTopology extends BuildAsSubstructure {
             // Entferne alle Verbindungen dieses Knotens
             removeNodeAndAllConnections(existingNode);
         }
-
-        setMirrorIterator(nodesToAdd.iterator());
 
         for(int i = 0; i < nodesToAdd.size(); i++) {
             allNodes.add(getMirrorNodeFromIterator());
@@ -338,7 +336,6 @@ public class NConnectedTopology extends BuildAsSubstructure {
         return totalLinks;
     }
 
-
     /**
      * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
      * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
@@ -347,23 +344,13 @@ public class NConnectedTopology extends BuildAsSubstructure {
      */
     @Override
     protected NConnectedMirrorNode getMirrorNodeFromIterator() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+        if (network.getMirrorCursor().hasNextMirror()) {
             NConnectedMirrorNode node = (NConnectedMirrorNode) super.getMirrorNodeFromIterator();
             node.addNodeType(StructureNode.StructureType.N_CONNECTED);
 
             return node;
         }
         return null;
-    }
-
-    // ===== GETTER UND SETTER =====
-
-    public int getTargetLinksPerNode() {
-        return network.getNumTargetLinksPerMirror();
-    }
-
-    public void setTargetLinksPerNode(int targetLinksPerNode, int simTime) {
-        this.network.setNumTargetedLinksPerMirror(Math.max(1, targetLinksPerNode),simTime);
     }
 
     // ===== STRING REPRESENTATION =====

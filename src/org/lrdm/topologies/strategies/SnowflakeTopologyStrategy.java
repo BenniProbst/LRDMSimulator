@@ -9,6 +9,7 @@ import org.lrdm.effectors.TopologyChange;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.StructureNode;
 import org.lrdm.topologies.validators.SnowflakeTopologyValidator;
+import org.lrdm.util.IDGenerator;
 
 import java.util.*;
 
@@ -157,16 +158,11 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
      */
     protected void initializeInternalState(Network n) {
         this.network = n;
-        // TODO: sort network on copy of mirrors
-        //this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
-        this.mirrorIterator = n.getMirrors().iterator();
 
         internNConnectedTopologie.initializeInternalState(n);
-        internNConnectedTopologie.setMirrorIterator(this.mirrorIterator);
 
         for(BuildAsSubstructure buildAsSubstructure : externHostedStructures){
             buildAsSubstructure.initializeInternalState(n);
-            buildAsSubstructure.setMirrorIterator(this.mirrorIterator);
         }
     }
 
@@ -251,7 +247,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         validateParameters();
         // **SCHRITT 1**: Ermittle derzeitige Anzahl der Knoten und Ports
-        setMirrorIterator(nodesToAdd.iterator());
+
         // Berechne Mirror-Verteilung
         int oldTotalNodes = getAllStructureNodes().size();
         int totalNodes = oldTotalNodes + nodesToAdd.size();
@@ -518,7 +514,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         if (a instanceof MirrorChange || a instanceof TargetLinkChange) {
 
-            MirrorDistributionResult newSnowflakeEstimateResult = null;
+            MirrorDistributionResult newSnowflakeEstimateResult;
 
             if(a instanceof MirrorChange mirrorChange){
                 newSnowflakeEstimateResult = calculateSnowflakeDistribution(mirrorChange.getNewMirrors(), snowflakeProperties);
@@ -528,7 +524,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
             }
 
             for (int i = 0; i < allRingNodes.size(); i++) {
-                // **SCHRITT 4**: Entferne geplante node Strukutren wenn das Muster aktiv wird
+                // **SCHRITT 4**: Entferne geplante node Strukturen, wenn das Muster aktiv wird
                 if(i%snowflakeProperties.ringBridgeGap==0){
                     // Filter the correct substructure, adjust network properties and finally calculate target links of structure
                     MirrorNode current = allRingNodes.get(i);
@@ -540,7 +536,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                         // create a derived action that matches the changes for a substructure
                         MirrorChange subMirrorChange = new MirrorChange(
                                 network,
-                                idGenerator.getNextID(),
+                                IDGenerator.getInstance().getNextID(),
                                 mirrorChange.getTime(),
                                 newSnowflakeEstimateResult.externalTreeMirrors().get(i)
                         );
@@ -562,7 +558,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 // create a derived action that matches the changes for a substructure
                 MirrorChange subMirrorChange = new MirrorChange(
                         network,
-                        idGenerator.getNextID(),
+                        IDGenerator.getInstance().getNextID(),
                         mirrorChange.getTime(),
                         newSnowflakeEstimateResult.ringMirrors()
                 );

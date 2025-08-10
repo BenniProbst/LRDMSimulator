@@ -120,7 +120,7 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
         // 3. Sammle verbleibende Mirrors und erstelle DepthLimitedTreeMirrorNodes
         List<DepthLimitedTreeMirrorNode> remainingNodes = new ArrayList<>();
 
-        for (int i=1; i<totalNodes&&hasNextMirror(); i++) {
+        for (int i=1; i<totalNodes; i++) {
             DepthLimitedTreeMirrorNode node = getNodeFromIterator();
             remainingNodes.add(node);
         }
@@ -130,41 +130,6 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
         buildDepthLimitedTreeStructureOnly(root, remainingNodes);
 
         return root;
-    }
-
-    /**
-     * Erstellt einen neuen BalancedTreeMirrorNode aus dem Mirror-Iterator.
-     *
-     * @return Neuer BalancedTreeMirrorNode oder null, wenn keine Mirrors verfügbar sind
-     */
-    protected DepthLimitedTreeMirrorNode getNodeFromIterator() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            Mirror mirror = getNextMirror();
-            MirrorNode node = createMirrorNodeForMirror(mirror);
-
-            if (node != null) {
-                node.addNodeType(StructureNode.StructureType.MIRROR);
-                node.addNodeType(StructureNode.StructureType.TREE);
-                node.addNodeType(StructureNode.StructureType.DEPTH_LIMIT_TREE);
-                node.setMirror(mirror);
-                addToStructureNodes(node); // Aktiv hinzufügen
-                ((DepthLimitedTreeMirrorNode) node).setMaxDepth(maxDepth);
-            }
-            return (DepthLimitedTreeMirrorNode) node;
-        }
-        return null;
-    }
-
-    /**
-     * Factory-Methode für baum-spezifische MirrorNode-Erstellung.
-     * Überschreibt BuildAsSubstructure für die TreeMirrorNode-Erstellung.
-     *
-     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
-     * @return Neuer TreeMirrorNode
-     */
-    @Override
-    protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
-        return new DepthLimitedTreeMirrorNode(mirror.getID(), mirror, maxDepth);
     }
 
     /**
@@ -183,8 +148,6 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
         if (!(currentRoot instanceof DepthLimitedTreeMirrorNode)) {
             return 0;
         }
-
-        this.setMirrorIterator(nodesToAdd.iterator());
 
         int actuallyAdded = 0;
         DepthLimitedTreeMirrorNode root = (DepthLimitedTreeMirrorNode) getCurrentStructureRoot();
@@ -438,6 +401,41 @@ public class DepthLimitTreeTopologyStrategy extends TreeTopologyStrategy {
                 collectValidCandidateParents(depthChild, candidates);
             }
         }
+    }
+
+    /**
+     * Erstellt einen neuen BalancedTreeMirrorNode aus dem Mirror-Iterator.
+     *
+     * @return Neuer BalancedTreeMirrorNode oder null, wenn keine Mirrors verfügbar sind
+     */
+    protected DepthLimitedTreeMirrorNode getNodeFromIterator() {
+        if (network.getMirrorCursor().hasNextMirror()) {
+            Mirror mirror = network.getMirrorCursor().getNextMirror();
+            MirrorNode node = createMirrorNodeForMirror(mirror);
+
+            if (node != null) {
+                node.addNodeType(StructureNode.StructureType.MIRROR);
+                node.addNodeType(StructureNode.StructureType.TREE);
+                node.addNodeType(StructureNode.StructureType.DEPTH_LIMIT_TREE);
+                node.setMirror(mirror);
+                addToStructureNodes(node); // Aktiv hinzufügen
+                ((DepthLimitedTreeMirrorNode) node).setMaxDepth(maxDepth);
+            }
+            return (DepthLimitedTreeMirrorNode) node;
+        }
+        return null;
+    }
+
+    /**
+     * Factory-Methode für baum-spezifische MirrorNode-Erstellung.
+     * Überschreibt BuildAsSubstructure für die TreeMirrorNode-Erstellung.
+     *
+     * @param mirror Der Mirror, für den ein MirrorNode erstellt werden soll
+     * @return Neuer TreeMirrorNode
+     */
+    @Override
+    protected MirrorNode createMirrorNodeForMirror(Mirror mirror) {
+        return new DepthLimitedTreeMirrorNode(mirror.getID(), mirror, maxDepth);
     }
 
     /**

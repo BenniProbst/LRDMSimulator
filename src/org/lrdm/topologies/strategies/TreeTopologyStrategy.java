@@ -52,7 +52,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     protected MirrorNode buildStructure(int totalNodes) {
-        if (totalNodes < 1 || !hasNextMirror()) {
+        if (totalNodes < 1) {
             return null;
         }
 
@@ -107,7 +107,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
     /**
      * **PLANUNGSEBENE**: Fügt neue Knoten zur bestehenden Baum-Struktur hinzu.
      * Überschreibt BuildAsSubstructure für baum-spezifische Einfügung.
-     * Verwendet Breadth-First-Strategie für gleichmäßige Verteilung.
+     * Verwendet eine Breadth-First-Strategie für gleichmäßige Verteilung.
      *
      * @param nodesToAdd Anzahl der hinzuzufügenden Knoten
      * @return Tatsächliche Anzahl der hinzugefügten Knoten
@@ -248,16 +248,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
         // 2. TargetLinkChange: Ändert die Links pro Mirror
         else if (a instanceof TargetLinkChange tlc) {
             // Bei TargetLinkChange werden die Links pro Mirror geändert
-            int newLinksPerMirror = tlc.getNewLinksPerMirror();
-
-            // Für Bäume ist die Anzahl Links immer n-1, unabhängig von Links pro Mirror
-            // Aber wir können eine theoretische Berechnung machen:
-            // Wenn jeder Mirror newLinksPerMirror Links haben soll, dann:
-            // Gesamtlinks = (currentMirrors * newLinksPerMirror) / 2
-            // Aber für echte Bäume ist es immer n-1
-
-            // Baum-Constraint: Maximal n-1 Links für n Knoten
-            int theoreticalLinks = (currentMirrors * newLinksPerMirror) / 2;
+            int theoreticalLinks = getTheoreticalLinks(tlc, currentMirrors);
             int treeConstraintLinks = Math.max(0, currentMirrors - 1);
 
             // Für Bäume: Nimm das Minimum zwischen theoretischer Berechnung und Baum-Constraint
@@ -276,6 +267,19 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
 
         // 4. Unbekannter Action-Typ: Verwende aktuelle Netzwerk-Konfiguration
         return getNumTargetLinks(network);
+    }
+
+    private static int getTheoreticalLinks(TargetLinkChange tlc, int currentMirrors) {
+        int newLinksPerMirror = tlc.getNewLinksPerMirror();
+
+        // Für Bäume ist die Anzahl Links immer n-1, unabhängig von Links pro Mirror
+        // Aber wir können eine theoretische Berechnung machen:
+        // Wenn jeder Mirror newLinksPerMirror Links haben soll, dann:
+        // Gesamtlinks = (currentMirrors * newLinksPerMirror) / 2
+        // Aber für echte Bäume ist es immer n-1
+
+        // Baum-Constraint: Maximal n-1 Links für n Knoten
+        return (currentMirrors * newLinksPerMirror) / 2;
     }
 
     // ===== BAUM-SPEZIFISCHE HILFSMETHODEN =====
@@ -345,7 +349,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
      * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
      */
     protected TreeMirrorNode getMirrorNodeFromIterator() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+        if (network.getMirrorCursor().hasNextMirror()) {
             TreeMirrorNode node = (TreeMirrorNode) super.getMirrorNodeFromIterator();
             node.addNodeType(StructureNode.StructureType.TREE);
             return node;

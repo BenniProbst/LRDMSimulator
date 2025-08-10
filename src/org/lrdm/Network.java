@@ -19,16 +19,12 @@ import java.util.logging.Logger;
  */
 public class Network {
 	private final Properties props;
-	private final List<Mirror> mirrors;
+	private final MirrorCursor mirrorCursor;
 	private final Set<Link> links;
 	private final List<Probe> probes;
 	private Effector effector;
-	private int numTargetMirrors;
 	private int numTargetLinksPerMirror;
 	private TopologyStrategy strategy;
-
-	private double faultProbability = 0.01;
-	private final Random random;
 
 	private final Logger log;
 
@@ -50,27 +46,15 @@ public class Network {
 	 * @param props the properties of the simulation
 	 */
 	public Network(TopologyStrategy strategy, int numMirrors, int numLinks, int fileSize, Properties props) {
-		numTargetMirrors = numMirrors;
 		numTargetLinksPerMirror = numLinks;
 		this.props = props;
-		mirrors = new ArrayList<>();
+		mirrorCursor = new MirrorCursor(numMirrors,fileSize,props);
 		probes = new ArrayList<>();
 		this.strategy = strategy;
 
-		// create the mirrors
-		for (int i = 0; i < numMirrors; i++) {
-			mirrors.add(new Mirror(i, 0, props));
-		}
-		mirrors.get(0).setRoot(true);
 		// create the links - default strategy: spanning tree
 		links = strategy.initNetwork(this, props);
 		log = Logger.getLogger(this.getClass().getName());
-		//put a new data package on the first mirror
-		DataPackage initialData = new DataPackage(fileSize);
-		initialData.increaseReceived(fileSize);
-		mirrors.get(0).setDataPackage(initialData);
-		faultProbability = Double.parseDouble(props.getProperty("fault_probability"));
-		random = new Random();
 
 		bandwidthHistory = new HashMap<>();
 		activeLinkHistory = new HashMap<>();
@@ -106,7 +90,7 @@ public class Network {
 	 * @return List of all {@link Mirror}s
 	 */
 	public List<Mirror> getMirrors() {
-		return mirrors;
+		return mirrorCursor.getMirrors();
 	}
 
 	/**Get Mirrors sorted by ID in ascending order.
@@ -114,7 +98,7 @@ public class Network {
 	 * @return {@link List} or mirrors sorted in ascending order by ID
 	 */
 	public List<Mirror> getMirrorsSortedById() {
-		return mirrors.stream().sorted(Comparator.comparingInt(Mirror::getID)).toList();
+		return mirrorCursor.getMirrorsSortedById();
 	}
 
 	/**Returns all links of the net as a set.
@@ -133,13 +117,13 @@ public class Network {
 	 */
 	public void setNumMirrors(int newMirrors, int simTime) {
 		log.log(Level.INFO, "setNumMirrors({0},{1})",  new Object[] {newMirrors, simTime});
-		int upMirrors = Math.toIntExact(mirrors.stream().filter(Mirror::isUsableForNetwork).count());
+		int upMirrors = mirrorCursor.getNumUsableMirrors();
 		if (newMirrors > upMirrors) { // create new mirrors
 			strategy.handleAddNewMirrors(this, newMirrors - upMirrors, props, simTime);
 		} else if (newMirrors < upMirrors) { // send shutdown signal to mirrors being too much
 			strategy.handleRemoveMirrors(this, upMirrors - newMirrors, props, simTime);
 		}
-		numTargetMirrors = newMirrors;
+		mirrorCursor.setNumTargetMirrors(newMirrors);
 	}
 
 	/**Set the topology strategy to use. This will call {@link TopologyStrategy#restartNetwork(Network, Properties, int)} to reestablish the links between the mirrors accordingly.
@@ -185,7 +169,7 @@ public class Network {
 	 * @return number of mirrors in the net (regardless of their state)
 	 */
 	public int getNumMirrors() {
-		return mirrors.size();
+		return mirrorCursor.getNumMirrors();
 	}
 
 	/**
@@ -243,23 +227,24 @@ public class Network {
 	 * @return targeted number of ready mirrors
 	 */
 	public int getNumTargetMirrors() {
-		return numTargetMirrors;
+		return mirrorCursor.getNumTargetMirrors();
 	}
 
 	/**
 	 * @return current number of ready mirrors
 	 */
 	public int getNumReadyMirrors() {
-		int ret = 0;
-		for (Mirror m : mirrors) {
-			if (m.getState() == Mirror.State.READY || m.getState() == Mirror.State.HASDATA) {
-				ret++;
-			}
-		}
-		return ret;
+		return mirrorCursor.getNumReadyMirrors();
 	}
 
-	/**Get the history of the overall bandwidth use.
+    /**
+     * @return the {@link MirrorCursor} used by this network
+     */
+    public MirrorCursor getMirrorCursor() {
+        return mirrorCursor;
+    }
+
+    /**Get the history of the overall bandwidth use.
 	 *
 	 * @return a map with simulation time as key and the bandwidth used as value
 	 */
@@ -305,24 +290,13 @@ public class Network {
 	}
 
 	/**Inspect the network for mirrors in the STOPPED state to remove them from the network.
-	 * Else calls {@link Mirror#timeStep(int)}
+	 * Else calls {@link MirrorCursor#handleMirrors(int)} (int)}
 	 *
 	 * @param simTime current simulation time
 	 */
 	private void handleMirrors(int simTime) {
 		//find stopped mirrors to remove them or invoke timeStep on the active mirrors
-		List<Mirror> stoppedMirrors = new ArrayList<>();
-		for (Mirror m : mirrors) {
-			if (m.getState() == Mirror.State.STOPPED) {
-				stoppedMirrors.add(m);
-			} else {
-				if(random.nextDouble() < faultProbability && !m.isRoot()) {
-					m.crash(simTime);
-				}
-				m.timeStep(simTime);
-			}
-		}
-		mirrors.removeAll(stoppedMirrors);
+		mirrorCursor.handleMirrors(simTime);
 	}
 
 	/**Remove all links from the network that are in CLOSED state and

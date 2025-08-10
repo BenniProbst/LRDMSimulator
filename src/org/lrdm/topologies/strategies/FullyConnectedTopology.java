@@ -104,8 +104,6 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
         List<FullyConnectedMirrorNode> newNodes = new ArrayList<>();
         int actuallyAdded = 0;
 
-        List<Mirror> tmpMirrorIterate = new ArrayList<>(nodesToAdd);
-        setMirrorIterator(tmpMirrorIterate.iterator());
         // Erstelle neue FullyConnectedMirrorNodes - Verwende das saubere Interface
         for (int i = 0; i < nodesToAdd.size(); i++) {
             FullyConnectedMirrorNode newNode = getMirrorNodeFromIterator();
@@ -331,7 +329,7 @@ public class FullyConnectedTopology extends BuildAsSubstructure {
      */
     @Override
     protected FullyConnectedMirrorNode getMirrorNodeFromIterator() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
+        if (network.getMirrorCursor().hasNextMirror()) {
             FullyConnectedMirrorNode node = (FullyConnectedMirrorNode) super.getMirrorNodeFromIterator();
             node.addNodeType(StructureNode.StructureType.FULLY_CONNECTED);
             return node;

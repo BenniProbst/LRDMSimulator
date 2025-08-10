@@ -102,8 +102,6 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
             return 0;
         }
 
-        this.setMirrorIterator(nodesToAdd.iterator());
-
         int addedCount = 0;
 
         // Sammle alle verfügbaren Einfüge-Punkte (Balance-optimiert)
@@ -662,9 +660,10 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
      * @return Neuer BalancedTreeMirrorNode oder null, wenn keine Mirrors verfügbar sind
      */
     protected BalancedTreeMirrorNode getNodeFromIterator() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            Mirror mirror = getNextMirror();
+        if (network.getMirrorCursor().hasNextMirror()) {
+            Mirror mirror = network.getMirrorCursor().getNextMirror();
             MirrorNode node = createMirrorNodeForMirror(mirror);
+
             if (node != null) {
                 node.addNodeType(StructureNode.StructureType.MIRROR);
                 node.addNodeType(StructureNode.StructureType.TREE);

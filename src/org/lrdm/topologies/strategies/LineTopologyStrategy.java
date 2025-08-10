@@ -111,7 +111,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         LineMirrorNode head = getLineHead();
         if (head == null) return 0;
 
-        setMirrorIterator(nodesToAdd.iterator());
         List<LineMirrorNode> lineNodes = getAllLineNodes();
         int actuallyAdded = 0;
 
@@ -178,22 +177,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         return new LineMirrorNode(mirror.getID(), mirror);
     }
 
-    /**
-     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
-     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
-     *
-     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
-     */
-    @Override
-    protected LineMirrorNode getMirrorNodeFromIterator() {
-        if (mirrorIterator != null && mirrorIterator.hasNext()) {
-            LineMirrorNode node = (LineMirrorNode) super.getMirrorNodeFromIterator();
-            node.addNodeType(StructureNode.StructureType.LINE);
-            return node;
-        }
-        return null;
-    }
-
     // ===== FEHLENDE TOPOLOGY STRATEGY METHODEN =====
 
     /**
@@ -241,20 +224,6 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
             // StructureNode-Verbindung
             current.addChild(next);
         }
-    }
-
-    /**
-     * **NUR PLANUNGSEBENE**: Erstellt einen neuen Linien-Knoten mit struktureller Planung.
-     */
-    private LineMirrorNode createLineNodeForStructure() {
-        if (!hasNextMirror()) return null;
-
-        Mirror mirror = getNextMirror();
-        assert mirror != null;
-        LineMirrorNode lineNode = new LineMirrorNode(mirror.getID(), mirror);
-        addToStructureNodes(lineNode);
-
-        return lineNode;
     }
 
     /**
@@ -450,6 +419,22 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
 
     public void setAllowLineExpansion(boolean allowLineExpansion) {
         this.allowLineExpansion = allowLineExpansion;
+    }
+
+    /**
+     * Erstellt einen neuen MirrorNode mit Mirror aus dem Iterator.
+     * AKTUALISIERT: Fügt den Knoten automatisch zu structureNodes hinzu.
+     *
+     * @return Neuer MirrorNode mit zugeordnetem Mirror oder null
+     */
+    @Override
+    protected LineMirrorNode getMirrorNodeFromIterator() {
+        if (network.getMirrorCursor().hasNextMirror()) {
+            LineMirrorNode node = (LineMirrorNode) super.getMirrorNodeFromIterator();
+            node.addNodeType(StructureNode.StructureType.LINE);
+            return node;
+        }
+        return null;
     }
 
     @Override
