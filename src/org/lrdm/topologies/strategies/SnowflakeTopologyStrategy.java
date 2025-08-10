@@ -473,8 +473,16 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
     @Override
     protected boolean validateTopology() {
         // Validiere alle Substrukturen über BuildAsSubstructure.nodeToSubstructure
-        for (BuildAsSubstructure substructure : getNodeToSubstructureMapping().values()) {
-            if (!substructure.validateTopology()) {
+        // 1) Snapshot + Duplikate eliminieren
+        Set<BuildAsSubstructure> uniqueSubs = new HashSet<>(getNodeToSubstructureMapping().values());
+
+        // 2) Gegen Selbstreferenzen/zyklen absichern
+        Set<BuildAsSubstructure> visited = new HashSet<>();
+        for (BuildAsSubstructure sub : uniqueSubs) {
+            if (sub == this) continue;           // Selbstreferenz ignorieren, falls vorhanden
+            if (!visited.add(sub)) continue;     // Duplikat/zyklische Referenz überspringen
+
+            if (!sub.validateTopology()) {
                 return false;
             }
         }
