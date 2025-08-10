@@ -66,18 +66,22 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         this(new SnowflakeProperties(
                 0.5,
                 2
-        ));
+        ), null);
     }
 
     public SnowflakeTopologyStrategy(SnowflakeProperties snowflakeProperties) {
-        super();
-        this.snowflakeProperties = snowflakeProperties;
+        this(snowflakeProperties, null);
     }
 
     public SnowflakeTopologyStrategy(SnowflakeProperties snowflakeProperties, List<BuildAsSubstructure> externHostedStructures) {
         super();
         this.snowflakeProperties = snowflakeProperties;
-        this.externHostedStructures = externHostedStructures;
+        if(externHostedStructures == null || externHostedStructures.isEmpty()){
+            this.externHostedStructures = List.of(new StarTopologyStrategy());
+        }
+        else{
+            this.externHostedStructures = externHostedStructures;
+        }
     }
 
     private MirrorDistributionResult calculateSnowflakeDistribution(int totalMirrors, SnowflakeProperties snowflakeProperties) {
@@ -147,6 +151,23 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
     }
 
     // ===== ÜBERSCHREIBUNG DER BUILD-AS-SUBSTRUCTURE-METHODEN =====
+
+    /**
+     * Initialisiert den internen Zustand für ein Netzwerk.
+     */
+    protected void initializeInternalState(Network n) {
+        this.network = n;
+        this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
+        this.mirrorIterator = n.getMirrors().iterator();
+
+        internNConnectedTopologie.initializeInternalState(n);
+        internNConnectedTopologie.setMirrorIterator(this.mirrorIterator);
+
+        for(BuildAsSubstructure buildAsSubstructure : externHostedStructures){
+            buildAsSubstructure.initializeInternalState(n);
+            buildAsSubstructure.setMirrorIterator(this.mirrorIterator);
+        }
+    }
 
     /**
      * **PLANUNGSEBENE**: Erstellt die hierarchische Schneeflocken-Struktur.

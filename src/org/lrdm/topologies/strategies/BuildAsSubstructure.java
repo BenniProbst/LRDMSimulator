@@ -859,11 +859,10 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     /**
      * Initialisiert den internen Zustand für ein Netzwerk.
      */
-    private void initializeInternalState(Network n) {
+    protected void initializeInternalState(Network n) {
         this.network = n;
         this.network.getMirrors().sort(Comparator.comparingInt(Mirror::getID));
         this.mirrorIterator = n.getMirrors().iterator();
-        //TODO: also reset network for all substructures
     }
 
     /**
