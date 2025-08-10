@@ -867,7 +867,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
     /**
      * Initialisiert den internen Zustand für ein Netzwerk.
      */
-    protected void initializeInternalState(Network n) {
+    public void initializeInternalState(Network n) {
         this.network = n;
     }
 
@@ -875,7 +875,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      * Setzt nur die StructureNode-Struktur zurück, nicht die Mirror-Links.
      * Wird verwendet, wenn die Mirror-Links bereits durch TopologyStrategy.restartNetwork() gelöscht wurden.
      */
-    protected void resetInternalStateStructureOnly() {
+    public void resetInternalStateStructureOnly() {
         nodeToSubstructure.clear();
         structureNodes.clear();
         currentStructureRoot = null;
