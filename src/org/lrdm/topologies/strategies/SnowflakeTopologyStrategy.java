@@ -347,7 +347,13 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                         actuallyAdded += newNodes.size();
                     }
                     if (externNodesDiff < 0) {
-                        strucTup.substructure().removeNodesFromStructure(Math.abs(externNodesDiff));
+                        Set<MirrorNode> reuse = strucTup.substructure().removeNodesFromStructure(Math.abs(externNodesDiff));
+                        Set<Mirror> extractedMirrors = new HashSet<>();
+                        for(MirrorNode m : reuse){
+                            extractedMirrors.add(m.getMirror());
+                        }
+                        extractedMirrors.forEach(m -> m.shutdown(network.getCurrentTimeStep()));
+                        nodesToAdd.addAll(network.getMirrorCursor().createMirrors(extractedMirrors.size(), network.getCurrentTimeStep()));
                     }
 
                     // Externe Struktur wieder eingliedern
