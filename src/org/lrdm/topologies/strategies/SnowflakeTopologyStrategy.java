@@ -208,11 +208,12 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         int count = 0;
         for (MirrorNode nConNode : allNConNodes) {
-            if (count % snowflakeProperties.ringBridgeGap == 0) {
+            int nodeCount = snowflakeResult.externalStructureMirrors.get(count);
+            if (count % snowflakeProperties.ringBridgeGap == 0 && nodeCount > 0) {
                 // build and interlink substructure with estimated mirrors
                 int externStructureTypeIndex = count / snowflakeProperties.ringBridgeGap;
                 BuildAsSubstructure localBuild = substructureFactory.createCycledAndInit(externStructureTypeIndex, substructureRotation, network);
-                localBuild.buildStructure(snowflakeResult.externalStructureMirrors.get(count));
+                localBuild.buildStructure(nodeCount);
                 // Füge externe Struktur auch in die Snowflake für alle Strukturen und MirrorNode hierarchisch hinzu
                 connectToStructureNodes(nConNode, localBuild);
             }
@@ -306,6 +307,10 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         // External Structure update
         for (int i = 0; i < snowflakeResult.ringMirrors; i++) {
+            int newNodeCount = snowflakeResult.externalStructureMirrors.get(i);
+            if (newNodeCount == 0) {
+                continue;
+            }
             // **SCHRITT 4**: Füge neue nodes zu Port strukturen hinzu und/oder erstelle neue Port strukturen
             if (i > oldSnowflakeResult.ringMirrors) {
                 // Index übersteigt alte Ring-Struktur: neue externe Strukturen erstellen und eingliedern
@@ -316,12 +321,12 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                     BuildAsSubstructure localBuild = substructureFactory.createCycledAndInit(externStructureTypeIndex, substructureRotation, network);
                     localBuild.initializeInternalState(network);
 
-                    localBuild.buildStructure(snowflakeResult.externalStructureMirrors.get(i));
+                    localBuild.buildStructure(newNodeCount);
                     // Externe Struktur eingliedern
                     connectToStructureNodes(
                             current,
                             localBuild);
-                    actuallyAdded += snowflakeResult.externalStructureMirrors.get(i);
+                    actuallyAdded += newNodeCount;
                 }
             } else {
                 // Wenn Muster aktiv wird, nehme erste nicht verbundene Struktur aus der Liste, update und eingliedern
@@ -331,7 +336,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                     assert strucTup != null;
                     disconnectedSubstructures.remove(strucTup);
 
-                    int externNodesDiff = snowflakeResult.externalStructureMirrors.get(i) - oldSnowflakeResult.externalStructureMirrors.get(i);
+                    int externNodesDiff = newNodeCount - oldSnowflakeResult.externalStructureMirrors.get(i);
                     if (externNodesDiff > 0) {
                         Set<Mirror> newNodes = nodeSubset(nodesToAdd, externNodesDiff);
                         strucTup.substructure().addNodesToStructure(newNodes);
@@ -444,6 +449,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
 
         // External Structure update
         for (int i = 0; i < snowflakeResult.ringMirrors; i++) {
+            int newNodeCount = snowflakeResult.externalStructureMirrors.get(i);
             // **SCHRITT 4**: Entferne geplante node Strukutren wenn das Muster aktiv wird
             if (i % snowflakeProperties.ringBridgeGap == 0) {
                 MirrorNode current = existingRingNodes.get(i);
@@ -451,7 +457,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 assert strucTup != null;
                 disconnectedSubstructures.remove(strucTup);
 
-                int externNodesDiff = snowflakeResult.externalStructureMirrors.get(i) - oldSnowflakeResult.externalStructureMirrors.get(i);
+                int externNodesDiff = newNodeCount - oldSnowflakeResult.externalStructureMirrors.get(i);
                 if (externNodesDiff < 0) {
                     actuallyRemoved.addAll(strucTup.substructure().removeNodesFromStructure(Math.abs(externNodesDiff)));
                 }
