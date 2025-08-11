@@ -207,12 +207,13 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 .toList();
 
         int count = 0;
+        int externStructureTypeIndex = 0;
         for (MirrorNode nConNode : allNConNodes) {
             int nodeCount = snowflakeResult.externalStructureMirrors.get(count);
             if (count % snowflakeProperties.ringBridgeGap == 0 && nodeCount > 0) {
                 // build and interlink substructure with estimated mirrors
-                int externStructureTypeIndex = count / snowflakeProperties.ringBridgeGap;
                 BuildAsSubstructure localBuild = substructureFactory.createCycledAndInit(externStructureTypeIndex, substructureRotation, network);
+                externStructureTypeIndex++;
                 localBuild.buildStructure(nodeCount);
                 // Füge externe Struktur auch in die Snowflake für alle Strukturen und MirrorNode hierarchisch hinzu
                 connectToStructureNodes(nConNode, localBuild);
@@ -306,6 +307,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 .toList();
 
         // External Structure update
+        int externStructureTypeIndex = 0;
         for (int i = 0; i < snowflakeResult.ringMirrors; i++) {
             int newNodeCount = snowflakeResult.externalStructureMirrors.get(i);
             if (newNodeCount == 0) {
@@ -317,8 +319,8 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 if (i % snowflakeProperties.ringBridgeGap == 0) {
                     MirrorNode current = existingRingNodes.get(i);
 
-                    int externStructureTypeIndex = i / snowflakeProperties.ringBridgeGap;
                     BuildAsSubstructure localBuild = substructureFactory.createCycledAndInit(externStructureTypeIndex, substructureRotation, network);
+                    externStructureTypeIndex++;
                     localBuild.initializeInternalState(network);
 
                     localBuild.buildStructure(newNodeCount);

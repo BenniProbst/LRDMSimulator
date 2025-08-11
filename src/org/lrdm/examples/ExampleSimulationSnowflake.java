@@ -57,7 +57,6 @@ public class ExampleSimulationSnowflake {
                 StructureNode.StructureType.STAR
         );
 
-
         effector.setStrategy(new SnowflakeTopologyStrategy(
                 new SnowflakeProperties(
                         0.3,
