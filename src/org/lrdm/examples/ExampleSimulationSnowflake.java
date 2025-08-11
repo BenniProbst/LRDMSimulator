@@ -76,7 +76,7 @@ public class ExampleSimulationSnowflake {
 
 		effector.setStrategy(new SnowflakeTopologyStrategy(
                 new SnowflakeProperties(
-                        0.2,
+                        0.8,
                         3
                 ),
                 substructureFactory,
