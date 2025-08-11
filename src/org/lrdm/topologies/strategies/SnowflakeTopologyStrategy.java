@@ -420,7 +420,9 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         // **SCHRITT 3**: Schrumpfe den Ring und entferne Port Strukturen bei Bedarf, updates an bestehende Strukturen
 
         // Ring selbst ausgliedern
-        disconnectFromStructureNodes(internNConnectedTopologie.getCurrentStructureRoot(), internNConnectedTopologie);
+        if(this.getNodeToSubstructureMapping().containsValue(internNConnectedTopologie)){
+            disconnectFromStructureNodes(internNConnectedTopologie.getCurrentStructureRoot(), internNConnectedTopologie);
+        }
 
         // Ring update und structureNodes updaten
         int ringDiff = snowflakeResult.ringMirrors - oldSnowflakeResult.ringMirrors;
