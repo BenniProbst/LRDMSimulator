@@ -134,6 +134,7 @@ public class MirrorCursor {
      * @return a set of added {@link Mirror}s
      */
     public Set<Mirror> createMirrors(int numberOfMirrors, int simTime) {
+        if(mirrorIterator >= mirrors.size()) mirrorIterator = mirrors.size() - 1;
         int count = Math.max(0, numberOfMirrors);
         Set<Mirror> created = new LinkedHashSet<>(count);
         IDGenerator idGen = IDGenerator.getInstance();
