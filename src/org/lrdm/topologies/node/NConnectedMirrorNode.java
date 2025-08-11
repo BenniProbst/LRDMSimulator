@@ -341,7 +341,7 @@ public class NConnectedMirrorNode extends MirrorNode {
             if (!parentRecord.belongsToStructure(typeId, headId)) {
                 return true;
             }
-            return !allNodes.contains(parent);
+            return false;// return !allNodes.contains(parent);
         }
 
         // Parent muss innerhalb der N-Connected-Struktur sein

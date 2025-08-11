@@ -4,6 +4,7 @@ package org.lrdm.topologies.strategies;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.*;
+import org.lrdm.topologies.node.BalancedTreeMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.NConnectedMirrorNode;
 import org.lrdm.topologies.node.StructureNode;
@@ -62,32 +63,28 @@ public class NConnectedTopology extends BuildAsSubstructure {
             return null;
         }
 
-        // 1. Erstelle alle Knoten
+        // Erstelle Root-Node als BalancedTreeMirrorNode
+        NConnectedMirrorNode root = getMirrorNodeFromIterator();
+        if (root == null) return null;
+
+        setCurrentStructureRoot(root);
+
         List<NConnectedMirrorNode> allNodes = new ArrayList<>();
-        for (int i = 0; i < totalNodes; i++) {
+        allNodes.add(root);
+        // 1. Erstelle alle Knoten
+        for (int i = 1; i < totalNodes; i++) {
             NConnectedMirrorNode node = getMirrorNodeFromIterator();
-            allNodes.add(node);
-            addToStructureNodes(node); // Registriere bei BuildAsSubstructure
-            if (node.getMirror().isRoot()) {
-                setCurrentStructureRoot(node);
-                node.setHead(StructureNode.StructureType.N_CONNECTED, true);
+            if (node != null) {
+                allNodes.add(node);
             }
         }
+
+        // Baue balancierte Struktur mit Breadth-First-Ansatz
+        root.setHead(StructureNode.StructureType.N_CONNECTED, true);
 
         if (allNodes.isEmpty()) {
             return null;
         }
-
-        // 2. Setze den ersten Knoten als Head und Root
-        NConnectedMirrorNode root = allNodes.stream()
-                .filter(node -> node.getMirror() != null && node.isRoot())
-                .findFirst()
-                .orElse(null);
-
-        if (root == null) {
-            throw new IllegalStateException("No root node found in FullyConnected structure");
-        }
-
 
         // 3. Erstelle N-Connected-Verbindungen
         buildNConnectedStructure(allNodes);
@@ -113,7 +110,7 @@ public class NConnectedTopology extends BuildAsSubstructure {
                 if(!allNodes.get(firstNode).getChildren().contains(allNodes.get(secondNodeIndex))){
                     allNodes.get(firstNode).addChild(allNodes.get(secondNodeIndex));
                 }
-                if(secondNodeShift == 1 && allNodes.get(firstNode).isRoot()){
+                if(secondNodeShift == 1 && allNodes.get(firstNode).isHead()){
                     setCurrentStructureRoot(allNodes.get(firstNode));
                     allNodes.get(firstNode).setHead(StructureNode.StructureType.N_CONNECTED, true);
                     root = allNodes.get(firstNode);

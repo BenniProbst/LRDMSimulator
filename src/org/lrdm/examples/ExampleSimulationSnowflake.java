@@ -71,7 +71,7 @@ public class ExampleSimulationSnowflake {
 
         List<StructureNode.StructureType> rotation2 = List.of(
                 StructureNode.StructureType.N_CONNECTED,
-                StructureNode.StructureType.FULLY_CONNECTED
+                StructureNode.StructureType.BALANCED_TREE
         );
 
 		effector.setStrategy(new SnowflakeTopologyStrategy(
