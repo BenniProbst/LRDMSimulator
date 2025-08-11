@@ -37,7 +37,7 @@ public class ExampleSimulationSnowflake {
 		TimedRDMSim sim = new TimedRDMSim();
 		sim.initialize(new SnowflakeTopologyStrategy());
 		Effector effector = sim.getEffector();
-		int mirrors = 10;
+		int mirrors = 50;
 		for(int t = 0; t < 100; t += 10) {
 			if(t == 40) continue;
 			effector.setMirrors(mirrors, t);
@@ -83,13 +83,13 @@ public class ExampleSimulationSnowflake {
                 rotation2
         ), 80);
 
-		int startMirrors = 15;
+		int startMirrors = 80;
 		int count = 0;
 		for(int t = 200; t < 300; t += 10) {
 			effector.setMirrors(startMirrors - count++,t);
 		}
 
-		startMirrors = 5;
+		startMirrors = 50;
 		count = 0;
 		for(int t = 300; t < 400; t += 10) {
 			effector.setMirrors(startMirrors + count,t);
