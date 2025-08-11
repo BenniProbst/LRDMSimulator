@@ -196,7 +196,7 @@ public class TreeMirrorNode extends MirrorNode {
         }
 
         // Root muss Edge-Links haben (Verbindung nach außen)
-        return rootNode.getNumEdgeLinks() > 0;
+        return rootNode.getNumEdgeLinks() > 0 || allNodes.size() == 1;
     }
 
     /**
