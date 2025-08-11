@@ -352,8 +352,8 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                         for(MirrorNode m : reuse){
                             extractedMirrors.add(m.getMirror());
                         }
-                        extractedMirrors.forEach(m -> m.shutdown(network.getCurrentTimeStep()));
-                        nodesToAdd.addAll(network.getMirrorCursor().createMirrors(extractedMirrors.size(), network.getCurrentTimeStep()));
+                        extractedMirrors.forEach(m -> m.shutdown(network.getCurrentTimeStep()+1));
+                        nodesToAdd.addAll(network.getMirrorCursor().createMirrors(extractedMirrors.size(), network.getCurrentTimeStep()+1));
                     }
 
                     // Externe Struktur wieder eingliedern
