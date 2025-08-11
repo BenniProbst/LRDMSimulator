@@ -728,7 +728,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 for(MirrorNode node : bNodes){
                     node.updateChildRecordMergeStructureHead(
                             Map.of(
-                                    getCurrentStructureType(),externRoot.getId()
+                                    getCurrentStructureType(),b.getCurrentStructureRoot().getId()
                             ),
                             bNodeStruc
                     );
