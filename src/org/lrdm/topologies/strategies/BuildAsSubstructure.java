@@ -686,32 +686,21 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
 
         // Entferne alle StructureNodes von unserer Struktur, nodes verbleiben nur in der externen Struktur.
         // Entferne aber nur, wenn die node nicht in einer anderen Substruktur unserer Struktur teilnimmt
-        externStructureAllNodes.stream()
-                .filter(node -> !nodeToSubstructure.containsKey(node))
+        externStructureAllNodes
                 .forEach(this::removeFromStructureNodes);
 
         // Entferne den Strukturtypen dieser Struktur aus der externen Struktur
         externStructureAllNodes.forEach(node -> node.removeNodeType(getCurrentStructureType()));
-        // Entferne alle übrigen Kinder aus den nodes der externen Struktur
-        StructureNode.StructureType externType = buildExtern.getCurrentStructureType();
 
-        List<Map.Entry<MirrorNode, StructureNode>> toRemove = externStructureAllNodes.stream()
-                // baue Paare (parent, child)
-                .flatMap(parent -> parent.getChildren().stream()
-                        .map(child -> Map.entry(parent, child)))
-                // Filter: ChildRecord fehlt ODER hat den externen Typ nicht
-                .filter(entry -> {
-                    StructureNode parent = entry.getKey();
-                    StructureNode child  = entry.getValue();
-                    StructureNode.ChildRecord rec = parent.findChildRecordById(child.getId());
-                    return rec == null || !rec.hasType(externType);
-                })
-                .toList();
-
-        // Entfernen in separater Schleife (keine ConcurrentModification), nur nodes die eindeutig extern sind
-        toRemove.stream()
-                .filter(node -> !nodeToSubstructure.containsKey(node.getKey()))
-                .forEach(entry -> entry.getKey().removeChild(entry.getValue()));
+        // Lösche alle Kinder der externen Struktur, die andere Strukturgruppen bilden
+        for(MirrorNode node : externStructureAllNodes){
+            Set<StructureNode> children = node.getChildren();
+            for(StructureNode child:children){
+                if(nodeToSubstructure.containsKey(child)){
+                    node.removeChild(child);
+                }
+            }
+        }
 
         // ChildRecords der nodes in der zu entfernenden Struktur für alle nodes gleichzeitig säubern
         // die root node der entfernten Struktur, steht keine der anderen Substrukturen mehr zur Verfügung, auch hier
@@ -721,7 +710,39 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                         Set.of(getCurrentStructureType()),externalStructureSet)
                 );
 
-        return buildExtern.getCurrentStructureRoot();
+        MirrorNode externRoot = buildExtern.getCurrentStructureRoot();
+        if(getCurrentStructureRoot() == externRoot){
+            this.currentStructureRoot = null;
+            // Remove only the current root from all other substructures, since only the core structure was removed
+            // Reset all partitioned Substructures to accept their own structure root as a single source of truth head
+            for(BuildAsSubstructure b:nodeToSubstructure.values()){
+                // Remove all Snowflake type indexes including head
+                Set<MirrorNode> bNodes = b.getAllStructureNodes();
+                Set<StructureNode> bNodeStruc = new HashSet<>(bNodes);
+                for(MirrorNode node : bNodes){
+                    node.updateChildRecordRemoveStructureHead(
+                            Set.of(getCurrentStructureType()),bNodeStruc
+                    );
+                }
+                // Set each Substructure head for Snowflake to itself
+                for(MirrorNode node : bNodes){
+                    node.updateChildRecordMergeStructureHead(
+                            Map.of(
+                                    getCurrentStructureType(),externRoot.getId()
+                            ),
+                            bNodeStruc
+                    );
+                }
+            }
+        }
+        else{
+            // The structure was not the core structure, and we just need to remove the child of the parent of root
+            if(externRoot.getParent() != null){
+                externRoot.getParent().removeChild(externRoot);
+            }
+        }
+
+        return externRoot;
     }
 
     /**

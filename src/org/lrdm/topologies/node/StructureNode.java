@@ -620,10 +620,14 @@ public class StructureNode {
             }
             HashSet<StructureType> copyTypeIdsLocal = new HashSet<>(c.getTypeIds());
             copyTypeIdsLocal.removeAll(typeIds);
+
+            HashMap<StructureType, Integer> copyHeadIdsLocal = new HashMap<>(c.getHeadIds());
+            copyHeadIdsLocal.keySet().removeAll(typeIds);
+
             ChildRecord newChildRecord = new ChildRecord(
                     c.getChild(),
                     copyTypeIdsLocal,
-                    c.getHeadIds());
+                    copyHeadIdsLocal);
             copyChildRecordsForUpdate.add(newChildRecord);
             removeChildRecord.add(c);
         }
