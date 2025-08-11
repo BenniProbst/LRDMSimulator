@@ -31,6 +31,7 @@ public abstract class TopologyStrategy {
             n.getMirrorCursor().createMirrors(1, simTime);
             usableMirrorCount++;
         }
+        n.getMirrorCursor().resetMirrorCursor();
         return n.getLinks().stream().filter(Link::isActive).collect(Collectors.toSet());
     }
 
