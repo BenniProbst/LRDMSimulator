@@ -355,6 +355,7 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                             current,
                             strucTup.substructure());
                     disconnectedSubstructures.remove(strucTup);
+                    externStructureTypeIndex++;
                 }
             }
         }
