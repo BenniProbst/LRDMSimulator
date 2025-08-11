@@ -611,9 +611,24 @@ public class StructureNode {
      * löscht Typen
      */
     public void updateChildRecordRemoveStructureHead(Set<StructureType> typeIds, Set<StructureNode> childrenNodes) {
-        //TODO: remove ChildRecord types from childrenNodes
         HashSet<ChildRecord> copyChildRecordsForUpdate = new HashSet<>();
         HashSet<ChildRecord> removeChildRecord = new HashSet<>();
+
+        for(ChildRecord c:children){
+            if(!childrenNodes.contains(c.child())){
+                continue;
+            }
+            HashSet<StructureType> copyTypeIdsLocal = new HashSet<>(c.getTypeIds());
+            copyTypeIdsLocal.removeAll(typeIds);
+            ChildRecord newChildRecord = new ChildRecord(
+                    c.getChild(),
+                    copyTypeIdsLocal,
+                    c.getHeadIds());
+            copyChildRecordsForUpdate.add(newChildRecord);
+            removeChildRecord.add(c);
+        }
+        children.removeAll(removeChildRecord);
+        children.addAll(copyChildRecordsForUpdate);
     }
 
     /**
