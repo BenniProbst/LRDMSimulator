@@ -316,9 +316,10 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 continue;
             }
             // **SCHRITT 4**: Füge neue nodes zu Port strukturen hinzu und/oder erstelle neue Port strukturen
-            if (i > oldSnowflakeResult.ringMirrors) {
+            // Sind die Muster aus der alten kleinen Liste verbraucht oder die kürzere Liste zu ende, Wechsel auf Generieren
+            if (i > oldSnowflakeResult.ringMirrors || disconnectedSubstructures.isEmpty()) {
                 // Index übersteigt alte Ring-Struktur: neue externe Strukturen erstellen und eingliedern
-                if (i % snowflakeProperties.ringBridgeGap == 0) {
+                if (i % snowflakeProperties.ringBridgeGap == 0 && newNodeCount > 0) {
                     MirrorNode current = existingRingNodes.get(i);
 
                     BuildAsSubstructure localBuild = substructureFactory.createCycledAndInit(externStructureTypeIndex, substructureRotation, network);
@@ -334,10 +335,9 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 }
             } else {
                 // Wenn Muster aktiv wird, nehme erste nicht verbundene Struktur aus der Liste, update und eingliedern
-                if (i % snowflakeProperties.ringBridgeGap == 0) {
+                if (i % snowflakeProperties.ringBridgeGap == 0 && newNodeCount > 0) {
                     MirrorNode current = existingRingNodes.get(i);
                     SubstructureTuple strucTup = disconnectedSubstructures.stream().findFirst().orElse(null);
-                    assert strucTup != null;
                     disconnectedSubstructures.remove(strucTup);
 
                     int externNodesDiff = newNodeCount - oldSnowflakeResult.externalStructureMirrors.get(i);
