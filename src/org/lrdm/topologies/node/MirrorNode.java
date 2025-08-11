@@ -677,6 +677,7 @@ public class MirrorNode extends StructureNode {
      */
     private boolean isValidMirrorInStructure(Mirror mirror, Set<Mirror> structureMirrors, Set<Link> structureLinks) {
         if (mirror == null) return false;
+        if (structureMirrors.size() == 1) return true;
 
         // Mirror muss in der Struktur enthalten sein
         if (!structureMirrors.contains(mirror)) {

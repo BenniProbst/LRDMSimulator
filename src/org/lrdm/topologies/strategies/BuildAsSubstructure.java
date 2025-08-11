@@ -394,7 +394,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 .filter(Mirror::isUsableForNetwork).count());
         MirrorNode root = buildStructure(usableMirrorCount);
         if (root != null) {
-            setCurrentStructureRoot(root);
             return buildAndUpdateLinks(root, props, simTime, getCurrentStructureType());
         }
 
