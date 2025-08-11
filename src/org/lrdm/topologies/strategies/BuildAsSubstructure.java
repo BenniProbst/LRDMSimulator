@@ -711,7 +711,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
                 );
 
         MirrorNode externRoot = buildExtern.getCurrentStructureRoot();
-        if(getCurrentStructureRoot() == externRoot){
+        if(this.currentStructureRoot != null && getCurrentStructureRoot() == externRoot){
             this.currentStructureRoot = null;
             // Remove only the current root from all other substructures, since only the core structure was removed
             // Reset all partitioned Substructures to accept their own structure root as a single source of truth head
