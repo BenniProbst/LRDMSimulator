@@ -4,30 +4,73 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Abstrakte Basis-Klasse für strukturelle Knoten.
- * Verwaltet Parent-Child-Beziehungen und definiert Struktur-Validierung.
- * Ring-sichere Implementierung aller Traversierungsfunktionen.
- * <p>
- * Multi-Type-System mit Head-ID-Unterstützung:
- * - Jeder Knoten kann für verschiedene Strukturtypen gleichzeitig Head sein
- * - Kinder werden mit Sets von Typ-IDs und Head-IDs verknüpft
- * - Ermöglicht Koexistenz verschiedener Strukturtypen mit eindeutiger Identifikation
- * - Unterstützt mehrere Strukturen desselben Typs durch Head-ID-Trennung
+ * # StructureNode
+ *
+ * A structural graph node that supports:
+ * <ul>
+ *   <li><b>Parent–child relations</b> (directed edges)</li>
+ *   <li><b>Multi-type membership</b> (a node can belong to multiple structural types)</li>
+ *   <li><b>Head per type</b> (a node may act as the head/root for one or more structure types)</li>
+ *   <li><b>Head-ID scoping</b> (multiple disjoint structures of the same type are distinguished via head IDs)</li>
+ *   <li><b>Ring-safe traversals</b> (all traversals guard against cycles via explicit visited tracking)</li>
+ * </ul>
+ *
+ * <p><b>Multi-structure model.</b> A single parent–child edge is annotated with:
+ * <ul>
+ *   <li>the set of {@link StructureType}s for which it exists, and</li>
+ *   <li>for each of those types, a <em>head ID</em> indicating which independent structure instance it belongs to.</li>
+ * </ul>
+ * This allows several structures (even of the same {@link StructureType}) to co-exist on the same node set without
+ * bleeding into each other during typed traversals.
+ *
+ * <p><b>Immutability & copies.</b> Public getters on composite state return defensive copies to protect invariants.
+ *
+ * <p><b>Traversal guarantees.</b> All traversals (DFS/BFS/stack-based) are cycle-safe and avoid recursion to prevent
+ * stack overflow in large graphs.
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
+ * @since 1.0
  */
 public class StructureNode {
-    private final int id;
-    private StructureNode parent;
-    private final Set<ChildRecord> children;
-    private final Map<StructureType, Boolean> headStatus; // StructureType -> isHead für diesen Typ
-    protected Set<StructureType> nodeTypes; // Welche Typen dieser Knoten selbst repräsentiert
-    private int maxChildren = Integer.MAX_VALUE; // Standardmäßig unbegrenzt
 
+    /** Unique node identifier. */
+    private final int id;
+
+    /** Parent pointer (not typed; membership is validated via child records). */
+    private StructureNode parent;
 
     /**
-     * Enum für Standard-Strukturtypen.
-     * Ermöglicht die typsichere Verwendung verschiedener Strukturarten.
+     * Child edges. Each record stores:
+     * <ul>
+     *   <li>the child node reference,</li>
+     *   <li>the set of structure types this edge belongs to,</li>
+     *   <li>and a mapping type → headId defining the structure instance.</li>
+     * </ul>
+     */
+    private final Set<ChildRecord> children;
+
+    /**
+     * Head status per structure type. If a node is a head for a given {@link StructureType},
+     * traversals treat that node as a boundary (for typed, head-scoped traversals).
+     */
+    private final Map<StructureType, Boolean> headStatus;
+
+    /**
+     * The set of structure types this node itself represents. This is used by automatic type derivation
+     * and convenience checks (e.g., {@link #hasNodeType(StructureType)}).
+     */
+    protected Set<StructureType> nodeTypes;
+
+    /** Upper bound for direct children (across all types). */
+    private int maxChildren = Integer.MAX_VALUE;
+
+    // --------------------------------------------------------------------------------------------
+    // Types
+    // --------------------------------------------------------------------------------------------
+
+    /**
+     * Canonical structure types supported by the simulator. You can extend the set via
+     * {@link #nodeTypes} or by subclassing and overriding {@link #deriveTypeId()}.
      */
     public enum StructureType {
         DEFAULT(0),
@@ -47,59 +90,72 @@ public class StructureNode {
             this.id = id;
         }
 
+        /**
+         * @return integer identifier for stable, compact storage or logging
+         */
         public int getId() {
             return id;
         }
     }
 
     /**
-     * Record für Kind-Knoten mit zugehörigen Struktur-Typ-IDs und Head-IDs.
-     * Ermöglicht es einem Kind, gleichzeitig zu mehreren Strukturtypen zu gehören.
+     * Child-edge metadata: the child node plus per-edge annotations for multi-structure awareness.
+     * The constructor stores defensive copies to keep this record immutable.
+     *
+     * @param child   the child node
+     * @param typeIds structure types this edge participates in
+     * @param headIds for each type, the head-id that scopes the structure instance
      */
-    public record ChildRecord(StructureNode child, Set<StructureType> typeIds, Map<StructureType, Integer> headIds) {
+    public record ChildRecord(StructureNode child,
+                              Set<StructureType> typeIds,
+                              Map<StructureType, Integer> headIds) {
+
         public ChildRecord {
-            // Defensive Kopien zur Unveränderlichkeit
             typeIds = new HashSet<>(typeIds);
             headIds = new HashMap<>(headIds);
         }
 
         /**
-         * @return Child Structure Node
+         * @return the referenced child node
          */
-        public StructureNode getChild(){
+        public StructureNode getChild() {
             return child;
         }
 
         /**
-         * Prüft, ob dieses Kind zu einem bestimmten Strukturtyp gehört.
+         * @param typeId structure type to test
+         * @return {@code true} if this edge belongs to the given structure type
          */
         public boolean hasType(StructureType typeId) {
             return typeIds.contains(typeId);
         }
 
         /**
-         * Prüft, ob dieses Kind zu einer bestimmten Struktur (Typ + Head-ID) gehört.
+         * @param typeId structure type
+         * @param headId structure head-id
+         * @return {@code true} if this edge belongs to the structure instance (type + headId)
          */
         public boolean belongsToStructure(StructureType typeId, int headId) {
             return typeIds.contains(typeId) && headIds.containsKey(typeId) && headIds.get(typeId) == headId;
         }
 
         /**
-         * Gibt die Head-ID für einen bestimmten Strukturtyp zurück.
+         * @param typeId structure type
+         * @return the head-id for this type, or {@code null} if none
          */
         public Integer getHeadId(StructureType typeId) {
             return headIds.get(typeId);
         }
 
         /**
-         * Gibt eine unveränderliche Kopie der Typ-IDs zurück.
+         * @return defensive copy of the type set
          */
         public Set<StructureType> getTypeIds() {
             return new HashSet<>(typeIds);
         }
 
         /**
-         * Gibt eine unveränderliche Kopie der Head-IDs zurück.
+         * @return defensive copy of type → head-id map
          */
         public Map<StructureType, Integer> getHeadIds() {
             return new HashMap<>(headIds);
@@ -107,18 +163,13 @@ public class StructureNode {
     }
 
     /**
-     * Einfache Tupel-Klasse für Link-IDs (um String-Konkatenation zu vermeiden).
-     * Verwendet für die eindeutige Identifikation von Verbindungen zwischen Knoten.
+     * Directed link expressed as a pair of node IDs to avoid string concatenation in sets/maps.
+     *
+     * @param from source-node id
+     * @param to   target-node id
      */
     public record LinkPair(int from, int to) {
-        /**
-         * Erstellt ein neues LinkPair.
-         *
-         * @param from ID des Quellknotens
-         * @param to   ID des Zielknotens
-         */
-        public LinkPair {
-        }
+        public LinkPair {}
 
         @Override
         public boolean equals(Object obj) {
@@ -128,13 +179,15 @@ public class StructureNode {
         }
     }
 
-    // ===== KONSTRUKTOREN =====
+    // --------------------------------------------------------------------------------------------
+    // Construction
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Erstellt einen neuen StructureNode mit gegebener ID.
-     * Initialisiert alle internen Strukturen und fügt den Standard-Typ hinzu.
+     * Creates a new node with the given id. Initializes empty children/head-status and adds {@link StructureType#DEFAULT}
+     * to this node's {@link #nodeTypes}.
      *
-     * @param id Eindeutige Identifikationsnummer des Knotens
+     * @param id unique node id
      */
     public StructureNode(int id) {
         this.id = id;
@@ -142,108 +195,105 @@ public class StructureNode {
         this.children = new HashSet<>();
         this.headStatus = new HashMap<>();
         this.nodeTypes = new HashSet<>();
-
-        // Typ-Ermittlung über Instanz-Analyse
         this.nodeTypes.add(StructureType.DEFAULT);
     }
 
     /**
-     * Erstellt einen neuen StructureNode mit gegebener ID und maximaler Kindanzahl.
+     * Creates a new node with the given id and a maximum number of direct children.
      *
-     * @param id          Eindeutige Identifikationsnummer des Knotens
-     * @param maxChildren Maximale Anzahl von Kindern, die dieser Knoten haben kann (muss >= 0 sein)
+     * @param id          unique node id
+     * @param maxChildren maximum number of children (clamped to {@code >= 0})
      */
     public StructureNode(int id, int maxChildren) {
         this(id);
         this.maxChildren = Math.max(0, maxChildren);
     }
 
-    // ===== STRUKTURTYP-ERMITTLUNG =====
+    // --------------------------------------------------------------------------------------------
+    // Type derivation & node type management
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Bestimmt die Typ-ID basierend auf der Instanz der StructureNode.
-     * Kann von Kindklassen überschrieben werden für automatische Typ-Erkennung.
+     * Derives the primary type of this node. Subclasses may override to report a specific default type.
      *
-     * @return Der Standard-Strukturtyp für diese Knotenart
+     * @return the derived (primary) {@link StructureType}
      */
     protected StructureType deriveTypeId() {
         return StructureType.DEFAULT;
     }
 
-    // ===== NODE TYPES MANAGEMENT =====
-
     /**
-     * Gibt das Set von Strukturtypen zurück, die dieser Knoten repräsentiert.
-     * Ermöglicht es, zu prüfen, welche Strukturtypen ein Knoten unterstützt.
-     *
-     * @return Unveränderliche Kopie der Knotentypen
+     * @return defensive copy of the set of types this node represents
      */
     public Set<StructureType> getNodeTypes() {
         return new HashSet<>(nodeTypes);
     }
 
     /**
-     * Setzt das Set von Strukturtypen für diesen Knoten.
-     * Überschreibt die aktuellen Knotentypen vollständig.
+     * Replaces the set of types this node represents.
      *
-     * @param nodeTypes Die neuen Knotentypen (dürfen nicht null sein)
+     * @param nodeTypes new type set; must not be {@code null}
+     * @throws IllegalArgumentException if {@code nodeTypes} is {@code null}
      */
     public void setNodeTypes(Set<StructureType> nodeTypes) {
         if (nodeTypes == null) {
-            throw new IllegalArgumentException("NodeTypes dürfen nicht null sein");
+            throw new IllegalArgumentException("nodeTypes must not be null");
         }
         this.nodeTypes.clear();
         this.nodeTypes.addAll(nodeTypes);
     }
 
     /**
-     * Fügt einen Strukturtyp zu diesem Knoten hinzu.
-     * Ergänzt die bereits vorhandenen Knotentypen.
+     * Adds a structure type to this node.
      *
-     * @param nodeType Der hinzuzufügende Strukturtyp (darf nicht null sein)
+     * @param nodeType type to add; must not be {@code null}
+     * @throws IllegalArgumentException if {@code nodeType} is {@code null}
      */
     public void addNodeType(StructureType nodeType) {
         if (nodeType == null) {
-            throw new IllegalArgumentException("NodeType darf nicht null sein");
+            throw new IllegalArgumentException("nodeType must not be null");
         }
         this.nodeTypes.add(nodeType);
     }
 
     /**
-     * Entfernt einen Strukturtyp von diesem Knoten.
-     * Behält andere vorhandene Knotentypen bei.
+     * Removes a structure type from this node (no-op if not present).
      *
-     * @param nodeType Der zu entfernende Strukturtyp
+     * @param nodeType type to remove (nullable)
      */
     public void removeNodeType(StructureType nodeType) {
         this.nodeTypes.remove(nodeType);
     }
 
     /**
-     * Prüft, ob dieser Knoten einen bestimmten Strukturtyp unterstützt.
-     *
-     * @param nodeType Der zu prüfende Strukturtyp
-     * @return true, wenn der Knoten diesen Typ unterstützt
+     * @param nodeType type to test
+     * @return {@code true} if this node represents the given type
      */
     public boolean hasNodeType(StructureType nodeType) {
         return nodeTypes.contains(nodeType);
     }
 
-    // ===== MULTI-TYPE TRAVERSIERUNG =====
+    // --------------------------------------------------------------------------------------------
+    // Typed traversal (multi-structure aware)
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Sammelt alle Knoten der Substruktur für einen bestimmten Strukturtyp und Head-Node.
-     * Traversiert nur über Verbindungen mit der angegebenen Typ-ID und Head-ID.
-     * Stoppt bei Head-Knoten des gleichen Typs (Substruktur-Abgrenzung).
+     * Collects all nodes reachable within the same structure instance (typed + head-scoped), starting from {@code this}.
+     * The traversal:
+     * <ul>
+     *   <li>follows only edges whose {@code typeId} and {@code headId} match,</li>
+     *   <li>is ring-safe, and</li>
+     *   <li>does not traverse beyond head nodes of the <em>same</em> type+headId (heads define boundaries).</li>
+     * </ul>
      *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @param head Die Head-Node der gewünschten Struktur
-     * @return Set aller Knoten dieser Struktur
+     * @param typeId structure type to traverse
+     * @param head   head node that defines the structure instance (its id is used as head-id)
+     * @return the set of nodes in that structure instance; if {@code head} is {@code null}, returns {@code Set.of(this)}
      */
     public Set<StructureNode> getAllNodesInStructure(StructureType typeId, StructureNode head) {
         if (head == null) return Set.of(this);
 
-        int headId = head.getId(); // Head-ID einmal bestimmen und festhalten
+        int headId = head.getId();
         Set<StructureNode> result = new HashSet<>();
         Stack<StructureNode> stack = new Stack<>();
         stack.push(this);
@@ -251,24 +301,24 @@ public class StructureNode {
         while (!stack.isEmpty()) {
             StructureNode current = stack.pop();
 
-            if (result.contains(current)) continue; // Bereits besucht - Ring-sicher
+            if (result.contains(current)) continue; // cycle guard
             result.add(current);
 
-            // Wenn fremder Head oder Node, die unsere Strukturkennung nicht enthält → fremde Struktur ignorieren
-            if((current.isHead(typeId)&&headId!=current.getId())||(!current.getNodeTypes().contains(typeId))){
+            // If current is a foreign head of the same type or does not represent the type → stop exploring here.
+            if ((current.isHead(typeId) && headId != current.getId()) || (!current.getNodeTypes().contains(typeId))) {
                 continue;
             }
-            // Kinder traversieren (wenn Typ-ID und Head-ID passen)
+
+            // Traverse children that belong to the same typed, head-scoped structure
             Set<StructureNode> structureChildren = current.getChildren(typeId, headId);
             stack.addAll(structureChildren);
 
-            // Head-Knoten stoppen hier - keine weitere Traversierung über Parent
-            // Dies ermöglicht Substruktur-Abgrenzung bei verschachtelten Strukturen
-            if (current.isHead(typeId)&&headId==current.getId()){
+            // Do not traverse past the head of this structure instance
+            if (current.isHead(typeId) && headId == current.getId()) {
                 continue;
             }
 
-            // Parent traversieren (wenn Typ-ID und Head-ID passen)
+            // Traverse to parent if the parent→current edge belongs to this structure instance
             if (current.parent != null) {
                 ChildRecord parentRecord = current.parent.findChildRecordById(current.getId());
                 if (parentRecord != null && parentRecord.belongsToStructure(typeId, headId)) {
@@ -281,17 +331,16 @@ public class StructureNode {
     }
 
     /**
-     * Sammelt alle Endpunkte (Terminal-Knoten) für einen bestimmten Strukturtyp und Head-Node.
-     * Endpunkte sind Knoten mit genau einer Verbindung in der Struktur.
+     * Collects all terminal nodes (degree==1 within the typed, head-scoped structure).
      *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @param head Die Head-Node der gewünschten Struktur
-     * @return Set aller Endpunkte für diese Struktur
+     * @param typeId structure type
+     * @param head   head that identifies the structure instance
+     * @return set of endpoints
      */
     public Set<StructureNode> getEndpointsOfStructure(StructureType typeId, StructureNode head) {
         if (head == null) return Set.of(this);
 
-        final int headId = head.getId(); // Head-ID einmal bestimmen
+        final int headId = head.getId();
         Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head);
         Set<StructureNode> endpoints = new HashSet<>();
 
@@ -300,21 +349,21 @@ public class StructureNode {
                 endpoints.add(node);
             }
         }
-
         return endpoints;
     }
 
-    // ===== Zyklusprüfung - ALLE METHODEN ZUSAMMEN GRUPPIERT =====
+    // --------------------------------------------------------------------------------------------
+    // Cycle detection
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Prüft auf geschlossene Zyklen in einer bestimmten Struktur.
-     * Berücksichtigt Typ-ID und Head-Node für korrekte Kanal-Traversierung.
-     * Stack-basierte Implementierung zur Vermeidung von Rekursion.
+     * Detects whether a closed cycle exists within a given typed, head-scoped structure.
+     * Uses a stack-based DFS with explicit recursion stacks for ring safety.
      *
-     * @param allNodes Alle Knoten der zu prüfenden Struktur
-     * @param typeId Der Strukturtyp
-     * @param head Die Head-Node
-     * @return true, wenn ein geschlossener Zyklus gefunden wird
+     * @param allNodes nodes of the structure instance
+     * @param typeId   structure type
+     * @param head     head that identifies the structure instance
+     * @return {@code true} if a cycle is found
      */
     public boolean hasClosedCycle(Set<StructureNode> allNodes, StructureType typeId, StructureNode head) {
         if (allNodes == null || allNodes.isEmpty() || head == null) return false;
@@ -323,7 +372,6 @@ public class StructureNode {
         Set<StructureNode> visited = new HashSet<>();
         Set<StructureNode> globalRecursionStack = new HashSet<>();
 
-        // DFS für jeden unbesuchten Knoten (stack-basiert)
         for (StructureNode startNode : allNodes) {
             if (!visited.contains(startNode)) {
                 if (hasCycleDFS(startNode, visited, globalRecursionStack, typeId, headId)) {
@@ -331,23 +379,29 @@ public class StructureNode {
                 }
             }
         }
-
         return false;
     }
 
     /**
-     * Stack-basierte DFS-Hilfsmethode für Zykluserkennung mit Typ-/Head-ID-Berücksichtigung.
-     * Verwendet expliziten Stack statt Rekursion für bessere Kontrolle und Performance.
+     * Stack-based DFS for cycle detection with type+head scoping.
+     *
+     * @param startNode start node
+     * @param visited   global visited set
+     * @param globalRecursionStack nodes in current recursion globally
+     * @param typeId    structure type
+     * @param headId    head-id for the structure instance
+     * @return {@code true} if a cycle is detected
      */
-    private boolean hasCycleDFS(StructureNode startNode, Set<StructureNode> visited,
-                                Set<StructureNode> globalRecursionStack, StructureType typeId, int headId) {
+    private boolean hasCycleDFS(StructureNode startNode,
+                                Set<StructureNode> visited,
+                                Set<StructureNode> globalRecursionStack,
+                                StructureType typeId,
+                                int headId) {
 
-        // Stack für DFS-Traversierung: (Knoten, isProcessing)
-        // isProcessing = true: Knoten werden gerade verarbeitet (Pre-Order)
-        // isProcessing = false: Knoten-Verarbeitung abgeschlossen (Post-Order)
+        record StackEntry(StructureNode node, boolean isProcessing) {}
+
         Stack<StackEntry> stack = new Stack<>();
         Set<StructureNode> localRecursionStack = new HashSet<>();
-
         stack.push(new StackEntry(startNode, true));
 
         while (!stack.isEmpty()) {
@@ -356,159 +410,125 @@ public class StructureNode {
             boolean isProcessing = entry.isProcessing;
 
             if (isProcessing) {
-                // Pre-Order: Knoten zum ersten Mal besucht
                 if (localRecursionStack.contains(node) || globalRecursionStack.contains(node)) {
-                    return true; // Zyklus gefunden
+                    return true;
                 }
-
                 if (visited.contains(node)) {
-                    continue; // Bereits vollständig verarbeitet
+                    continue;
                 }
 
                 visited.add(node);
                 localRecursionStack.add(node);
                 globalRecursionStack.add(node);
 
-                // Post-Order Verarbeitung für diesen Knoten einplanen
+                // schedule post-order
                 stack.push(new StackEntry(node, false));
 
-                // Alle Kinder für den spezifischen Typ und Head hinzufügen
+                // follow typed, head-scoped children
                 Set<StructureNode> children = node.getChildren(typeId, headId);
                 for (StructureNode child : children) {
                     stack.push(new StackEntry(child, true));
                 }
-
             } else {
-                // Post-Order: Knoten-Verarbeitung abgeschlossen
                 localRecursionStack.remove(node);
                 globalRecursionStack.remove(node);
             }
         }
-
         return false;
     }
 
     /**
-     * Grundlegende Zyklusprüfung für beliebige Knotenstrukturen.
-     * Fundamentale statische Hilfsmethode, die von Kindklassen genutzt werden kann.
-     * Speziell für geschlossene Ring-Zyklen optimiert.
-     * Stack-basierte Implementierung zur Vermeidung von Rekursion.
+     * Utility to test whether a given set of nodes forms a single <em>closed ring</em>
+     * (each node has exactly one child and the ring covers all nodes).
      *
-     * @param nodes Menge von Knoten, die auf geschlossenen Zyklus geprüft werden sollen
-     * @return true, wenn alle Knoten genau einen geschlossenen Zyklus bilden, false bei leerer Menge oder anderen Strukturen
+     * @param nodes candidate nodes
+     * @return {@code true} if nodes form one closed cycle; {@code false} otherwise
      */
     public static boolean hasClosedCycle(Set<StructureNode> nodes) {
         if (nodes.isEmpty()) return false;
 
-        // Für geschlossene Zyklen: Jeder Knoten muss genau ein Kind haben
         for (StructureNode node : nodes) {
             if (node.getChildren().size() != 1) {
                 return false;
             }
         }
 
-        // Stack-basierte Zyklus-Traversierung
         StructureNode start = nodes.iterator().next();
         Set<StructureNode> visitedInCycle = new HashSet<>();
         StructureNode current = start;
 
-        // Folge der Kette, bis wir entweder einen Zyklus finden oder die Menge verlassen
         do {
             if (visitedInCycle.contains(current)) {
-                // Zyklus gefunden - prüfe, ob es ein vollständiger Zyklus ist
                 return current == start && visitedInCycle.size() == nodes.size();
             }
-
             visitedInCycle.add(current);
 
-            // Folge dem einzigen Kind
             Set<StructureNode> children = current.getChildren();
-            if (children.size() != 1) {
-                return false; // Sollte nicht passieren, da bereits geprüft
-            }
+            if (children.size() != 1) return false;
 
             StructureNode child = children.iterator().next();
-
-            // Prüfe, ob das Kind in der ursprünglichen Menge ist
-            if (!nodes.contains(child)) {
-                return false; // Zyklus verlässt die Knotenmenge
-            }
+            if (!nodes.contains(child)) return false;
 
             current = child;
-
         } while (!visitedInCycle.contains(current));
 
-        // Wenn wir hier ankommen, haben wir einen Zyklus gefunden.
-        // Prüfe, ob es ein vollständiger Zyklus zurück zum Start ist
         return current == start && visitedInCycle.size() == nodes.size();
     }
 
-    // ===== HILFSKLASSE FÜR STACK-BASIERTE DFS =====
+    // --------------------------------------------------------------------------------------------
+    // Children management
+    // --------------------------------------------------------------------------------------------
 
     /**
-         * Hilfsklasse für Stack-basierte DFS-Traversierung.
-         * Speichert Knoten und Verarbeitungsstatus (Pre-Order vs Post-Order).
-         */
-        private record StackEntry(StructureNode node, boolean isProcessing) {
-    }
-
-    // ===== KIND-MANAGEMENT =====
-
-    /**
-     * Fügt einen Kindknoten mit Struktur-Typ-IDs und Head-IDs hinzu.
-     * Unterstützt das Multi-Type-System durch explizite Typ- und Head-ID-Zuordnung.
+     * Adds (or merges) a typed, head-scoped child edge. If the child already exists (by id), the
+     * type set and head-id map are merged; otherwise a new edge is inserted (subject to {@link #maxChildren}).
      *
-     * @param child   Der hinzuzufügende Kindknoten (darf nicht null sein)
-     * @param typeIds Die Struktur-Typ-IDs für diese Verbindung
-     * @param headIds Map von Typ-ID zu Head-ID für Strukturidentifikation
+     * @param child   child node; must not be {@code null}
+     * @param typeIds structure types; must not be {@code null} or empty
+     * @param headIds map type → head-id; must provide a head-id for each type in {@code typeIds}
+     * @throws IllegalArgumentException if required head-ids are missing
      */
     public void addChild(StructureNode child, Set<StructureType> typeIds, Map<StructureType, Integer> headIds) {
         if (child == null || typeIds == null || typeIds.isEmpty()) {
             return;
         }
 
-        // Automatische Typ-ID-Ableitung wenn nicht im Set
+        // auto-derive child's primary type and add it to the edge types
         Set<StructureType> finalTypeIds = new HashSet<>(typeIds);
         StructureType derivedTypeId = child.deriveTypeId();
         finalTypeIds.add(derivedTypeId);
 
-        // Validierung: Alle Typ-IDs müssen in headIds vertreten sein
+        // validate head-ids coverage
         Map<StructureType, Integer> finalHeadIds = new HashMap<>(headIds);
         for (StructureType typeId : finalTypeIds) {
             if (!finalHeadIds.containsKey(typeId)) {
-                throw new IllegalArgumentException("Head-ID fehlt für Typ-ID: " + typeId);
+                throw new IllegalArgumentException("Missing head-id for type: " + typeId);
             }
         }
 
-        // Prüfe, ob ein Kind bereits existiert (nach ID)
+        // merge or insert
         ChildRecord existingRecord = findChildRecordById(child.getId());
-
         if (existingRecord != null) {
-            // Kind existiert bereits - Typ-IDs und Head-IDs zusammenführen
             Set<StructureType> mergedTypes = new HashSet<>(existingRecord.typeIds());
             mergedTypes.addAll(finalTypeIds);
 
             Map<StructureType, Integer> mergedHeadIds = new HashMap<>(existingRecord.headIds());
             mergedHeadIds.putAll(finalHeadIds);
 
-            // Alten Record entfernen und neuen hinzufügen
             children.remove(existingRecord);
             children.add(new ChildRecord(child, mergedTypes, mergedHeadIds));
             child.setParent(this);
-        } else {
-            // Neues Kind hinzufügen (nur wenn unter dem Limit)
-            if (children.size() < maxChildren) {
-                children.add(new ChildRecord(child, finalTypeIds, finalHeadIds));
-                child.setParent(this);
-            }
+        } else if (children.size() < maxChildren) {
+            children.add(new ChildRecord(child, finalTypeIds, finalHeadIds));
+            child.setParent(this);
         }
     }
 
     /**
-     * Fügt einen Kindknoten mit automatischer Typ- und Head-ID-Ermittlung hinzu.
-     * Verwendet den abgeleiteten Typ und sucht den Head automatisch.
+     * Convenience overload: adds a child using its derived primary type and the nearest head for that type.
+     * If no head is found, this node becomes the head for the new edge.
      *
-     * @param child Der hinzuzufügende Kindknoten (darf nicht null sein)
+     * @param child child node (ignored if {@code null})
      */
     public void addChild(StructureNode child) {
         if (child == null) return;
@@ -521,11 +541,10 @@ public class StructureNode {
     }
 
     /**
-     * Entfernt einen Kindknoten nur für bestimmte Strukturtypen.
-     * Ermöglicht selektive Entfernung aus Multi-Type-Strukturen.
+     * Removes a child <em>only</em> for the specified types (the edge may remain if it still belongs to other types).
      *
-     * @param child   Der Kindknoten
-     * @param typeIds Die zu entfernenden Typ-IDs
+     * @param child   child node (nullable)
+     * @param typeIds types to strip from the child edge (nullable)
      */
     public void removeChild(StructureNode child, Set<StructureType> typeIds) {
         if (child == null || typeIds == null) return;
@@ -540,23 +559,20 @@ public class StructureNode {
         typeIds.forEach(remainingHeadIds::remove);
 
         if (remainingTypes.isEmpty()) {
-            // Keine Typen mehr übrig - Kind komplett entfernen
             children.remove(existingRecord);
             if (child.getParent() == this) {
                 child.setParent(null);
             }
         } else {
-            // Typ-IDs aktualisieren
             children.remove(existingRecord);
             children.add(new ChildRecord(child, remainingTypes, remainingHeadIds));
         }
     }
 
     /**
-     * Entfernt einen Kindknoten komplett aus allen Strukturtypen.
-     * Setzt auch die Parent-Beziehung zurück.
+     * Removes a child edge entirely (across all types) and clears the child's parent if present.
      *
-     * @param child Der zu entfernende Kindknoten (null wird ignoriert)
+     * @param child child node (ignored if {@code null})
      */
     public void removeChild(StructureNode child) {
         if (child != null) {
@@ -568,8 +584,10 @@ public class StructureNode {
     }
 
     /**
-     * Findet einen ChildRecord anhand der Knoten-ID.
-     * Hilfsmethode für interne Kind-Verwaltung.
+     * Finds the child record for a given child-id.
+     *
+     * @param childId child node id
+     * @return the record or {@code null} if not present
      */
     public ChildRecord findChildRecordById(int childId) {
         return children.stream()
@@ -578,19 +596,67 @@ public class StructureNode {
                 .orElse(null);
     }
 
-    // ===== KIND-ZUGRIFF =====
+    // --------------------------------------------------------------------------------------------
+    // Child accessors
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Updated die Informationen in ChildRecord über direkten Zugriff auf das Kind
-     * Fügt zusätzliche Typen ein
+     * @return set of all direct child nodes (across all types)
+     */
+    public Set<StructureNode> getChildren() {
+        Set<StructureNode> allChildren = new HashSet<>();
+        for (ChildRecord record : children) {
+            allChildren.add(record.child());
+        }
+        return allChildren;
+    }
+
+    /**
+     * Returns direct children for a given structure type (ignores head scoping).
+     *
+     * @param typeId structure type
+     * @return set of children that have this type on the edge
+     */
+    public Set<StructureNode> getChildren(StructureType typeId) {
+        Set<StructureNode> typeChildren = new HashSet<>();
+        for (ChildRecord record : children) {
+            if (record.hasType(typeId)) {
+                typeChildren.add(record.child());
+            }
+        }
+        return typeChildren;
+    }
+
+    /**
+     * Returns direct children that belong to the specific structure instance (type + headId).
+     *
+     * @param typeId structure type
+     * @param headId head-id identifying the instance
+     * @return set of typed, head-scoped children
+     */
+    public Set<StructureNode> getChildren(StructureType typeId, int headId) {
+        Set<StructureNode> structureChildren = new HashSet<>();
+        for (ChildRecord record : children) {
+            if (record.belongsToStructure(typeId, headId)) {
+                structureChildren.add(record.child());
+            }
+        }
+        return structureChildren;
+    }
+
+    /**
+     * Bulk-merge: add/overwrite head-ids for the specified children (union on types).
+     *
+     * @param headIds        new head-ids to merge (type → headId)
+     * @param childrenNodes  affected children
      */
     public void updateChildRecordMergeStructureHead(Map<StructureType, Integer> headIds, Set<StructureNode> childrenNodes) {
         HashMap<StructureType, Integer> copyHeadIds = new HashMap<>(headIds);
         HashSet<ChildRecord> copyChildRecordsForUpdate = new HashSet<>();
         HashSet<ChildRecord> removeChildRecord = new HashSet<>();
 
-        for(ChildRecord c:children){
-            if(!childrenNodes.contains(c.child())){
+        for (ChildRecord c : children) {
+            if (!childrenNodes.contains(c.child())) {
                 continue;
             }
             HashMap<StructureType, Integer> copyHeadIdsLocal = new HashMap<>(c.getHeadIds());
@@ -607,15 +673,17 @@ public class StructureNode {
     }
 
     /**
-     * Updated die Informationen in ChildRecord über direkten Zugriff auf das Kind
-     * löscht Typen
+     * Bulk-remove: drop the provided types (and their head-ids) from selected children.
+     *
+     * @param typeIds        types to remove
+     * @param childrenNodes  affected children
      */
     public void updateChildRecordRemoveStructureHead(Set<StructureType> typeIds, Set<StructureNode> childrenNodes) {
         HashSet<ChildRecord> copyChildRecordsForUpdate = new HashSet<>();
         HashSet<ChildRecord> removeChildRecord = new HashSet<>();
 
-        for(ChildRecord c:children){
-            if(!childrenNodes.contains(c.child())){
+        for (ChildRecord c : children) {
+            if (!childrenNodes.contains(c.child())) {
                 continue;
             }
             HashSet<StructureType> copyTypeIdsLocal = new HashSet<>(c.getTypeIds());
@@ -635,70 +703,22 @@ public class StructureNode {
         children.addAll(copyChildRecordsForUpdate);
     }
 
-    /**
-     * Gibt alle direkten Kindknoten zurück (ohne Typ-Filter).
-     * Sammelt alle Kinder aus allen ChildRecords.
-     *
-     * @return Set aller direkten Kindknoten
-     */
-    public Set<StructureNode> getChildren() {
-        Set<StructureNode> allChildren = new HashSet<>();
-        for (ChildRecord record : children) {
-            allChildren.add(record.child());
-        }
-        return allChildren;
-    }
+    // --------------------------------------------------------------------------------------------
+    // Head discovery
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Gibt alle direkten Kindknoten für einen bestimmten Strukturtyp zurück.
+     * Finds the nearest head node for the given type by walking upwards (parents only).
+     * Returns {@code null} if none is found. This method is ring-safe.
      *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @return Set aller Kindknoten für den gegebenen Typ
-     */
-    public Set<StructureNode> getChildren(StructureType typeId) {
-        Set<StructureNode> typeChildren = new HashSet<>();
-        for (ChildRecord record : children) {
-            if (record.hasType(typeId)) {
-                typeChildren.add(record.child());
-            }
-        }
-        return typeChildren;
-    }
-
-    /**
-     * Gibt alle direkten Kindknoten für eine spezifische Struktur zurück.
-     *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @param headId Die Head-ID der gewünschten Struktur
-     * @return Set aller Kindknoten für die spezifische Struktur
-     */
-    public Set<StructureNode> getChildren(StructureType typeId, int headId) {
-        Set<StructureNode> structureChildren = new HashSet<>();
-        for (ChildRecord record : children) {
-            if (record.belongsToStructure(typeId, headId)) {
-                structureChildren.add(record.child());
-            }
-        }
-        return structureChildren;
-    }
-
-    // ===== HEAD-SUCHE =====
-
-
-    /**
-     * Findet den Head-Knoten für einen bestimmten Strukturtyp.
-     * Sucht strikt nach Head-Knoten und gibt null zurück, wenn niemand gefunden wird.
-     * Verwendet Stack-basierte Traversierung für Ring-Sicherheit.
-     *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @return Head-Knoten für diesen Strukturtyp oder null
+     * @param typeId structure type
+     * @return nearest head for the type, or {@code null}
      */
     public StructureNode findHead(StructureType typeId) {
         if (typeId == null) {
             return null;
         }
 
-        // Stack-basierte Traversierung für Ring-Sicherheit
         Set<StructureNode> visited = new HashSet<>();
         Stack<StructureNode> stack = new Stack<>();
         stack.push(this);
@@ -707,61 +727,54 @@ public class StructureNode {
             StructureNode current = stack.pop();
 
             if (visited.contains(current)) {
-                continue; // Bereits besucht - verhindert Zyklen
+                continue;
             }
             visited.add(current);
 
-            // Prüfe, ob der aktuelle Knoten ein Head für den gewünschten Typ ist
             if (current.isHead(typeId)) {
-                return current; // Head-Knoten gefunden - gibt Head-Knoten zurück, nicht dessen ID
+                return current;
             }
-
-            // Füge Parent hinzu (nicht Kinder - wir suchen nach oben zum Head)
             if (current.getParent() != null && !visited.contains(current.getParent())) {
                 stack.push(current.getParent());
             }
         }
-
-        // Kein Head gefunden - gibt null zurück, anstatt nach Kindern zu suchen
         return null;
     }
 
-    // ===== ENDPUNKT-ERKENNUNG =====
+    // --------------------------------------------------------------------------------------------
+    // Endpoint detection
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Prüft, ob ein Knoten ein Endpunkt in einer bestimmten Struktur ist.
-     * Ein Endpunkt hat genau eine Verbindung in der Struktur (Terminal-Knoten).
+     * Checks whether {@code node} is an endpoint (degree==1) within the typed, head-scoped structure.
      *
-     * @param node   Der zu prüfende Knoten
-     * @param typeId Die Typ-ID der Struktur
-     * @param headId Die Head-ID der Struktur
-     * @return true, wenn der Knoten ein Endpunkt in dieser Struktur ist
+     * @param node   node to test
+     * @param typeId structure type
+     * @param headId structure head-id
+     * @return {@code true} if exactly one incident edge of this structure instance exists
      */
     public boolean isEndpoint(StructureNode node, StructureType typeId, int headId) {
         int connections = 0;
 
-        // Parent-Verbindung zählen (wenn Typ-ID und Head-ID passen)
         if (node.parent != null) {
             ChildRecord parentRecord = node.parent.findChildRecordById(node.getId());
             if (parentRecord != null && parentRecord.belongsToStructure(typeId, headId)) {
                 connections++;
             }
         }
-
-        // Kind-Verbindungen zählen (wenn Typ-ID und Head-ID passen)
         connections += node.getChildren(typeId, headId).size();
-
-        return connections == 1; // Terminal = genau eine Verbindung
+        return connections == 1;
     }
 
-    // ===== VOLLSTÄNDIGE TRAVERSIERUNG (Legacy und Universell) =====
+    // --------------------------------------------------------------------------------------------
+    // Full traversal (untyped, legacy)
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Sammelt ALLE verbundenen Knoten (vollständige Traversierung ohne Head-Stops).
-     * Unterschied zu getAllNodesInStructure(): stoppt NICHT bei Head-Knoten.
-     * Verwendet für vollständige Netzwerk-Analyse und Validierung.
+     * Returns all nodes reachable from this node by following parent and all children (ignores types/heads).
+     * Cycle-safe, non-recursive.
      *
-     * @return Set aller erreichbaren Knoten von diesem Startpunkt
+     * @return reachable node set
      */
     public Set<StructureNode> getAllNodes() {
         Set<StructureNode> result = new HashSet<>();
@@ -771,71 +784,57 @@ public class StructureNode {
         while (!stack.isEmpty()) {
             StructureNode current = stack.pop();
 
-            if (result.contains(current)) continue; // Ring-sicher
+            if (result.contains(current)) continue;
             result.add(current);
 
-            // Parent hinzufügen (ohne Typ-Beschränkung)
             if (current.parent != null) {
                 stack.push(current.parent);
             }
-
-            // Alle Kinder hinzufügen (ohne Typ-Beschränkung)
             current.getChildren().forEach(stack::push);
         }
-
         return result;
     }
 
-    // Füge diese Methode zu StructureNode hinzu:
+    // --------------------------------------------------------------------------------------------
+    // Paths (multi-path discovery)
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Findet alle möglichen gerichteten Pfade von der Head-Node zu diesem Knoten.
-     * Verwendet vollständigen Dijkstra-Algorithmus für alle Pfade ohne Loops und Schleifen.
-     * Sortiert nach Pfadlänge (kürzeste zuerst), dann nach Summe der Node-IDs.
+     * Finds all directed paths from {@code head} to {@code this} constrained to {@code typeId}.
+     * Uses a Dijkstra-like best-first exploration (on path length; then sum of node IDs) and avoids loops.
      *
-     * @param typeId Struktur-Typ-ID zur Filterung der relevanten Kanten
-     * @param head   Start-Knoten (Head-Node)
-     * @return Liste aller möglichen Pfade, sortiert nach Länge und ID-Summe
+     * <p><b>Ordering:</b> paths are sorted by (1) length (shortest first), then (2) sum of node IDs.</p>
+     *
+     * @param typeId structure type
+     * @param head   head node
+     * @return sorted list of all found paths; {@code List.of(List.of(this))} if {@code head == this}
      */
     public List<List<StructureNode>> getPathFromHeadMulti(StructureType typeId, StructureNode head) {
         if (head == null || typeId == null) {
             return List.of();
         }
-
-        // Wenn head == this, gibt es einen leeren Pfad der Länge 1
         if (head.equals(this)) {
             return List.of(List.of(this));
         }
 
         List<List<StructureNode>> allPaths = new ArrayList<>();
-
-        // Dijkstra-basierte Pfadsuche mit vollständiger Exploration
         findAllPathsDijkstra(head, this, typeId, allPaths);
 
-        // Sortierung: 1. Pfadlänge, 2. Summe der Node-IDs
         allPaths.sort((path1, path2) -> {
-            // Erste Priorität: Pfadlänge (kürzeste zuerst)
             int lengthCompare = Integer.compare(path1.size(), path2.size());
-            if (lengthCompare != 0) {
-                return lengthCompare;
-            }
+            if (lengthCompare != 0) return lengthCompare;
 
-            // Zweite Priorität: Summe aller Node-IDs im Pfad
             long sum1 = path1.stream().mapToLong(StructureNode::getId).sum();
             long sum2 = path2.stream().mapToLong(StructureNode::getId).sum();
-
             return Long.compare(sum1, sum2);
         });
-
         return allPaths;
     }
 
     /**
-     * Berechnet den Pfad von der Head-Node zu diesem Knoten.
-     * Verwendet automatische Typ- und Head-Ermittlung.
-     * Gibt alle möglichen Pfade zurück, sortiert nach Länge und ID-Summe.
+     * Convenience overload using {@link #deriveTypeId()} and {@link #findHead(StructureType)}.
      *
-     * @return Liste aller möglichen Pfade vom Head zu diesem Knoten
+     * @return sorted list of all paths from the derived head to {@code this}; if no head exists, returns {@code List.of(List.of(this))}
      */
     public List<List<StructureNode>> getPathFromHeadMulti() {
         StructureType typeId = deriveTypeId();
@@ -844,78 +843,61 @@ public class StructureNode {
         if (head == null) {
             return List.of(List.of(this));
         }
-
         return getPathFromHeadMulti(typeId, head);
     }
 
     /**
-     * Dijkstra-basierte Suche aller Pfade ohne Loops und Schleifen.
-     * Verwendet modifizierten Dijkstra-Algorithmus für vollständige Pfad-Exploration.
+     * Best-first search (Dijkstra-like) that enumerates all simple paths (no repeated nodes) from {@code start} to {@code target}
+     * along edges that belong to {@code typeId}.
      *
-     * @param start     Start-Knoten
-     * @param target    Ziel-Knoten
-     * @param typeId    Struktur-Typ-ID zur Kanten-Filterung
-     * @param allPaths  Sammlung aller gefundenen Pfade
+     * @param start    start node (head)
+     * @param target   target node
+     * @param typeId   structure type filter
+     * @param allPaths accumulator for discovered paths
      */
-    private void findAllPathsDijkstra(StructureNode start, StructureNode target,
-                                      StructureType typeId, List<List<StructureNode>> allPaths) {
+    private void findAllPathsDijkstra(StructureNode start,
+                                      StructureNode target,
+                                      StructureType typeId,
+                                      List<List<StructureNode>> allPaths) {
 
-        // Dijkstra-State für jeden Knoten: Liste aller möglichen Pfade zu diesem Knoten
         Map<StructureNode, List<List<StructureNode>>> nodeToAllPaths = new HashMap<>();
 
-        // Priority Queue: Sortiert nach Pfadlänge, dann nach ID-Summe
         PriorityQueue<List<StructureNode>> queue = new PriorityQueue<>((path1, path2) -> {
-            // Erste Priorität: Pfadlänge
             int lengthCompare = Integer.compare(path1.size(), path2.size());
-            if (lengthCompare != 0) {
-                return lengthCompare;
-            }
+            if (lengthCompare != 0) return lengthCompare;
 
-            // Zweite Priorität: Summe der Node-IDs
             long sum1 = path1.stream().mapToLong(StructureNode::getId).sum();
             long sum2 = path2.stream().mapToLong(StructureNode::getId).sum();
-
             return Long.compare(sum1, sum2);
         });
 
-        // Initialer Pfad: Nur start-Knoten
         List<StructureNode> initialPath = new ArrayList<>();
         initialPath.add(start);
         queue.offer(initialPath);
 
-        // Set zur Vermeidung unendlicher Schleifen bei der Pfad-Exploration
         Set<List<StructureNode>> exploredPaths = new HashSet<>();
 
         while (!queue.isEmpty()) {
             List<StructureNode> currentPath = queue.poll();
             StructureNode currentNode = currentPath.get(currentPath.size() - 1);
 
-            // Vermeide zirkuläre Pfade
             if (exploredPaths.contains(currentPath)) {
                 continue;
             }
             exploredPaths.add(new ArrayList<>(currentPath));
 
-            // Ziel erreicht: Pfad zu Ergebnissen hinzufügen
             if (currentNode.equals(target)) {
                 allPaths.add(new ArrayList<>(currentPath));
                 continue;
             }
 
-            // Erkunde alle Nachbarn (Kinder) des aktuellen Knotens
             Set<StructureNode> neighbors = getNeighborsForTypeId(currentNode, typeId);
-
             for (StructureNode neighbor : neighbors) {
-                // Vermeide Loops: Knoten dürfen nicht bereits im aktuellen Pfad sein
                 if (currentPath.contains(neighbor)) {
-                    continue;
+                    continue; // avoid loops
                 }
-
-                // Erstelle neuen Pfad mit dem Nachbarn
                 List<StructureNode> newPath = new ArrayList<>(currentPath);
                 newPath.add(neighbor);
-
-                // Prüfe, ob dieser Pfad bereits erkundet wurde
                 if (!exploredPaths.contains(newPath)) {
                     queue.offer(newPath);
                 }
@@ -924,72 +906,59 @@ public class StructureNode {
     }
 
     /**
-     * Ermittelt alle Nachbarn (Kinder und Parent) eines Knotens für die gegebene typeId.
-     * Diese Methode definiert die gerichteten Kanten im Graphen.
+     * Returns typed neighbors (children with matching {@code typeId} plus the parent if it supports {@code typeId}).
+     * This defines the directed adjacency used by path discovery.
      *
-     * @param node   Der Knoten, dessen Nachbarn ermittelt werden sollen
-     * @param typeId Die Struktur-Typ-ID zur Kanten-Filterung
-     * @return Set aller erreichbaren Nachbarn
+     * @param node   node whose neighbors are requested
+     * @param typeId structure type
+     * @return neighbor set (typed)
      */
     private Set<StructureNode> getNeighborsForTypeId(StructureNode node, StructureType typeId) {
-
-        // Füge alle Kinder als Nachbarn hinzu (gerichtete Kante: Parent → Child)
         Set<StructureNode> neighbors = new HashSet<>(node.getChildren(typeId));
-
-        // Füge Parent als Nachbarn hinzu (gerichtete Kante: Child -> Parent)
-        // OPTIONAL: Nur wenn bidirektionale Traversierung gewünscht ist
         StructureNode parent = node.getParent();
         if (parent != null && parent.hasNodeType(typeId)) {
             neighbors.add(parent);
         }
-
         return neighbors;
     }
 
     /**
-     * Berechnet den Pfad von der Head-Node zu diesem Knoten.
-     * Verwendet automatische Typ- und Head-Ermittlung.
-     * Verwendet BFS für den kürzesten Pfad in ungewichteten Strukturen.
+     * Returns the <em>shortest</em> (by length) path from head to {@code this} for the derived type.
      *
-     * @return Liste der Knoten vom Head zu diesem Knoten (inklusive Head und this)
+     * @return shortest path (possibly empty if none exists)
      */
     public List<StructureNode> getPathFromHead() {
         List<List<StructureNode>> allPaths = getPathFromHeadMulti();
-        if (!allPaths.isEmpty()) {
-            return allPaths.get(0);
-        }
-        else{
-            return new ArrayList<>();
-        }
+        return !allPaths.isEmpty() ? allPaths.get(0) : new ArrayList<>();
     }
 
     /**
-     * Berechnet den Pfad von der Head-Node zu diesem Knoten.
-     * Verwendet automatische Typ- und Head-Ermittlung.
-     * Verwendet BFS für den kürzesten Pfad in ungewichteten Strukturen.
+     * Returns the <em>shortest</em> (by length) path for a given type/head.
      *
-     * @return Liste der Knoten vom Head zu diesem Knoten (inklusive Head und this)
+     * @param typeId structure type
+     * @param head   head node
+     * @return shortest path (possibly empty if none exists)
      */
     public List<StructureNode> getPathFromHead(StructureType typeId, StructureNode head) {
         List<List<StructureNode>> allPaths = getPathFromHeadMulti(typeId, head);
-        if (!allPaths.isEmpty()) {
-            return allPaths.get(0);
-        }
-        else{
-            return new ArrayList<>();
-        }
+        return !allPaths.isEmpty() ? allPaths.get(0) : new ArrayList<>();
     }
 
-
-// ===== LINK-ZÄHLUNG =====
+    // --------------------------------------------------------------------------------------------
+    // Link counting
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Berechnet die Anzahl der geplanten Links in einer spezifischen Struktur.
-     * Berücksichtigt Typ-ID und Head-ID für korrekte Kanal-Traversierung.
+     * Estimates the number of planned links in a typed, head-scoped structure.
+     * Default heuristic:
+     * <ul>
+     *   <li>Tree-like structures → {@code n - 1}</li>
+     *   <li>Rings → may need override (default remains {@code n - 1})</li>
+     * </ul>
      *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @param head Die Head-Node der gewünschten Struktur
-     * @return Anzahl der geplanten Links in der spezifischen Struktur
+     * @param typeId structure type
+     * @param head   head node
+     * @return estimated link count (defaults to {@code n - 1})
      */
     public int getNumPlannedLinksFromStructure(StructureType typeId, StructureNode head) {
         if (head == null) return 0;
@@ -997,17 +966,13 @@ public class StructureNode {
         Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head);
         if (allNodes.size() <= 1) return 0;
 
-        // Für Bäume: n Knoten = n-1 Links
-        // für Ringe: n Knoten = n Links
-        // für andere Strukturen kann dies überschrieben werden
-        return allNodes.size() - 1; // Baum/Standard: n-1 Links
+        return allNodes.size() - 1;
     }
 
     /**
-     * Berechnet die Anzahl der geplanten Links in der Struktur.
-     * Verwendet automatische Typ- und Head-Ermittlung.
+     * Convenience overload using {@link #deriveTypeId()} and {@link #findHead(StructureType)}.
      *
-     * @return Anzahl der geplanten Links in der Struktur
+     * @return estimated link count for the derived structure
      */
     public int getNumPlannedLinksFromStructure() {
         StructureType typeId = deriveTypeId();
@@ -1016,127 +981,108 @@ public class StructureNode {
     }
 
     /**
-     * Berechnet die Anzahl direkter Verbindungen dieses Knotens.
-     * Zählt Parent-Verbindung (falls vorhanden) plus alle Kinder.
-     * Wichtig für Terminal-Erkennung (1 Verbindung) und Struktur-Analyse.
-     *
-     * @return Anzahl direkter Verbindungen (0 bis maxChildren+1)
+     * @return the number of direct connections, i.e. {@code (parent != null ? 1 : 0) + children.size()}
      */
     public int getNumDirectLinksFromStructure() {
         int linkCount = 0;
-        if (parent != null) linkCount++; // Parent-Verbindung
-        linkCount += children.size(); // Alle Kind-Verbindungen
+        if (parent != null) linkCount++;
+        linkCount += children.size();
         return linkCount;
     }
 
-    // ===== NACHFAHREN-ZÄHLUNG =====
+    // --------------------------------------------------------------------------------------------
+    // Descendants
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Zählt alle Nachfahren dieses Knotens (Kinder, Enkel, etc.).
-     * Verwendet Stack-basierte Traversierung zur Vermeidung von Rekursion.
+     * Counts all descendants (children, grandchildren, …) ignoring types (full structure).
+     * Cycle-safe, non-recursive.
      *
-     * @return Anzahl aller Nachfahren
+     * @return number of descendants
      */
     public int getDescendantCount() {
         Set<StructureNode> descendants = new HashSet<>();
         Stack<StructureNode> stack = new Stack<>();
 
-        // Alle direkten Kinder als Start
         stack.addAll(getChildren());
 
         while (!stack.isEmpty()) {
             StructureNode current = stack.pop();
-            if (descendants.contains(current)) continue; // Ring-sicher
+            if (descendants.contains(current)) continue;
 
             descendants.add(current);
-            stack.addAll(current.getChildren()); // Enkel hinzufügen
+            stack.addAll(current.getChildren());
         }
-
         return descendants.size();
     }
 
-    // ===== KNOTEN-SUCHE =====
+    // --------------------------------------------------------------------------------------------
+    // Node search (untyped, full)
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Findet einen Knoten anhand seiner ID in der gesamten verbundenen Struktur.
-     * Traversiert alle erreichbaren Knoten ohne Typ-Beschränkung.
+     * Searches the entire reachable component (untyped) for a node id.
      *
-     * @param nodeId Die gesuchte Knoten-ID
-     * @return Der gefundene Knoten oder null
+     * @param nodeId id to search
+     * @return the matching node or {@code null}
      */
     public StructureNode findNodeById(int nodeId) {
         Set<StructureNode> allNodes = getAllNodes();
-
         for (StructureNode node : allNodes) {
             if (node.getId() == nodeId) {
                 return node;
             }
         }
-
-        return null; // Knoten nicht gefunden
+        return null;
     }
 
-    // ===== STRUKTUR-MANAGEMENT =====
+    // --------------------------------------------------------------------------------------------
+    // Structure integrity & validation
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Prüft, ob dieser Knoten aus der Struktur entfernt werden kann.
-     * Ein Knoten kann entfernt werden, wenn:
-     * - Er Teil der Struktur ist (über getAllNodesInStructure ermittelt)
-     * - Seine Entfernung die Strukturintegrität nicht gefährdet
-     * - Er ein Blatt ist (keine Kinder hat, um Fragmentierung zu vermeiden)
-     * <p>
-     * Der strukturRoot kann ebenfalls entfernt werden, wenn er ein Blatt ist.
+     * Checks whether this node can be removed from the structure rooted at {@code structureRoot}.
+     * Current policy:
+     * <ul>
+     *   <li>node must be part of the structure</li>
+     *   <li>node must be a leaf (to avoid fragmentation)</li>
+     * </ul>
      *
-     * @param structureRoot Der Root-Knoten der Struktur für Referenz (darf nicht null sein)
-     * @return true, wenn der Knoten sicher entfernt werden kann
+     * @param structureRoot structure root (must not be {@code null})
+     * @return {@code true} if safe to remove
      */
     public boolean canBeRemovedFromStructure(StructureNode structureRoot) {
         if (structureRoot == null) return false;
 
-        // Verwende die korrekte Strukturermittlung
         Set<StructureNode> structureNodes = structureRoot.getAllNodesInStructure();
 
-        // Prüfe, ob dieser Knoten Teil der Struktur ist
         if (!structureNodes.contains(this)) {
-            return false; // Knoten ist nicht Teil der Struktur
+            return false;
         }
-
-        // Ein Knoten kann entfernt werden, wenn er ein Blatt ist.
-        // Dies verhindert die Fragmentierung der Struktur.
-        // Auch der Head/Root kann entfernt werden, wenn er ein Blatt ist
         return this.isLeaf();
     }
 
-    // ===== GRUNDLEGENDE STRUKTUR-VALIDIERUNG =====
-
     /**
-     * Grundlegende Struktur-Validierung - prüft, ob alle Knoten miteinander verbunden sind.
-     * Verhindert isolierte Knoten in der Struktur.
-     * Unterstützt sowohl Baum- als auch Ring-Strukturen.
+     * Basic validation: checks connectedness of {@code allNodes} (untyped).
      *
-     * @param allNodes Menge aller Knoten, die zur Struktur gehören sollen
-     * @return true, wenn alle Knoten zusammenhängend sind, false bei isolierten Knoten oder null/leerer Menge
+     * @param allNodes nodes to validate
+     * @return {@code true} if connected (or single-node); {@code false} if empty or disconnected
      */
     public boolean isValidStructure(Set<StructureNode> allNodes) {
         if (allNodes == null || allNodes.isEmpty()) return false;
-        if (allNodes.size() == 1) return true; // Ein einzelner Knoten ist gültig
-
-        // Prüfe, ob alle Knoten zusammenhängend sind
+        if (allNodes.size() == 1) return true;
         return isConnectedStructure(allNodes);
     }
 
     /**
-     * Prüft, ob alle Knoten in der gegebenen Menge zusammenhängend sind.
-     * Verwendet BFS, um zu überprüfen, dass alle Knoten erreichbar sind.
-     * Ring-sichere Implementierung für alle Strukturtypen.
+     * BFS-based connectedness check (untyped).
      *
-     * @param allNodes Menge aller zu prüfenden Knoten
-     * @return true, wenn alle Knoten von einem beliebigen Startknoten erreichbar sind
+     * @param allNodes nodes to test
+     * @return {@code true} if all nodes are reachable from an arbitrary start
      */
     private boolean isConnectedStructure(Set<StructureNode> allNodes) {
         if (allNodes.isEmpty()) return false;
 
-        // Starte von einem beliebigen Knoten
         StructureNode startNode = allNodes.iterator().next();
         Set<StructureNode> visited = new HashSet<>();
         Queue<StructureNode> queue = new LinkedList<>();
@@ -1144,22 +1090,15 @@ public class StructureNode {
         queue.offer(startNode);
         visited.add(startNode);
 
-        // BFS-Traversierung über alle Verbindungen
         while (!queue.isEmpty()) {
             StructureNode current = queue.poll();
 
-            // Besuche alle Nachbarn (Parent und Children)
             List<StructureNode> neighbors = new ArrayList<>();
-
-            // Parent hinzufügen (falls vorhanden)
             if (current.parent != null) {
                 neighbors.add(current.parent);
             }
-
-            // Alle Kinder hinzufügen
             neighbors.addAll(current.getChildren());
 
-            // Besuche fehlende Knoten
             for (StructureNode neighbor : neighbors) {
                 if (allNodes.contains(neighbor) && !visited.contains(neighbor)) {
                     visited.add(neighbor);
@@ -1167,19 +1106,18 @@ public class StructureNode {
                 }
             }
         }
-
-        // Alle Knoten müssen erreichbar sein
         return visited.size() == allNodes.size();
     }
 
-    // ===== HEAD-STATUS METHODEN =====
+    // --------------------------------------------------------------------------------------------
+    // Head status
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Markiert diesen Knoten als Head für einen bestimmten Strukturtyp.
-     * Ermöglicht Multi-Type-Head-Status.
+     * Sets or clears head status for a given type.
      *
-     * @param typeId Die Typ-ID der Struktur
-     * @param isHead true, um Head zu markieren, false, um Head-Status zu entfernen
+     * @param typeId type
+     * @param isHead {@code true} to mark as head, {@code false} to clear
      */
     public void setHead(StructureType typeId, boolean isHead) {
         if (isHead) {
@@ -1190,10 +1128,9 @@ public class StructureNode {
     }
 
     /**
-     * Markiert diesen Knoten als Head für alle seine Strukturtypen.
-     * Legacy-Methode für einfache Verwendung.
+     * Convenience: sets/clears head status across all {@link #nodeTypes}.
      *
-     * @param isHead true, um Head zu markieren, false, um Head-Status zu entfernen
+     * @param isHead {@code true} to mark as head for all types, else clear
      */
     public void setHead(boolean isHead) {
         for (StructureType typeId : nodeTypes) {
@@ -1202,50 +1139,43 @@ public class StructureNode {
     }
 
     /**
-     * Prüft, ob dieser Knoten Head für einen bestimmten Strukturtyp ist.
-     *
-     * @param typeId Die zu prüfende Typ-ID
-     * @return true, wenn dieser Knoten Head für den Typ ist
+     * @param typeId type to test
+     * @return {@code true} if this node is head for that type
      */
     public boolean isHead(StructureType typeId) {
         return headStatus.getOrDefault(typeId, false);
     }
 
     /**
-     * Prüft, ob dieser Knoten Head für irgendeinen Strukturtyp ist.
-     * Legacy-Methode für einfache Verwendung.
-     *
-     * @return true, wenn dieser Knoten für mindestens einen Typ Head ist
+     * @return {@code true} if this node is head for at least one type
      */
     public boolean isHead() {
         return headStatus.values().stream().anyMatch(Boolean::booleanValue);
     }
 
-    // ===== LEGACY-METHODEN FÜR Rückwärtskompatibilität =====
+    // --------------------------------------------------------------------------------------------
+    // Legacy conveniences (DEFAULT-type fallbacks)
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Sammelt alle Knoten der Default-Struktur.
-     * Legacy-Methode, die den DEFAULT-Typ verwendet.
+     * Collects all nodes across <em>all</em> discovered structures this node participates in, by:
+     * <ol>
+     *   <li>collecting heads for each known type,</li>
+     *   <li>and uniting {@link #getAllNodesInStructure(StructureType, StructureNode)} for each (type, head-id) pair.</li>
+     * </ol>
      *
-     * @return Set aller Knoten in der Default-Struktur
+     * @return union of nodes across discovered structures
      */
     public Set<StructureNode> getAllNodesInStructure() {
-        // Sammle alle verfügbaren Struktur-Typen aus dem headStatus
         Set<StructureType> defaultTypes = new HashSet<>(headStatus.keySet());
 
-        // Verwende Tuple aus StructureType und Node-ID als Schlüssel
         Map<AbstractMap.SimpleEntry<StructureType, Integer>, StructureNode> heads = defaultTypes.stream()
-                // Für jeden StructureType alle Heads finden
                 .flatMap(type -> {
-                    // Hier direkt die Heads für diesen Typ ermitteln
                     List<StructureNode> headsForType = new ArrayList<>();
                     StructureNode mainHead = findHead(type);
                     if (mainHead != null) {
                         headsForType.add(mainHead);
                     }
-                    // Hier könnten weitere Heads für denselben Typ hinzugefügt werden
-
-                    // Erzeuge Einträge für jeden Head mit zusammengesetztem Schlüssel
                     return headsForType.stream()
                             .map(head -> Map.entry(
                                     new AbstractMap.SimpleEntry<>(type, head.getId()),
@@ -1253,23 +1183,20 @@ public class StructureNode {
                 })
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        // Sammle alle Knoten aus allen Strukturen und vereinige sie
         return heads.entrySet().stream()
                 .flatMap(entry -> getAllNodesInStructure(entry.getKey().getKey(), entry.getValue()).stream())
                 .collect(Collectors.toSet());
     }
 
     /**
-     * Findet den Head der Default-Struktur mit Root-Fallback.
-     * Legacy-Methode für einfache Verwendung.
+     * Finds the head of the DEFAULT structure if possible; otherwise falls back to the first root found.
      *
-     * @return Head-Knoten der Default-Struktur oder Root-Knoten
+     * @return default head or a root node, otherwise {@code null}
      */
     public StructureNode findHead() {
         StructureNode head = findHead(StructureType.DEFAULT);
         if (head != null) return head;
 
-        // Fallback: Suche nach Root-Knoten (für Legacy-Kompatibilität)
         Set<StructureNode> visited = new HashSet<>();
         Stack<StructureNode> stack = new Stack<>();
         stack.push(this);
@@ -1290,15 +1217,11 @@ public class StructureNode {
                 }
             }
         }
-
         return null;
     }
 
     /**
-     * Sammelt alle Endpunkte der Default-Struktur.
-     * Legacy-Methode für einfache Verwendung.
-     *
-     * @return Set aller Endpunkte in der Default-Struktur
+     * @return endpoints for the DEFAULT structure (falls back to this node as head if none found)
      */
     public Set<StructureNode> getEndpointsOfStructure() {
         StructureType defaultType = StructureType.DEFAULT;
@@ -1308,10 +1231,7 @@ public class StructureNode {
     }
 
     /**
-     * Prüft, ob dieser Knoten ein Endpunkt in der Default-Struktur ist.
-     * Legacy-Methode für einfache Verwendung.
-     *
-     * @return true, wenn dieser Knoten ein Endpunkt ist
+     * @return {@code true} if this node is an endpoint (degree==1) in the DEFAULT structure
      */
     public boolean isEndpoint() {
         StructureType defaultType = StructureType.DEFAULT;
@@ -1320,84 +1240,68 @@ public class StructureNode {
         return isEndpoint(this, defaultType, headId);
     }
 
-    // ===== GRUNDLEGENDE NODE-EIGENSCHAFTEN =====
-
-    // ===== KNOTEN-TYP-ERKENNUNG (MULTI-TYPE-SYSTEM) =====
+    // --------------------------------------------------------------------------------------------
+    // Node classification helpers
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Prüft, ob dieser Knoten ein Blatt ist (keine Kinder hat) für eine spezifische Struktur.
-     * Berücksichtigt Typ-ID und Head-ID für korrekte Multi-Type-Strukturerkennung.
-     *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @param headId Die Head-ID der gewünschten Struktur
-     * @return true, wenn keine Kinder für diese spezifische Struktur vorhanden sind
+     * @param typeId type
+     * @param headId head-id
+     * @return {@code true} if this node has no children within that typed, head-scoped structure
      */
     public boolean isLeaf(StructureType typeId, int headId) {
         return getChildren(typeId, headId).isEmpty();
     }
 
     /**
-     * Prüft, ob dieser Knoten ein Blatt ist (keine Kinder hat).
-     * Verwendet automatische Typ- und Head-Ermittlung.
+     * Uses derived type/head to determine leaf status; fallback is global child emptiness.
      *
-     * @return true, wenn keine Kinder vorhanden sind
+     * @return {@code true} if leaf under the derived structure
      */
     public boolean isLeaf() {
         StructureType typeId = deriveTypeId();
         StructureNode head = findHead(typeId);
         if (head == null) {
-            return children.isEmpty(); // Fallback auf globale Kinder-Prüfung
+            return children.isEmpty();
         }
         return isLeaf(typeId, head.getId());
     }
 
     /**
-     * Prüft, ob dieser Knoten terminal ist (genau eine Verbindung hat) für eine spezifische Struktur.
-     * Terminal-Knoten sind Endpunkte in Strukturen.
-     *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @param headId Die Head-ID der gewünschten Struktur
-     * @return true, wenn genau eine Verbindung in dieser spezifischen Struktur vorhanden ist
+     * @param typeId type
+     * @param headId head-id
+     * @return {@code true} if endpoint (degree==1) in that structure
      */
     public boolean isTerminal(StructureType typeId, int headId) {
         return isEndpoint(this, typeId, headId);
     }
 
     /**
-     * Prüft, ob dieser Knoten terminal ist (genau eine Verbindung hat).
-     * Verwendet automatische Typ- und Head-Ermittlung.
-     * Terminal-Knoten sind Endpunkte in Strukturen.
+     * Uses derived type/head to determine endpoint status; fallback counts global degree.
      *
-     * @return true, wenn genau eine Verbindung vorhanden ist
+     * @return {@code true} if terminal under the derived structure
      */
     public boolean isTerminal() {
         StructureType typeId = deriveTypeId();
         StructureNode head = findHead(typeId);
         if (head == null) {
-            // Fallback: Zähle Parent + Kinder
             return (parent != null ? 1 : 0) + children.size() == 1;
         }
         return isTerminal(typeId, head.getId());
     }
 
     /**
-     * Prüft, ob dieser Knoten ein Root für eine spezifische Struktur ist.
-     * Root-Knoten sind sowohl Head-Knoten als auch haben keinen Parent in der Struktur.
-     *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @return true, wenn dieser Knoten Head und ohne Parent in der Struktur ist
+     * @param typeId type
+     * @return {@code true} if this node is a head and has no parent within the structure
      */
     public boolean isRoot(StructureType typeId) {
-        // Root = Head + kein Parent in dieser Strukturform
         return isHead(typeId) && (parent == null || !hasParentInStructure(typeId));
     }
 
     /**
-     * Prüft, ob dieser Knoten ein Root ist (keinen Parent hat und Head ist).
-     * Verwendet automatische Typ-Ermittlung.
-     * Root-Knoten sind Startpunkte für Traversierung.
+     * Derived-type root check.
      *
-     * @return true, wenn kein Parent vorhanden ist und dieser Knoten Head ist
+     * @return {@code true} if root for the derived type
      */
     public boolean isRoot() {
         StructureType typeId = deriveTypeId();
@@ -1405,29 +1309,23 @@ public class StructureNode {
     }
 
     /**
-     * Hilfsmethode: Prüft, ob dieser Knoten einen Parent in einer spezifischen Struktur hat.
-     *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @return true, wenn ein Parent in dieser Struktur existiert
+     * @param typeId type
+     * @return {@code true} if this node has a parent edge that belongs to the (type, headId)-scoped structure
      */
     private boolean hasParentInStructure(StructureType typeId) {
         if (parent == null) return false;
 
-        // Prüfe, ob der Parent diesen Knoten als Kind für die spezifische Struktur führt
         StructureNode head = findHead(typeId);
-        if (head == null) return parent != null; // Fallback
+        if (head == null) return parent != null;
 
         Set<StructureNode> parentChildren = parent.getChildren(typeId, head.getId());
         return parentChildren.contains(this);
     }
 
     /**
-     * Erweiterte canAcceptMoreChildren für spezifische Struktur.
-     * Berücksichtigt Typ-ID und Head-ID.
-     *
-     * @param typeId Die Typ-ID der gewünschten Struktur
-     * @param headId Die Head-ID der gewünschten Struktur
-     * @return true, wenn weitere Kinder für diese Struktur akzeptiert werden können
+     * @param typeId type
+     * @param headId head-id
+     * @return {@code true} if the number of typed, head-scoped children is below {@link #maxChildren}
      */
     public boolean canAcceptMoreChildren(StructureType typeId, int headId) {
         Set<StructureNode> currentChildren = getChildren(typeId, headId);
@@ -1435,83 +1333,79 @@ public class StructureNode {
     }
 
     /**
-     * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann.
-     * Verwendet automatische Typ- und Head-Ermittlung.
+     * Derived-type check for {@link #canAcceptMoreChildren(StructureType, int)}.
      *
-     * @return true, wenn weitere Kinder akzeptiert werden können
+     * @return {@code true} if more children are allowed
      */
     public boolean canAcceptMoreChildren() {
         StructureType typeId = deriveTypeId();
         StructureNode head = findHead(typeId);
         if (head == null) {
-            return children.size() < maxChildren; // Fallback
+            return children.size() < maxChildren;
         }
         return canAcceptMoreChildren(typeId, head.getId());
     }
 
     /**
-     * Berechnet den Konnektivität-grad (Anzahl aller Verbindungen).
-     * Summe aus Parent-Verbindung und Kind-Verbindungen.
-     *
-     * @return Gesamtanzahl der Verbindungen
+     * @return (parent connection ? 1 : 0) + child count
      */
     public int getConnectivityDegree() {
         return (parent != null ? 1 : 0) + children.size();
     }
 
-    // ===== GETTER UND SETTER =====
+    // --------------------------------------------------------------------------------------------
+    // Getters / setters
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Gibt die eindeutige ID dieses Knotens zurück.
-     *
-     * @return Die Knoten-ID
+     * @return node id
      */
     public int getId() {
         return id;
     }
 
     /**
-     * Gibt den Parent-Knoten zurück.
-     *
-     * @return Der Parent-Knoten oder null
+     * @return parent node (untyped), or {@code null}
      */
     public StructureNode getParent() {
         return parent;
     }
 
     /**
-     * Setzt den Parent-Knoten direkt (Vorsicht: kann Inkonsistenzen verursachen).
-     * Normalerweise sollte addChild() verwendet werden.
+     * Sets the parent pointer directly. Use with care—normally edges should be created via {@link #addChild(StructureNode, Set, Map)}
+     * or {@link #addChild(StructureNode)} to keep child metadata consistent.
      *
-     * @param parent Der neue Parent-Knoten (kann null sein)
+     * @param parent new parent (nullable)
      */
     public void setParent(StructureNode parent) {
         this.parent = parent;
     }
 
     /**
-     * Gibt die maximale Anzahl von Kindern zurück.
-     *
-     * @return Die maximale Kindanzahl
+     * @return maximum number of children
      */
     public int getMaxChildren() {
         return maxChildren;
     }
 
     /**
-     * Setzt die maximale Anzahl von Kindern, die dieser Knoten haben kann.
+     * Sets the maximum number of children; values below 0 are clamped to 0.
      *
-     * @param maxChildren Maximale Kindanzahl (wird auf mindestens 0 begrenzt)
+     * @param maxChildren limit (≥ 0)
      */
     public void setMaxChildren(int maxChildren) {
         this.maxChildren = Math.max(0, maxChildren);
     }
 
-    // ===== OBJECT-METHODEN =====
+    // --------------------------------------------------------------------------------------------
+    // Object overrides
+    // --------------------------------------------------------------------------------------------
 
     /**
-     * Vergleicht zwei StructureNodes basierend auf ihrer ID.
-     * Zwei Knoten sind gleich, wenn sie die gleiche ID haben.
+     * Nodes are equal if their ids are equal.
+     *
+     * @param obj other object
+     * @return {@code true} if ids match
      */
     @Override
     public boolean equals(Object obj) {
@@ -1521,8 +1415,9 @@ public class StructureNode {
     }
 
     /**
-     * Berechnet den Hash-Code basierend auf der ID.
-     * Konsistent mit equals() für korrekte Verwendung in Collections.
+     * Hash-code based on the node id.
+     *
+     * @return hash
      */
     @Override
     public int hashCode() {
@@ -1530,8 +1425,7 @@ public class StructureNode {
     }
 
     /**
-     * Gibt eine String-Repräsentation des Knotens zurück.
-     * Nützlich für Debugging und Logging.
+     * @return debug-friendly string with id, types, head-status and child count
      */
     @Override
     public String toString() {

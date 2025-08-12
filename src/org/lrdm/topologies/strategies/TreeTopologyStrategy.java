@@ -214,7 +214,7 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
      */
     @Override
     public int getNumTargetLinks(Network n) {
-        return Math.max(0, n.getNumMirrors() - 1);
+        return Math.max(0, n.getMirrorCursor().getNumUsableMirrors() - 1);
     }
 
     /**
