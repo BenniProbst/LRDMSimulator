@@ -9,12 +9,12 @@ import java.util.Properties;
 
 /**
  * Represents the predicted impact (the “effect”) of applying an adaptation {@link Action}.
- * It provides deltas for the three objectives—relative Active Links (AL), relative Bandwidth (BW),
+ * It provides deltas for the three goals—relative Active Links (AL), relative Bandwidth (BW),
  * and relative Time-To-Write (TTW)—as well as the adaptation latency (in simulation timesteps).
  *
  * <p><b>Sign convention:</b>
  * All delta methods return values where a <em>positive</em> number indicates an
- * <em>improvement</em> with respect to the objective:
+ * <em>improvement</em> with respect to the goal:
  * <ul>
  *   <li>{@code getDeltaActiveLinks()} &gt; 0 —&gt; relative AL increases (more reliability)</li>
  *   <li>{@code getDeltaBandwidth(...)} &gt; 0 —&gt; relative BW decreases (lower cost)</li>
@@ -24,21 +24,18 @@ import java.util.Properties;
  * <p>Latency is computed from the simulator configuration (min/max startup/ready/activation times)
  * using the <em>average</em> of each min/max range.
  *
+ * @param action The action for which this effect is predicted.
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  * @since 1.0
  */
-public class Effect {
-    /** The action for which this effect is predicted. */
-    private final Action action;
-
+public record Effect(Action action) {
     /**
      * Creates a new effect bound to the given {@link Action}.
      *
      * @param action the action this effect describes; must not be {@code null}
      */
-    public Effect(Action action) {
-        this.action = action;
+    public Effect {
     }
 
     /**
@@ -119,7 +116,7 @@ public class Effect {
      *
      * @param props simulator/system properties (needs at least {@code max_bandwidth})
      * @return the change in percent (0..100), where positive means improvement (lower BW)
-     * @throws IllegalStateException if required properties are missing or malformed
+     * @throws IllegalStateException if required, properties are missing or malformed
      */
     public int getDeltaBandwidth(Properties props) {
         var net = action.getNetwork();
@@ -132,7 +129,7 @@ public class Effect {
         int predictedMaxTotalBandwidth =
                 net.getTopologyStrategy().getPredictedNumTargetLinks(action) * maxBandwidthPerLink;
 
-        // Clamp evaluation time to be at least "now" to avoid indexing t-1 when latency is zero.
+        // Clamp evaluation time to be at least "now" to avoid indexing t-1 when the latency is zero.
         int evalTime = Math.max(now, action.getTime() + getLatency() - 1);
         int predictedTotalBandwidth = net.getPredictedBandwidth(evalTime);
 
@@ -152,7 +149,7 @@ public class Effect {
      *
      * <p>Notes:
      * <ul>
-     *   <li>For the fully connected topology, TTW is considered 100% (best case).</li>
+     *   <li>For the fully connected topology, TTW is considered 100% (the best case).</li>
      *   <li>For the balanced tree topology, TTW is estimated via the tree depth.</li>
      *   <li>Other combinations are currently returned as 0 (subject to future work).</li>
      * </ul>
@@ -203,22 +200,27 @@ public class Effect {
      * <p>All averages are computed as {@code (min + max) / 2}.
      *
      * @return the latency in simulation timesteps (never negative)
-     * @throws IllegalStateException if required properties are missing or malformed
+     * @throws IllegalStateException if required, properties are missing or malformed
      */
     public int getLatency() {
         Properties props = action.getNetwork().getProps();
 
         int minStartup = requireIntProp(props, "startup_time_min");
         int maxStartup = requireIntProp(props, "startup_time_max");
-        int minReady   = requireIntProp(props, "ready_time_min");
-        int maxReady   = requireIntProp(props, "ready_time_max"); // fixed key
-        int minActive  = requireIntProp(props, "link_activation_time_min");
-        int maxActive  = requireIntProp(props, "link_activation_time_max");
+        int minReady = requireIntProp(props, "ready_time_min");
+        int maxReady = requireIntProp(props, "ready_time_max"); // fixed key
+        int minActive = requireIntProp(props, "link_activation_time_min");
+        int maxActive = requireIntProp(props, "link_activation_time_max");
 
         float avgStartup = (minStartup + maxStartup) / 2f;
-        float avgReady   = (minReady   + maxReady)   / 2f;
-        float avgActive  = (minActive  + maxActive)  / 2f;
+        float avgReady = (minReady + maxReady) / 2f;
+        float avgActive = (minActive + maxActive) / 2f;
 
+        int time = getTime(avgStartup, avgReady, avgActive);
+        return Math.max(0, time);
+    }
+
+    private int getTime(float avgStartup, float avgReady, float avgActive) {
         int time = 0;
         if (action instanceof MirrorChange mc) {
             // adding mirrors -> need startup + ready + activation
@@ -230,7 +232,7 @@ public class Effect {
             // re-initialize links; mirrors assumed up/ready already
             time = Math.round(avgActive);
         }
-        return Math.max(0, time);
+        return time;
     }
 
     // ---- internal helpers ---------------------------------------------------
