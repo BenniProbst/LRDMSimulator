@@ -14,7 +14,7 @@ import org.lrdm.Network;
  *   <li>the simulation time at which it should be applied ({@link #getTime()}),</li>
  *   <li>the target {@link Network} instance it modifies ({@link #getNetwork()}),</li>
  *   <li>and an {@link Effect} object summarizing the predicted impact of the action
- *       on the system’s quality objectives (reliability via active links, cost via
+ *       on the system’s quality goals (reliability via active links, cost via
  *       bandwidth, performance via TTW) and its adaptation latency ({@link #getEffect()}).</li>
  * </ul>
  *
@@ -43,7 +43,7 @@ public class Action {
     /** Simulation time step at which the action should be applied. */
     private final int time;
 
-    /** Target network to which this action applies. */
+    /** Target the network to which this action applies. */
     private final Network network;
 
     /**
