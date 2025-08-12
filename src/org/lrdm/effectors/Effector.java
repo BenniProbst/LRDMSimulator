@@ -10,68 +10,68 @@ import java.util.Map;
 /**
  * # Effector
  * <p>
- * Queues and applies reconfiguration requests for the latency-aware remote
- * data mirroring simulator. The {@code Effector} exposes convenience methods
- * to schedule changes to:
+ * Central scheduling component that collects and triggers reconfiguration requests
+ * for a latency-aware remote data mirroring network. The {@code Effector} allows
+ * client code (e.g., planners/optimizers) to enqueue {@link Action}s to:
  *
  * <ul>
- *   <li>the number of mirrors ({@link #setMirrors(int, int)}),</li>
- *   <li>the topology strategy ({@link #setStrategy(TopologyStrategy, int)}), and</li>
- *   <li>the number of targeted links per mirror ({@link #setTargetLinksPerMirror(int, int)}).</li>
+ *   <li>change the number of mirrors ({@link #setMirrors(int, int)}),</li>
+ *   <li>switch the topology strategy ({@link #setStrategy(TopologyStrategy, int)}),</li>
+ *   <li>adjust the targeted links per mirror ({@link #setTargetLinksPerMirror(int, int)}).</li>
  * </ul>
  *
- * Each scheduling method creates an {@link Action} (a concrete subtype such as
- * {@link MirrorChange}, {@link TopologyChange}, or {@link TargetLinkChange}),
- * associates it with a simulation time {@code t}, and stores it internally.
- * When {@link #timeStep(int)} is called with {@code t}, the effector triggers
- * the requested change on the underlying {@link Network}.
+ * Actions are keyed by the simulation time (tick) at which they should be applied.
+ * On each time step, {@link #timeStep(int)} applies any pending changes for that tick
+ * by delegating to the underlying {@link Network}.
  *
- * <p><b>Action identity &amp; replacement:</b>
- * There is at most one queued action of a given type per simulation time step.
- * If you schedule a second action of the same typing at the same {@code t}, it will
- * overwrite the previous one in the internal map (later call wins).
+ * <p><b>Usage</b></p>
+ * <pre>{@code
+ * Effector eff = sim.getEffector();
+ * // schedule a series of changes
+ * Action a1 = eff.setMirrors(10, 120);
+ * Action a2 = eff.setTargetLinksPerMirror(3, 140);
+ * TopologyChange a3 = eff.setStrategy(new NConnectedTopology(), 160);
  *
- * <p><b>Removing scheduled actions:</b>
- * {@link #removeAction(Action)} removes a previously queued action by matching
- * both its key (time) and the specific instance (value). This is a no-op if the
- * action is not currently queued.
+ * // optionally, remove/replace before they trigger
+ * eff.removeAction(a2);
  *
- * <p><b>Threading:</b>
- * This class is not synchronized. External synchronization is required if it is
- * accessed from multiple threads concurrently.
+ * // simulation loop
+ * for (int t = 1; t <= simTime; t++) {
+ *     eff.timeStep(t);  // applies any change scheduled for t
+ *     sim.runStep(t);
+ * }
+ * }</pre>
  *
- * @apiNote Typical usage is: construct {@code Effector} from a {@code Network},
- * schedule one or more actions, and invoke {@link #timeStep(int)} from the
- * simulation driver each tick to apply due actions.
+ * @apiNote If multiple actions of the same type are scheduled for the same tick,
+ *          the most recently scheduled one is retained in the internal map (by key overwrite).
  *
  * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
  * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
  * @since 1.0
  * @see Action
  * @see MirrorChange
- * @see TopologyChange
  * @see TargetLinkChange
+ * @see TopologyChange
  * @see Network
  */
 public class Effector {
-    /** Backing network to mutate when actions become due. */
+
+    /** The target network to which scheduled actions will be applied. */
     private final Network n;
 
-    /** Pending mirror-count changes, keyed by simulation time (sim_time → action). */
+    /** Map of scheduled mirror-count changes keyed by simulation time (sim_time → action). */
     private final Map<Integer, MirrorChange> setMirrorChanges;
 
-    /** Pending topology changes, keyed by simulation time (sim_time → action). */
+    /** Map of scheduled topology switches keyed by simulation time (sim_time → action). */
     private final Map<Integer, TopologyChange> setStrategyChanges;
 
-    /** Pending target-links-per-mirror changes, keyed by simulation time (sim_time → action). */
+    /** Map of scheduled target-links-per-mirror changes keyed by simulation time (sim_time → action). */
     private final Map<Integer, TargetLinkChange> setTargetedLinkChanges;
 
     /**
-     * Constructs an effector bound to a {@link Network}.
+     * Creates a new effector bound to a specific {@link Network}.
      *
-     * @param n the target network; must not be {@code null}
-     * @implNote This class keeps only a reference; the network’s lifetime must
-     *           outlive the effector or be managed by the caller.
+     * @param n the network to operate on; must not be {@code null}
      */
     public Effector(Network n) {
         this.n = n;
@@ -81,17 +81,13 @@ public class Effector {
     }
 
     /**
-     * Schedules a change to the number of mirrors at simulation time {@code t}.
+     * Schedules a change of the number of mirrors at simulation time {@code t}.
      *
-     * <p>If an existing mirror-change is already scheduled for the same time {@code t},
-     * it will be replaced by this new request.</p>
-     *
-     * @param m the desired number of mirrors to enforce at time {@code t}
-     * @param t the simulation time (tick) when this change should be applied
-     * @return the concrete {@link MirrorChange} action that was created and queued
-     * @implNote The returned action contains a unique ID provided by {@link IDGenerator}.
-     *           Callers may attach an {@link Effect} to the returned action
-     *           (via {@link Action#setEffect(Effect)}) before the step becomes due.
+     * @param m the desired number of mirrors
+     * @param t the simulation time (tick) when the change should be applied
+     * @return a newly created {@link Action} (specifically a {@link MirrorChange}) representing this adaptation
+     * @implNote If an action of the same type was already scheduled for {@code t},
+     *           it will be replaced by this call (map overwrite).
      */
     public Action setMirrors(int m, int t) {
         MirrorChange a = new MirrorChange(n, IDGenerator.getInstance().getNextID(), t, m);
@@ -100,16 +96,13 @@ public class Effector {
     }
 
     /**
-     * Schedules a topology switch to {@code strategy} at simulation time {@code t}.
+     * Schedules a topology strategy switch at simulation time {@code t}.
      *
-     * <p>If an existing topology-change is already scheduled for the same time {@code t},
-     * it will be replaced by this new request.</p>
-     *
-     * @param strategy the {@link TopologyStrategy} to activate at time {@code t}
-     * @param t        the simulation time (tick) when this change should be applied
-     * @return the concrete {@link TopologyChange} action that was created and queued
-     * @implNote The actual network mutation is performed inside {@link #timeStep(int)}
-     *           using {@link Network#setTopologyStrategy(TopologyStrategy, int)}.
+     * @param strategy the {@link TopologyStrategy} to switch to
+     * @param t        the simulation time (tick) when the switch should occur
+     * @return a newly created {@link TopologyChange} action representing this adaptation
+     * @implNote If a topology change was already scheduled for {@code t},
+     *           it will be replaced by this call (map overwrite).
      */
     public TopologyChange setStrategy(TopologyStrategy strategy, int t) {
         TopologyChange change = new TopologyChange(n, strategy, IDGenerator.getInstance().getNextID(), t);
@@ -118,16 +111,13 @@ public class Effector {
     }
 
     /**
-     * Schedules a change to the number of targeted links per mirror at time {@code t}.
+     * Schedules a change to the number of targeted links per mirror at simulation time {@code t}.
      *
-     * <p>If an existing target-link-change is already scheduled for the same time {@code t},
-     * it will be replaced by this new request.</p>
-     *
-     * @param numTargetedLinks the new target-links-per-mirror value to enforce
-     * @param t                the simulation time (tick) when this change should be applied
-     * @return the concrete {@link TargetLinkChange} action that was created and queued
-     * @implNote The actual network mutation is performed inside {@link #timeStep(int)}
-     *           using {@link Network#setNumTargetedLinksPerMirror(int, int)}.
+     * @param numTargetedLinks the new target links per mirror
+     * @param t                the simulation time (tick) when the change should be applied
+     * @return a newly created {@link TargetLinkChange} action representing this adaptation
+     * @implNote If a target-link change was already scheduled for {@code t},
+     *           it will be replaced by this call (map overwrite).
      */
     public TargetLinkChange setTargetLinksPerMirror(int numTargetedLinks, int t) {
         TargetLinkChange tlc = new TargetLinkChange(n, IDGenerator.getInstance().getNextID(), t, numTargetedLinks);
@@ -136,14 +126,12 @@ public class Effector {
     }
 
     /**
-     * Removes a previously queued {@link Action} from the effector.
+     * Removes a previously scheduled {@link Action} from the queue if it is still pending.
      *
-     * <p>This method looks up the internal map by {@link Action#getTime()} and removes
-     * the mapping only if it is associated with the exact same {@code Action} instance.
-     * Passing an action that is not currently queued is a no-op.</p>
-     *
-     * @param a the {@link Action} to remove; ignored if {@code null} or not present
-     * @implNote Removal uses {@code Map.remove(key, value)} semantics for safety.
+     * @param a the action to remove
+     * @implNote Removal is keyed by the action's scheduled time; if an action for the same time
+     *           was subsequently overwritten by another action of the same type, this call
+     *           will remove only if the map still holds the same instance {@code a}.
      */
     public void removeAction(Action a) {
         if (a instanceof MirrorChange) {
@@ -156,22 +144,14 @@ public class Effector {
     }
 
     /**
-     * Applies any actions that are due at simulation time {@code t}.
+     * Applies any scheduled adaptations for the given simulation time tick by delegating to the {@link Network}.
      *
-     * <p>The application order at a given tick is:
-     * <ol>
-     *   <li>Topology change (if present),</li>
-     *   <li>Mirror-count change (if present),</li>
-     *   <li>Target-links-per-mirror change (if present).</li>
-     * </ol>
-     * This order is intentional, so the topology exists before changing the population
-     * and link targets.</p>
+     * <p>The application order is: topology change → mirror count change → target links per mirror.
+     * This mirrors the existing implementation and ensures deterministic behavior.</p>
      *
-     * @param t the current simulation time (tick)
-     * @implNote If no action is queued for {@code t}, this method is a no-op.
-     * @see Network#setTopologyStrategy(TopologyStrategy, int)
-     * @see Network#setNumMirrors(int, int)
-     * @see Network#setNumTargetedLinksPerMirror(int, int)
+     * @param t current simulation time (tick)
+     * @implNote This method is side-effecting and should be called exactly once per simulation tick
+     *           before/after the network step, depending on your simulation semantics.
      */
     public void timeStep(int t) {
         if (setStrategyChanges.get(t) != null) {
