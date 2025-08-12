@@ -12,30 +12,41 @@ import java.util.Properties;
  * It provides deltas for the three goals—relative Active Links (AL), relative Bandwidth (BW),
  * and relative Time-To-Write (TTW)—as well as the adaptation latency (in simulation timesteps).
  *
- * <p><b>Sign convention:</b>
- * All delta methods return values where a <em>positive</em> number indicates an
- * <em>improvement</em> with respect to the goal:
+ * <p><b>Sign convention:</b> All delta methods return values where a <em>positive</em> number
+ * indicates an <em>improvement</em> with respect to the goal:
  * <ul>
  *   <li>{@code getDeltaActiveLinks()} &gt; 0 —&gt; relative AL increases (more reliability)</li>
  *   <li>{@code getDeltaBandwidth(...)} &gt; 0 —&gt; relative BW decreases (lower cost)</li>
  *   <li>{@code getDeltaTimeToWrite()} &gt; 0 —&gt; relative TTW improves (faster)</li>
  * </ul>
  *
- * <p>Latency is computed from the simulator configuration (min/max startup/ready/activation times)
- * using the <em>average</em> of each min/max range.
+ * <p><b>Latency model:</b> Latency is computed from simulator configuration using
+ * the <em>average</em> of each min/max range.
  *
- * @param action The action for which this effect is predicted.
- * @author Benjamin-Elias Probst <benjamineliasprobst@gmail.com>
- * @author Sebastian Götz <sebastian.goetz1@tu-dresden.de>
+ * <p><b>Topology awareness:</b> Calculations are topology-specific. For some unsupported
+ * or non-applicable combinations, methods may return {@code 0}.
+ *
+ * @param action the {@link Action} for which this effect is predicted
+ * @author Benjamin-Elias Probst &lt;benjamineliasprobst@gmail.com&gt;
+ * @author Sebastian Götz &lt;sebastian.goetz1@tu-dresden.de&gt;
  * @since 1.0
+ * @see Action
+ * @see MirrorChange
+ * @see TargetLinkChange
+ * @see TopologyChange
+ * @see TopologyStrategy
  */
 public record Effect(Action action) {
+
     /**
      * Creates a new effect bound to the given {@link Action}.
      *
      * @param action the action this effect describes; must not be {@code null}
+     * @throws NullPointerException if {@code action} is {@code null}
      */
     public Effect {
+        // Intentionally no additional checks here; callers must provide a non-null action.
+        // (If desired, add: Objects.requireNonNull(action, "action");
     }
 
     /**
@@ -59,6 +70,16 @@ public record Effect(Action action) {
         }
     }
 
+    /**
+     * Computes AL delta for a mirror count change, given the topology and the current/target mirror counts.
+     * Guards against division-by-zero for invalid inputs.
+     *
+     * @param mc   the mirror change action
+     * @param topo the current topology
+     * @param m1   current number of mirrors
+     * @param lpm  number of target links per mirror
+     * @return the raw delta (prior to outer sign convention)
+     */
     private double getDeltaActiveLinksForMirrorChange(MirrorChange mc, TopologyStrategy topo, int m1, int lpm) {
         int m2 = mc.getNewMirrors();
         if (topo instanceof FullyConnectedTopology) {
@@ -74,6 +95,16 @@ public record Effect(Action action) {
         }
     }
 
+    /**
+     * Computes AL delta for a change of target links per mirror under N-connected topology.
+     * Guards against division-by-zero for invalid inputs.
+     *
+     * @param tlc  the target-link change action
+     * @param topo the current topology
+     * @param m    current number of mirrors
+     * @param lpm1 current links per mirror
+     * @return the raw delta (prior to outer sign convention)
+     */
     private double getDeltaActiveLinksForTargetLinkChange(TargetLinkChange tlc, TopologyStrategy topo, int m, int lpm1) {
         int lpm2 = tlc.getNewLinksPerMirror();
         if (topo instanceof NConnectedTopology) {
@@ -83,6 +114,16 @@ public record Effect(Action action) {
         return 0;
     }
 
+    /**
+     * Computes AL delta for a topology change, relative to the current topology.
+     * Guards against division-by-zero for invalid inputs.
+     *
+     * @param tc   the topology change action
+     * @param topo the current topology
+     * @param m    current number of mirrors
+     * @param lpm  current links per mirror
+     * @return the raw delta (prior to outer sign convention)
+     */
     private double getDeltaActiveLinksForTopologyChange(TopologyChange tc, TopologyStrategy topo, int m, int lpm) {
         TopologyStrategy newTopology = tc.getNewTopology();
         if (topo instanceof FullyConnectedTopology && newTopology instanceof NConnectedTopology) {
@@ -112,11 +153,12 @@ public record Effect(Action action) {
      * at {@code action.getTime() + getLatency() - 1}. Positive values indicate an improvement
      * (i.e., lower relative bandwidth).
      *
-     * <p>Relative BW is computed as {@code totalBandwidth / predictedMaxTotalBandwidth}.
+     * <p>Relative BW is computed as {@code totalBandwidth / predictedMaxTotalBandwidth}, both in percent.
      *
-     * @param props simulator/system properties (needs at least {@code max_bandwidth})
+     * @param props simulator/system properties (requires at least {@code max_bandwidth})
      * @return the change in percent (0..100), where positive means improvement (lower BW)
-     * @throws IllegalStateException if required, properties are missing or malformed
+     * @throws IllegalStateException if required properties are missing or malformed
+     * @see #getLatency()
      */
     public int getDeltaBandwidth(Properties props) {
         var net = action.getNetwork();
@@ -149,7 +191,7 @@ public record Effect(Action action) {
      *
      * <p>Notes:
      * <ul>
-     *   <li>For the fully connected topology, TTW is considered 100% (the best case).</li>
+     *   <li>For the fully connected topology, TTW is considered 100% (best case).</li>
      *   <li>For the balanced tree topology, TTW is estimated via the tree depth.</li>
      *   <li>Other combinations are currently returned as 0 (subject to future work).</li>
      * </ul>
@@ -178,6 +220,15 @@ public record Effect(Action action) {
         return getDeltaTimeToWriteForBalancedTrees(m, currentRelativeTTW, lpm);
     }
 
+    /**
+     * Computes TTW delta for balanced tree topology based on an estimated tree depth.
+     * Uses {@code depth ≈ round(log((m+1)/2) / log(lpm))} and normalizes against {@code maxTTW = round(m/2)}.
+     *
+     * @param m                 number of mirrors
+     * @param currentRelativeTTW current relative TTW at evaluation time
+     * @param lpm               target links per mirror (branching factor); must be {@code >= 2} to be meaningful
+     * @return TTW delta in percent (0..100), positive indicates improvement
+     */
     private static int getDeltaTimeToWriteForBalancedTrees(int m, int currentRelativeTTW, int lpm) {
         int maxTTW = Math.round(m / 2f);
         if (maxTTW == 1) {
@@ -194,13 +245,16 @@ public record Effect(Action action) {
 
     /**
      * Returns the predicted adaptation latency (in simulation timesteps) for this action.
-     * For adding mirrors, latency is {@code avg(startup) + avg(ready) + avg(link_activation)}.
-     * For removing mirrors, latency is 0. For link/topology changes, latency is {@code avg(link_activation)}.
+     * <ul>
+     *   <li>Adding mirrors: {@code avg(startup) + avg(ready) + avg(link_activation)}</li>
+     *   <li>Removing mirrors: {@code 0}</li>
+     *   <li>Link/topology changes: {@code avg(link_activation)}</li>
+     * </ul>
      *
      * <p>All averages are computed as {@code (min + max) / 2}.
      *
      * @return the latency in simulation timesteps (never negative)
-     * @throws IllegalStateException if required, properties are missing or malformed
+     * @throws IllegalStateException if required properties are missing or malformed
      */
     public int getLatency() {
         Properties props = action.getNetwork().getProps();
@@ -220,6 +274,14 @@ public record Effect(Action action) {
         return Math.max(0, time);
     }
 
+    /**
+     * Helper that maps the action type to its latency formula, using provided averages.
+     *
+     * @param avgStartup average startup time
+     * @param avgReady   average ready time
+     * @param avgActive  average link activation time
+     * @return the predicted latency (may be zero for removals)
+     */
     private int getTime(float avgStartup, float avgReady, float avgActive) {
         int time = 0;
         if (action instanceof MirrorChange mc) {
@@ -237,6 +299,14 @@ public record Effect(Action action) {
 
     // ---- internal helpers ---------------------------------------------------
 
+    /**
+     * Retrieves a required integer property.
+     *
+     * @param p   properties bag
+     * @param key property key
+     * @return parsed integer value
+     * @throws IllegalStateException if the property is missing or cannot be parsed as integer
+     */
     private static int requireIntProp(Properties p, String key) {
         String v = p.getProperty(key);
         if (v == null) {
