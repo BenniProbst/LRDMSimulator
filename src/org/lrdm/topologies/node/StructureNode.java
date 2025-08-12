@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 /**
  * # StructureNode
- *
+ * <p>
  * A structural graph node that supports:
  * <ul>
  *   <li><b>Parent–child relations</b> (directed edges)</li>
@@ -40,7 +40,7 @@ public class StructureNode {
     private StructureNode parent;
 
     /**
-     * Child edges. Each record stores:
+     * Child edges. Each record store:
      * <ul>
      *   <li>the child node reference,</li>
      *   <li>the set of structure types this edge belongs to,</li>
@@ -155,7 +155,7 @@ public class StructureNode {
         }
 
         /**
-         * @return defensive copy of type → head-id map
+         * @return defensive copy of a type → head-id map
          */
         public Map<StructureType, Integer> getHeadIds() {
             return new HashMap<>(headIds);
@@ -169,7 +169,6 @@ public class StructureNode {
      * @param to   target-node id
      */
     public record LinkPair(int from, int to) {
-        public LinkPair {}
 
         @Override
         public boolean equals(Object obj) {
@@ -278,7 +277,7 @@ public class StructureNode {
     // --------------------------------------------------------------------------------------------
 
     /**
-     * Collects all nodes reachable within the same structure instance (typed + head-scoped), starting from {@code this}.
+     * Collects all nodes reachable within the same structure instance (typed and head-scoped), starting from {@code this}.
      * The traversal:
      * <ul>
      *   <li>follows only edges whose {@code typeId} and {@code headId} match,</li>
@@ -304,7 +303,7 @@ public class StructureNode {
             if (result.contains(current)) continue; // cycle guard
             result.add(current);
 
-            // If current is a foreign head of the same type or does not represent the type → stop exploring here.
+            // If the current is a foreign head of the same type or does not represent the type → stop exploring here.
             if ((current.isHead(typeId) && headId != current.getId()) || (!current.getNodeTypes().contains(typeId))) {
                 continue;
             }
@@ -486,14 +485,14 @@ public class StructureNode {
      * @param child   child node; must not be {@code null}
      * @param typeIds structure types; must not be {@code null} or empty
      * @param headIds map type → head-id; must provide a head-id for each type in {@code typeIds}
-     * @throws IllegalArgumentException if required head-ids are missing
+     * @throws IllegalArgumentException if required, head-ids are missing
      */
     public void addChild(StructureNode child, Set<StructureType> typeIds, Map<StructureType, Integer> headIds) {
         if (child == null || typeIds == null || typeIds.isEmpty()) {
             return;
         }
 
-        // auto-derive child's primary type and add it to the edge types
+        // auto-derive a child's primary type and add it to the edge types
         Set<StructureType> finalTypeIds = new HashSet<>(typeIds);
         StructureType derivedTypeId = child.deriveTypeId();
         finalTypeIds.add(derivedTypeId);
@@ -847,7 +846,7 @@ public class StructureNode {
     }
 
     /**
-     * Best-first search (Dijkstra-like) that enumerates all simple paths (no repeated nodes) from {@code start} to {@code target}
+     * Best-first search (Dijkstra-like) that lists all simple paths (no repeated nodes) from {@code start} to {@code target}
      * along edges that belong to {@code typeId}.
      *
      * @param start    start node (head)
@@ -1347,7 +1346,7 @@ public class StructureNode {
     }
 
     /**
-     * @return (parent connection ? 1 : 0) + child count
+     * @return (parent connection ? 1: 0) + child count
      */
     public int getConnectivityDegree() {
         return (parent != null ? 1 : 0) + children.size();
@@ -1404,7 +1403,7 @@ public class StructureNode {
     /**
      * Nodes are equal if their ids are equal.
      *
-     * @param obj other object
+     * @param obj another object
      * @return {@code true} if ids match
      */
     @Override
