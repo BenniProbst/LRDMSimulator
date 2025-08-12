@@ -17,5 +17,6 @@ public class ScenarioOne {
             t += 10;
         }
         sim.run();
+        sim.plotLinks();
     }
 }
