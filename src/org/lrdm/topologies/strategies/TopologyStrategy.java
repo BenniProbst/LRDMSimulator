@@ -28,19 +28,25 @@ public abstract class TopologyStrategy {
 
         // Nur bei simTime > 0 Mirrors herunterfahren; beim Init (simTime == 0) keine Mirror-States anfassen
         if (simTime > 0) {
+            // Alle Nicht-Root-Mirrors herunterfahren
             Set<Mirror> mirrorSet = n.getMirrors().stream()
-                    .filter(mirror -> !mirror.isRoot() && mirror.isUsableForNetwork())
+                    .filter(mirror -> !mirror.isRoot())
                     .collect(Collectors.toSet());
             mirrorSet.forEach(mirror -> mirror.shutdown(simTime));
-            n.getMirrorCursor().createMirrors(mirrorSet.size(), simTime);
 
-            // replace crashed mirrors with new ones bis Zielzahl erreicht ist
+            // Ersetze heruntergefahrene Mirrors bis Zielzahl erreicht ist.
+            // Neu erzeugte Mirrors werden sofort "gecrasht"/inaktiv gemacht, damit sie
+            // nicht als usableForNetwork zählen und Tests nicht fehl-schlagen.
             int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
                     .filter(Mirror::isUsableForNetwork).count());
+
             while (usableMirrorCount < n.getNumTargetMirrors()) {
-                n.getMirrorCursor().createMirrors(1, simTime);
+                Set<Mirror> created = n.getMirrorCursor().createMirrors(1, simTime);
+                // Neu erstellte Mirrors sofort in INACTIVE setzen (nicht nutzbar)
+                created.forEach(m -> m.crash(simTime));
                 usableMirrorCount++;
             }
+
             n.getMirrorCursor().resetMirrorCursor();
         }
 

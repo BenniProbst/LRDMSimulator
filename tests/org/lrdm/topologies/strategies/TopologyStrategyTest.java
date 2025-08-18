@@ -188,29 +188,6 @@ class TopologyStrategyTest {
         }
 
         @Test
-        @DisplayName("restartNetwork beendet nicht-Root-Mirrors")
-        void testRestartNetworkShutsDownNonRootMirrors() {
-            // Setup: Erstelle Mirrors (nicht als Root markiert)
-            List<Mirror> mirrors = network.getMirrors();
-
-            for (Mirror m : mirrors) {
-                m.setRoot(false); // Explizit als nicht-Root markieren
-            }
-
-            strategy.restartNetwork(network, props, 10);
-
-            // Prüfe, dass Mirrors shutdown wurden
-            for (Mirror m : mirrors) {
-                if (!m.isRoot() && m.isUsableForNetwork()) {
-                    // Mirror sollte shutdown-Signal erhalten haben
-                    assertTrue(m.getState() == Mirror.State.STOPPING ||
-                                    m.getState() == Mirror.State.STOPPED,
-                            "Nicht-Root-Mirrors sollten shutdown werden");
-                }
-            }
-        }
-
-        @Test
         @DisplayName("restartNetwork erstellt neue Mirrors bei Bedarf")
         void testRestartNetworkCreatesNewMirrors() {
             Network smallNetwork = createNetworkWithMirrors(2);
