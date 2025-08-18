@@ -19,12 +19,19 @@ public abstract class TopologyStrategy {
     }
 
     public Set<Link> restartNetwork(Network n, Properties props, int simTime) {
-        n.getLinks().forEach(Link::shutdown);
+        // Links können beim ersten Aufruf (während des Network-Konstruktors) noch null sein
+        Set<Link> existingLinks = n.getLinks();
+
+        if (existingLinks != null) {
+            existingLinks.forEach(Link::shutdown);
+        }
+
         Set<Mirror> mirrorSet = n.getMirrors().stream()
                 .filter(mirror -> !mirror.isRoot() && mirror.isUsableForNetwork()).collect(Collectors.toSet());
         mirrorSet.forEach(mirror -> mirror.shutdown(simTime));
         n.getMirrorCursor().createMirrors(mirrorSet.size(), simTime);
-        //replace crashed mirrors with new ones
+
+        // replace crashed mirrors with new ones
         int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
                 .filter(Mirror::isUsableForNetwork).count());
         while (usableMirrorCount < n.getNumTargetMirrors()) {
@@ -32,7 +39,13 @@ public abstract class TopologyStrategy {
             usableMirrorCount++;
         }
         n.getMirrorCursor().resetMirrorCursor();
-        return n.getLinks().stream().filter(Link::isActive).collect(Collectors.toSet());
+
+        // Falls Links noch nicht initialisiert sind, leeres Set zurückgeben
+        if (existingLinks == null) {
+            return new HashSet<>();
+        }
+
+        return existingLinks.stream().filter(Link::isActive).collect(Collectors.toSet());
     }
 
     public abstract void handleAddNewMirrors(Network n, int newMirrors, Properties props, int simTime);
