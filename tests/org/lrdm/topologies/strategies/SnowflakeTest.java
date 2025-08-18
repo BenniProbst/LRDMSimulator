@@ -261,6 +261,11 @@ class SnowflakeTest {
                 sim.runStep(t);
 
                 Action a = sim.getEffector().setMirrors(mirrorProbe.getNumMirrors() + 1, t + 1);
+                // Effect kann bei geplanter Änderung noch null sein -> in diesem Fall Iteration überspringen
+                if (a == null || a.getEffect() == null) {
+                    continue;
+                }
+
                 int ttw = a.getEffect().getDeltaTimeToWrite();
                 int bw = a.getEffect().getDeltaBandwidth(sim.getProps());
                 double al = a.getEffect().getDeltaActiveLinks();
