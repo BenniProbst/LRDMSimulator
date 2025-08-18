@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.lrdm.*;
 import org.lrdm.effectors.Action;
+import org.lrdm.effectors.TopologyChange;
 import org.lrdm.probes.LinkProbe;
 import org.lrdm.probes.MirrorProbe;
 
@@ -361,19 +362,36 @@ class SnowflakeTest {
             // Starte mit einer anderen Topologie
             sim.initialize(new FullyConnectedTopology());
 
-            // Wechsle zu Schneeflocke
-            Action strategyChangeAction = sim.getEffector().setStrategy(new SnowflakeTopologyStrategy(), 8);
-            
-            // Verifiziere, dass die Strategy-Änderung geplant wurde
-            assertNotNull(strategyChangeAction, "Strategy-Änderung sollte Action zurückgeben");
-            assertInstanceOf(SnowflakeTopologyStrategy.class, 
-                    strategyChangeAction.getNetwork().getTopologyStrategy(),
-                    "Action sollte auf SnowflakeTopologyStrategy verweisen");
+            // Stelle sicher, dass zur Zeit des Wechsels mindestens 5 Mirrors vorhanden/geplant sind
+            MirrorProbe mirrorProbe = getMirrorProbe();
+            int minRequired = 5;
+            int currentTargets = mirrorProbe != null ? mirrorProbe.getNumTargetMirrors() : 0;
+            if (currentTargets < minRequired) {
+                // Plane frühzeitig genug, damit zum Wechselzeitpunkt genügend Mirrors verfügbar sind
+                sim.getEffector().setMirrors(minRequired, 1);
+            }
 
+            // Wechsle zu Schneeflocke (geplanter Wechsel bei t=8)
+            TopologyChange strategyChangeAction = sim.getEffector().setStrategy(new SnowflakeTopologyStrategy(), 8);
+
+            // Verifiziere, dass die Strategy-Änderung korrekt geplant wurde (neue Topologie ist Snowflake)
+            assertNotNull(strategyChangeAction, "Strategy-Änderung sollte Action zurückgeben");
+            assertInstanceOf(TopologyChange.class, strategyChangeAction, "Action sollte ein TopologyChange sein");
+            assertInstanceOf(SnowflakeTopologyStrategy.class, strategyChangeAction.getNewTopology(),
+                    "Action sollte neue Snowflake-Topology referenzieren");
+
+            // Simulation bis inkl. Wechselzeitpunkt laufen lassen und dann den tatsächlichen Wechsel prüfen
             for (int t = 1; t < Math.min(20, sim.getSimTime()); t++) {
                 int finalT = t;
                 assertDoesNotThrow(() -> sim.runStep(finalT),
                         "Wechsel zu Schneeflocke sollte funktionieren bei t=" + t);
+
+                if (t >= 8) {
+                    assertInstanceOf(SnowflakeTopologyStrategy.class,
+                            strategyChangeAction.getNetwork().getTopologyStrategy(),
+                            "Nach dem Wechselzeitpunkt sollte die Network-Topologie Snowflake sein");
+                    break;
+                }
             }
         }
     }
@@ -424,14 +442,11 @@ class SnowflakeTest {
         @Test
         @DisplayName("Schneeflocke mit sehr wenigen Mirrors")
         void testSnowflakeWithFewMirrors() {
-            // Teste Verhalten bei Grenzbedingungen
+            // Test: Unter 5 Mirrors darf die Schneeflocke NICHT konstruiert werden
             for (int mirrors = 1; mirrors <= 4; mirrors++) {
                 int finalMirrors = mirrors;
-                assertDoesNotThrow(() -> {
-                    Network network = createSnowflakeNetwork(finalMirrors);
-                    // Schneeflocke sollte auch mit wenigen Mirrors funktionieren
-                    assertTrue(network.getNumMirrors() >= finalMirrors);
-                }, "Schneeflocke sollte mit " + mirrors + " Mirrors funktionieren");
+                assertThrows(IllegalArgumentException.class, () ->
+                        createSnowflakeNetwork(finalMirrors), "Schneeflocke darf mit " + mirrors + " Mirrors nicht konstruierbar sein");
             }
         }
     }

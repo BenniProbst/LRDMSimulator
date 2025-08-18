@@ -138,17 +138,17 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
         count = 0;
         assert ringMirrors > 0 && externalMirrors > 0;
         while (restMirrors > 0) {
+            // Index immer in Ring-Größe halten
+            int idx = count % ringMirrors;
+
             // Fill external structures on the ring
-            if (count % snowflakeProperties.ringBridgeGap == 0) {
-                externalStructureMirrorsDone.set(count, externalStructureMirrorsDone.get(count) + 1);
+            if (idx % snowflakeProperties.ringBridgeGap == 0) {
+                externalStructureMirrorsDone.set(idx, externalStructureMirrorsDone.get(idx) + 1);
                 restMirrors--;
             }
 
-            if (count == ringMirrors - 1) {
-                count = 0;
-            } else {
-                count++;
-            }
+            // Einfache zyklische Inkrementierung
+            count++;
         }
 
         return new MirrorDistributionResult(ringMirrors, externalStructureMirrorsDone);
@@ -206,11 +206,13 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 .sorted(Comparator.comparingInt(MirrorNode::getId))
                 .toList();
 
-        int count = 0;
         int externStructureTypeIndex = 0;
-        for (MirrorNode nConNode : allNConNodes) {
-            int nodeCount = snowflakeResult.externalStructureMirrors.get(count);
-            if (count % snowflakeProperties.ringBridgeGap == 0 && nodeCount > 0) {
+        int ringSize = snowflakeResult.ringMirrors;
+        int limit = Math.min(allNConNodes.size(), ringSize);
+        for (int i = 0; i < limit; i++) {
+            MirrorNode nConNode = allNConNodes.get(i);
+            int nodeCount = snowflakeResult.externalStructureMirrors.get(i);
+            if (i % snowflakeProperties.ringBridgeGap == 0 && nodeCount > 0) {
                 // build and interlink substructure with estimated mirrors
                 BuildAsSubstructure localBuild = substructureFactory.createCycledAndInit(externStructureTypeIndex, substructureRotation, network);
                 externStructureTypeIndex++;
@@ -218,7 +220,6 @@ public class SnowflakeTopologyStrategy extends BuildAsSubstructure {
                 // Füge externe Struktur auch in die Snowflake für alle Strukturen und MirrorNode hierarchisch hinzu
                 connectToStructureNodes(nConNode, localBuild);
             }
-            count++;
         }
 
         return nConNodeRoot;

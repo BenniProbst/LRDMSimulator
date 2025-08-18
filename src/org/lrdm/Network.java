@@ -343,7 +343,7 @@ public class Network {
 		if(maxTTW == 1) {
 			ttwHistory.put(simTime, 100);
 		} else {
-			ttwHistory.put(simTime, 100 - 100 * (ttw - 1) / (maxTTW - 1));
+			ttwHistory.put(simTime, 100 - 100 * (ttw - 1) / (maxTTW - 1)); // This is pure ignorance of fractional values
 		}
 	}
 
