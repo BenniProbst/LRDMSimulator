@@ -2,8 +2,6 @@ package org.lrdm;
 
 import org.lrdm.effectors.Effector;
 import org.lrdm.probes.Probe;
-import org.lrdm.topologies.strategies.BalancedTreeTopologyStrategy;
-import org.lrdm.topologies.strategies.FullyConnectedTopology;
 import org.lrdm.topologies.strategies.TopologyStrategy;
 
 import java.util.*;
@@ -199,13 +197,17 @@ public class Network {
 	 */
 	public int getBandwidthUsed(int timestep) {
 		int total = 0;
-		for(Mirror m : getMirrors()) {
+		for(Mirror m : getNonStopMirrors()) {
 			Integer rec = m.getReceivedPerTimestep(timestep);
 			if(rec == null) rec = 0;
 			total += rec;
 		}
 		return total;
 	}
+
+    public List<Mirror> getNonStopMirrors() {
+        return mirrorCursor.getNonStopMirrors();
+    }
 
 	/**Get the number of target links per mirror, i.e., how many links each mirror should have.
 	 *
@@ -346,8 +348,9 @@ public class Network {
 	}
 
 	private int getNumHops() {
-		if(getTopologyStrategy() instanceof FullyConnectedTopology) return 1;
-		if(getTopologyStrategy() instanceof BalancedTreeTopologyStrategy) return (int)(Math.round(Math.log((getNumTargetMirrors()+1)/2f)/Math.log(getNumTargetLinksPerMirror())));
+        // Removed Bullshit, only measurement offers true numbers
+		// if(getTopologyStrategy() instanceof FullyConnectedTopology) return 1;
+		// if(getTopologyStrategy() instanceof BalancedTreeTopologyStrategy) return (int)(Math.round(Math.log((getNumTargetMirrors()+1)/2f)/Math.log(getNumTargetLinksPerMirror())));
 		//else we have NConnected Topology
 		//find the shortest combination of parallel sendings to distribute the package
 		Set<Mirror> visitedMirrors = new HashSet<>();

@@ -82,6 +82,18 @@ public class MirrorCursor {
         return usable;
     }
 
+    /**
+     * @return a list of mirrors that are usable for the network.
+     */
+    public List<Mirror> getNonStopMirrors(){
+        List<Mirror> nonStopMirrors = new ArrayList<>();
+        for (Mirror m : mirrors) {
+            if (m.isUsableForNetwork()) {
+                nonStopMirrors.add(m);
+            }
+        }
+        return nonStopMirrors;
+    }
 
     /**Inspect the network for mirrors in the STOPPED state to remove them from the network.
      * Else calls {@link Mirror#timeStep(int)}
