@@ -247,7 +247,7 @@ class InvalidRingParameterExceptionTest {
             // sollten entsprechende Tests hinzugefügt werden
         }
 
-        // TODO: Wenn Parameter wieder aktiviert werden, diese Tests einkommentieren:
+        // Note: Wenn Parameter wieder aktiviert werden, diese Tests einkommentieren:
 
         /*
         @ParameterizedTest

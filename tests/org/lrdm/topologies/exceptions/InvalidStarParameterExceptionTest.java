@@ -331,7 +331,7 @@ class InvalidStarParameterExceptionTest {
     @DisplayName("Zukünftige Implementierung - Vorbereitete Tests")
     class FutureImplementationTests {
 
-        // TODO: Diese Tests werden aktiviert, sobald validateStarParameters verfügbar ist
+        // Note: Diese Tests werden aktiviert, sobald validateStarParameters verfügbar ist
 
         /*
         // Test-Konstanten für gültige Parameterwerte (für zukünftige Verwendung)
