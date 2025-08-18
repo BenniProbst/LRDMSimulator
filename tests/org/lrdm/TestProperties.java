@@ -12,7 +12,6 @@ public class TestProperties {
         props.load(new FileReader(config));
     }
 
-    // ✅ Neue public Getter-Methode hinzufügen
     public static Properties getProps() {
         return props;
     }

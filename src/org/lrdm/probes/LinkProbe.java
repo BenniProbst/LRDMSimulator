@@ -6,6 +6,8 @@ import org.lrdm.Network;
 import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * # LinkProbe
@@ -83,6 +85,7 @@ public class LinkProbe extends Probe {
      */
     @Override
     public void print(int simTime) {
+        final int num_links = n.getNumLinks();
         final int active = n.getNumActiveLinks();
         final int target = n.getNumTargetLinks();
         final NumberFormat pct = NumberFormat.getPercentInstance(Locale.ROOT);
@@ -90,8 +93,16 @@ public class LinkProbe extends Probe {
         pct.setMaximumFractionDigits(1);
 
         // Keep it simple: stdout logging; adapt to your logging facility if desired.
-        System.out.println(
-                "[" + simTime + "] Active Links: " + active + " / " + target + " (" + pct.format(linkRatio) + ")"
+        Logger.getLogger(this.getClass().getName()).log(
+                Level.INFO,
+                "[{0}] [Link] All/Active/Target/Ratio: {1} | {2} | {3} | {4}",
+                new Object[]{
+                        simTime,
+                        num_links,
+                        active,
+                        target,
+                        pct.format(linkRatio)
+                }
         );
     }
 

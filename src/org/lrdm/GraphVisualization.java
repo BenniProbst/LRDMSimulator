@@ -202,11 +202,18 @@ public class GraphVisualization implements VisualizationStrategy {
     private void updateLinks(Network network) {
         for (Link l : network.getLinks()) {
             if (l.getState() != Link.State.CLOSED) {
-                Optional<Edge> e = graph.edges().filter(edge -> edge.getSourceNode().getId().equals(Integer.toString(l.getSource().getID())) &&
-                        edge.getTargetNode().getId().equals(Integer.toString(l.getTarget().getID()))).findAny();
+                //Filter links unidirectional
+                Optional<Edge> e = graph.edges().filter(
+                        (edge -> (edge.getSourceNode().getId().equals(Integer.toString(l.getSource().getID())) &&
+                        edge.getTargetNode().getId().equals(Integer.toString(l.getTarget().getID())))||
+                                (edge.getSourceNode().getId().equals(Integer.toString(l.getTarget().getID())) &&
+                                edge.getTargetNode().getId().equals(Integer.toString(l.getSource().getID())))
+                        )
+                ).findAny();
 
                 Edge edge = null;
-                if (e.isEmpty() && (l.getSource().getState() != Mirror.State.STOPPING
+                if (e.isEmpty() && (
+                            l.getSource().getState() != Mirror.State.STOPPING
                             && l.getSource().getState() != Mirror.State.STOPPED
                             && l.getTarget().getState() != Mirror.State.STOPPING
                             && l.getTarget().getState() != Mirror.State.STOPPED)) {
