@@ -1,9 +1,11 @@
 package org.lrdm.probes;
 
+import org.lrdm.Link;
 import org.lrdm.Network;
 
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * # LinkProbe
@@ -115,5 +117,15 @@ public class LinkProbe extends Probe {
      */
     public int getActiveLinkMetric(int simTime) {
         return n.getActiveLinksHistory().get(simTime);
+    }
+
+    /**
+     * Returns all links from the monitored network.
+     * Delegates the call to the underlying {@link Network} instance.
+     *
+     * @return immutable view of all links in the network
+     */
+    public Set<Link> getLinks() {
+        return n.getLinks();
     }
 }

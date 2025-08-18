@@ -265,8 +265,8 @@ class FullyConnectedMirrorNodeTest {
             head.addChild(peer4);
 
             // Erstelle vollständig-vernetzte Links (jeder mit jedem: 10 Links für 5 Knoten)
-            createFullyConnectedLinks(Arrays.asList(simMirrors.get(0), simMirrors.get(1), 
-                                                  simMirrors.get(2), simMirrors.get(3), simMirrors.get(4)));
+            createFullyConnectedLinks(Arrays.asList(simMirrors.get(0), simMirrors.get(1),
+                    simMirrors.get(2), simMirrors.get(3), simMirrors.get(4)));
 
             // Erstelle Edge-Link für Head (zu externem Mirror)
             Mirror externalMirror = new Mirror(300, 0, props);
@@ -286,17 +286,18 @@ class FullyConnectedMirrorNodeTest {
             assertEquals(head, peer4.getFullyConnectedHead());
 
             // Teste Connected Nodes (alle sind mit allen anderen verbunden)
-            Set<FullyConnectedMirrorNode> connected1 = head.getConnectedNodes();
-            assertEquals(4, connected1.size()); // Mit allen 4 anderen verbunden
+            List<FullyConnectedMirrorNode> connected1 = head.getAllFullyConnectedNodes();
+            assertEquals(5, connected1.size()); // Alle 5 Knoten einschließlich Head
+            assertTrue(connected1.contains(head));
             assertTrue(connected1.contains(peer1));
             assertTrue(connected1.contains(peer2));
             assertTrue(connected1.contains(peer3));
             assertTrue(connected1.contains(peer4));
-            assertFalse(connected1.contains(head)); // sich selbst nicht enthalten
 
-            Set<FullyConnectedMirrorNode> connectedPeer = peer1.getConnectedNodes();
-            assertEquals(4, connectedPeer.size()); // Mit allen 4 anderen verbunden
+            List<FullyConnectedMirrorNode> connectedPeer = peer1.getAllFullyConnectedNodes();
+            assertEquals(5, connectedPeer.size()); // Alle 5 Knoten einschließlich Head
             assertTrue(connectedPeer.contains(head));
+            assertTrue(connectedPeer.contains(peer1));
             assertTrue(connectedPeer.contains(peer2));
             assertTrue(connectedPeer.contains(peer3));
             assertTrue(connectedPeer.contains(peer4));
@@ -393,18 +394,19 @@ class FullyConnectedMirrorNodeTest {
         }
 
         @Test
-        @DisplayName("getConnectedNodes sammelt alle verbundenen Knoten")
-        void testGetConnectedNodes() {
-            Set<FullyConnectedMirrorNode> connectedToHead = head.getConnectedNodes();
-            assertEquals(5, connectedToHead.size());
+        @DisplayName("getAllFullyConnectedNodes sammelt alle verbundenen Knoten")
+        void testGetAllFullyConnectedNodes() {
+            List<FullyConnectedMirrorNode> connectedToHead = head.getAllFullyConnectedNodes();
+            assertEquals(6, connectedToHead.size()); // Head + 5 Peers
 
-            Set<FullyConnectedMirrorNode> expectedPeers = Set.of(peer1, peer2, peer3, peer4, peer5);
-            assertEquals(expectedPeers, connectedToHead);
+            Set<FullyConnectedMirrorNode> expectedNodes = Set.of(head, peer1, peer2, peer3, peer4, peer5);
+            assertEquals(expectedNodes, new HashSet<>(connectedToHead));
 
             // Versuche von Peer-Perspektive
-            Set<FullyConnectedMirrorNode> connectedToPeer1 = peer1.getConnectedNodes();
-            assertEquals(5, connectedToPeer1.size());
+            List<FullyConnectedMirrorNode> connectedToPeer1 = peer1.getAllFullyConnectedNodes();
+            assertEquals(6, connectedToPeer1.size()); // Alle Knoten
             assertTrue(connectedToPeer1.contains(head));
+            assertTrue(connectedToPeer1.contains(peer1));
             assertTrue(connectedToPeer1.contains(peer2));
             assertTrue(connectedToPeer1.contains(peer3));
             assertTrue(connectedToPeer1.contains(peer4));
@@ -433,7 +435,7 @@ class FullyConnectedMirrorNodeTest {
 
         @Test
         @DisplayName("getAllFullyConnectedNodes sammelt alle Netzwerk-Knoten")
-        void testGetAllFullyConnectedNodes() {
+        void testGetAllFullyConnectedNodesCollection() {
             List<FullyConnectedMirrorNode> allNodes = head.getAllFullyConnectedNodes();
             assertEquals(6, allNodes.size());
             assertTrue(allNodes.contains(head));
@@ -492,14 +494,14 @@ class FullyConnectedMirrorNodeTest {
             minHead.addChild(minPeer);
 
             assertEquals(minHead, minPeer.getFullyConnectedHead());
-            assertEquals(1, minHead.getConnectedNodes().size());
-            assertEquals(1, minPeer.getConnectedNodes().size());
+            assertEquals(2, minHead.getAllFullyConnectedNodes().size()); // Head + Peer
+            assertEquals(2, minPeer.getAllFullyConnectedNodes().size()); // Head + Peer
 
             // Test mit größerer Struktur (10 Knoten)
             FullyConnectedMirrorNode largeHead = createLargeFullyConnectedNetwork(200, 10);
             assertEquals(10, largeHead.getNetworkSize());
             assertEquals(9, largeHead.getExpectedLinkCount()); // 10-1 = 9
-            assertEquals(9, largeHead.getConnectedNodes().size());
+            assertEquals(10, largeHead.getAllFullyConnectedNodes().size()); // Alle Knoten
         }
 
         private void setupValidFullyConnectedNetwork() {
@@ -782,7 +784,7 @@ class FullyConnectedMirrorNodeTest {
 
                 // Versuche Navigation-Performance
                 startTime = System.currentTimeMillis();
-                Set<FullyConnectedMirrorNode> connectedNodes = largeHead.getConnectedNodes();
+                List<FullyConnectedMirrorNode> connectedNodes = largeHead.getAllFullyConnectedNodes();
                 long navigationTime = System.currentTimeMillis() - startTime;
 
                 // Versuche Validierung-Performance
@@ -792,9 +794,9 @@ class FullyConnectedMirrorNodeTest {
 
                 // Assertions mit largePeers
                 assertEquals(size, largePeers.size());
-                assertEquals(size - 1, connectedNodes.size()); // Head ist nicht in connectedNodes enthalten
+                assertEquals(size, connectedNodes.size()); // Alle Knoten einschließlich Head
                 assertTrue(isValid);
-                assertTrue(connectedNodes.containsAll(largePeers.subList(1, largePeers.size())));
+                assertTrue(connectedNodes.containsAll(largePeers));
 
                 // Performance-Assertions (sollten schnell genug sein)
                 assertTrue(networkCreationTime < 1000,
@@ -869,7 +871,7 @@ class FullyConnectedMirrorNodeTest {
 
             assertEquals(2, minHead.getNetworkSize());
             assertEquals(1, minHead.getExpectedLinkCount());
-            assertEquals(1, minHead.getConnectedNodes().size());
+            assertEquals(2, minHead.getAllFullyConnectedNodes().size()); // Head + Peer
 
             // Einzelner isolierter Knoten
             FullyConnectedMirrorNode isolated = new FullyConnectedMirrorNode(100);
@@ -877,7 +879,7 @@ class FullyConnectedMirrorNodeTest {
 
             assertEquals(1, isolated.getNetworkSize());
             assertEquals(0, isolated.getExpectedLinkCount());
-            assertEquals(0, isolated.getConnectedNodes().size());
+            assertEquals(1, isolated.getAllFullyConnectedNodes().size()); // Nur er selbst
             assertNull(isolated.getFullyConnectedHead()); // Kein Head gefunden bei ungültiger Struktur
         }
 
@@ -892,9 +894,9 @@ class FullyConnectedMirrorNodeTest {
             assertFalse(fcNode.isValidStructure(Set.of(fcNode), StructureType.FULLY_CONNECTED, null));
             assertFalse(fcNode.isValidStructure(Set.of(fcNode), null, fcNode));
 
-            // getConnectedNodes ohne gültige Struktur
-            Set<FullyConnectedMirrorNode> connected = fcNode.getConnectedNodes();
-            assertTrue(connected.isEmpty());
+            // getAllFullyConnectedNodes ohne gültige Struktur
+            List<FullyConnectedMirrorNode> connected = fcNode.getAllFullyConnectedNodes();
+            assertEquals(1, connected.size()); // Mindestens sich selbst
 
             // getAllFullyConnectedNodes ohne gültige Struktur
             List<FullyConnectedMirrorNode> allNodes = fcNode.getAllFullyConnectedNodes();
@@ -940,7 +942,7 @@ class FullyConnectedMirrorNodeTest {
 
             // Jeder Knoten sollte mit allen anderen verbunden sein
             for (FullyConnectedMirrorNode node : networkNodes) {
-                assertEquals(7, node.getConnectedNodes().size());
+                assertEquals(8, node.getAllFullyConnectedNodes().size()); // Alle Knoten inkl. sich selbst
                 assertEquals(8, node.getNetworkSize());
                 assertEquals(head, node.getFullyConnectedHead());
             }

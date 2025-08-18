@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Struktur:
  * - Grundfunktionen (Konstruktoren, Vererbung, Typ-System)
  * - Connectivity-Management (Vernetzungsgrad, erwartete Links)
- * - Netzwerk-Navigation (Connected Nodes, Größe, etc.)
+ * - Netzwerk-Navigation (Connected Nodes, Größe etc.)
  * - Struktur-Validierung (gültige/ungültige N-Connected-Netze)
  * - Performance und Edge Cases (große Netze, verschiedene N-Werte)
  * - Exception-Handling und Defensive Programmierung
@@ -89,7 +89,7 @@ class NConnectedMirrorNodeTest {
     }
 
     /**
-     * Hilfsmethode zum Setup einer gültigen N-Connected-Struktur mit echten Mirror-Links.
+     * Eine Hilfsmethode zum Setup einer gültigen N-Connected-Struktur mit echten Mirror-Links.
      * Erstellt alle notwendigen bidirektionalen Verbindungen für echte N-Connected-Validierung.
      */
     private void setupValidNConnectedStructure(NConnectedMirrorNode head, List<NConnectedMirrorNode> peers) throws IOException {
@@ -107,7 +107,7 @@ class NConnectedMirrorNodeTest {
         allNodes.add(head);
         allNodes.addAll(peers);
 
-        // Erstelle Links bis jeder Knoten N Verbindungen hat
+        // Erstelle Links, bis jeder Knoten N Verbindungen hat
         for (int i = 0; i < allNodes.size(); i++) {
             NConnectedMirrorNode node = allNodes.get(i);
             int currentConnections = 0;
@@ -348,7 +348,7 @@ class NConnectedMirrorNodeTest {
         @Test
         @DisplayName("hasOptimalConnectivity mit echten N-Connected-Links")
         void testHasOptimalConnectivityWithRealLinks() throws IOException {
-            // Setup: 3-Connected mid 5 Knoten
+            // Setup: 3-Connected mid-5 Knoten
             NConnectedMirrorNode head = new NConnectedMirrorNode(1, 3);
             List<NConnectedMirrorNode> peers = Arrays.asList(
                     new NConnectedMirrorNode(2, 3),
@@ -863,7 +863,7 @@ class NConnectedMirrorNodeTest {
         void testMemoryEfficiency() {
             NConnectedMirrorNode head = new NConnectedMirrorNode(1, 2);
 
-            // Sammle Rückgabewerte um sicherzustellen, dass die Operationen tatsächlich ausgeführt werden
+            // Sammle Rückgabewerte, um sicherzustellen, dass die Operationen tatsächlich ausgeführt werden
             int totalConnectivityDegree = 0;
             int totalExpectedLinkCount = 0;
             int totalNetworkSize = 0;
@@ -879,14 +879,14 @@ class NConnectedMirrorNodeTest {
                 totalTypeIdChecks += head.deriveTypeId().getId();
             }
 
-            // Verifikation dass Operationen durchgeführt wurden
+            // Verifikation, dass Operationen durchgeführt wurden
             assertEquals(2000, totalConnectivityDegree); // 1000 * 2
             assertEquals(0, totalExpectedLinkCount); // Einzelner Knoten ohne Netzwerk
             assertEquals(1000, totalNetworkSize); // 1000 * 1 (einzelner Knoten)
             assertEquals(0, totalConnectedNodes); // Keine verbundenen Knoten
             assertEquals(7000, totalTypeIdChecks); // 1000 * 7 (N_CONNECTED.getId())
 
-            // Test erfolgreich wenn keine OutOfMemoryError und erwartete Werte
+            // Test erfolgreich, wenn keine OutOfMemoryError und erwartete Werte
             assertTrue(true);
         }
     }

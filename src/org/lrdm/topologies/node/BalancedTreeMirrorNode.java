@@ -21,7 +21,7 @@ import java.util.*;
  * - Versucht gleichmäßige Verteilung nach Entfernung zu erhalten
  * <p>
  * **Wiederverwendung der TreeMirrorNode-Funktionalität**:
- * - 90%+ der Traversierungs- und Validierungslogik wird wiederverwendet
+ * - 90 %+ der Traversierung- und Validierungslogik wird wiederverwendet
  * - Fokussiert auf Balance-spezifische Validierung und Optimierung
  * - Erweiterte Balance-Analysefunktionen
  *
@@ -30,15 +30,16 @@ import java.util.*;
  */
 public class BalancedTreeMirrorNode extends TreeMirrorNode {
     private int targetLinksPerNode;
+
     private double maxAllowedBalanceDeviation;
 
     // Map für die Balance-Berechnung nach Tiefe und Knotenverteilung
-    private Map<Integer, Map<BalancedTreeMirrorNode, BalanceInfo>> balanceMap = new HashMap<>();
+    private final Map<Integer, Map<BalancedTreeMirrorNode, BalanceInfo>> balanceMap = new HashMap<>();
 
     /**
      * Innere Klasse zur Speicherung der Balance-Informationen pro Knoten
      */
-    private static class BalanceInfo {
+    public static class BalanceInfo {
         int actualChildCount;      // Tatsächliche Anzahl der Kinder
         int expectedChildCount;    // Erwartete Anzahl basierend auf targetLinksPerNode
 
@@ -145,7 +146,7 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
     // ===== STRUKTUR-MANAGEMENT =====
 
     /**
-     * Prüft, ob dieser Knoten weitere Kinder akzeptieren kann unter Balance-Gesichtspunkten.
+     * Prüft, ob dieser Knoten weitere Kinder akzeptieren unter Balance-Gesichtspunkten.
      */
     @Override
     public boolean canAcceptMoreChildren() {
@@ -178,7 +179,7 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
         // Mindestens 2 Knoten müssen für einen funktionsfähigen Baum bleiben
         if (structureNodes.size() < 3) return false;
 
-        // Zusätzliche Balance-Prüfung: niedrigerer Balance-Impact ist besser
+        // Zusätzliche Balance-Prüfung: Niedrigerer Balance-Impact ist besser
         double balanceImpact = calculateRemovalBalanceImpact();
         return balanceImpact <= maxAllowedBalanceDeviation;
     }
@@ -366,7 +367,7 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
     }
 
     /**
-     * Berechnet die Tiefen verteilung im Baum.
+     * Berechnet die Tiefen Verteilung im Baum.
      */
     public Map<Integer, Integer> getDepthDistribution() {
         StructureType typeId = deriveTypeId();
@@ -405,10 +406,14 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
         this.maxAllowedBalanceDeviation = Math.max(0.1, maxAllowedBalanceDeviation);
     }
 
+    public Map<Integer, Map<BalancedTreeMirrorNode, BalanceInfo>> getBalanceMap() {
+        return balanceMap;
+    }
+
     // ===== STRING REPRESENTATION =====
 
     /**
-     * Erweitertes toString() für die Darstellung des Balancierten Baums
+     * Erweitertes toString() für die Darstellung des balancierten Baums
      */
     @Override
     public String toString() {

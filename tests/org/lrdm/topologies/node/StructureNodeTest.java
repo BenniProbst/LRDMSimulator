@@ -212,26 +212,26 @@ class StructureNodeTest {
             StructureNode.ChildRecord record = createTestChildRecord();
 
             assertTrue(record.hasType(StructureNode.StructureType.TREE));
-            assertTrue(record.hasType(StructureNode.StructureType.RING));
+            assertTrue(record.hasType(StructureNode.StructureType.N_CONNECTED));
             assertFalse(record.hasType(StructureNode.StructureType.LINE));
 
             assertTrue(record.belongsToStructure(StructureNode.StructureType.TREE, 1));
-            assertTrue(record.belongsToStructure(StructureNode.StructureType.RING, 2));
+            assertTrue(record.belongsToStructure(StructureNode.StructureType.N_CONNECTED, 2));
             assertFalse(record.belongsToStructure(StructureNode.StructureType.TREE, 2));
 
             assertEquals(Integer.valueOf(1), record.getHeadId(StructureNode.StructureType.TREE));
-            assertEquals(Integer.valueOf(2), record.getHeadId(StructureNode.StructureType.RING));
+            assertEquals(Integer.valueOf(2), record.getHeadId(StructureNode.StructureType.N_CONNECTED));
             assertNull(record.getHeadId(StructureNode.StructureType.LINE));
         }
 
         private StructureNode.ChildRecord createTestChildRecord() {
             Set<StructureNode.StructureType> types = Set.of(
                     StructureNode.StructureType.TREE,
-                    StructureNode.StructureType.RING
+                    StructureNode.StructureType.N_CONNECTED  // Ersetzt RING
             );
             Map<StructureNode.StructureType, Integer> headIds = Map.of(
                     StructureNode.StructureType.TREE, 1,
-                    StructureNode.StructureType.RING, 2
+                    StructureNode.StructureType.N_CONNECTED, 2  // Ersetzt RING
             );
 
             StructureNode child = new StructureNode(10);
@@ -245,11 +245,11 @@ class StructureNodeTest {
 
             // Teste verschiedene Strukturtypen
             node.setHead(StructureNode.StructureType.TREE, true);
-            node.setHead(StructureNode.StructureType.RING, false);
+            node.setHead(StructureNode.StructureType.N_CONNECTED, false);  // Ersetzt RING
             node.setHead(StructureNode.StructureType.LINE, true);
 
             assertTrue(node.isHead(StructureNode.StructureType.TREE));
-            assertFalse(node.isHead(StructureNode.StructureType.RING));
+            assertFalse(node.isHead(StructureNode.StructureType.N_CONNECTED));  // Ersetzt RING
             assertTrue(node.isHead(StructureNode.StructureType.LINE));
         }
 
@@ -262,26 +262,26 @@ class StructureNodeTest {
 
             // node1 ist Head für beide Strukturtypen
             node1.setHead(StructureNode.StructureType.TREE, true);
-            node1.setHead(StructureNode.StructureType.RING, true);
+            node1.setHead(StructureNode.StructureType.N_CONNECTED, true);  // Ersetzt RING
 
             // Füge Kinder für verschiedene Strukturtypen hinzu
             Set<StructureNode.StructureType> treeTypes = Set.of(StructureNode.StructureType.TREE);
-            Set<StructureNode.StructureType> ringTypes = Set.of(StructureNode.StructureType.RING);
+            Set<StructureNode.StructureType> nConnectedTypes = Set.of(StructureNode.StructureType.N_CONNECTED);  // Ersetzt RING
 
             Map<StructureNode.StructureType, Integer> treeHeadIds = Map.of(StructureNode.StructureType.TREE, node1.getId());
-            Map<StructureNode.StructureType, Integer> ringHeadIds = Map.of(StructureNode.StructureType.RING, node1.getId());
+            Map<StructureNode.StructureType, Integer> nConnectedHeadIds = Map.of(StructureNode.StructureType.N_CONNECTED, node1.getId());  // Ersetzt RING
 
             node1.addChild(node2, treeTypes, treeHeadIds);
-            node1.addChild(node3, ringTypes, ringHeadIds);
+            node1.addChild(node3, nConnectedTypes, nConnectedHeadIds);
 
             // Teste strukturspezifische Kinder-Zugriffe
             Set<StructureNode> treeChildren = node1.getChildren(StructureNode.StructureType.TREE, node1.getId());
-            Set<StructureNode> ringChildren = node1.getChildren(StructureNode.StructureType.RING, node1.getId());
+            Set<StructureNode> nConnectedChildren = node1.getChildren(StructureNode.StructureType.N_CONNECTED, node1.getId());  // Ersetzt RING
 
             assertEquals(1, treeChildren.size());
-            assertEquals(1, ringChildren.size());
+            assertEquals(1, nConnectedChildren.size());
             assertTrue(treeChildren.contains(node2));
-            assertTrue(ringChildren.contains(node3));
+            assertTrue(nConnectedChildren.contains(node3));
         }
     }
 
@@ -317,9 +317,11 @@ class StructureNodeTest {
             assertEquals(0, StructureNode.StructureType.DEFAULT.getId());
             assertEquals(1, StructureNode.StructureType.MIRROR.getId());
             assertEquals(2, StructureNode.StructureType.TREE.getId());
-            assertEquals(3, StructureNode.StructureType.RING.getId());
-            assertEquals(4, StructureNode.StructureType.LINE.getId());
-            assertEquals(5, StructureNode.StructureType.STAR.getId());
+            assertEquals(3, StructureNode.StructureType.LINE.getId());
+            assertEquals(4, StructureNode.StructureType.STAR.getId());
+            assertEquals(5, StructureNode.StructureType.FULLY_CONNECTED.getId());
+            assertEquals(6, StructureNode.StructureType.N_CONNECTED.getId());
+            // Hinweis: RING wurde entfernt und durch N_CONNECTED ersetzt
         }
 
         @Test

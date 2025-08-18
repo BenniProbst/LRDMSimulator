@@ -374,6 +374,10 @@ public class TreeMirrorNode extends MirrorNode {
         return Math.max(0, pathFromRoot.size() - 1); // Pfadlänge - 1 = Tiefe
     }
 
+    public int getMaxDepth() {
+        return Integer.MAX_VALUE;
+    }
+
     /**
      * Berechnet die maximale Tiefe des Baums.
      * <p>
