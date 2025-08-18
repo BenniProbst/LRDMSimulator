@@ -26,11 +26,13 @@ public class MirrorCursor {
 
         // create the mirrors and put a new data package on the first mirror
         createMirrors(numMirrors, 0);
-        mirrors.get(0).setRoot(true);
+        if (!mirrors.isEmpty()) {
+            mirrors.get(0).setRoot(true);
 
-        DataPackage initialData = new DataPackage(fileSize);
-        initialData.increaseReceived(fileSize);
-        mirrors.get(0).setDataPackage(initialData);
+            DataPackage initialData = new DataPackage(fileSize);
+            initialData.increaseReceived(fileSize);
+            mirrors.get(0).setDataPackage(initialData);
+        }
     }
 
     /**Returns aks Mirrors of the net.

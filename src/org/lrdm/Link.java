@@ -34,13 +34,15 @@ public class Link {
 		
 		state = State.INACTIVE;
 		
-		int minActivationTime = Integer.parseInt(props.getProperty("link_activation_time_min"));
-		int maxActivationTime = Integer.parseInt(props.getProperty("link_activation_time_max"));
+		int minActivationTime = getInt(props, "link_activation_time_min", 1);
+		int maxActivationTime = getInt(props, "link_activation_time_max", 3);
 
-		minBandwidth = Integer.parseInt(props.getProperty("min_bandwidth"));
-		maxBandwidth = Integer.parseInt(props.getProperty("max_bandwidth"));
+		minBandwidth = getInt(props, "min_bandwidth", 1);
+		maxBandwidth = getInt(props, "max_bandwidth", 10);
 		
-		activationTime = rand.nextInt(minActivationTime, maxActivationTime);
+		int loAct = Math.min(minActivationTime, maxActivationTime);
+		int hiAct = Math.max(minActivationTime, maxActivationTime);
+		activationTime = (hiAct > loAct) ? rand.nextInt(loAct, hiAct) : loAct;
 	}
 	
 	public int getID() {
@@ -56,7 +58,10 @@ public class Link {
 	 * @return random bandwidth between min and max
 	 */
 	public int getCurrentBandwidth() {
-		return rand.nextInt(minBandwidth,maxBandwidth);
+		int lo = Math.min(minBandwidth, maxBandwidth);
+		int hi = Math.max(minBandwidth, maxBandwidth);
+		if (hi == lo) return lo;
+		return rand.nextInt(lo, hi);
 	}
 
 	public boolean isActive() {
@@ -131,6 +136,18 @@ public class Link {
 	}
 
 	public int getAverageBandwidth() {
-		return (maxBandwidth-minBandwidth)/2;
+		int lo = Math.min(minBandwidth, maxBandwidth);
+		int hi = Math.max(minBandwidth, maxBandwidth);
+		return (lo + hi) / 2;
+	}
+
+	private static int getInt(Properties props, String key, int def) {
+		if (props == null) return def;
+		try {
+			String v = props.getProperty(key);
+			return v != null ? Integer.parseInt(v) : def;
+		} catch (Exception e) {
+			return def;
+		}
 	}
 }

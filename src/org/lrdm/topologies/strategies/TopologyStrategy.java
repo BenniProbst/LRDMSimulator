@@ -26,19 +26,23 @@ public abstract class TopologyStrategy {
             existingLinks.forEach(Link::shutdown);
         }
 
-        Set<Mirror> mirrorSet = n.getMirrors().stream()
-                .filter(mirror -> !mirror.isRoot() && mirror.isUsableForNetwork()).collect(Collectors.toSet());
-        mirrorSet.forEach(mirror -> mirror.shutdown(simTime));
-        n.getMirrorCursor().createMirrors(mirrorSet.size(), simTime);
+        // Nur bei simTime > 0 Mirrors herunterfahren; beim Init (simTime == 0) keine Mirror-States anfassen
+        if (simTime > 0) {
+            Set<Mirror> mirrorSet = n.getMirrors().stream()
+                    .filter(mirror -> !mirror.isRoot() && mirror.isUsableForNetwork())
+                    .collect(Collectors.toSet());
+            mirrorSet.forEach(mirror -> mirror.shutdown(simTime));
+            n.getMirrorCursor().createMirrors(mirrorSet.size(), simTime);
 
-        // replace crashed mirrors with new ones
-        int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
-                .filter(Mirror::isUsableForNetwork).count());
-        while (usableMirrorCount < n.getNumTargetMirrors()) {
-            n.getMirrorCursor().createMirrors(1, simTime);
-            usableMirrorCount++;
+            // replace crashed mirrors with new ones bis Zielzahl erreicht ist
+            int usableMirrorCount = Math.toIntExact(n.getMirrors().stream()
+                    .filter(Mirror::isUsableForNetwork).count());
+            while (usableMirrorCount < n.getNumTargetMirrors()) {
+                n.getMirrorCursor().createMirrors(1, simTime);
+                usableMirrorCount++;
+            }
+            n.getMirrorCursor().resetMirrorCursor();
         }
-        n.getMirrorCursor().resetMirrorCursor();
 
         // Falls Links noch nicht initialisiert sind, leeres Set zurückgeben
         if (existingLinks == null) {
@@ -61,7 +65,12 @@ public abstract class TopologyStrategy {
      * @param simTime       current simulation time
      */
     public void handleRemoveMirrors(Network n, int removeMirrors, Properties props, int simTime) {
-        for (int i = 0; i < removeMirrors; i++) {
+        if (removeMirrors <= 0) {
+            return;
+        }
+        // Nicht mehr Mirrors entfernen als vorhanden
+        int toRemove = Math.min(removeMirrors, n.getNumMirrors());
+        for (int i = 0; i < toRemove; i++) {
             Mirror m = n.getMirrorsSortedById().get(n.getNumMirrors() - 1 - i);
             m.shutdown(simTime);
         }

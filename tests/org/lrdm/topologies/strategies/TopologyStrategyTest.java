@@ -8,7 +8,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import org.lrdm.*;
 import org.lrdm.effectors.Action;
@@ -138,7 +137,7 @@ class TopologyStrategyTest {
             Set<Link> result = strategy.initNetwork(network, props);
 
             assertNotNull(result, "initNetwork sollte gültiges Set zurückgeben");
-            assertTrue(result instanceof Set, "Ergebnis sollte Set-Typ sein");
+            assertInstanceOf(Set.class, result, "Ergebnis sollte Set-Typ sein");
         }
 
         @Test
@@ -436,10 +435,17 @@ class TopologyStrategyTest {
         @Test
         @DisplayName("getPredictedNumTargetLinks mit MirrorChange")
         void testGetPredictedNumTargetLinksWithMirrorChange() {
-            MirrorChange mockAction = mock(MirrorChange.class);
-            when(mockAction.getNewMirrors()).thenReturn(8);
+            int newMirrors = 8;
 
-            int result = strategy.getPredictedNumTargetLinks(mockAction);
+            // Reale Action statt Mockito-Mock (vermeidet Byte Buddy Probleme auf JDK 24)
+            MirrorChange action = new MirrorChange(
+                    network,
+                    org.lrdm.util.IDGenerator.getInstance().getNextID(),
+                    0,
+                    newMirrors
+            );
+
+            int result = strategy.getPredictedNumTargetLinks(action);
 
             assertTrue(result >= 0, "Predicted target links sollte nicht negativ sein");
         }
@@ -447,11 +453,17 @@ class TopologyStrategyTest {
         @Test
         @DisplayName("getPredictedNumTargetLinks mit TargetLinkChange")
         void testGetPredictedNumTargetLinksWithTargetLinkChange() {
-            TargetLinkChange mockAction = mock(TargetLinkChange.class);
-            when(mockAction.getNetwork()).thenReturn(network);
-            when(mockAction.getNewLinksPerMirror()).thenReturn(3);
+            int linksPerMirror = 3;
 
-            int result = strategy.getPredictedNumTargetLinks(mockAction);
+            // reale Action-Instanz statt Mockito-Mock (vermeidet Byte Buddy Probleme auf JDK 24)
+            TargetLinkChange action = new TargetLinkChange(
+                    network,
+                    org.lrdm.util.IDGenerator.getInstance().getNextID(),
+                    0,
+                    linksPerMirror
+            );
+
+            int result = strategy.getPredictedNumTargetLinks(action);
 
             assertTrue(result >= 0, "Predicted target links sollte nicht negativ sein");
         }
@@ -459,14 +471,21 @@ class TopologyStrategyTest {
         @Test
         @DisplayName("getPredictedNumTargetLinks mit TopologyChange")
         void testGetPredictedNumTargetLinksWithTopologyChange() {
-            TopologyStrategy mockNewStrategy = mock(TopologyStrategy.class);
-            TopologyChange mockAction = mock(TopologyChange.class);
-            when(mockAction.getNewTopology()).thenReturn(mockNewStrategy);
-            when(mockNewStrategy.getPredictedNumTargetLinks(mockAction)).thenReturn(15);
+            // Reale Topologie statt Mockito-Mock
+            TopologyStrategy newStrategy = new FullyConnectedTopology();
 
-            int result = strategy.getPredictedNumTargetLinks(mockAction);
+            // TopologyChange ist aufgebaut als (Network, TopologyStrategy, id, time)
+            TopologyChange action = new TopologyChange(
+                    network,
+                    newStrategy,
+                    org.lrdm.util.IDGenerator.getInstance().getNextID(),
+                    0
+            );
 
-            assertEquals(15, result, "Sollte an neue Topology-Strategie delegieren");
+            int expected = newStrategy.getNumTargetLinks(network);
+            int result = strategy.getPredictedNumTargetLinks(action);
+
+            assertEquals(expected, result, "Sollte an neue Topologie delegieren und deren Links liefern");
         }
 
         @Test
@@ -479,9 +498,14 @@ class TopologyStrategyTest {
         @Test
         @DisplayName("getPredictedNumTargetLinks mit unbekanntem Action-Typ")
         void testGetPredictedNumTargetLinksWithUnknownActionType() {
-            Action mockAction = mock(Action.class);
+            // Reale, unbekannte Action-Subklasse statt Mockito-Mock (vermeidet Byte Buddy Probleme auf JDK 24)
+            Action unknownAction = new Action(
+                    network,
+                    org.lrdm.util.IDGenerator.getInstance().getNextID(),
+                    0
+            ) { /* keine zusätzlichen Eigenschaften */ };
 
-            int result = strategy.getPredictedNumTargetLinks(mockAction);
+            int result = strategy.getPredictedNumTargetLinks(unknownAction);
 
             assertEquals(0, result, "Unbekannter Action-Typ sollte 0 zurückgeben");
         }
@@ -490,10 +514,15 @@ class TopologyStrategyTest {
         @ValueSource(ints = {1, 3, 5, 10, 20})
         @DisplayName("getPredictedNumTargetLinks MirrorChange mit verschiedenen Größen")
         void testGetPredictedNumTargetLinksWithDifferentMirrorCounts(int newMirrors) {
-            MirrorChange mockAction = mock(MirrorChange.class);
-            when(mockAction.getNewMirrors()).thenReturn(newMirrors);
+            // reale Action statt Mockito-Mock (vermeidet Byte Buddy Probleme auf JDK 24)
+            MirrorChange action = new MirrorChange(
+                    network,
+                    org.lrdm.util.IDGenerator.getInstance().getNextID(),
+                    0,
+                    newMirrors
+            );
 
-            int result = strategy.getPredictedNumTargetLinks(mockAction);
+            int result = strategy.getPredictedNumTargetLinks(action);
 
             assertTrue(result >= 0, "Result sollte nicht negativ sein für " + newMirrors + " Mirrors");
             assertTrue(result <= newMirrors * (newMirrors - 1) / 2,
@@ -531,11 +560,15 @@ class TopologyStrategyTest {
         void testConsistencyBetweenTargetLinksAndPredicted() {
             int currentTargetLinks = strategy.getNumTargetLinks(network);
 
-            // Erstelle MirrorChange mit gleicher Mirror-Anzahl
-            MirrorChange mockAction = mock(MirrorChange.class);
-            when(mockAction.getNewMirrors()).thenReturn(network.getNumMirrors());
+            // Erstelle reale MirrorChange-Action (vermeidet Mockito/ByteBuddy-Probleme auf JDK 24)
+            MirrorChange action = new MirrorChange(
+                    network,
+                    org.lrdm.util.IDGenerator.getInstance().getNextID(),
+                    0,
+                    network.getNumMirrors()
+            );
 
-            int predictedLinks = strategy.getPredictedNumTargetLinks(mockAction);
+            int predictedLinks = strategy.getPredictedNumTargetLinks(action);
 
             assertEquals(currentTargetLinks, predictedLinks,
                     "Predicted links sollten current links entsprechen bei gleicher Mirror-Anzahl");
@@ -590,10 +623,15 @@ class TopologyStrategyTest {
         @Test
         @DisplayName("Extrem große Mirror-Anzahlen")
         void testExtremelyLargeMirrorCounts() {
-            MirrorChange mockAction = mock(MirrorChange.class);
-            when(mockAction.getNewMirrors()).thenReturn(1000);
+            // reale Action statt Mockito-Mock (vermeidet Byte Buddy Probleme auf JDK 24)
+            MirrorChange action = new MirrorChange(
+                    network,
+                    org.lrdm.util.IDGenerator.getInstance().getNextID(),
+                    0,
+                    1000
+            );
 
-            int result = strategy.getPredictedNumTargetLinks(mockAction);
+            int result = strategy.getPredictedNumTargetLinks(action);
 
             assertTrue(result >= 0, "Result sollte auch bei großen Zahlen nicht negativ sein");
         }
@@ -710,10 +748,15 @@ class TopologyStrategyTest {
             int[] boundaryValues = {0, 1, 2, 10, 100};
 
             for (int count : boundaryValues) {
-                MirrorChange mockAction = mock(MirrorChange.class);
-                when(mockAction.getNewMirrors()).thenReturn(count);
+                // reale Action statt Mockito-Mock (vermeidet Byte Buddy Probleme auf JDK 24)
+                MirrorChange action = new MirrorChange(
+                        network,
+                        org.lrdm.util.IDGenerator.getInstance().getNextID(),
+                        0,
+                        count
+                );
 
-                int result = strategy.getPredictedNumTargetLinks(mockAction);
+                int result = strategy.getPredictedNumTargetLinks(action);
                 assertTrue(result >= 0, "Result für " + count + " Mirrors sollte >= 0 sein");
             }
         }
@@ -724,11 +767,15 @@ class TopologyStrategyTest {
             int[] boundaryValues = {0, 1, 2, 5, network.getNumMirrors() - 1};
 
             for (int linksPerMirror : boundaryValues) {
-                TargetLinkChange mockAction = mock(TargetLinkChange.class);
-                when(mockAction.getNetwork()).thenReturn(network);
-                when(mockAction.getNewLinksPerMirror()).thenReturn(linksPerMirror);
+                // Erzeuge eine reale Action-Instanz statt eines Mocks (vermeidet Byte Buddy/Mockito Inline auf JDK 24)
+                TargetLinkChange action = new TargetLinkChange(
+                        network,
+                        org.lrdm.util.IDGenerator.getInstance().getNextID(),
+                        0,
+                        linksPerMirror
+                );
 
-                int result = strategy.getPredictedNumTargetLinks(mockAction);
+                int result = strategy.getPredictedNumTargetLinks(action);
                 assertTrue(result >= 0, "Result für " + linksPerMirror + " Links/Mirror sollte >= 0 sein");
             }
         }
