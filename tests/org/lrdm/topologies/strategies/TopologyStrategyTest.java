@@ -12,14 +12,12 @@ import static org.mockito.Mockito.*;
 
 import org.lrdm.*;
 import org.lrdm.effectors.Action;
-import org.lrdm.effectors.Effect;
 import org.lrdm.effectors.MirrorChange;
 import org.lrdm.effectors.TargetLinkChange;
 import org.lrdm.effectors.TopologyChange;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @DisplayName("TopologyStrategy Basisklasse Tests")
 class TopologyStrategyTest {
