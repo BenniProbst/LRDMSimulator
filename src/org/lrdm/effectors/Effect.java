@@ -126,26 +126,102 @@ public record Effect(Action action) {
      */
     private double getDeltaActiveLinksForTopologyChange(TopologyChange tc, TopologyStrategy topo, int m, int lpm) {
         TopologyStrategy newTopology = tc.getNewTopology();
-        if (topo instanceof FullyConnectedTopology && newTopology instanceof NConnectedTopology) {
-            if ((m - 1) == 0) return 0; // guard
-            return (2 * lpm) / (double) (m - 1);
-        } else if (topo instanceof FullyConnectedTopology && newTopology instanceof BalancedTreeTopologyStrategy) {
-            if (m == 0) return 0; // guard
-            return 1 - (2 / (double) m);
-        } else if (topo instanceof NConnectedTopology && newTopology instanceof FullyConnectedTopology) {
-            if ((m - 1) == 0) return 0; // guard
-            return (2 * lpm) / (double) (m - 1) - 1;
-        } else if (topo instanceof NConnectedTopology && newTopology instanceof BalancedTreeTopologyStrategy) {
-            if ((m * m - m) == 0) return 0; // guard
-            return ((2 * m * (1 - lpm)) - 2) / (double) (m * m - m);
-        } else if (topo instanceof BalancedTreeTopologyStrategy && newTopology instanceof FullyConnectedTopology) {
-            if (m == 0) return 0; // guard
-            return (2 / (double) m) - 1;
-        } else if (topo instanceof BalancedTreeTopologyStrategy && newTopology instanceof NConnectedTopology) {
-            if ((m * m - m) == 0) return 0; // guard
-            return (2 * m * (lpm - 1) + 2) / (double) (m * m - m);
+
+        return switch (getTopologyTransition(topo, newTopology)) {
+            case FULLY_TO_N -> calculateFullyToNConnectedDelta(m, lpm);
+            case FULLY_TO_BALANCED -> calculateFullyToBalancedTreeDelta(m);
+            case N_TO_FULLY -> calculateNToFullyConnectedDelta(m, lpm);
+            case N_TO_BALANCED -> calculateNToBalancedTreeDelta(m, lpm);
+            case BALANCED_TO_FULLY -> calculateBalancedToFullyConnectedDelta(m);
+            case BALANCED_TO_N -> calculateBalancedToNConnectedDelta(m, lpm);
+            default -> 0.0;
+        };
+    }
+
+    /**
+     * Determines the type of topology transition.
+     */
+    private TopologyTransition getTopologyTransition(TopologyStrategy from, TopologyStrategy to) {
+        if (from instanceof FullyConnectedTopology && to instanceof NConnectedTopology) {
+            return TopologyTransition.FULLY_TO_N;
         }
-        return 0;
+        if (from instanceof FullyConnectedTopology && to instanceof BalancedTreeTopologyStrategy) {
+            return TopologyTransition.FULLY_TO_BALANCED;
+        }
+        if (from instanceof NConnectedTopology && to instanceof FullyConnectedTopology) {
+            return TopologyTransition.N_TO_FULLY;
+        }
+        if (from instanceof NConnectedTopology && to instanceof BalancedTreeTopologyStrategy) {
+            return TopologyTransition.N_TO_BALANCED;
+        }
+        if (from instanceof BalancedTreeTopologyStrategy && to instanceof FullyConnectedTopology) {
+            return TopologyTransition.BALANCED_TO_FULLY;
+        }
+        if (from instanceof BalancedTreeTopologyStrategy && to instanceof NConnectedTopology) {
+            return TopologyTransition.BALANCED_TO_N;
+        }
+        return TopologyTransition.UNSUPPORTED;
+    }
+
+    /**
+     * Calculates delta for transition from FullyConnected to NConnected topology.
+     */
+    private double calculateFullyToNConnectedDelta(int m, int lpm) {
+        if ((m - 1) == 0) return 0; // guard
+        return (2 * lpm) / (double) (m - 1);
+    }
+
+    /**
+     * Calculates delta for transition from FullyConnected to BalancedTree topology.
+     */
+    private double calculateFullyToBalancedTreeDelta(int m) {
+        if (m == 0) return 0; // guard
+        return 1 - (2 / (double) m);
+    }
+
+    /**
+     * Calculates delta for transition from NConnected to FullyConnected topology.
+     */
+    private double calculateNToFullyConnectedDelta(int m, int lpm) {
+        if ((m - 1) == 0) return 0; // guard
+        return (2 * lpm) / (double) (m - 1) - 1;
+    }
+
+    /**
+     * Calculates delta for transition from NConnected to BalancedTree topology.
+     */
+    private double calculateNToBalancedTreeDelta(int m, int lpm) {
+        if ((m * m - m) == 0) return 0; // guard
+        return ((2 * m * (1 - lpm)) - 2) / (double) (m * m - m);
+    }
+
+    /**
+     * Calculates delta for transition from BalancedTree to FullyConnected topology.
+     */
+    private double calculateBalancedToFullyConnectedDelta(int m) {
+        if (m == 0) return 0; // guard
+        return (2 / (double) m) - 1;
+    }
+
+    /**
+     * Calculates delta for transition from BalancedTree to NConnected topology.
+     */
+    private double calculateBalancedToNConnectedDelta(int m, int lpm) {
+        if ((m * m - m) == 0) return 0; // guard
+        return (2 * m * (lpm - 1) + 2) / (double) (m * m - m);
+    }
+
+    /**
+     * Enum representing different topology transition types.
+     */
+    private enum TopologyTransition {
+        FULLY_TO_N,
+        FULLY_TO_BALANCED,
+        N_TO_FULLY,
+        N_TO_BALANCED,
+        BALANCED_TO_FULLY,
+        BALANCED_TO_N,
+        UNSUPPORTED
     }
 
     /**

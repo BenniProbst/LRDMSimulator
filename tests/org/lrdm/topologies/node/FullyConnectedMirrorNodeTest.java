@@ -527,6 +527,7 @@ class FullyConnectedMirrorNodeTest {
             assertEquals(10, largeHead.getAllFullyConnectedNodes().size()); // Alle Knoten
         }
 
+        /*
         private void setupValidFullyConnectedNetwork() {
             // Setze Mirrors für alle Knoten
             List<Mirror> mirrors = new ArrayList<>();
@@ -547,6 +548,8 @@ class FullyConnectedMirrorNodeTest {
             mirrors.get(0).addLink(edgeLink);
             externalMirror.addLink(edgeLink);
         }
+
+         */
 
         private FullyConnectedMirrorNode createLargeFullyConnectedNetwork(int baseId, int size) {
             FullyConnectedMirrorNode head = new FullyConnectedMirrorNode(baseId);

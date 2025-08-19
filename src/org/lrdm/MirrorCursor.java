@@ -14,7 +14,7 @@ public class MirrorCursor {
     private final List<Mirror> mirrors;
     private int mirrorIterator = -1;
     private final Properties props;
-    private final double faultProbability; // = 0.01;
+    private final double faultProbability;
     private final SecureRandom random;
 
     public MirrorCursor(int numMirrors, int fileSize, Properties props){
