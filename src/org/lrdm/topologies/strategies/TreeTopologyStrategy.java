@@ -359,14 +359,31 @@ public class TreeTopologyStrategy extends BuildAsSubstructure {
 
     // ===== STRING REPRESENTATION =====
 
+    // ===== STRING REPRESENTATION =====
+
     @Override
     public String toString() {
-        String baseString = super.toString();
-        TreeMirrorNode root = (TreeMirrorNode) getCurrentStructureRoot();
-        int maxDepth = root != null ? root.getMaxTreeDepth() : 0;
-        int leaves = (int) getAllTreeNodes().stream().filter(TreeMirrorNode::isLeaf).count();
+        StringBuilder sb = new StringBuilder();
+        sb.append("TreeTopologyStrategy");
 
-        return baseString + "[maxDepth=" + maxDepth + ", leaves=" + leaves + "]";
+        // Sichere Informationen sammeln - keine Validierung oder Root-Zugriff
+        if (network != null) {
+            sb.append("[targetLinksPerMirror=").append(network.getNumTargetLinksPerMirror());
+            sb.append(", nodeCount=").append(getAllStructureNodes().size());
+
+            TreeMirrorNode root = (TreeMirrorNode) getCurrentStructureRoot();
+            if (root != null) {
+                int maxDepth = root.getMaxTreeDepth();
+                int leaves = (int) getAllTreeNodes().stream().filter(TreeMirrorNode::isLeaf).count();
+                sb.append(", maxDepth=").append(maxDepth);
+                sb.append(", leaves=").append(leaves);
+            }
+            sb.append("]");
+        } else {
+            sb.append("[not initialized]");
+        }
+
+        return sb.toString();
     }
 
 }

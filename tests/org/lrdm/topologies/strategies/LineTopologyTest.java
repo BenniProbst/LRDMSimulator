@@ -47,11 +47,6 @@ class LineTopologyTest {
         return new Network(strategy, mirrors, 2, 30, getProps());
     }
 
-    private Network createLineNetwork(int mirrors, int minLineSize) {
-        LineTopologyStrategy strategy = new LineTopologyStrategy(minLineSize);
-        return new Network(strategy, mirrors, 2, 30, getProps());
-    }
-
     private Network createLineNetwork(int mirrors, int minLineSize, boolean allowExpansion) {
         LineTopologyStrategy strategy = new LineTopologyStrategy(minLineSize, allowExpansion);
         return new Network(strategy, mirrors, 2, 30, getProps());
@@ -59,7 +54,7 @@ class LineTopologyTest {
 
     private MirrorProbe getMirrorProbe() {
         return sim.getProbes().stream()
-                .filter(p -> p instanceof MirrorProbe)
+                .filter(MirrorProbe.class::isInstance)
                 .map(p -> (MirrorProbe) p)
                 .findFirst()
                 .orElse(null);
@@ -67,7 +62,7 @@ class LineTopologyTest {
 
     private LinkProbe getLinkProbe() {
         return sim.getProbes().stream()
-                .filter(p -> p instanceof LinkProbe)
+                .filter(LinkProbe.class::isInstance)
                 .map(p -> (LinkProbe) p)
                 .findFirst()
                 .orElse(null);

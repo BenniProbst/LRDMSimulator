@@ -697,9 +697,23 @@ public class BalancedTreeTopologyStrategy extends TreeTopologyStrategy {
         this.maxAllowedBalanceDeviation = Math.max(0.1, maxAllowedBalanceDeviation);
     }
 
+
     @Override
     public String toString() {
-        return String.format("BalancedTreeTopologyStrategy[targetLinks=%d, maxDev=%.2f]",
-                network.getNumTargetLinksPerMirror(), maxAllowedBalanceDeviation);
+        StringBuilder sb = new StringBuilder();
+        sb.append("BalancedTreeTopologyStrategy[");
+
+        // Sichere Informationen - immer verfügbar
+        sb.append("maxDev=").append(String.format("%.2f", maxAllowedBalanceDeviation));
+
+        if (network != null) {
+            sb.append(", targetLinks=").append(network.getNumTargetLinksPerMirror());
+            sb.append(", nodeCount=").append(getAllStructureNodes().size());
+        } else {
+            sb.append(", not initialized");
+        }
+
+        sb.append("]");
+        return sb.toString();
     }
 }
