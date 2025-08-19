@@ -1,5 +1,6 @@
 package org.lrdm;
 
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -37,15 +38,15 @@ public class Mirror {
 		// get time to startup
 		int startupTimeMin = Integer.parseInt(props.getProperty("startup_time_min"));
 		int startupTimeMax = Integer.parseInt(props.getProperty("startup_time_max"));
-		startupTime = new Random().nextInt(startupTimeMin, startupTimeMax);
+		startupTime = new SecureRandom().nextInt(startupTimeMin, startupTimeMax);
 
 		int readyTimeMin = Integer.parseInt(props.getProperty("ready_time_min"));
 		int readyTimeMax = Integer.parseInt(props.getProperty("ready_time_max"));
-		readyTime = new Random().nextInt(readyTimeMin, readyTimeMax);
+		readyTime = new SecureRandom().nextInt(readyTimeMin, readyTimeMax);
 
 		int stopTimeMin = Integer.parseInt(props.getProperty("stop_time_min"));
 		int stopTimeMax = Integer.parseInt(props.getProperty("stop_time_max"));
-		stopTime = new Random().nextInt(stopTimeMin,stopTimeMax);
+		stopTime = new SecureRandom().nextInt(stopTimeMin,stopTimeMax);
 		
 		links = new HashSet<>();
 

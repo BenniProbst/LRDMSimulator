@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 
 /**
  * # LinkProbe
- *
+ * <p>
  * Observes link-related state in the RDM network and exposes:
  * <ul>
  *   <li>the fraction of currently active links relative to the topology’s target links
@@ -35,11 +35,6 @@ import java.util.logging.Logger;
 public class LinkProbe extends Probe {
 
     /**
-     * Network under observation (never {@code null}).
-     */
-    private final Network n;
-
-    /**
      * Cached ratio of active links to target links after the last {@link #update(int)}.
      * Value range: {@code [0.0, 1.0]}.
      */
@@ -52,7 +47,6 @@ public class LinkProbe extends Probe {
      */
     public LinkProbe(Network n) {
         super(n);
-        this.n = n;
         this.linkRatio = 0.0;
     }
 

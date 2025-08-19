@@ -508,19 +508,6 @@ class FullyConnectedMirrorNodeTest {
         }
 
         @Test
-        @DisplayName("hasOptimalLinkCount prüft Link-Optimierung")
-        void testHasOptimalLinkCount() {
-            setupValidFullyConnectedNetwork();
-
-            // Mit vollständig implementierten Links sollte die Anzahl optimal sein
-            boolean headOptimal = head.hasOptimalLinkCount();
-            boolean peer1Optimal = peer1.hasOptimalLinkCount();
-
-            // Das Ergebnis hängt von der konkreten Link-Implementierung ab.
-            // Hier testen wir hauptsächlich, dass die Methode funktioniert
-        }
-
-        @Test
         @DisplayName("Navigation mit speziellen Netzwerk-Strukturen")
         void testNavigationWithSpecialNetworkStructures() {
             // Test mit minimaler Struktur (2 Knoten)

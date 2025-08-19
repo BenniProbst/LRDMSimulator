@@ -2,6 +2,7 @@ package org.lrdm;
 
 import org.lrdm.util.IDGenerator;
 
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -14,14 +15,14 @@ public class MirrorCursor {
     private int mirrorIterator = -1;
     private final Properties props;
     private final double faultProbability; // = 0.01;
-    private final Random random;
+    private final SecureRandom random;
 
     public MirrorCursor(int numMirrors, int fileSize, Properties props){
         numTargetMirrors = numMirrors;
         mirrors = new ArrayList<>();
 
         faultProbability = Double.parseDouble(props.getProperty("fault_probability"));
-        random = new Random();
+        random = new SecureRandom();
         this.props = props;
 
         // create the mirrors and put a new data package on the first mirror

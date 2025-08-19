@@ -2,7 +2,7 @@ package org.lrdm;
 
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Random;
+import java.security.SecureRandom;
 
 /**A link between two mirrors. Initially is inactive. Gets active after <i>activation_time</i> as soon as both mirrors are <i>ready</i>.
  *
@@ -21,7 +21,7 @@ public class Link {
 	private int endsActiveTime = -1;
 	private final int activationTime;
 
-	private final Random rand = new Random();
+	private final SecureRandom rand = new SecureRandom();
 	
 	public Link(int id, Mirror source, Mirror target, int initTime, Properties props) {
 		this.source = source;
