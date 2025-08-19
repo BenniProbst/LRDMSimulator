@@ -1,15 +1,18 @@
+
 package org.lrdm.topologies.exceptions;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.lrdm.topologies.validators.SnowflakeTopologyValidator;
 
 @DisplayName("Ring Parameter Validierung Tests")
 class RingParameterValidationTest {
+
+    // Konstanten entsprechend der aktuellen SnowflakeTopologyValidator-Implementation
+    private static final int DEFAULT_MAX_RING_LAYERS = 5;
 
     @Nested
     @DisplayName("Aktive Ring-Parameter (MINIMAL_RING_MIRROR_COUNT)")
@@ -59,14 +62,22 @@ class RingParameterValidationTest {
         @Test
         @DisplayName("Gültige Ring-Konstruktion: typische Fälle")
         void testValidRingConstruction() {
-            // 2 Ringe à 3 Mirrors = 6 möglich
-            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(9, 3, 2));
+            // Sichere Kombinationen, die maxRingLayers von 5 nicht überschreiten
+
+            // 6 Mirrors / 3 pro Ring = 2 Ringe ≤ 5 (OK)
+            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(6, 3, 5));
+
             // 0 Mirrors (keine Ringe geplant) ist zulässig
-            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(0, 3, 2));
-            // 3 Ringe à 5 Mirrors = 15 möglich
-            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(15, 5, 3));
-            // genau 1 Ring möglich
-            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(3, 3, 1));
+            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(0, 3, 5));
+
+            // 15 Mirrors / 5 pro Ring = 3 Ringe ≤ 5 (OK)
+            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(15, 5, 5));
+
+            // 3 Mirrors / 3 pro Ring = 1 Ring ≤ 5 (OK)
+            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(3, 3, 5));
+
+            // Exakt 5 Ringe (Maximum)
+            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(15, 3, 5)); // 15/3 = 5
         }
 
         @Test
@@ -74,7 +85,7 @@ class RingParameterValidationTest {
         void testInsufficientMirrors() {
             InsufficientMirrorsForRingException ex1 = assertThrows(
                     InsufficientMirrorsForRingException.class,
-                    () -> SnowflakeTopologyValidator.validateRingConstruction(1, 5, 2)
+                    () -> SnowflakeTopologyValidator.validateRingConstruction(1, 5, 5)
             );
             assertEquals(1, ex1.getAvailableMirrors());
             assertEquals(5, ex1.getRequiredMirrors());
@@ -82,7 +93,7 @@ class RingParameterValidationTest {
 
             InsufficientMirrorsForRingException ex2 = assertThrows(
                     InsufficientMirrorsForRingException.class,
-                    () -> SnowflakeTopologyValidator.validateRingConstruction(4, 5, 1)
+                    () -> SnowflakeTopologyValidator.validateRingConstruction(4, 5, 5)
             );
             assertEquals(4, ex2.getAvailableMirrors());
             assertEquals(5, ex2.getRequiredMirrors());
@@ -92,20 +103,35 @@ class RingParameterValidationTest {
         @Test
         @DisplayName("Zu viele Ring-Ebenen für verfügbare Mirrors")
         void testTooManyLayersForAvailableMirrors() {
-            // 10 Mirrors, 10 pro Ring, 50 Ebenen -> erfordert 500 Mirrors
+            // 30 Mirrors / 3 pro Ring = 10 Ringe > 5 (Maximum) → Exception
             InvalidMirrorDistributionException ex = assertThrows(
                     InvalidMirrorDistributionException.class,
-                    () -> SnowflakeTopologyValidator.validateRingConstruction(100, 10, 50)
+                    () -> SnowflakeTopologyValidator.validateRingConstruction(30, 3, 5)
             );
             assertTrue(ex.getMessage().contains("überschreitet") || ex.getMessage().contains("Ring-Anzahl"),
                     "Message sollte Grenzüberschreitung der Ring-Anzahl erwähnen");
+            assertTrue(ex.getMessage().contains("10") && ex.getMessage().contains("5"),
+                    "Message sollte berechnete Ringanzahl (10) und Maximum (5) enthalten");
+        }
+
+        @Test
+        @DisplayName("Weitere Fälle für zu viele Ringe")
+        void testMoreCasesWithTooManyRings() {
+            // 60 Mirrors / 3 pro Ring = 20 Ringe > 5
+            assertThrows(InvalidMirrorDistributionException.class, () -> SnowflakeTopologyValidator.validateRingConstruction(60, 3, 5));
+
+            // 100 Mirrors / 4 pro Ring = 25 Ringe > 5
+            assertThrows(InvalidMirrorDistributionException.class, () -> SnowflakeTopologyValidator.validateRingConstruction(100, 4, 5));
         }
 
         @Test
         @DisplayName("Exakt maximale Ring-Anzahl ist gültig")
         void testExactMaxRings() {
-            // 6 Mirrors, min 3 pro Ring -> 2 Ringe exakt das Maximum
-            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(6, 3, 2));
+            // 15 Mirrors / 3 pro Ring = 5 Ringe = Maximum (OK)
+            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(15, 3, 5));
+
+            // 20 Mirrors / 4 pro Ring = 5 Ringe = Maximum (OK)
+            assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingConstruction(20, 4, 5));
         }
     }
 
@@ -119,13 +145,13 @@ class RingParameterValidationTest {
             // setze Mindestwert 3 (gültig)
             assertDoesNotThrow(() -> SnowflakeTopologyValidator.validateRingParameters(3));
 
-            // konsistente Verteilung
+            // konsistente Verteilung mit sicheren Ring-Werten
             assertDoesNotThrow(() ->
-                    SnowflakeTopologyValidator.validateMirrorDistribution(10, 6, 4, 3, 2));
+                    SnowflakeTopologyValidator.validateMirrorDistribution(10, 6, 4, 3, 5));
 
-            // konsistente Konstruktion mit 2 Ebenen
+            // konsistente Konstruktion: 6/3 = 2 Ringe ≤ 5
             assertDoesNotThrow(() ->
-                    SnowflakeTopologyValidator.validateRingConstruction(6, 3, 2));
+                    SnowflakeTopologyValidator.validateRingConstruction(6, 3, 5));
         }
 
         @Test
@@ -133,7 +159,7 @@ class RingParameterValidationTest {
         void testDistributionBelowMinimumRing() {
             InsufficientMirrorsForRingException ex = assertThrows(
                     InsufficientMirrorsForRingException.class,
-                    () -> SnowflakeTopologyValidator.validateMirrorDistribution(10, 2, 8, 5, 3)
+                    () -> SnowflakeTopologyValidator.validateMirrorDistribution(10, 2, 8, 5, 5)
             );
             assertEquals(2, ex.getAvailableMirrors());
             assertEquals(5, ex.getRequiredMirrors());
@@ -144,7 +170,37 @@ class RingParameterValidationTest {
         @DisplayName("Fehlerfall: Summeninkonsistenz in Verteilung")
         void testDistributionSumMismatch() {
             assertThrows(InvalidMirrorDistributionException.class,
-                    () -> SnowflakeTopologyValidator.validateMirrorDistribution(10, 3, 4, 3, 2));
+                    () -> SnowflakeTopologyValidator.validateMirrorDistribution(10, 3, 4, 3, 5));
+        }
+
+        @Test
+        @DisplayName("Fehlerfall: Ring-Konstruktion mit zu vielen berechneten Ringen")
+        void testConstructionWithTooManyCalculatedRings() {
+            // Diese sollten InvalidMirrorDistributionException werfen, da zu viele Ringe berechnet werden
+
+            // 18 Mirrors / 3 pro Ring = 6 Ringe > 5
+            assertThrows(InvalidMirrorDistributionException.class, () -> SnowflakeTopologyValidator.validateRingConstruction(18, 3, 5));
+
+            // 24 Mirrors / 4 pro Ring = 6 Ringe > 5
+            assertThrows(InvalidMirrorDistributionException.class, () -> SnowflakeTopologyValidator.validateRingConstruction(24, 4, 5));
+        }
+
+        @Test
+        @DisplayName("Grenzwerte: Verschiedene maxRingLayers-Werte")
+        void testDifferentMaxRingLayerValues() {
+            // Mit maxRingLayers = 2
+            assertDoesNotThrow(() ->
+                    SnowflakeTopologyValidator.validateRingConstruction(6, 3, 2)); // 6/3 = 2 Ringe = Max
+
+            assertThrows(InvalidMirrorDistributionException.class, () ->
+                    SnowflakeTopologyValidator.validateRingConstruction(9, 3, 2)); // 9/3 = 3 > 2
+
+            // Mit maxRingLayers = 10
+            assertDoesNotThrow(() ->
+                    SnowflakeTopologyValidator.validateRingConstruction(30, 3, 10)); // 30/3 = 10 Ringe = Max
+
+            assertThrows(InvalidMirrorDistributionException.class, () ->
+                    SnowflakeTopologyValidator.validateRingConstruction(33, 3, 10)); // 33/3 = 11 > 10
         }
     }
 }

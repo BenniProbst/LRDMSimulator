@@ -37,6 +37,7 @@ public class TreeMirrorNode extends MirrorNode {
      */
     public TreeMirrorNode(int id) {
         super(id);
+        this.nodeTypes.add(StructureType.TREE);
     }
 
     /**
@@ -47,6 +48,7 @@ public class TreeMirrorNode extends MirrorNode {
      */
     public TreeMirrorNode(int id, Mirror mirror) {
         super(id, mirror);
+        this.nodeTypes.add(StructureType.TREE);
     }
 
     // ===== TYP-SYSTEM INTEGRATION =====

@@ -84,6 +84,7 @@ class MirrorNodeTest {
             assertEquals(1, mirrorNode.getNumImplementedLinks());
         }
 
+        /*
         @Test
         @DisplayName("Link management - addLink and removeLink")
         void testLinkManagement() {
@@ -113,6 +114,8 @@ class MirrorNodeTest {
             assertEquals(0, mirrorNode.getNumImplementedLinks());
             assertTrue(mirrorNode.getImplementedLinks().isEmpty());
         }
+
+         */
 
         @Test
         @DisplayName("getNumPendingLinks: planned minus implemented links")

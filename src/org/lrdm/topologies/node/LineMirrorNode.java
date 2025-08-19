@@ -392,6 +392,7 @@ public class LineMirrorNode extends MirrorNode {
         return (head instanceof LineMirrorNode) ? (LineMirrorNode) head : null;
     }
 
+
     /**
      * Prüft, ob dieser Knoten ein mittlerer Knoten der Linie ist.
      * Mittlere Knoten haben genau 2 Verbindungen (nicht Terminal).
@@ -406,7 +407,13 @@ public class LineMirrorNode extends MirrorNode {
     public boolean isMiddleNode() {
         StructureType typeId = StructureType.LINE;
         StructureNode head = findHead(typeId);
-        final int headId = head != null ? head.getId() : this.getId();
+
+        // Fallback falls kein HEAD gefunden wird
+        if (head == null) {
+            return false;
+        }
+
+        final int headId = head.getId();
 
         return !isEndpoint(this, typeId, headId) &&
                 getConnectivityDegree(typeId, headId) == 2;

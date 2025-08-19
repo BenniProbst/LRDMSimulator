@@ -17,13 +17,13 @@ public class DepthLimitedTreeMirrorNode extends TreeMirrorNode {
     public DepthLimitedTreeMirrorNode(int id, int maxDepth) {
         super(id);
         this.maxDepth = Math.max(1, maxDepth);
-        addNodeType(StructureType.TREE);
+        addNodeType(StructureType.DEPTH_LIMIT_TREE);
     }
 
     public DepthLimitedTreeMirrorNode(int id, Mirror mirror, int maxDepth) {
         super(id, mirror);
         this.maxDepth = Math.max(1, maxDepth);
-        addNodeType(StructureType.TREE);
+        addNodeType(StructureType.DEPTH_LIMIT_TREE);
     }
 
     // ===== TIEFENBESCHRÄNKUNGS-SPEZIFISCHE METHODEN =====

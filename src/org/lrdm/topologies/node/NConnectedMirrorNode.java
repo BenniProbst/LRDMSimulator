@@ -338,10 +338,7 @@ public class NConnectedMirrorNode extends MirrorNode {
 
             // Validiere, dass Parent-Child-Beziehung zur N-Connected-Struktur gehört
             ChildRecord parentRecord = parent.findChildRecordById(nConnectedNode.getId());
-            if (!parentRecord.belongsToStructure(typeId, headId)) {
-                return true;
-            }
-            return false;// return !allNodes.contains(parent);
+            return !parentRecord.belongsToStructure(typeId, headId);// return !allNodes.contains(parent);
         }
 
         // Parent muss innerhalb der N-Connected-Struktur sein
@@ -428,12 +425,39 @@ public class NConnectedMirrorNode extends MirrorNode {
      * Berechnet die aktuelle Vernetzungsdichte der Struktur.
      */
     public double getConnectivityDensity() {
-        int actualLinks = getNumLinksOfStructure(); // Bereits existiert in MirrorNode
-        int expectedLinks = getExpectedTotalLinkCount();
+        NConnectedMirrorNode head = getNConnectedHead();
+        if (head == null) {
+            return 0.0; // Kein Head gefunden
+        }
 
-        if (expectedLinks == 0) return 1.0;
+        int networkSize = getNetworkSize();
+        if (networkSize <= 1) {
+            return 0.0; // Einzelner Knoten oder leeres Netzwerk
+        }
 
-        return (double) actualLinks / expectedLinks;
+        // Zähle tatsächliche Links im Netzwerk
+        int actualLinkCount = 0;
+        Set<NConnectedMirrorNode> allNodes = head.getChildren(StructureType.N_CONNECTED, head.getId())
+                .stream()
+                .map(node -> (NConnectedMirrorNode) node)
+                .collect(Collectors.toSet());
+        allNodes.add(head);
+
+        for (NConnectedMirrorNode node : allNodes) {
+            if (node.getMirror() != null) {
+                actualLinkCount += node.getMirror().getLinks().size();
+            }
+        }
+
+        // Jeder Link wird doppelt gezählt (von beiden Enden)
+        actualLinkCount = actualLinkCount / 2;
+
+        int expectedLinkCount = getExpectedTotalLinkCount();
+        if (expectedLinkCount == 0) {
+            return 0.0; // Division durch Null vermeiden
+        }
+
+        return (double) actualLinkCount / expectedLinkCount;
     }
 
     /**

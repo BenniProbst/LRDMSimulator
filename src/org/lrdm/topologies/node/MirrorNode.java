@@ -36,7 +36,7 @@ public class MirrorNode extends StructureNode {
      * @param mirror Der zugeordnete Mirror
      */
     public MirrorNode(int id, Mirror mirror) {
-        super(id);
+        this(id);
         this.mirror = mirror;
     }
 
