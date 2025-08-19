@@ -233,10 +233,10 @@ public class Mirror {
 		return isAlreadyConnected(this, target);
 	}
 
-	@Override
-	public String toString() {
-		return id + " {" + state + "}";
-	}
+    @Override
+    public String toString() {
+        return String.format("%d {%s}", id, state);
+    }
 
 	public int getStartupTime() {
 		return startupTime;

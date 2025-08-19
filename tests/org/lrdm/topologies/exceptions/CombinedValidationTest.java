@@ -1,4 +1,3 @@
-
 package org.lrdm.topologies.exceptions;
 
 import org.junit.jupiter.api.Test;

@@ -351,6 +351,14 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
      */
     public boolean isLineIntact() {
         List<LineMirrorNode> lineNodes = getAllLineNodes();
+        if (lineNodes.isEmpty()) return false;
+
+        // Spezialfall: Ein-Knoten-Linie ist gültig
+        if (lineNodes.size() == 1) {
+            return true;
+        }
+
+        // Für normale Linien: mindestens minLineSize und genau 2 Endpunkte
         if (lineNodes.size() < minLineSize) return false;
 
         // Prüfe, ob genau 2 Endpunkte existieren
@@ -380,7 +388,8 @@ public class LineTopologyStrategy extends BuildAsSubstructure {
         List<LineMirrorNode> lineNodes = getAllLineNodes();
 
         info.put("totalNodes", lineNodes.size());
-        info.put("expectedLinks", Math.max(0, lineNodes.size() - 1));
+        info.put("totalLinks", Math.max(0, lineNodes.size() - 1)); // Geändert von "expectedLinks" zu "totalLinks"
+        info.put("expectedLinks", Math.max(0, lineNodes.size() - 1)); // Behalte auch den alten Schlüssel für Kompatibilität
         info.put("endpointCount", lineNodes.stream().filter(this::isLineEndpoint).count());
         info.put("isIntact", isLineIntact());
         info.put("averagePathLength", calculateAverageLinePathLength());

@@ -4,7 +4,6 @@ package org.lrdm.topologies.strategies;
 import org.lrdm.Mirror;
 import org.lrdm.Network;
 import org.lrdm.effectors.*;
-import org.lrdm.topologies.node.BalancedTreeMirrorNode;
 import org.lrdm.topologies.node.MirrorNode;
 import org.lrdm.topologies.node.NConnectedMirrorNode;
 import org.lrdm.topologies.node.StructureNode;

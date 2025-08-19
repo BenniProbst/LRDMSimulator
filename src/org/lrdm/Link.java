@@ -126,10 +126,13 @@ public class Link {
 		return Objects.hash(id);
 	}
 
-	@Override
-	public String toString() {
-		return "["+(isActive()?"active":"")+"] "+source+" -> "+target;
-	}
+    @Override
+    public String toString() {
+        return String.format("[%s] %s -> %s",
+                isActive() ? "active" : "",
+                source,
+                target);
+    }
 
 	public int getActivationTime() {
 		return activationTime;

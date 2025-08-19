@@ -1,4 +1,3 @@
-
 package org.lrdm.topologies.exceptions;
 
 import org.junit.jupiter.api.Test;
@@ -21,7 +20,7 @@ class InvalidStarParameterExceptionTest {
         @Test
         @DisplayName("validateStarParameters ist derzeit auskommentiert")
         void testValidateStarParametersCurrentlyUnavailable() {
-            // Überprüfe, dass die validateStarParameters Methode existiert, aber auskommentiert ist
+            // Überprüfe, dass die validateStarParameters Methode existiert, aber auskommentiert ist.
             // Dies wird durch Reflexion getestet, um die aktuelle Implementierung zu validieren
 
             Class<?> validatorClass = SnowflakeTopologyValidator.class;
@@ -66,7 +65,7 @@ class InvalidStarParameterExceptionTest {
         }
 
         @Test
-        @DisplayName("Verfügbare Validierungs-Methoden funktionieren korrekt")
+        @DisplayName("Verfügbare Validierung-Methoden funktionieren korrekt")
         void testAvailableValidationMethodsWork() {
             // Teste, dass die verfügbaren Methoden funktionieren
             assertDoesNotThrow(() -> {
@@ -127,7 +126,7 @@ class InvalidStarParameterExceptionTest {
         })
         @DisplayName("Exception-Erstellung für verschiedene Parameter-Kombinationen")
         void testExceptionCreationForVariousParameterCombinations(String paramName, String value, String constraint) {
-            // Parse den Wert als Object um verschiedene Typen zu unterstützen
+            // Parse den Wert als Object, um verschiedene Typen zu unterstützen
             Object actualValue = parseValue(value);
 
             InvalidStarParameterException exception = new InvalidStarParameterException(
@@ -280,7 +279,7 @@ class InvalidStarParameterExceptionTest {
         @Test
         @DisplayName("Konsistenz mit anderen Parameter-Validierungen")
         void testConsistencyWithOtherParameterValidations() {
-            // Teste, dass andere Validierungen ähnliche Patterns folgen
+            // Teste, dass andere Validierungen ähnlichen Patterns folgen
 
             // Ring-Parameter Validierung sollte ähnliche Exceptions werfen
             assertThrows(Exception.class, () -> {
@@ -303,8 +302,7 @@ class InvalidStarParameterExceptionTest {
                     "TEST", 0, "test"
             );
 
-            assertTrue(starException instanceof RuntimeException,
-                    "InvalidStarParameterException sollte RuntimeException erweitern");
+            assertInstanceOf(RuntimeException.class, starException, "InvalidStarParameterException sollte RuntimeException erweitern");
 
             assertNotNull(starException.getMessage(),
                     "Exception sollte immer eine Message haben");
@@ -462,22 +460,14 @@ class InvalidStarParameterExceptionTest {
             MockStarParameterValidator mockValidator = new MockStarParameterValidator();
 
             // Teste erwartetes Verhalten mit Mock
-            assertThrows(IllegalArgumentException.class, () -> {
-                mockValidator.validateStarParameters(-1, 0, 0.5);
-            });
+            assertThrows(IllegalArgumentException.class, () -> mockValidator.validateStarParameters(-1, 0, 0.5));
 
-            assertThrows(IllegalArgumentException.class, () -> {
-                mockValidator.validateStarParameters(1, -1, 0.5);
-            });
+            assertThrows(IllegalArgumentException.class, () -> mockValidator.validateStarParameters(1, -1, 0.5));
 
-            assertThrows(IllegalArgumentException.class, () -> {
-                mockValidator.validateStarParameters(1, 0, 1.5);
-            });
+            assertThrows(IllegalArgumentException.class, () -> mockValidator.validateStarParameters(1, 0, 1.5));
 
             // Gültige Werte sollten keine Exception werfen
-            assertDoesNotThrow(() -> {
-                mockValidator.validateStarParameters(1, 0, 0.5);
-            });
+            assertDoesNotThrow(() -> mockValidator.validateStarParameters(1, 0, 0.5));
         }
 
         // Mock-Implementierung für Testzwecke
@@ -499,7 +489,7 @@ class InvalidStarParameterExceptionTest {
     /**
      * Helper-Methode zur zentralen Validierung von Exception-Details.
      * Reduziert Code-Duplikation und verbessert Wartbarkeit.
-     * Bereit für zukünftige Verwendung sobald validateStarParameters verfügbar ist.
+     * Bereit für zukünftige Verwendung, sobald validateStarParameters verfügbar ist.
      *
      * @param exception Die zu validierende Exception
      * @param expectedParameterName Der erwartete Parameter-Name

@@ -308,6 +308,7 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
     /**
      * Prüft, ob der Baum mit den konfigurierten Einstellungen balanciert ist.
      */
+    @Override
     public boolean isBalanced() {
         return calculateTreeBalance() <= maxAllowedBalanceDeviation;
     }
@@ -421,24 +422,24 @@ public class BalancedTreeMirrorNode extends TreeMirrorNode {
         updateBalanceMap(); // Sicherstellen, dass die Balance-Map aktuell ist
 
         StringBuilder builder = new StringBuilder(baseString);
-        builder.append("\nBalance Information:\n");
-        builder.append(String.format("Balance Score: %.2f (max allowed: %.2f)\n",
+        builder.append(String.format("%nBalance Information:%n"));
+        builder.append(String.format("Balance Score: %.2f (max allowed: %.2f)%n",
                 calculateTreeBalance(), maxAllowedBalanceDeviation));
-        builder.append(String.format("Is Balanced: %s\n", isBalanced() ? "Yes" : "No"));
-        builder.append(String.format("Target Links Per Node: %d\n", targetLinksPerNode));
+        builder.append(String.format("Is Balanced: %s%n", isBalanced() ? "Yes" : "No"));
+        builder.append(String.format("Target Links Per Node: %d%n", targetLinksPerNode));
 
         // Balance-Details nach Tiefe anzeigen
-        builder.append("Balance Details by Depth:\n");
+        builder.append(String.format("Balance Details by Depth:%n"));
         for (Map.Entry<Integer, Map<BalancedTreeMirrorNode, BalanceInfo>> entry : balanceMap.entrySet()) {
             int depth = entry.getKey();
             Map<BalancedTreeMirrorNode, BalanceInfo> nodesAtDepth = entry.getValue();
 
-            builder.append(String.format("  Depth %d (%d nodes):\n", depth, nodesAtDepth.size()));
+            builder.append(String.format("  Depth %d (%d nodes):%n", depth, nodesAtDepth.size()));
             for (Map.Entry<BalancedTreeMirrorNode, BalanceInfo> nodeEntry : nodesAtDepth.entrySet()) {
                 BalancedTreeMirrorNode node = nodeEntry.getKey();
                 BalanceInfo info = nodeEntry.getValue();
 
-                builder.append(String.format("    Node %d: %s\n", node.getId(), info));
+                builder.append(String.format("    Node %d: %s%n", node.getId(), info));
             }
         }
 

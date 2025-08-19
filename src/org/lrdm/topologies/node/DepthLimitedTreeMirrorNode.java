@@ -127,10 +127,8 @@ public class DepthLimitedTreeMirrorNode extends TreeMirrorNode {
         Set<StructureNode> allNodes = getAllNodesInStructure(typeId, head);
 
         for (StructureNode node : allNodes) {
-            if (node instanceof DepthLimitedTreeMirrorNode depthNode) {
-                if (depthNode.getDepthInTree() == maxDepth - 1) {
-                    maxDepthNodes.add(depthNode);
-                }
+            if (node instanceof DepthLimitedTreeMirrorNode depthNode && depthNode.getDepthInTree() == maxDepth - 1) {
+                maxDepthNodes.add(depthNode);
             }
         }
 

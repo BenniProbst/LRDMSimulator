@@ -601,7 +601,6 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         if(hostSubstructureNode == null || buildExtern == null)return;
         // Bestimme die extern root aus ihrer externen Struktur
         MirrorNode externRoot = buildExtern.getCurrentStructureRoot();
-        if(externRoot == null)return;
 
         boolean setFirstStructure = false;
         // Ist unsere Struktur Topologie noch leer gehen wir in der ersten Verbindung eine Identität mit der ersten fremden Struktur ein
@@ -614,19 +613,7 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         }
 
         // get extern all nodes
-        Set<MirrorNode> externStructureAllNodes = buildExtern.getAllStructureNodes();
-        // Setze den Typen dieser Struktur in die neu anzugliedernde Struktur und deren Nodes ein, die nun an dieser Strukutr teilnimmt
-        externStructureAllNodes.forEach(node -> node.addNodeType(getCurrentStructureType()));
-        // Update aller Abhängigkeiten der Parents gegenüber der Strukturtypen ihrer Kinder
-        externStructureAllNodes.forEach(
-            node -> node.updateChildRecordMergeStructureHead(
-                Map.of(
-                        getCurrentStructureType(),getCurrentStructureRoot().getId(),
-                        buildExtern.getCurrentStructureType(),externRoot.getId()
-                ),
-                    node.getChildren()
-            )
-        );
+        Set<MirrorNode> externStructureAllNodes = getMirrorNodes(buildExtern, externRoot);
 
         if(setFirstStructure){
             // Setze und ergänze die Strukturtypen in die host node, falls hostSubstructureNode und neue buildExtern root nicht identisch sind
@@ -665,6 +652,23 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
         nodeToSubstructure.put(externRoot,buildExtern);
         // add all external nodes also to this structure
         structureNodes.addAll(externStructureAllNodes);
+    }
+
+    private Set<MirrorNode> getMirrorNodes(BuildAsSubstructure buildExtern, MirrorNode externRoot) {
+        Set<MirrorNode> externStructureAllNodes = buildExtern.getAllStructureNodes();
+        // Setze den Typen dieser Struktur in die neu anzugliedernde Struktur und deren Nodes ein, die nun an dieser Strukutr teilnimmt
+        externStructureAllNodes.forEach(node -> node.addNodeType(getCurrentStructureType()));
+        // Update aller Abhängigkeiten der Parents gegenüber der Strukturtypen ihrer Kinder
+        externStructureAllNodes.forEach(
+            node -> node.updateChildRecordMergeStructureHead(
+                Map.of(
+                        getCurrentStructureType(),getCurrentStructureRoot().getId(),
+                        buildExtern.getCurrentStructureType(), externRoot.getId()
+                ),
+                    node.getChildren()
+            )
+        );
+        return externStructureAllNodes;
     }
 
     /*

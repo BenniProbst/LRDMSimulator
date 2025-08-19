@@ -1,4 +1,3 @@
-
 package org.lrdm.topologies.node;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -527,30 +526,6 @@ class FullyConnectedMirrorNodeTest {
             assertEquals(10, largeHead.getAllFullyConnectedNodes().size()); // Alle Knoten
         }
 
-        /*
-        private void setupValidFullyConnectedNetwork() {
-            // Setze Mirrors für alle Knoten
-            List<Mirror> mirrors = new ArrayList<>();
-            List<FullyConnectedMirrorNode> nodes = Arrays.asList(head, peer1, peer2, peer3, peer4, peer5);
-
-            for (int i = 0; i < nodes.size(); i++) {
-                Mirror mirror = new Mirror(150 + i, 0, props);
-                nodes.get(i).setMirror(mirror);
-                mirrors.add(mirror);
-            }
-
-            // Erstelle vollständig vernetzte Links
-            createFullyConnectedLinks(mirrors);
-
-            // Erstelle Edge-Link für Head
-            Mirror externalMirror = new Mirror(300, 0, props);
-            Link edgeLink = new Link(200, mirrors.get(0), externalMirror, 0, props);
-            mirrors.get(0).addLink(edgeLink);
-            externalMirror.addLink(edgeLink);
-        }
-
-         */
-
         private FullyConnectedMirrorNode createLargeFullyConnectedNetwork(int baseId, int size) {
             FullyConnectedMirrorNode head = new FullyConnectedMirrorNode(baseId);
             head.setHead(StructureType.FULLY_CONNECTED, true);
@@ -561,17 +536,6 @@ class FullyConnectedMirrorNodeTest {
             }
 
             return head;
-        }
-
-        private void createFullyConnectedLinks(List<Mirror> mirrors) {
-            int linkId = 1;
-            for (int i = 0; i < mirrors.size(); i++) {
-                for (int j = i + 1; j < mirrors.size(); j++) {
-                    Link link = new Link(linkId++, mirrors.get(i), mirrors.get(j), 0, props);
-                    mirrors.get(i).addLink(link);
-                    mirrors.get(j).addLink(link);
-                }
-            }
         }
     }
 

@@ -1,4 +1,3 @@
-
 package org.lrdm.topologies.node;
 
 import org.junit.jupiter.api.*;
