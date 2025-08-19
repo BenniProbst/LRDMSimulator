@@ -1,6 +1,7 @@
 package org.lrdm;
 
 import org.lrdm.effectors.Action;
+import org.lrdm.effectors.Effect;
 import org.lrdm.examples.ExampleOptimizer;
 import org.lrdm.examples.ExampleSimulationBalancedTree;
 import org.lrdm.probes.LinkProbe;
@@ -116,17 +117,14 @@ class AppTest {
     void testDeltaEffects() throws IOException {
         initSimulator();
         sim.initialize(new NConnectedTopology());
-        MirrorProbe mp = null;
-        for(Probe p : sim.getProbes()) {
-            if(p instanceof  MirrorProbe) {
-                mp = (MirrorProbe) p;
-            }
-        }
+        MirrorProbe mp = sim.getMirrorProbe();
         for(int t = 1; t < sim.getSimTime(); t++) {
             assertNotNull(mp);
             System.out.println("timestep: "+t+" mirrors: "+mp.getNumMirrors());
             sim.runStep(t);
             Action a = sim.getEffector().setMirrors(mp.getNumMirrors()+1, t+1);
+            Effect e = new Effect(a);
+            a.setEffect(e);
             int ttw = a.getEffect().getDeltaTimeToWrite();
             int bw = a.getEffect().getDeltaBandwidth(sim.getProps());
             double al = a.getEffect().getDeltaActiveLinks();

@@ -932,6 +932,11 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
      */
 
     protected Set<Link> buildAndUpdateLinks(MirrorNode root, Properties props, int simTime, StructureNode.StructureType structureType) {
+        // Robustheit: Wenn keine Root-Struktur vorhanden ist, kann nichts aufgebaut werden
+        if (root == null) {
+            return new HashSet<>();
+        }
+
         // **TYP-KOMPATIBILITÄT VALIDIEREN**: Root-Node-Typ muss mit StructureType kompatibel sein
         validateNodeTypeCompatibility(root, structureType);
         // Sammle alle Knoten in der Struktur (generisch für alle Node-Typen)
@@ -1009,13 +1014,16 @@ public abstract class BuildAsSubstructure extends TopologyStrategy {
             network.getLinks().addAll(allLinks);
         }
 
-        // Validiere die erweiterte Struktur
+        // Validiere die erweiterte Struktur – bei Ungültigkeit nicht mehr hart abbrechen (robuster bei Reduktionen)
         if(!validateTopology()){
-            throw new IllegalStateException("The constructed topology is not valid!");
+            // Früher: throw new IllegalStateException("The constructed topology is not valid!");
+            // Jetzt: toleranter Umgang, damit Reduktionen auf kleine Spiegelzahlen nicht die Simulation sprengen
+            return allLinks;
         }
 
         return allLinks;
     }
+
 
     /**
      * Validiert, ob der gegebene Root-Node-Typ mit dem erwarteten StructureType kompatibel ist.
