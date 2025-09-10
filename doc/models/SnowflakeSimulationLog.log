@@ -1,0 +1,1944 @@
+C:\Users\benja\.jdks\openjdk-24.0.2+12-54\bin\java.exe "-javaagent:C:\Users\benja\AppData\Local\Programs\IntelliJ IDEA Ultimate\lib\idea_rt.jar=59200" -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -classpath C:\Users\benja\IdeaProjects\LRDMSimulator\target\classes;C:\Users\benja\.m2\repository\org\graphstream\gs-core\2.0\gs-core-2.0.jar;C:\Users\benja\.m2\repository\org\graphstream\pherd\1.0\pherd-1.0.jar;C:\Users\benja\.m2\repository\org\graphstream\mbox2\1.0\mbox2-1.0.jar;C:\Users\benja\.m2\repository\org\graphstream\gs-ui-swing\2.0\gs-ui-swing-2.0.jar;C:\Users\benja\.m2\repository\org\knowm\xchart\xchart\3.8.4\xchart-3.8.4.jar;C:\Users\benja\.m2\repository\de\erichseifert\vectorgraphics2d\VectorGraphics2D\0.13\VectorGraphics2D-0.13.jar;C:\Users\benja\.m2\repository\de\rototor\pdfbox\graphics2d\0.43\graphics2d-0.43.jar;C:\Users\benja\.m2\repository\org\apache\pdfbox\pdfbox\2.0.28\pdfbox-2.0.28.jar;C:\Users\benja\.m2\repository\org\apache\pdfbox\fontbox\2.0.28\fontbox-2.0.28.jar;C:\Users\benja\.m2\repository\com\madgag\animated-gif-lib\1.4\animated-gif-lib-1.4.jar;C:\Users\benja\.m2\repository\org\junit\jupiter\junit-jupiter-engine\5.10.2\junit-jupiter-engine-5.10.2.jar;C:\Users\benja\.m2\repository\org\junit\platform\junit-platform-engine\1.10.2\junit-platform-engine-1.10.2.jar;C:\Users\benja\.m2\repository\org\opentest4j\opentest4j\1.3.0\opentest4j-1.3.0.jar;C:\Users\benja\.m2\repository\org\junit\platform\junit-platform-commons\1.10.2\junit-platform-commons-1.10.2.jar;C:\Users\benja\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.10.2\junit-jupiter-api-5.10.2.jar;C:\Users\benja\.m2\repository\org\apiguardian\apiguardian-api\1.1.2\apiguardian-api-1.1.2.jar;C:\Users\benja\.m2\repository\org\junit\jupiter\junit-jupiter-params\5.10.2\junit-jupiter-params-5.10.2.jar;C:\Users\benja\.m2\repository\org\apache\commons\commons-lang3\3.18.0\commons-lang3-3.18.0.jar;C:\Users\benja\.m2\repository\org\jfree\jfreechart\1.5.4\jfreechart-1.5.4.jar;C:\Users\benja\.m2\repository\com\opencsv\opencsv\5.9\opencsv-5.9.jar;C:\Users\benja\.m2\repository\org\apache\commons\commons-text\1.11.0\commons-text-1.11.0.jar;C:\Users\benja\.m2\repository\commons-beanutils\commons-beanutils\1.9.4\commons-beanutils-1.9.4.jar;C:\Users\benja\.m2\repository\commons-logging\commons-logging\1.2\commons-logging-1.2.jar;C:\Users\benja\.m2\repository\commons-collections\commons-collections\3.2.2\commons-collections-3.2.2.jar;C:\Users\benja\.m2\repository\org\apache\commons\commons-collections4\4.4\commons-collections4-4.4.jar org.lrdm.examples.ExampleSimulationSnowflake
+[2025-09-10 17:36:03] [INFORMATION] [1] [Mirror] All/Ready/Target/Ratio: 50 | 0 | 50 | 0
+[2025-09-10 17:36:03] [INFORMATION] [1] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:03] [INFORMATION] [2] [Mirror] All/Ready/Target/Ratio: 50 | 1 | 50 | 0,02
+[2025-09-10 17:36:03] [INFORMATION] [2] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:03] [INFORMATION] [3] [Mirror] All/Ready/Target/Ratio: 50 | 1 | 50 | 0,02
+[2025-09-10 17:36:03] [INFORMATION] [3] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:04] [INFORMATION] [4] [Mirror] All/Ready/Target/Ratio: 50 | 1 | 50 | 0,02
+[2025-09-10 17:36:04] [INFORMATION] [4] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:04] [INFORMATION] [5] [Mirror] All/Ready/Target/Ratio: 50 | 1 | 50 | 0,02
+[2025-09-10 17:36:04] [INFORMATION] [5] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:04] [INFORMATION] [6] [Mirror] All/Ready/Target/Ratio: 50 | 1 | 50 | 0,02
+[2025-09-10 17:36:04] [INFORMATION] [6] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:04] [INFORMATION] [7] [Mirror] All/Ready/Target/Ratio: 50 | 1 | 50 | 0,02
+[2025-09-10 17:36:04] [INFORMATION] [7] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:05] [INFORMATION] [8] [Mirror] All/Ready/Target/Ratio: 50 | 1 | 50 | 0,02
+[2025-09-10 17:36:05] [INFORMATION] [8] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:05] [INFORMATION] [9] [Mirror] All/Ready/Target/Ratio: 50 | 1 | 50 | 0,02
+[2025-09-10 17:36:05] [INFORMATION] [9] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:05] [INFORMATION] [10] [Mirror] All/Ready/Target/Ratio: 50 | 1 | 50 | 0,02
+[2025-09-10 17:36:05] [INFORMATION] [10] [Link] All/Active/Target/Ratio: 50 | 0 | 734 | 0.0%
+[2025-09-10 17:36:05] [INFORMATION] setNumMirrors(54,10)
+[2025-09-10 17:36:06] [INFORMATION] [11] [Mirror] All/Ready/Target/Ratio: 54 | 1 | 54 | 0,019
+[2025-09-10 17:36:06] [INFORMATION] [11] [Link] All/Active/Target/Ratio: 55 | 1 | 847 | 0.1%
+[2025-09-10 17:36:06] [INFORMATION] [12] [Mirror] All/Ready/Target/Ratio: 54 | 1 | 54 | 0,019
+[2025-09-10 17:36:06] [INFORMATION] [12] [Link] All/Active/Target/Ratio: 54 | 5 | 847 | 0.6%
+[2025-09-10 17:36:06] [INFORMATION] [13] [Mirror] All/Ready/Target/Ratio: 54 | 1 | 54 | 0,019
+[2025-09-10 17:36:06] [INFORMATION] [13] [Link] All/Active/Target/Ratio: 54 | 11 | 847 | 1.3%
+[2025-09-10 17:36:06] [INFORMATION] [14] [Mirror] All/Ready/Target/Ratio: 54 | 1 | 54 | 0,019
+[2025-09-10 17:36:06] [INFORMATION] [14] [Link] All/Active/Target/Ratio: 54 | 23 | 847 | 2.7%
+[2025-09-10 17:36:07] [INFORMATION] [15] [Mirror] All/Ready/Target/Ratio: 54 | 1 | 54 | 0,019
+[2025-09-10 17:36:07] [INFORMATION] [15] [Link] All/Active/Target/Ratio: 54 | 33 | 847 | 3.9%
+[2025-09-10 17:36:07] [INFORMATION] [16] [Mirror] All/Ready/Target/Ratio: 54 | 2 | 54 | 0,037
+[2025-09-10 17:36:07] [INFORMATION] [16] [Link] All/Active/Target/Ratio: 54 | 41 | 847 | 4.8%
+[2025-09-10 17:36:07] [INFORMATION] [17] [Mirror] All/Ready/Target/Ratio: 54 | 5 | 54 | 0,093
+[2025-09-10 17:36:07] [INFORMATION] [17] [Link] All/Active/Target/Ratio: 54 | 43 | 847 | 5.1%
+[2025-09-10 17:36:08] [INFORMATION] [18] [Mirror] All/Ready/Target/Ratio: 54 | 9 | 54 | 0,167
+[2025-09-10 17:36:08] [INFORMATION] [18] [Link] All/Active/Target/Ratio: 54 | 46 | 847 | 5.4%
+[2025-09-10 17:36:08] [INFORMATION] [19] [Mirror] All/Ready/Target/Ratio: 54 | 10 | 54 | 0,185
+[2025-09-10 17:36:08] [INFORMATION] [19] [Link] All/Active/Target/Ratio: 54 | 46 | 847 | 5.4%
+[2025-09-10 17:36:08] [INFORMATION] [20] [Mirror] All/Ready/Target/Ratio: 54 | 12 | 54 | 0,222
+[2025-09-10 17:36:08] [INFORMATION] [20] [Link] All/Active/Target/Ratio: 54 | 47 | 847 | 5.5%
+[2025-09-10 17:36:08] [INFORMATION] setTopologyStrategy(org.lrdm.topologies.strategies.FullyConnectedTopology,20)
+[2025-09-10 17:36:10] [INFORMATION] setNumMirrors(58,20)
+[2025-09-10 17:36:10] [INFORMATION] setNumTargetedLinksPerMirror(2,20)
+[2025-09-10 17:36:11] [INFORMATION] [21] [Mirror] All/Ready/Target/Ratio: 168 | 1 | 58 | 0,017
+[2025-09-10 17:36:11] [INFORMATION] [21] [Link] All/Active/Target/Ratio: 3.360 | 0 | 14.028 | 0.0%
+[2025-09-10 17:36:12] [INFORMATION] [22] [Mirror] All/Ready/Target/Ratio: 168 | 1 | 58 | 0,017
+[2025-09-10 17:36:12] [INFORMATION] [22] [Link] All/Active/Target/Ratio: 1.653 | 0 | 14.028 | 0.0%
+[2025-09-10 17:36:13] [INFORMATION] [23] [Mirror] All/Ready/Target/Ratio: 134 | 1 | 58 | 0,017
+[2025-09-10 17:36:13] [INFORMATION] [23] [Link] All/Active/Target/Ratio: 1.653 | 0 | 8.911 | 0.0%
+[2025-09-10 17:36:14] [INFORMATION] [24] [Mirror] All/Ready/Target/Ratio: 102 | 1 | 58 | 0,017
+[2025-09-10 17:36:14] [INFORMATION] [24] [Link] All/Active/Target/Ratio: 1.653 | 0 | 5.151 | 0.0%
+[2025-09-10 17:36:15] [INFORMATION] [25] [Mirror] All/Ready/Target/Ratio: 58 | 1 | 58 | 0,017
+[2025-09-10 17:36:15] [INFORMATION] [25] [Link] All/Active/Target/Ratio: 1.653 | 0 | 1.653 | 0.0%
+[2025-09-10 17:36:16] [INFORMATION] [26] [Mirror] All/Ready/Target/Ratio: 58 | 1 | 58 | 0,017
+[2025-09-10 17:36:16] [INFORMATION] [26] [Link] All/Active/Target/Ratio: 1.653 | 0 | 1.653 | 0.0%
+[2025-09-10 17:36:17] [INFORMATION] [27] [Mirror] All/Ready/Target/Ratio: 58 | 1 | 58 | 0,017
+[2025-09-10 17:36:17] [INFORMATION] [27] [Link] All/Active/Target/Ratio: 1.653 | 0 | 1.653 | 0.0%
+[2025-09-10 17:36:18] [INFORMATION] [28] [Mirror] All/Ready/Target/Ratio: 58 | 1 | 58 | 0,017
+[2025-09-10 17:36:18] [INFORMATION] [28] [Link] All/Active/Target/Ratio: 1.653 | 0 | 1.653 | 0.0%
+[2025-09-10 17:36:18] [INFORMATION] [29] [Mirror] All/Ready/Target/Ratio: 58 | 1 | 58 | 0,017
+[2025-09-10 17:36:18] [INFORMATION] [29] [Link] All/Active/Target/Ratio: 1.653 | 0 | 1.653 | 0.0%
+[2025-09-10 17:36:19] [INFORMATION] [30] [Mirror] All/Ready/Target/Ratio: 58 | 1 | 58 | 0,017
+[2025-09-10 17:36:19] [INFORMATION] [30] [Link] All/Active/Target/Ratio: 1.653 | 18 | 1.653 | 1.1%
+[2025-09-10 17:36:20] [INFORMATION] setNumMirrors(62,30)
+[2025-09-10 17:36:21] [INFORMATION] [31] [Mirror] All/Ready/Target/Ratio: 62 | 1 | 62 | 0,016
+[2025-09-10 17:36:21] [INFORMATION] [31] [Link] All/Active/Target/Ratio: 1.891 | 47 | 1.891 | 2.5%
+[2025-09-10 17:36:22] [INFORMATION] [32] [Mirror] All/Ready/Target/Ratio: 62 | 1 | 62 | 0,016
+[2025-09-10 17:36:22] [INFORMATION] [32] [Link] All/Active/Target/Ratio: 1.891 | 119 | 1.891 | 6.3%
+[2025-09-10 17:36:22] [INFORMATION] [33] [Mirror] All/Ready/Target/Ratio: 62 | 1 | 62 | 0,016
+[2025-09-10 17:36:22] [INFORMATION] [33] [Link] All/Active/Target/Ratio: 1.891 | 267 | 1.891 | 14.1%
+[2025-09-10 17:36:24] [INFORMATION] [34] [Mirror] All/Ready/Target/Ratio: 62 | 1 | 62 | 0,016
+[2025-09-10 17:36:24] [INFORMATION] [34] [Link] All/Active/Target/Ratio: 1.891 | 550 | 1.891 | 29.1%
+[2025-09-10 17:36:26] [INFORMATION] [35] [Mirror] All/Ready/Target/Ratio: 62 | 1 | 62 | 0,016
+[2025-09-10 17:36:26] [INFORMATION] [35] [Link] All/Active/Target/Ratio: 1.891 | 784 | 1.891 | 41.5%
+[2025-09-10 17:36:27] [INFORMATION] [36] [Mirror] All/Ready/Target/Ratio: 62 | 1 | 62 | 0,016
+[2025-09-10 17:36:27] [INFORMATION] [36] [Link] All/Active/Target/Ratio: 1.891 | 1.042 | 1.891 | 55.1%
+[2025-09-10 17:36:28] [INFORMATION] [37] [Mirror] All/Ready/Target/Ratio: 62 | 1 | 62 | 0,016
+[2025-09-10 17:36:28] [INFORMATION] [37] [Link] All/Active/Target/Ratio: 1.891 | 1.247 | 1.891 | 65.9%
+[2025-09-10 17:36:29] [INFORMATION] [38] [Mirror] All/Ready/Target/Ratio: 62 | 3 | 62 | 0,048
+[2025-09-10 17:36:29] [INFORMATION] [38] [Link] All/Active/Target/Ratio: 1.891 | 1.409 | 1.891 | 74.5%
+[2025-09-10 17:36:30] [INFORMATION] [39] [Mirror] All/Ready/Target/Ratio: 62 | 5 | 62 | 0,081
+[2025-09-10 17:36:30] [INFORMATION] [39] [Link] All/Active/Target/Ratio: 1.891 | 1.425 | 1.891 | 75.4%
+[2025-09-10 17:36:31] [INFORMATION] [40] [Mirror] All/Ready/Target/Ratio: 62 | 9 | 62 | 0,145
+[2025-09-10 17:36:31] [INFORMATION] [40] [Link] All/Active/Target/Ratio: 1.891 | 1.457 | 1.891 | 77.0%
+[2025-09-10 17:36:32] [INFORMATION] setTopologyStrategy(org.lrdm.topologies.strategies.SnowflakeTopologyStrategy,40)
+[2025-09-10 17:36:32] [INFORMATION] [41] [Mirror] All/Ready/Target/Ratio: 123 | 1 | 62 | 0,016
+[2025-09-10 17:36:32] [INFORMATION] [41] [Link] All/Active/Target/Ratio: 1.953 | 0 | 2.195 | 0.0%
+[2025-09-10 17:36:32] [INFORMATION] [42] [Mirror] All/Ready/Target/Ratio: 123 | 1 | 62 | 0,016
+[2025-09-10 17:36:32] [INFORMATION] [42] [Link] All/Active/Target/Ratio: 62 | 0 | 2.195 | 0.0%
+[2025-09-10 17:36:33] [INFORMATION] [43] [Mirror] All/Ready/Target/Ratio: 104 | 1 | 62 | 0,016
+[2025-09-10 17:36:33] [INFORMATION] [43] [Link] All/Active/Target/Ratio: 62 | 0 | 1.910 | 0.0%
+[2025-09-10 17:36:33] [INFORMATION] [44] [Mirror] All/Ready/Target/Ratio: 87 | 1 | 62 | 0,016
+[2025-09-10 17:36:33] [INFORMATION] [44] [Link] All/Active/Target/Ratio: 62 | 0 | 1.661 | 0.0%
+[2025-09-10 17:36:33] [INFORMATION] [45] [Mirror] All/Ready/Target/Ratio: 63 | 1 | 62 | 0,016
+[2025-09-10 17:36:33] [INFORMATION] [45] [Link] All/Active/Target/Ratio: 62 | 0 | 1.301 | 0.0%
+[2025-09-10 17:36:34] [INFORMATION] [46] [Mirror] All/Ready/Target/Ratio: 63 | 1 | 62 | 0,016
+[2025-09-10 17:36:34] [INFORMATION] [46] [Link] All/Active/Target/Ratio: 62 | 0 | 1.301 | 0.0%
+[2025-09-10 17:36:34] [INFORMATION] [47] [Mirror] All/Ready/Target/Ratio: 63 | 1 | 62 | 0,016
+[2025-09-10 17:36:34] [INFORMATION] [47] [Link] All/Active/Target/Ratio: 62 | 0 | 1.301 | 0.0%
+[2025-09-10 17:36:34] [INFORMATION] [48] [Mirror] All/Ready/Target/Ratio: 63 | 1 | 62 | 0,016
+[2025-09-10 17:36:34] [INFORMATION] [48] [Link] All/Active/Target/Ratio: 62 | 0 | 1.301 | 0.0%
+[2025-09-10 17:36:34] [INFORMATION] [49] [Mirror] All/Ready/Target/Ratio: 63 | 1 | 62 | 0,016
+[2025-09-10 17:36:34] [INFORMATION] [49] [Link] All/Active/Target/Ratio: 62 | 0 | 1.301 | 0.0%
+[2025-09-10 17:36:35] [INFORMATION] [50] [Mirror] All/Ready/Target/Ratio: 63 | 1 | 62 | 0,016
+[2025-09-10 17:36:35] [INFORMATION] [50] [Link] All/Active/Target/Ratio: 62 | 2 | 1.301 | 0.2%
+[2025-09-10 17:36:35] [INFORMATION] setNumMirrors(66,50)
+[2025-09-10 17:36:35] [INFORMATION] [51] [Mirror] All/Ready/Target/Ratio: 66 | 1 | 66 | 0,015
+[2025-09-10 17:36:35] [INFORMATION] [51] [Link] All/Active/Target/Ratio: 66 | 2 | 1.422 | 0.1%
+[2025-09-10 17:36:35] [INFORMATION] [52] [Mirror] All/Ready/Target/Ratio: 66 | 2 | 66 | 0,03
+[2025-09-10 17:36:35] [INFORMATION] [52] [Link] All/Active/Target/Ratio: 65 | 10 | 1.422 | 0.7%
+[2025-09-10 17:36:35] [INFORMATION] [53] [Mirror] All/Ready/Target/Ratio: 66 | 2 | 66 | 0,03
+[2025-09-10 17:36:35] [INFORMATION] [53] [Link] All/Active/Target/Ratio: 65 | 16 | 1.422 | 1.1%
+[2025-09-10 17:36:36] [INFORMATION] [54] [Mirror] All/Ready/Target/Ratio: 66 | 3 | 66 | 0,045
+[2025-09-10 17:36:36] [INFORMATION] [54] [Link] All/Active/Target/Ratio: 65 | 27 | 1.422 | 1.9%
+[2025-09-10 17:36:36] [INFORMATION] [55] [Mirror] All/Ready/Target/Ratio: 65 | 4 | 66 | 0,061
+[2025-09-10 17:36:36] [INFORMATION] [55] [Link] All/Active/Target/Ratio: 65 | 38 | 1.407 | 2.7%
+[2025-09-10 17:36:36] [INFORMATION] [56] [Mirror] All/Ready/Target/Ratio: 65 | 5 | 66 | 0,076
+[2025-09-10 17:36:36] [INFORMATION] [56] [Link] All/Active/Target/Ratio: 65 | 42 | 1.407 | 3.0%
+[2025-09-10 17:36:36] [INFORMATION] [57] [Mirror] All/Ready/Target/Ratio: 65 | 10 | 66 | 0,152
+[2025-09-10 17:36:36] [INFORMATION] [57] [Link] All/Active/Target/Ratio: 65 | 50 | 1.407 | 3.6%
+[2025-09-10 17:36:37] [INFORMATION] [58] [Mirror] All/Ready/Target/Ratio: 65 | 14 | 66 | 0,212
+[2025-09-10 17:36:37] [INFORMATION] [58] [Link] All/Active/Target/Ratio: 65 | 55 | 1.407 | 3.9%
+[2025-09-10 17:36:37] [INFORMATION] [59] [Mirror] All/Ready/Target/Ratio: 65 | 18 | 66 | 0,273
+[2025-09-10 17:36:37] [INFORMATION] [59] [Link] All/Active/Target/Ratio: 65 | 55 | 1.407 | 3.9%
+[2025-09-10 17:36:37] [INFORMATION] [60] [Mirror] All/Ready/Target/Ratio: 65 | 20 | 66 | 0,303
+[2025-09-10 17:36:37] [INFORMATION] [60] [Link] All/Active/Target/Ratio: 65 | 55 | 1.407 | 3.9%
+[2025-09-10 17:36:37] [INFORMATION] setTopologyStrategy(org.lrdm.topologies.strategies.FullyConnectedTopology,60)
+[2025-09-10 17:36:38] [INFORMATION] setNumMirrors(70,60)
+[2025-09-10 17:36:38] [INFORMATION] setNumTargetedLinksPerMirror(4,60)
+[2025-09-10 17:36:38] [INFORMATION] [61] [Mirror] All/Ready/Target/Ratio: 203 | 1 | 70 | 0,014
+[2025-09-10 17:36:38] [INFORMATION] [61] [Link] All/Active/Target/Ratio: 4.895 | 0 | 20.503 | 0.0%
+[2025-09-10 17:36:39] [INFORMATION] [62] [Mirror] All/Ready/Target/Ratio: 203 | 1 | 70 | 0,014
+[2025-09-10 17:36:39] [INFORMATION] [62] [Link] All/Active/Target/Ratio: 2.415 | 0 | 20.503 | 0.0%
+[2025-09-10 17:36:40] [INFORMATION] [63] [Mirror] All/Ready/Target/Ratio: 164 | 1 | 70 | 0,014
+[2025-09-10 17:36:40] [INFORMATION] [63] [Link] All/Active/Target/Ratio: 2.415 | 0 | 13.366 | 0.0%
+[2025-09-10 17:36:41] [INFORMATION] [64] [Mirror] All/Ready/Target/Ratio: 121 | 1 | 70 | 0,014
+[2025-09-10 17:36:41] [INFORMATION] [64] [Link] All/Active/Target/Ratio: 2.415 | 0 | 7.260 | 0.0%
+[2025-09-10 17:36:42] [INFORMATION] [65] [Mirror] All/Ready/Target/Ratio: 70 | 1 | 70 | 0,014
+[2025-09-10 17:36:42] [INFORMATION] [65] [Link] All/Active/Target/Ratio: 2.415 | 0 | 2.415 | 0.0%
+[2025-09-10 17:36:44] [INFORMATION] [66] [Mirror] All/Ready/Target/Ratio: 70 | 1 | 70 | 0,014
+[2025-09-10 17:36:44] [INFORMATION] [66] [Link] All/Active/Target/Ratio: 2.415 | 0 | 2.415 | 0.0%
+[2025-09-10 17:36:45] [INFORMATION] [67] [Mirror] All/Ready/Target/Ratio: 70 | 1 | 70 | 0,014
+[2025-09-10 17:36:45] [INFORMATION] [67] [Link] All/Active/Target/Ratio: 2.415 | 0 | 2.415 | 0.0%
+[2025-09-10 17:36:46] [INFORMATION] [68] [Mirror] All/Ready/Target/Ratio: 70 | 1 | 70 | 0,014
+[2025-09-10 17:36:46] [INFORMATION] [68] [Link] All/Active/Target/Ratio: 2.415 | 0 | 2.415 | 0.0%
+[2025-09-10 17:36:46] [INFORMATION] [69] [Mirror] All/Ready/Target/Ratio: 70 | 1 | 70 | 0,014
+[2025-09-10 17:36:46] [INFORMATION] [69] [Link] All/Active/Target/Ratio: 2.415 | 0 | 2.415 | 0.0%
+[2025-09-10 17:36:47] [INFORMATION] [70] [Mirror] All/Ready/Target/Ratio: 70 | 1 | 70 | 0,014
+[2025-09-10 17:36:47] [INFORMATION] [70] [Link] All/Active/Target/Ratio: 2.415 | 35 | 2.415 | 1.4%
+[2025-09-10 17:36:49] [INFORMATION] setNumMirrors(74,70)
+[2025-09-10 17:36:50] [INFORMATION] [71] [Mirror] All/Ready/Target/Ratio: 74 | 1 | 74 | 0,014
+[2025-09-10 17:36:50] [INFORMATION] [71] [Link] All/Active/Target/Ratio: 2.701 | 126 | 2.701 | 4.7%
+[2025-09-10 17:36:51] [INFORMATION] [72] [Mirror] All/Ready/Target/Ratio: 74 | 1 | 74 | 0,014
+[2025-09-10 17:36:51] [INFORMATION] [72] [Link] All/Active/Target/Ratio: 2.701 | 369 | 2.701 | 13.7%
+[2025-09-10 17:36:52] [INFORMATION] [73] [Mirror] All/Ready/Target/Ratio: 74 | 1 | 74 | 0,014
+[2025-09-10 17:36:52] [INFORMATION] [73] [Link] All/Active/Target/Ratio: 2.701 | 738 | 2.701 | 27.3%
+[2025-09-10 17:36:54] [INFORMATION] [74] [Mirror] All/Ready/Target/Ratio: 74 | 1 | 74 | 0,014
+[2025-09-10 17:36:54] [INFORMATION] [74] [Link] All/Active/Target/Ratio: 2.701 | 1.183 | 2.701 | 43.8%
+[2025-09-10 17:36:55] [INFORMATION] [75] [Mirror] All/Ready/Target/Ratio: 74 | 1 | 74 | 0,014
+[2025-09-10 17:36:55] [INFORMATION] [75] [Link] All/Active/Target/Ratio: 2.701 | 1.606 | 2.701 | 59.5%
+[2025-09-10 17:36:56] [INFORMATION] [76] [Mirror] All/Ready/Target/Ratio: 74 | 3 | 74 | 0,041
+[2025-09-10 17:36:56] [INFORMATION] [76] [Link] All/Active/Target/Ratio: 2.701 | 1.921 | 2.701 | 71.1%
+[2025-09-10 17:36:56] [INFORMATION] [77] [Mirror] All/Ready/Target/Ratio: 74 | 4 | 74 | 0,054
+[2025-09-10 17:36:56] [INFORMATION] [77] [Link] All/Active/Target/Ratio: 2.701 | 2.061 | 2.701 | 76.3%
+[2025-09-10 17:36:57] [INFORMATION] [78] [Mirror] All/Ready/Target/Ratio: 74 | 7 | 74 | 0,095
+[2025-09-10 17:36:57] [INFORMATION] [78] [Link] All/Active/Target/Ratio: 2.701 | 2.087 | 2.701 | 77.3%
+[2025-09-10 17:36:58] [INFORMATION] [79] [Mirror] All/Ready/Target/Ratio: 74 | 9 | 74 | 0,122
+[2025-09-10 17:36:58] [INFORMATION] [79] [Link] All/Active/Target/Ratio: 2.701 | 2.113 | 2.701 | 78.2%
+[2025-09-10 17:36:59] [INFORMATION] [80] [Mirror] All/Ready/Target/Ratio: 74 | 15 | 74 | 0,203
+[2025-09-10 17:36:59] [INFORMATION] [80] [Link] All/Active/Target/Ratio: 2.701 | 2.060 | 2.701 | 76.3%
+[2025-09-10 17:36:59] [INFORMATION] setTopologyStrategy(org.lrdm.topologies.strategies.SnowflakeTopologyStrategy,80)
+[2025-09-10 17:37:00] [INFORMATION] setNumMirrors(78,80)
+[2025-09-10 17:37:00] [INFORMATION] [81] [Mirror] All/Ready/Target/Ratio: 151 | 1 | 78 | 0,013
+[2025-09-10 17:37:00] [INFORMATION] [81] [Link] All/Active/Target/Ratio: 2.897 | 0 | 2.530 | 0.0%
+[2025-09-10 17:37:00] [INFORMATION] [82] [Mirror] All/Ready/Target/Ratio: 151 | 1 | 78 | 0,013
+[2025-09-10 17:37:00] [INFORMATION] [82] [Link] All/Active/Target/Ratio: 238 | 0 | 2.532 | 0.0%
+[2025-09-10 17:37:01] [INFORMATION] [83] [Mirror] All/Ready/Target/Ratio: 129 | 1 | 78 | 0,013
+[2025-09-10 17:37:01] [INFORMATION] [83] [Link] All/Active/Target/Ratio: 214 | 0 | 2.182 | 0.0%
+[2025-09-10 17:37:01] [INFORMATION] [84] [Mirror] All/Ready/Target/Ratio: 105 | 1 | 78 | 0,013
+[2025-09-10 17:37:01] [INFORMATION] [84] [Link] All/Active/Target/Ratio: 189 | 0 | 1.798 | 0.0%
+[2025-09-10 17:37:01] [INFORMATION] [85] [Mirror] All/Ready/Target/Ratio: 80 | 1 | 78 | 0,013
+[2025-09-10 17:37:01] [INFORMATION] [85] [Link] All/Active/Target/Ratio: 189 | 0 | 1.398 | 0.0%
+[2025-09-10 17:37:02] [INFORMATION] [86] [Mirror] All/Ready/Target/Ratio: 80 | 1 | 78 | 0,013
+[2025-09-10 17:37:02] [INFORMATION] [86] [Link] All/Active/Target/Ratio: 189 | 0 | 1.398 | 0.0%
+[2025-09-10 17:37:02] [INFORMATION] [87] [Mirror] All/Ready/Target/Ratio: 80 | 1 | 78 | 0,013
+[2025-09-10 17:37:02] [INFORMATION] [87] [Link] All/Active/Target/Ratio: 189 | 0 | 1.398 | 0.0%
+[2025-09-10 17:37:02] [INFORMATION] [88] [Mirror] All/Ready/Target/Ratio: 80 | 1 | 78 | 0,013
+[2025-09-10 17:37:02] [INFORMATION] [88] [Link] All/Active/Target/Ratio: 189 | 0 | 1.398 | 0.0%
+[2025-09-10 17:37:02] [INFORMATION] [89] [Mirror] All/Ready/Target/Ratio: 80 | 1 | 78 | 0,013
+[2025-09-10 17:37:02] [INFORMATION] [89] [Link] All/Active/Target/Ratio: 189 | 0 | 1.398 | 0.0%
+[2025-09-10 17:37:03] [INFORMATION] [90] [Mirror] All/Ready/Target/Ratio: 80 | 1 | 78 | 0,013
+[2025-09-10 17:37:03] [INFORMATION] [90] [Link] All/Active/Target/Ratio: 189 | 0 | 1.398 | 0.0%
+[2025-09-10 17:37:03] [INFORMATION] setNumMirrors(82,90)
+[2025-09-10 17:37:03] [INFORMATION] [91] [Mirror] All/Ready/Target/Ratio: 82 | 1 | 82 | 0,012
+[2025-09-10 17:37:03] [INFORMATION] [91] [Link] All/Active/Target/Ratio: 196 | 5 | 1.430 | 0.3%
+[2025-09-10 17:37:03] [INFORMATION] [92] [Mirror] All/Ready/Target/Ratio: 82 | 1 | 82 | 0,012
+[2025-09-10 17:37:03] [INFORMATION] [92] [Link] All/Active/Target/Ratio: 191 | 17 | 1.430 | 1.2%
+[2025-09-10 17:37:03] [INFORMATION] [93] [Mirror] All/Ready/Target/Ratio: 81 | 1 | 82 | 0,012
+[2025-09-10 17:37:03] [INFORMATION] [93] [Link] All/Active/Target/Ratio: 191 | 39 | 1.414 | 2.8%
+[2025-09-10 17:37:04] [INFORMATION] [94] [Mirror] All/Ready/Target/Ratio: 81 | 2 | 82 | 0,024
+[2025-09-10 17:37:04] [INFORMATION] [94] [Link] All/Active/Target/Ratio: 191 | 77 | 1.414 | 5.4%
+[2025-09-10 17:37:04] [INFORMATION] [95] [Mirror] All/Ready/Target/Ratio: 80 | 3 | 82 | 0,037
+[2025-09-10 17:37:04] [INFORMATION] [95] [Link] All/Active/Target/Ratio: 191 | 106 | 1.398 | 7.6%
+[2025-09-10 17:37:04] [INFORMATION] [96] [Mirror] All/Ready/Target/Ratio: 80 | 8 | 82 | 0,098
+[2025-09-10 17:37:04] [INFORMATION] [96] [Link] All/Active/Target/Ratio: 191 | 134 | 1.398 | 9.6%
+[2025-09-10 17:37:05] [INFORMATION] [97] [Mirror] All/Ready/Target/Ratio: 80 | 12 | 82 | 0,146
+[2025-09-10 17:37:05] [INFORMATION] [97] [Link] All/Active/Target/Ratio: 191 | 145 | 1.398 | 10.4%
+[2025-09-10 17:37:05] [INFORMATION] [98] [Mirror] All/Ready/Target/Ratio: 80 | 14 | 82 | 0,171
+[2025-09-10 17:37:05] [INFORMATION] [98] [Link] All/Active/Target/Ratio: 191 | 154 | 1.398 | 11.0%
+[2025-09-10 17:37:05] [INFORMATION] [99] [Mirror] All/Ready/Target/Ratio: 80 | 16 | 82 | 0,195
+[2025-09-10 17:37:05] [INFORMATION] [99] [Link] All/Active/Target/Ratio: 191 | 154 | 1.398 | 11.0%
+[2025-09-10 17:37:05] [INFORMATION] [100] [Mirror] All/Ready/Target/Ratio: 80 | 21 | 82 | 0,256
+[2025-09-10 17:37:05] [INFORMATION] [100] [Link] All/Active/Target/Ratio: 191 | 154 | 1.398 | 11.0%
+[2025-09-10 17:37:06] [INFORMATION] setNumMirrors(86,100)
+[2025-09-10 17:37:06] [INFORMATION] [101] [Mirror] All/Ready/Target/Ratio: 93 | 25 | 86 | 0,291
+[2025-09-10 17:37:06] [INFORMATION] [101] [Link] All/Active/Target/Ratio: 224 | 126 | 1.703 | 7.4%
+[2025-09-10 17:37:06] [INFORMATION] [102] [Mirror] All/Ready/Target/Ratio: 93 | 25 | 86 | 0,291
+[2025-09-10 17:37:06] [INFORMATION] [102] [Link] All/Active/Target/Ratio: 193 | 123 | 1.703 | 7.2%
+[2025-09-10 17:37:07] [INFORMATION] [103] [Mirror] All/Ready/Target/Ratio: 91 | 29 | 86 | 0,337
+[2025-09-10 17:37:07] [INFORMATION] [103] [Link] All/Active/Target/Ratio: 193 | 127 | 1.671 | 7.6%
+[2025-09-10 17:37:07] [INFORMATION] [104] [Mirror] All/Ready/Target/Ratio: 90 | 32 | 86 | 0,372
+[2025-09-10 17:37:07] [INFORMATION] [104] [Link] All/Active/Target/Ratio: 193 | 132 | 1.655 | 8.0%
+[2025-09-10 17:37:07] [INFORMATION] [105] [Mirror] All/Ready/Target/Ratio: 86 | 35 | 86 | 0,407
+[2025-09-10 17:37:07] [INFORMATION] [105] [Link] All/Active/Target/Ratio: 193 | 135 | 1.591 | 8.5%
+[2025-09-10 17:37:07] [INFORMATION] [106] [Mirror] All/Ready/Target/Ratio: 86 | 37 | 86 | 0,43
+[2025-09-10 17:37:07] [INFORMATION] [106] [Link] All/Active/Target/Ratio: 193 | 143 | 1.591 | 9.0%
+[2025-09-10 17:37:08] [INFORMATION] [107] [Mirror] All/Ready/Target/Ratio: 86 | 38 | 86 | 0,442
+[2025-09-10 17:37:08] [INFORMATION] [107] [Link] All/Active/Target/Ratio: 193 | 143 | 1.591 | 9.0%
+[2025-09-10 17:37:08] [INFORMATION] [108] [Mirror] All/Ready/Target/Ratio: 86 | 43 | 86 | 0,5
+[2025-09-10 17:37:08] [INFORMATION] [108] [Link] All/Active/Target/Ratio: 193 | 145 | 1.591 | 9.1%
+[2025-09-10 17:37:08] [INFORMATION] [109] [Mirror] All/Ready/Target/Ratio: 86 | 46 | 86 | 0,535
+[2025-09-10 17:37:08] [INFORMATION] [109] [Link] All/Active/Target/Ratio: 193 | 149 | 1.591 | 9.4%
+[2025-09-10 17:37:08] [INFORMATION] [110] [Mirror] All/Ready/Target/Ratio: 86 | 50 | 86 | 0,581
+[2025-09-10 17:37:08] [INFORMATION] [110] [Link] All/Active/Target/Ratio: 193 | 150 | 1.591 | 9.4%
+[2025-09-10 17:37:09] [INFORMATION] setNumMirrors(82,110)
+[2025-09-10 17:37:09] [INFORMATION] [111] [Mirror] All/Ready/Target/Ratio: 86 | 52 | 82 | 0,634
+[2025-09-10 17:37:09] [INFORMATION] [111] [Link] All/Active/Target/Ratio: 202 | 143 | 1.579 | 9.1%
+[2025-09-10 17:37:09] [INFORMATION] [112] [Mirror] All/Ready/Target/Ratio: 86 | 56 | 82 | 0,683
+[2025-09-10 17:37:09] [INFORMATION] [112] [Link] All/Active/Target/Ratio: 183 | 146 | 1.579 | 9.2%
+[2025-09-10 17:37:09] [INFORMATION] [113] [Mirror] All/Ready/Target/Ratio: 84 | 58 | 82 | 0,707
+[2025-09-10 17:37:09] [INFORMATION] [113] [Link] All/Active/Target/Ratio: 183 | 149 | 1.547 | 9.6%
+[2025-09-10 17:37:10] [INFORMATION] [114] [Mirror] All/Ready/Target/Ratio: 82 | 61 | 82 | 0,744
+[2025-09-10 17:37:10] [INFORMATION] [114] [Link] All/Active/Target/Ratio: 183 | 152 | 1.515 | 10.0%
+[2025-09-10 17:37:10] [INFORMATION] [115] [Mirror] All/Ready/Target/Ratio: 82 | 63 | 82 | 0,768
+[2025-09-10 17:37:10] [INFORMATION] [115] [Link] All/Active/Target/Ratio: 183 | 158 | 1.515 | 10.4%
+[2025-09-10 17:37:10] [INFORMATION] [116] [Mirror] All/Ready/Target/Ratio: 82 | 63 | 82 | 0,768
+[2025-09-10 17:37:10] [INFORMATION] [116] [Link] All/Active/Target/Ratio: 183 | 155 | 1.515 | 10.2%
+[2025-09-10 17:37:10] [INFORMATION] [117] [Mirror] All/Ready/Target/Ratio: 82 | 62 | 82 | 0,756
+[2025-09-10 17:37:10] [INFORMATION] [117] [Link] All/Active/Target/Ratio: 183 | 159 | 1.515 | 10.5%
+[2025-09-10 17:37:11] [INFORMATION] [118] [Mirror] All/Ready/Target/Ratio: 82 | 63 | 82 | 0,768
+[2025-09-10 17:37:11] [INFORMATION] [118] [Link] All/Active/Target/Ratio: 183 | 157 | 1.515 | 10.4%
+[2025-09-10 17:37:11] [INFORMATION] [119] [Mirror] All/Ready/Target/Ratio: 82 | 63 | 82 | 0,768
+[2025-09-10 17:37:11] [INFORMATION] [119] [Link] All/Active/Target/Ratio: 183 | 161 | 1.515 | 10.6%
+[2025-09-10 17:37:11] [INFORMATION] [120] [Mirror] All/Ready/Target/Ratio: 82 | 64 | 82 | 0,78
+[2025-09-10 17:37:11] [INFORMATION] [120] [Link] All/Active/Target/Ratio: 183 | 156 | 1.515 | 10.3%
+[2025-09-10 17:37:11] [INFORMATION] setNumMirrors(78,120)
+[2025-09-10 17:37:11] [INFORMATION] [121] [Mirror] All/Ready/Target/Ratio: 82 | 61 | 78 | 0,782
+[2025-09-10 17:37:11] [INFORMATION] [121] [Link] All/Active/Target/Ratio: 186 | 143 | 1.410 | 10.1%
+[2025-09-10 17:37:12] [INFORMATION] [122] [Mirror] All/Ready/Target/Ratio: 82 | 61 | 78 | 0,782
+[2025-09-10 17:37:12] [INFORMATION] [122] [Link] All/Active/Target/Ratio: 169 | 143 | 1.410 | 10.1%
+[2025-09-10 17:37:12] [INFORMATION] [123] [Mirror] All/Ready/Target/Ratio: 81 | 60 | 78 | 0,769
+[2025-09-10 17:37:12] [INFORMATION] [123] [Link] All/Active/Target/Ratio: 169 | 137 | 1.394 | 9.8%
+[2025-09-10 17:37:12] [INFORMATION] [124] [Mirror] All/Ready/Target/Ratio: 73 | 60 | 78 | 0,769
+[2025-09-10 17:37:12] [INFORMATION] [124] [Link] All/Active/Target/Ratio: 169 | 137 | 1.266 | 10.8%
+[2025-09-10 17:37:13] [INFORMATION] [125] [Mirror] All/Ready/Target/Ratio: 70 | 61 | 78 | 0,782
+[2025-09-10 17:37:13] [INFORMATION] [125] [Link] All/Active/Target/Ratio: 169 | 137 | 1.218 | 11.2%
+[2025-09-10 17:37:13] [INFORMATION] [126] [Mirror] All/Ready/Target/Ratio: 70 | 62 | 78 | 0,795
+[2025-09-10 17:37:13] [INFORMATION] [126] [Link] All/Active/Target/Ratio: 169 | 131 | 1.218 | 10.8%
+[2025-09-10 17:37:13] [INFORMATION] [127] [Mirror] All/Ready/Target/Ratio: 70 | 62 | 78 | 0,795
+[2025-09-10 17:37:13] [INFORMATION] [127] [Link] All/Active/Target/Ratio: 169 | 134 | 1.218 | 11.0%
+[2025-09-10 17:37:13] [INFORMATION] [128] [Mirror] All/Ready/Target/Ratio: 70 | 61 | 78 | 0,782
+[2025-09-10 17:37:13] [INFORMATION] [128] [Link] All/Active/Target/Ratio: 169 | 136 | 1.218 | 11.2%
+[2025-09-10 17:37:14] [INFORMATION] [129] [Mirror] All/Ready/Target/Ratio: 70 | 60 | 78 | 0,769
+[2025-09-10 17:37:14] [INFORMATION] [129] [Link] All/Active/Target/Ratio: 169 | 134 | 1.218 | 11.0%
+[2025-09-10 17:37:14] [INFORMATION] [130] [Mirror] All/Ready/Target/Ratio: 70 | 60 | 78 | 0,769
+[2025-09-10 17:37:14] [INFORMATION] [130] [Link] All/Active/Target/Ratio: 169 | 137 | 1.218 | 11.2%
+[2025-09-10 17:37:14] [INFORMATION] setNumMirrors(74,130)
+[2025-09-10 17:37:14] [INFORMATION] [131] [Mirror] All/Ready/Target/Ratio: 74 | 59 | 74 | 0,797
+[2025-09-10 17:37:14] [INFORMATION] [131] [Link] All/Active/Target/Ratio: 188 | 130 | 1.290 | 10.1%
+[2025-09-10 17:37:14] [INFORMATION] [132] [Mirror] All/Ready/Target/Ratio: 74 | 59 | 74 | 0,797
+[2025-09-10 17:37:14] [INFORMATION] [132] [Link] All/Active/Target/Ratio: 179 | 135 | 1.290 | 10.5%
+[2025-09-10 17:37:15] [INFORMATION] [133] [Mirror] All/Ready/Target/Ratio: 74 | 59 | 74 | 0,797
+[2025-09-10 17:37:15] [INFORMATION] [133] [Link] All/Active/Target/Ratio: 179 | 136 | 1.290 | 10.5%
+[2025-09-10 17:37:15] [INFORMATION] [134] [Mirror] All/Ready/Target/Ratio: 74 | 59 | 74 | 0,797
+[2025-09-10 17:37:15] [INFORMATION] [134] [Link] All/Active/Target/Ratio: 179 | 138 | 1.290 | 10.7%
+[2025-09-10 17:37:15] [INFORMATION] [135] [Mirror] All/Ready/Target/Ratio: 74 | 60 | 74 | 0,811
+[2025-09-10 17:37:15] [INFORMATION] [135] [Link] All/Active/Target/Ratio: 179 | 140 | 1.290 | 10.9%
+[2025-09-10 17:37:16] [INFORMATION] [136] [Mirror] All/Ready/Target/Ratio: 74 | 60 | 74 | 0,811
+[2025-09-10 17:37:16] [INFORMATION] [136] [Link] All/Active/Target/Ratio: 179 | 144 | 1.290 | 11.2%
+[2025-09-10 17:37:16] [INFORMATION] [137] [Mirror] All/Ready/Target/Ratio: 74 | 60 | 74 | 0,811
+[2025-09-10 17:37:16] [INFORMATION] [137] [Link] All/Active/Target/Ratio: 179 | 144 | 1.290 | 11.2%
+[2025-09-10 17:37:16] [INFORMATION] [138] [Mirror] All/Ready/Target/Ratio: 74 | 60 | 74 | 0,811
+[2025-09-10 17:37:16] [INFORMATION] [138] [Link] All/Active/Target/Ratio: 179 | 148 | 1.290 | 11.5%
+[2025-09-10 17:37:16] [INFORMATION] [139] [Mirror] All/Ready/Target/Ratio: 74 | 59 | 74 | 0,797
+[2025-09-10 17:37:16] [INFORMATION] [139] [Link] All/Active/Target/Ratio: 179 | 142 | 1.290 | 11.0%
+[2025-09-10 17:37:17] [INFORMATION] [140] [Mirror] All/Ready/Target/Ratio: 74 | 59 | 74 | 0,797
+[2025-09-10 17:37:17] [INFORMATION] [140] [Link] All/Active/Target/Ratio: 179 | 145 | 1.290 | 11.2%
+[2025-09-10 17:37:17] [INFORMATION] setNumMirrors(70,140)
+[2025-09-10 17:37:17] [INFORMATION] [141] [Mirror] All/Ready/Target/Ratio: 74 | 60 | 70 | 0,857
+[2025-09-10 17:37:17] [INFORMATION] [141] [Link] All/Active/Target/Ratio: 188 | 144 | 1.282 | 11.2%
+[2025-09-10 17:37:17] [INFORMATION] [142] [Mirror] All/Ready/Target/Ratio: 74 | 58 | 70 | 0,829
+[2025-09-10 17:37:17] [INFORMATION] [142] [Link] All/Active/Target/Ratio: 169 | 139 | 1.282 | 10.8%
+[2025-09-10 17:37:18] [INFORMATION] [143] [Mirror] All/Ready/Target/Ratio: 73 | 58 | 70 | 0,829
+[2025-09-10 17:37:18] [INFORMATION] [143] [Link] All/Active/Target/Ratio: 169 | 134 | 1.266 | 10.6%
+[2025-09-10 17:37:18] [INFORMATION] [144] [Mirror] All/Ready/Target/Ratio: 72 | 59 | 70 | 0,843
+[2025-09-10 17:37:18] [INFORMATION] [144] [Link] All/Active/Target/Ratio: 169 | 137 | 1.250 | 11.0%
+[2025-09-10 17:37:18] [INFORMATION] [145] [Mirror] All/Ready/Target/Ratio: 70 | 60 | 70 | 0,857
+[2025-09-10 17:37:18] [INFORMATION] [145] [Link] All/Active/Target/Ratio: 169 | 137 | 1.218 | 11.2%
+[2025-09-10 17:37:18] [INFORMATION] [146] [Mirror] All/Ready/Target/Ratio: 70 | 61 | 70 | 0,871
+[2025-09-10 17:37:18] [INFORMATION] [146] [Link] All/Active/Target/Ratio: 169 | 137 | 1.218 | 11.2%
+[2025-09-10 17:37:19] [INFORMATION] [147] [Mirror] All/Ready/Target/Ratio: 70 | 61 | 70 | 0,871
+[2025-09-10 17:37:19] [INFORMATION] [147] [Link] All/Active/Target/Ratio: 169 | 137 | 1.218 | 11.2%
+[2025-09-10 17:37:19] [INFORMATION] [148] [Mirror] All/Ready/Target/Ratio: 70 | 62 | 70 | 0,886
+[2025-09-10 17:37:19] [INFORMATION] [148] [Link] All/Active/Target/Ratio: 169 | 139 | 1.218 | 11.4%
+[2025-09-10 17:37:19] [INFORMATION] [149] [Mirror] All/Ready/Target/Ratio: 70 | 62 | 70 | 0,886
+[2025-09-10 17:37:19] [INFORMATION] [149] [Link] All/Active/Target/Ratio: 169 | 144 | 1.218 | 11.8%
+[2025-09-10 17:37:19] [INFORMATION] [150] [Mirror] All/Ready/Target/Ratio: 70 | 62 | 70 | 0,886
+[2025-09-10 17:37:19] [INFORMATION] [150] [Link] All/Active/Target/Ratio: 169 | 147 | 1.218 | 12.1%
+[2025-09-10 17:37:20] [INFORMATION] setNumMirrors(66,150)
+[2025-09-10 17:37:20] [INFORMATION] [151] [Mirror] All/Ready/Target/Ratio: 70 | 58 | 66 | 0,879
+[2025-09-10 17:37:20] [INFORMATION] [151] [Link] All/Active/Target/Ratio: 175 | 137 | 1.210 | 11.3%
+[2025-09-10 17:37:20] [INFORMATION] [152] [Mirror] All/Ready/Target/Ratio: 70 | 58 | 66 | 0,879
+[2025-09-10 17:37:20] [INFORMATION] [152] [Link] All/Active/Target/Ratio: 161 | 143 | 1.210 | 11.8%
+[2025-09-10 17:37:20] [INFORMATION] [153] [Mirror] All/Ready/Target/Ratio: 68 | 58 | 66 | 0,879
+[2025-09-10 17:37:20] [INFORMATION] [153] [Link] All/Active/Target/Ratio: 161 | 143 | 1.178 | 12.1%
+[2025-09-10 17:37:20] [INFORMATION] [154] [Mirror] All/Ready/Target/Ratio: 67 | 58 | 66 | 0,879
+[2025-09-10 17:37:21] [INFORMATION] [154] [Link] All/Active/Target/Ratio: 161 | 148 | 1.162 | 12.7%
+[2025-09-10 17:37:21] [INFORMATION] [155] [Mirror] All/Ready/Target/Ratio: 66 | 59 | 66 | 0,894
+[2025-09-10 17:37:21] [INFORMATION] [155] [Link] All/Active/Target/Ratio: 161 | 151 | 1.146 | 13.2%
+[2025-09-10 17:37:21] [INFORMATION] [156] [Mirror] All/Ready/Target/Ratio: 66 | 58 | 66 | 0,879
+[2025-09-10 17:37:21] [INFORMATION] [156] [Link] All/Active/Target/Ratio: 161 | 147 | 1.146 | 12.8%
+[2025-09-10 17:37:21] [INFORMATION] [157] [Mirror] All/Ready/Target/Ratio: 66 | 57 | 66 | 0,864
+[2025-09-10 17:37:21] [INFORMATION] [157] [Link] All/Active/Target/Ratio: 161 | 138 | 1.146 | 12.0%
+[2025-09-10 17:37:22] [INFORMATION] [158] [Mirror] All/Ready/Target/Ratio: 66 | 57 | 66 | 0,864
+[2025-09-10 17:37:22] [INFORMATION] [158] [Link] All/Active/Target/Ratio: 161 | 140 | 1.146 | 12.2%
+[2025-09-10 17:37:22] [INFORMATION] [159] [Mirror] All/Ready/Target/Ratio: 66 | 56 | 66 | 0,848
+[2025-09-10 17:37:22] [INFORMATION] [159] [Link] All/Active/Target/Ratio: 161 | 136 | 1.146 | 11.9%
+[2025-09-10 17:37:22] [INFORMATION] [160] [Mirror] All/Ready/Target/Ratio: 66 | 57 | 66 | 0,864
+[2025-09-10 17:37:22] [INFORMATION] [160] [Link] All/Active/Target/Ratio: 161 | 136 | 1.146 | 11.9%
+[2025-09-10 17:37:22] [INFORMATION] setNumMirrors(62,160)
+[2025-09-10 17:37:22] [INFORMATION] [161] [Mirror] All/Ready/Target/Ratio: 66 | 48 | 62 | 0,774
+[2025-09-10 17:37:22] [INFORMATION] [161] [Link] All/Active/Target/Ratio: 164 | 107 | 870 | 12.3%
+[2025-09-10 17:37:23] [INFORMATION] [162] [Mirror] All/Ready/Target/Ratio: 66 | 48 | 62 | 0,774
+[2025-09-10 17:37:23] [INFORMATION] [162] [Link] All/Active/Target/Ratio: 127 | 107 | 870 | 12.3%
+[2025-09-10 17:37:23] [INFORMATION] [163] [Mirror] All/Ready/Target/Ratio: 61 | 48 | 62 | 0,774
+[2025-09-10 17:37:23] [INFORMATION] [163] [Link] All/Active/Target/Ratio: 127 | 107 | 810 | 13.2%
+[2025-09-10 17:37:23] [INFORMATION] [164] [Mirror] All/Ready/Target/Ratio: 58 | 49 | 62 | 0,79
+[2025-09-10 17:37:23] [INFORMATION] [164] [Link] All/Active/Target/Ratio: 127 | 107 | 774 | 13.8%
+[2025-09-10 17:37:23] [INFORMATION] [165] [Mirror] All/Ready/Target/Ratio: 55 | 49 | 62 | 0,79
+[2025-09-10 17:37:23] [INFORMATION] [165] [Link] All/Active/Target/Ratio: 127 | 107 | 738 | 14.5%
+[2025-09-10 17:37:24] [INFORMATION] [166] [Mirror] All/Ready/Target/Ratio: 55 | 48 | 62 | 0,774
+[2025-09-10 17:37:24] [INFORMATION] [166] [Link] All/Active/Target/Ratio: 127 | 106 | 738 | 14.4%
+[2025-09-10 17:37:24] [INFORMATION] [167] [Mirror] All/Ready/Target/Ratio: 55 | 49 | 62 | 0,79
+[2025-09-10 17:37:24] [INFORMATION] [167] [Link] All/Active/Target/Ratio: 127 | 107 | 738 | 14.5%
+[2025-09-10 17:37:24] [INFORMATION] [168] [Mirror] All/Ready/Target/Ratio: 55 | 49 | 62 | 0,79
+[2025-09-10 17:37:24] [INFORMATION] [168] [Link] All/Active/Target/Ratio: 127 | 108 | 738 | 14.6%
+[2025-09-10 17:37:24] [INFORMATION] [169] [Mirror] All/Ready/Target/Ratio: 55 | 49 | 62 | 0,79
+[2025-09-10 17:37:24] [INFORMATION] [169] [Link] All/Active/Target/Ratio: 127 | 112 | 738 | 15.2%
+[2025-09-10 17:37:25] [INFORMATION] [170] [Mirror] All/Ready/Target/Ratio: 55 | 49 | 62 | 0,79
+[2025-09-10 17:37:25] [INFORMATION] [170] [Link] All/Active/Target/Ratio: 127 | 114 | 738 | 15.4%
+[2025-09-10 17:37:25] [INFORMATION] setNumMirrors(58,170)
+[2025-09-10 17:37:25] [INFORMATION] [171] [Mirror] All/Ready/Target/Ratio: 58 | 47 | 58 | 0,81
+[2025-09-10 17:37:25] [INFORMATION] [171] [Link] All/Active/Target/Ratio: 140 | 107 | 780 | 13.7%
+[2025-09-10 17:37:25] [INFORMATION] [172] [Mirror] All/Ready/Target/Ratio: 58 | 48 | 58 | 0,828
+[2025-09-10 17:37:25] [INFORMATION] [172] [Link] All/Active/Target/Ratio: 134 | 107 | 780 | 13.7%
+[2025-09-10 17:37:25] [INFORMATION] [173] [Mirror] All/Ready/Target/Ratio: 58 | 47 | 58 | 0,81
+[2025-09-10 17:37:25] [INFORMATION] [173] [Link] All/Active/Target/Ratio: 134 | 105 | 780 | 13.5%
+[2025-09-10 17:37:26] [INFORMATION] [174] [Mirror] All/Ready/Target/Ratio: 58 | 47 | 58 | 0,81
+[2025-09-10 17:37:26] [INFORMATION] [174] [Link] All/Active/Target/Ratio: 134 | 106 | 780 | 13.6%
+[2025-09-10 17:37:26] [INFORMATION] [175] [Mirror] All/Ready/Target/Ratio: 58 | 47 | 58 | 0,81
+[2025-09-10 17:37:26] [INFORMATION] [175] [Link] All/Active/Target/Ratio: 134 | 107 | 780 | 13.7%
+[2025-09-10 17:37:26] [INFORMATION] [176] [Mirror] All/Ready/Target/Ratio: 58 | 47 | 58 | 0,81
+[2025-09-10 17:37:26] [INFORMATION] [176] [Link] All/Active/Target/Ratio: 134 | 108 | 780 | 13.8%
+[2025-09-10 17:37:26] [INFORMATION] [177] [Mirror] All/Ready/Target/Ratio: 58 | 48 | 58 | 0,828
+[2025-09-10 17:37:26] [INFORMATION] [177] [Link] All/Active/Target/Ratio: 134 | 108 | 780 | 13.8%
+[2025-09-10 17:37:27] [INFORMATION] [178] [Mirror] All/Ready/Target/Ratio: 58 | 48 | 58 | 0,828
+[2025-09-10 17:37:27] [INFORMATION] [178] [Link] All/Active/Target/Ratio: 134 | 103 | 780 | 13.2%
+[2025-09-10 17:37:27] [INFORMATION] [179] [Mirror] All/Ready/Target/Ratio: 58 | 48 | 58 | 0,828
+[2025-09-10 17:37:27] [INFORMATION] [179] [Link] All/Active/Target/Ratio: 134 | 103 | 780 | 13.2%
+[2025-09-10 17:37:27] [INFORMATION] [180] [Mirror] All/Ready/Target/Ratio: 58 | 48 | 58 | 0,828
+[2025-09-10 17:37:27] [INFORMATION] [180] [Link] All/Active/Target/Ratio: 134 | 104 | 780 | 13.3%
+[2025-09-10 17:37:28] [INFORMATION] setNumMirrors(54,180)
+[2025-09-10 17:37:28] [INFORMATION] [181] [Mirror] All/Ready/Target/Ratio: 58 | 47 | 54 | 0,87
+[2025-09-10 17:37:28] [INFORMATION] [181] [Link] All/Active/Target/Ratio: 143 | 100 | 772 | 13.0%
+[2025-09-10 17:37:28] [INFORMATION] [182] [Mirror] All/Ready/Target/Ratio: 58 | 48 | 54 | 0,889
+[2025-09-10 17:37:28] [INFORMATION] [182] [Link] All/Active/Target/Ratio: 124 | 100 | 772 | 13.0%
+[2025-09-10 17:37:28] [INFORMATION] [183] [Mirror] All/Ready/Target/Ratio: 57 | 48 | 54 | 0,889
+[2025-09-10 17:37:28] [INFORMATION] [183] [Link] All/Active/Target/Ratio: 124 | 100 | 760 | 13.2%
+[2025-09-10 17:37:28] [INFORMATION] [184] [Mirror] All/Ready/Target/Ratio: 55 | 48 | 54 | 0,889
+[2025-09-10 17:37:28] [INFORMATION] [184] [Link] All/Active/Target/Ratio: 124 | 103 | 736 | 14.0%
+[2025-09-10 17:37:29] [INFORMATION] [185] [Mirror] All/Ready/Target/Ratio: 54 | 47 | 54 | 0,87
+[2025-09-10 17:37:29] [INFORMATION] [185] [Link] All/Active/Target/Ratio: 124 | 99 | 724 | 13.7%
+[2025-09-10 17:37:29] [INFORMATION] [186] [Mirror] All/Ready/Target/Ratio: 54 | 47 | 54 | 0,87
+[2025-09-10 17:37:29] [INFORMATION] [186] [Link] All/Active/Target/Ratio: 124 | 99 | 724 | 13.7%
+[2025-09-10 17:37:29] [INFORMATION] [187] [Mirror] All/Ready/Target/Ratio: 54 | 47 | 54 | 0,87
+[2025-09-10 17:37:29] [INFORMATION] [187] [Link] All/Active/Target/Ratio: 124 | 102 | 724 | 14.1%
+[2025-09-10 17:37:29] [INFORMATION] [188] [Mirror] All/Ready/Target/Ratio: 54 | 46 | 54 | 0,852
+[2025-09-10 17:37:29] [INFORMATION] [188] [Link] All/Active/Target/Ratio: 124 | 107 | 724 | 14.8%
+[2025-09-10 17:37:30] [INFORMATION] [189] [Mirror] All/Ready/Target/Ratio: 54 | 46 | 54 | 0,852
+[2025-09-10 17:37:30] [INFORMATION] [189] [Link] All/Active/Target/Ratio: 124 | 110 | 724 | 15.2%
+[2025-09-10 17:37:30] [INFORMATION] [190] [Mirror] All/Ready/Target/Ratio: 54 | 46 | 54 | 0,852
+[2025-09-10 17:37:30] [INFORMATION] [190] [Link] All/Active/Target/Ratio: 124 | 110 | 724 | 15.2%
+[2025-09-10 17:37:30] [INFORMATION] setNumMirrors(50,190)
+[2025-09-10 17:37:30] [INFORMATION] [191] [Mirror] All/Ready/Target/Ratio: 54 | 37 | 50 | 0,74
+[2025-09-10 17:37:30] [INFORMATION] [191] [Link] All/Active/Target/Ratio: 127 | 99 | 660 | 15.0%
+[2025-09-10 17:37:30] [INFORMATION] [192] [Mirror] All/Ready/Target/Ratio: 54 | 38 | 50 | 0,76
+[2025-09-10 17:37:30] [INFORMATION] [192] [Link] All/Active/Target/Ratio: 111 | 101 | 660 | 15.3%
+[2025-09-10 17:37:31] [INFORMATION] [193] [Mirror] All/Ready/Target/Ratio: 53 | 37 | 50 | 0,74
+[2025-09-10 17:37:31] [INFORMATION] [193] [Link] All/Active/Target/Ratio: 111 | 94 | 648 | 14.5%
+[2025-09-10 17:37:31] [INFORMATION] [194] [Mirror] All/Ready/Target/Ratio: 48 | 37 | 50 | 0,74
+[2025-09-10 17:37:31] [INFORMATION] [194] [Link] All/Active/Target/Ratio: 111 | 94 | 588 | 16.0%
+[2025-09-10 17:37:31] [INFORMATION] [195] [Mirror] All/Ready/Target/Ratio: 43 | 37 | 50 | 0,74
+[2025-09-10 17:37:31] [INFORMATION] [195] [Link] All/Active/Target/Ratio: 111 | 95 | 528 | 18.0%
+[2025-09-10 17:37:31] [INFORMATION] [196] [Mirror] All/Ready/Target/Ratio: 43 | 37 | 50 | 0,74
+[2025-09-10 17:37:31] [INFORMATION] [196] [Link] All/Active/Target/Ratio: 111 | 95 | 528 | 18.0%
+[2025-09-10 17:37:32] [INFORMATION] [197] [Mirror] All/Ready/Target/Ratio: 43 | 38 | 50 | 0,76
+[2025-09-10 17:37:32] [INFORMATION] [197] [Link] All/Active/Target/Ratio: 111 | 98 | 528 | 18.6%
+[2025-09-10 17:37:32] [INFORMATION] [198] [Mirror] All/Ready/Target/Ratio: 43 | 38 | 50 | 0,76
+[2025-09-10 17:37:32] [INFORMATION] [198] [Link] All/Active/Target/Ratio: 111 | 100 | 528 | 18.9%
+[2025-09-10 17:37:32] [INFORMATION] [199] [Mirror] All/Ready/Target/Ratio: 43 | 38 | 50 | 0,76
+[2025-09-10 17:37:32] [INFORMATION] [199] [Link] All/Active/Target/Ratio: 111 | 103 | 528 | 19.5%
+[2025-09-10 17:37:32] [INFORMATION] [200] [Mirror] All/Ready/Target/Ratio: 43 | 38 | 50 | 0,76
+[2025-09-10 17:37:32] [INFORMATION] [200] [Link] All/Active/Target/Ratio: 111 | 103 | 528 | 19.5%
+[2025-09-10 17:37:33] [INFORMATION] setNumMirrors(80,200)
+[2025-09-10 17:37:33] [INFORMATION] [201] [Mirror] All/Ready/Target/Ratio: 80 | 38 | 80 | 0,475
+[2025-09-10 17:37:33] [INFORMATION] [201] [Link] All/Active/Target/Ratio: 209 | 91 | 1.398 | 6.5%
+[2025-09-10 17:37:33] [INFORMATION] [202] [Mirror] All/Ready/Target/Ratio: 80 | 39 | 80 | 0,487
+[2025-09-10 17:37:33] [INFORMATION] [202] [Link] All/Active/Target/Ratio: 195 | 92 | 1.398 | 6.6%
+[2025-09-10 17:37:33] [INFORMATION] [203] [Mirror] All/Ready/Target/Ratio: 80 | 39 | 80 | 0,487
+[2025-09-10 17:37:33] [INFORMATION] [203] [Link] All/Active/Target/Ratio: 195 | 92 | 1.398 | 6.6%
+[2025-09-10 17:37:34] [INFORMATION] [204] [Mirror] All/Ready/Target/Ratio: 80 | 40 | 80 | 0,5
+[2025-09-10 17:37:34] [INFORMATION] [204] [Link] All/Active/Target/Ratio: 195 | 95 | 1.398 | 6.8%
+[2025-09-10 17:37:34] [INFORMATION] [205] [Mirror] All/Ready/Target/Ratio: 80 | 40 | 80 | 0,5
+[2025-09-10 17:37:34] [INFORMATION] [205] [Link] All/Active/Target/Ratio: 195 | 95 | 1.398 | 6.8%
+[2025-09-10 17:37:34] [INFORMATION] [206] [Mirror] All/Ready/Target/Ratio: 80 | 40 | 80 | 0,5
+[2025-09-10 17:37:34] [INFORMATION] [206] [Link] All/Active/Target/Ratio: 195 | 97 | 1.398 | 6.9%
+[2025-09-10 17:37:34] [INFORMATION] [207] [Mirror] All/Ready/Target/Ratio: 80 | 42 | 80 | 0,525
+[2025-09-10 17:37:34] [INFORMATION] [207] [Link] All/Active/Target/Ratio: 195 | 97 | 1.398 | 6.9%
+[2025-09-10 17:37:35] [INFORMATION] [208] [Mirror] All/Ready/Target/Ratio: 80 | 42 | 80 | 0,525
+[2025-09-10 17:37:35] [INFORMATION] [208] [Link] All/Active/Target/Ratio: 195 | 97 | 1.398 | 6.9%
+[2025-09-10 17:37:35] [INFORMATION] [209] [Mirror] All/Ready/Target/Ratio: 80 | 43 | 80 | 0,537
+[2025-09-10 17:37:35] [INFORMATION] [209] [Link] All/Active/Target/Ratio: 195 | 97 | 1.398 | 6.9%
+[2025-09-10 17:37:35] [INFORMATION] [210] [Mirror] All/Ready/Target/Ratio: 80 | 43 | 80 | 0,537
+[2025-09-10 17:37:35] [INFORMATION] [210] [Link] All/Active/Target/Ratio: 195 | 97 | 1.398 | 6.9%
+[2025-09-10 17:37:35] [INFORMATION] setNumMirrors(79,210)
+[2025-09-10 17:37:36] [INFORMATION] [211] [Mirror] All/Ready/Target/Ratio: 80 | 43 | 79 | 0,544
+[2025-09-10 17:37:36] [INFORMATION] [211] [Link] All/Active/Target/Ratio: 198 | 104 | 1.396 | 7.4%
+[2025-09-10 17:37:36] [INFORMATION] [212] [Mirror] All/Ready/Target/Ratio: 80 | 43 | 79 | 0,544
+[2025-09-10 17:37:36] [INFORMATION] [212] [Link] All/Active/Target/Ratio: 193 | 112 | 1.396 | 8.0%
+[2025-09-10 17:37:36] [INFORMATION] [213] [Mirror] All/Ready/Target/Ratio: 80 | 43 | 79 | 0,544
+[2025-09-10 17:37:36] [INFORMATION] [213] [Link] All/Active/Target/Ratio: 192 | 121 | 1.396 | 8.7%
+[2025-09-10 17:37:36] [INFORMATION] [214] [Mirror] All/Ready/Target/Ratio: 79 | 43 | 79 | 0,544
+[2025-09-10 17:37:36] [INFORMATION] [214] [Link] All/Active/Target/Ratio: 192 | 136 | 1.380 | 9.9%
+[2025-09-10 17:37:37] [INFORMATION] [215] [Mirror] All/Ready/Target/Ratio: 79 | 43 | 79 | 0,544
+[2025-09-10 17:37:37] [INFORMATION] [215] [Link] All/Active/Target/Ratio: 192 | 151 | 1.380 | 10.9%
+[2025-09-10 17:37:37] [INFORMATION] [216] [Mirror] All/Ready/Target/Ratio: 79 | 44 | 79 | 0,557
+[2025-09-10 17:37:37] [INFORMATION] [216] [Link] All/Active/Target/Ratio: 192 | 164 | 1.380 | 11.9%
+[2025-09-10 17:37:37] [INFORMATION] [217] [Mirror] All/Ready/Target/Ratio: 79 | 46 | 79 | 0,582
+[2025-09-10 17:37:37] [INFORMATION] [217] [Link] All/Active/Target/Ratio: 192 | 174 | 1.380 | 12.6%
+[2025-09-10 17:37:37] [INFORMATION] [218] [Mirror] All/Ready/Target/Ratio: 79 | 46 | 79 | 0,582
+[2025-09-10 17:37:37] [INFORMATION] [218] [Link] All/Active/Target/Ratio: 192 | 168 | 1.380 | 12.2%
+[2025-09-10 17:37:38] [INFORMATION] [219] [Mirror] All/Ready/Target/Ratio: 79 | 47 | 79 | 0,595
+[2025-09-10 17:37:38] [INFORMATION] [219] [Link] All/Active/Target/Ratio: 192 | 169 | 1.380 | 12.2%
+[2025-09-10 17:37:38] [INFORMATION] [220] [Mirror] All/Ready/Target/Ratio: 79 | 49 | 79 | 0,62
+[2025-09-10 17:37:38] [INFORMATION] [220] [Link] All/Active/Target/Ratio: 192 | 170 | 1.380 | 12.3%
+[2025-09-10 17:37:38] [INFORMATION] setNumMirrors(78,220)
+[2025-09-10 17:37:38] [INFORMATION] [221] [Mirror] All/Ready/Target/Ratio: 79 | 50 | 78 | 0,641
+[2025-09-10 17:37:38] [INFORMATION] [221] [Link] All/Active/Target/Ratio: 192 | 171 | 1.378 | 12.4%
+[2025-09-10 17:37:38] [INFORMATION] [222] [Mirror] All/Ready/Target/Ratio: 79 | 50 | 78 | 0,641
+[2025-09-10 17:37:38] [INFORMATION] [222] [Link] All/Active/Target/Ratio: 191 | 165 | 1.378 | 12.0%
+[2025-09-10 17:37:39] [INFORMATION] [223] [Mirror] All/Ready/Target/Ratio: 79 | 53 | 78 | 0,679
+[2025-09-10 17:37:39] [INFORMATION] [223] [Link] All/Active/Target/Ratio: 191 | 165 | 1.378 | 12.0%
+[2025-09-10 17:37:39] [INFORMATION] [224] [Mirror] All/Ready/Target/Ratio: 79 | 54 | 78 | 0,692
+[2025-09-10 17:37:39] [INFORMATION] [224] [Link] All/Active/Target/Ratio: 191 | 162 | 1.378 | 11.8%
+[2025-09-10 17:37:39] [INFORMATION] [225] [Mirror] All/Ready/Target/Ratio: 78 | 55 | 78 | 0,705
+[2025-09-10 17:37:39] [INFORMATION] [225] [Link] All/Active/Target/Ratio: 191 | 165 | 1.362 | 12.1%
+[2025-09-10 17:37:39] [INFORMATION] [226] [Mirror] All/Ready/Target/Ratio: 78 | 55 | 78 | 0,705
+[2025-09-10 17:37:39] [INFORMATION] [226] [Link] All/Active/Target/Ratio: 191 | 165 | 1.362 | 12.1%
+[2025-09-10 17:37:40] [INFORMATION] [227] [Mirror] All/Ready/Target/Ratio: 78 | 56 | 78 | 0,718
+[2025-09-10 17:37:40] [INFORMATION] [227] [Link] All/Active/Target/Ratio: 191 | 165 | 1.362 | 12.1%
+[2025-09-10 17:37:40] [INFORMATION] [228] [Mirror] All/Ready/Target/Ratio: 78 | 57 | 78 | 0,731
+[2025-09-10 17:37:40] [INFORMATION] [228] [Link] All/Active/Target/Ratio: 191 | 159 | 1.362 | 11.7%
+[2025-09-10 17:37:40] [INFORMATION] [229] [Mirror] All/Ready/Target/Ratio: 78 | 55 | 78 | 0,705
+[2025-09-10 17:37:40] [INFORMATION] [229] [Link] All/Active/Target/Ratio: 191 | 150 | 1.362 | 11.0%
+[2025-09-10 17:37:40] [INFORMATION] [230] [Mirror] All/Ready/Target/Ratio: 78 | 55 | 78 | 0,705
+[2025-09-10 17:37:40] [INFORMATION] [230] [Link] All/Active/Target/Ratio: 191 | 151 | 1.362 | 11.1%
+[2025-09-10 17:37:41] [INFORMATION] setNumMirrors(77,230)
+[2025-09-10 17:37:41] [INFORMATION] [231] [Mirror] All/Ready/Target/Ratio: 78 | 57 | 77 | 0,74
+[2025-09-10 17:37:41] [INFORMATION] [231] [Link] All/Active/Target/Ratio: 194 | 150 | 1.360 | 11.0%
+[2025-09-10 17:37:41] [INFORMATION] [232] [Mirror] All/Ready/Target/Ratio: 78 | 58 | 77 | 0,753
+[2025-09-10 17:37:41] [INFORMATION] [232] [Link] All/Active/Target/Ratio: 188 | 151 | 1.360 | 11.1%
+[2025-09-10 17:37:41] [INFORMATION] [233] [Mirror] All/Ready/Target/Ratio: 77 | 61 | 77 | 0,792
+[2025-09-10 17:37:41] [INFORMATION] [233] [Link] All/Active/Target/Ratio: 188 | 152 | 1.344 | 11.3%
+[2025-09-10 17:37:42] [INFORMATION] [234] [Mirror] All/Ready/Target/Ratio: 77 | 62 | 77 | 0,805
+[2025-09-10 17:37:42] [INFORMATION] [234] [Link] All/Active/Target/Ratio: 188 | 155 | 1.344 | 11.5%
+[2025-09-10 17:37:42] [INFORMATION] [235] [Mirror] All/Ready/Target/Ratio: 77 | 65 | 77 | 0,844
+[2025-09-10 17:37:42] [INFORMATION] [235] [Link] All/Active/Target/Ratio: 188 | 155 | 1.344 | 11.5%
+[2025-09-10 17:37:42] [INFORMATION] [236] [Mirror] All/Ready/Target/Ratio: 77 | 66 | 77 | 0,857
+[2025-09-10 17:37:42] [INFORMATION] [236] [Link] All/Active/Target/Ratio: 188 | 157 | 1.344 | 11.7%
+[2025-09-10 17:37:42] [INFORMATION] [237] [Mirror] All/Ready/Target/Ratio: 77 | 66 | 77 | 0,857
+[2025-09-10 17:37:42] [INFORMATION] [237] [Link] All/Active/Target/Ratio: 188 | 161 | 1.344 | 12.0%
+[2025-09-10 17:37:43] [INFORMATION] [238] [Mirror] All/Ready/Target/Ratio: 77 | 66 | 77 | 0,857
+[2025-09-10 17:37:43] [INFORMATION] [238] [Link] All/Active/Target/Ratio: 188 | 167 | 1.344 | 12.4%
+[2025-09-10 17:37:43] [INFORMATION] [239] [Mirror] All/Ready/Target/Ratio: 77 | 66 | 77 | 0,857
+[2025-09-10 17:37:43] [INFORMATION] [239] [Link] All/Active/Target/Ratio: 188 | 168 | 1.344 | 12.5%
+[2025-09-10 17:37:43] [INFORMATION] [240] [Mirror] All/Ready/Target/Ratio: 77 | 66 | 77 | 0,857
+[2025-09-10 17:37:43] [INFORMATION] [240] [Link] All/Active/Target/Ratio: 188 | 169 | 1.344 | 12.6%
+[2025-09-10 17:37:43] [INFORMATION] setNumMirrors(76,240)
+[2025-09-10 17:37:44] [INFORMATION] [241] [Mirror] All/Ready/Target/Ratio: 77 | 67 | 76 | 0,882
+[2025-09-10 17:37:44] [INFORMATION] [241] [Link] All/Active/Target/Ratio: 188 | 178 | 1.342 | 13.3%
+[2025-09-10 17:37:44] [INFORMATION] [242] [Mirror] All/Ready/Target/Ratio: 77 | 68 | 76 | 0,895
+[2025-09-10 17:37:44] [INFORMATION] [242] [Link] All/Active/Target/Ratio: 187 | 182 | 1.342 | 13.6%
+[2025-09-10 17:37:44] [INFORMATION] [243] [Mirror] All/Ready/Target/Ratio: 77 | 68 | 76 | 0,895
+[2025-09-10 17:37:44] [INFORMATION] [243] [Link] All/Active/Target/Ratio: 187 | 184 | 1.342 | 13.7%
+[2025-09-10 17:37:44] [INFORMATION] [244] [Mirror] All/Ready/Target/Ratio: 77 | 70 | 76 | 0,921
+[2025-09-10 17:37:44] [INFORMATION] [244] [Link] All/Active/Target/Ratio: 187 | 185 | 1.342 | 13.8%
+[2025-09-10 17:37:45] [INFORMATION] [245] [Mirror] All/Ready/Target/Ratio: 76 | 71 | 76 | 0,934
+[2025-09-10 17:37:45] [INFORMATION] [245] [Link] All/Active/Target/Ratio: 187 | 185 | 1.326 | 14.0%
+[2025-09-10 17:37:45] [INFORMATION] [246] [Mirror] All/Ready/Target/Ratio: 76 | 70 | 76 | 0,921
+[2025-09-10 17:37:45] [INFORMATION] [246] [Link] All/Active/Target/Ratio: 187 | 179 | 1.326 | 13.5%
+[2025-09-10 17:37:45] [INFORMATION] [247] [Mirror] All/Ready/Target/Ratio: 76 | 71 | 76 | 0,934
+[2025-09-10 17:37:45] [INFORMATION] [247] [Link] All/Active/Target/Ratio: 187 | 179 | 1.326 | 13.5%
+[2025-09-10 17:37:45] [INFORMATION] [248] [Mirror] All/Ready/Target/Ratio: 76 | 71 | 76 | 0,934
+[2025-09-10 17:37:45] [INFORMATION] [248] [Link] All/Active/Target/Ratio: 187 | 179 | 1.326 | 13.5%
+[2025-09-10 17:37:46] [INFORMATION] [249] [Mirror] All/Ready/Target/Ratio: 76 | 71 | 76 | 0,934
+[2025-09-10 17:37:46] [INFORMATION] [249] [Link] All/Active/Target/Ratio: 187 | 179 | 1.326 | 13.5%
+[2025-09-10 17:37:46] [INFORMATION] [250] [Mirror] All/Ready/Target/Ratio: 76 | 71 | 76 | 0,934
+[2025-09-10 17:37:46] [INFORMATION] [250] [Link] All/Active/Target/Ratio: 187 | 179 | 1.326 | 13.5%
+[2025-09-10 17:37:46] [INFORMATION] setNumMirrors(75,250)
+[2025-09-10 17:37:46] [INFORMATION] [251] [Mirror] All/Ready/Target/Ratio: 76 | 71 | 75 | 0,947
+[2025-09-10 17:37:46] [INFORMATION] [251] [Link] All/Active/Target/Ratio: 190 | 174 | 1.324 | 13.1%
+[2025-09-10 17:37:47] [INFORMATION] [252] [Mirror] All/Ready/Target/Ratio: 76 | 70 | 75 | 0,933
+[2025-09-10 17:37:47] [INFORMATION] [252] [Link] All/Active/Target/Ratio: 184 | 167 | 1.324 | 12.6%
+[2025-09-10 17:37:47] [INFORMATION] [253] [Mirror] All/Ready/Target/Ratio: 76 | 70 | 75 | 0,933
+[2025-09-10 17:37:47] [INFORMATION] [253] [Link] All/Active/Target/Ratio: 184 | 168 | 1.324 | 12.7%
+[2025-09-10 17:37:47] [INFORMATION] [254] [Mirror] All/Ready/Target/Ratio: 76 | 69 | 75 | 0,92
+[2025-09-10 17:37:47] [INFORMATION] [254] [Link] All/Active/Target/Ratio: 184 | 162 | 1.324 | 12.2%
+[2025-09-10 17:37:47] [INFORMATION] [255] [Mirror] All/Ready/Target/Ratio: 75 | 67 | 75 | 0,893
+[2025-09-10 17:37:47] [INFORMATION] [255] [Link] All/Active/Target/Ratio: 184 | 151 | 1.308 | 11.5%
+[2025-09-10 17:37:48] [INFORMATION] [256] [Mirror] All/Ready/Target/Ratio: 75 | 68 | 75 | 0,907
+[2025-09-10 17:37:48] [INFORMATION] [256] [Link] All/Active/Target/Ratio: 184 | 152 | 1.308 | 11.6%
+[2025-09-10 17:37:48] [INFORMATION] [257] [Mirror] All/Ready/Target/Ratio: 75 | 69 | 75 | 0,92
+[2025-09-10 17:37:48] [INFORMATION] [257] [Link] All/Active/Target/Ratio: 184 | 153 | 1.308 | 11.7%
+[2025-09-10 17:37:48] [INFORMATION] [258] [Mirror] All/Ready/Target/Ratio: 75 | 69 | 75 | 0,92
+[2025-09-10 17:37:48] [INFORMATION] [258] [Link] All/Active/Target/Ratio: 184 | 154 | 1.308 | 11.8%
+[2025-09-10 17:37:48] [INFORMATION] [259] [Mirror] All/Ready/Target/Ratio: 75 | 69 | 75 | 0,92
+[2025-09-10 17:37:48] [INFORMATION] [259] [Link] All/Active/Target/Ratio: 184 | 154 | 1.308 | 11.8%
+[2025-09-10 17:37:49] [INFORMATION] [260] [Mirror] All/Ready/Target/Ratio: 75 | 69 | 75 | 0,92
+[2025-09-10 17:37:49] [INFORMATION] [260] [Link] All/Active/Target/Ratio: 184 | 157 | 1.308 | 12.0%
+[2025-09-10 17:37:49] [INFORMATION] setNumMirrors(74,260)
+[2025-09-10 17:37:49] [INFORMATION] [261] [Mirror] All/Ready/Target/Ratio: 75 | 68 | 74 | 0,919
+[2025-09-10 17:37:49] [INFORMATION] [261] [Link] All/Active/Target/Ratio: 187 | 154 | 1.306 | 11.8%
+[2025-09-10 17:37:49] [INFORMATION] [262] [Mirror] All/Ready/Target/Ratio: 75 | 67 | 74 | 0,905
+[2025-09-10 17:37:49] [INFORMATION] [262] [Link] All/Active/Target/Ratio: 181 | 149 | 1.306 | 11.4%
+[2025-09-10 17:37:50] [INFORMATION] [263] [Mirror] All/Ready/Target/Ratio: 75 | 67 | 74 | 0,905
+[2025-09-10 17:37:50] [INFORMATION] [263] [Link] All/Active/Target/Ratio: 181 | 149 | 1.306 | 11.4%
+[2025-09-10 17:37:50] [INFORMATION] [264] [Mirror] All/Ready/Target/Ratio: 75 | 67 | 74 | 0,905
+[2025-09-10 17:37:50] [INFORMATION] [264] [Link] All/Active/Target/Ratio: 181 | 150 | 1.306 | 11.5%
+[2025-09-10 17:37:50] [INFORMATION] [265] [Mirror] All/Ready/Target/Ratio: 74 | 67 | 74 | 0,905
+[2025-09-10 17:37:50] [INFORMATION] [265] [Link] All/Active/Target/Ratio: 181 | 154 | 1.290 | 11.9%
+[2025-09-10 17:37:50] [INFORMATION] [266] [Mirror] All/Ready/Target/Ratio: 74 | 68 | 74 | 0,919
+[2025-09-10 17:37:50] [INFORMATION] [266] [Link] All/Active/Target/Ratio: 181 | 156 | 1.290 | 12.1%
+[2025-09-10 17:37:51] [INFORMATION] [267] [Mirror] All/Ready/Target/Ratio: 74 | 67 | 74 | 0,905
+[2025-09-10 17:37:51] [INFORMATION] [267] [Link] All/Active/Target/Ratio: 181 | 156 | 1.290 | 12.1%
+[2025-09-10 17:37:51] [INFORMATION] [268] [Mirror] All/Ready/Target/Ratio: 74 | 67 | 74 | 0,905
+[2025-09-10 17:37:51] [INFORMATION] [268] [Link] All/Active/Target/Ratio: 181 | 160 | 1.290 | 12.4%
+[2025-09-10 17:37:51] [INFORMATION] [269] [Mirror] All/Ready/Target/Ratio: 74 | 67 | 74 | 0,905
+[2025-09-10 17:37:51] [INFORMATION] [269] [Link] All/Active/Target/Ratio: 181 | 157 | 1.290 | 12.2%
+[2025-09-10 17:37:52] [INFORMATION] [270] [Mirror] All/Ready/Target/Ratio: 74 | 67 | 74 | 0,905
+[2025-09-10 17:37:52] [INFORMATION] [270] [Link] All/Active/Target/Ratio: 181 | 160 | 1.290 | 12.4%
+[2025-09-10 17:37:52] [INFORMATION] setNumMirrors(73,270)
+[2025-09-10 17:37:52] [INFORMATION] [271] [Mirror] All/Ready/Target/Ratio: 74 | 67 | 73 | 0,918
+[2025-09-10 17:37:52] [INFORMATION] [271] [Link] All/Active/Target/Ratio: 184 | 155 | 1.288 | 12.0%
+[2025-09-10 17:37:52] [INFORMATION] [272] [Mirror] All/Ready/Target/Ratio: 74 | 67 | 73 | 0,918
+[2025-09-10 17:37:52] [INFORMATION] [272] [Link] All/Active/Target/Ratio: 178 | 157 | 1.288 | 12.2%
+[2025-09-10 17:37:52] [INFORMATION] [273] [Mirror] All/Ready/Target/Ratio: 74 | 66 | 73 | 0,904
+[2025-09-10 17:37:52] [INFORMATION] [273] [Link] All/Active/Target/Ratio: 178 | 151 | 1.288 | 11.7%
+[2025-09-10 17:37:53] [INFORMATION] [274] [Mirror] All/Ready/Target/Ratio: 74 | 66 | 73 | 0,904
+[2025-09-10 17:37:53] [INFORMATION] [274] [Link] All/Active/Target/Ratio: 178 | 151 | 1.288 | 11.7%
+[2025-09-10 17:37:53] [INFORMATION] [275] [Mirror] All/Ready/Target/Ratio: 73 | 66 | 73 | 0,904
+[2025-09-10 17:37:53] [INFORMATION] [275] [Link] All/Active/Target/Ratio: 178 | 152 | 1.272 | 11.9%
+[2025-09-10 17:37:53] [INFORMATION] [276] [Mirror] All/Ready/Target/Ratio: 73 | 66 | 73 | 0,904
+[2025-09-10 17:37:53] [INFORMATION] [276] [Link] All/Active/Target/Ratio: 178 | 153 | 1.272 | 12.0%
+[2025-09-10 17:37:54] [INFORMATION] [277] [Mirror] All/Ready/Target/Ratio: 73 | 65 | 73 | 0,89
+[2025-09-10 17:37:54] [INFORMATION] [277] [Link] All/Active/Target/Ratio: 178 | 154 | 1.272 | 12.1%
+[2025-09-10 17:37:54] [INFORMATION] [278] [Mirror] All/Ready/Target/Ratio: 73 | 64 | 73 | 0,877
+[2025-09-10 17:37:54] [INFORMATION] [278] [Link] All/Active/Target/Ratio: 178 | 152 | 1.272 | 11.9%
+[2025-09-10 17:37:54] [INFORMATION] [279] [Mirror] All/Ready/Target/Ratio: 73 | 63 | 73 | 0,863
+[2025-09-10 17:37:54] [INFORMATION] [279] [Link] All/Active/Target/Ratio: 178 | 151 | 1.272 | 11.9%
+[2025-09-10 17:37:54] [INFORMATION] [280] [Mirror] All/Ready/Target/Ratio: 73 | 63 | 73 | 0,863
+[2025-09-10 17:37:54] [INFORMATION] [280] [Link] All/Active/Target/Ratio: 178 | 153 | 1.272 | 12.0%
+[2025-09-10 17:37:55] [INFORMATION] setNumMirrors(72,280)
+[2025-09-10 17:37:55] [INFORMATION] [281] [Mirror] All/Ready/Target/Ratio: 73 | 61 | 72 | 0,847
+[2025-09-10 17:37:55] [INFORMATION] [281] [Link] All/Active/Target/Ratio: 178 | 150 | 1.270 | 11.8%
+[2025-09-10 17:37:55] [INFORMATION] [282] [Mirror] All/Ready/Target/Ratio: 73 | 61 | 72 | 0,847
+[2025-09-10 17:37:55] [INFORMATION] [282] [Link] All/Active/Target/Ratio: 177 | 150 | 1.270 | 11.8%
+[2025-09-10 17:37:55] [INFORMATION] [283] [Mirror] All/Ready/Target/Ratio: 73 | 61 | 72 | 0,847
+[2025-09-10 17:37:55] [INFORMATION] [283] [Link] All/Active/Target/Ratio: 177 | 151 | 1.270 | 11.9%
+[2025-09-10 17:37:56] [INFORMATION] [284] [Mirror] All/Ready/Target/Ratio: 73 | 61 | 72 | 0,847
+[2025-09-10 17:37:56] [INFORMATION] [284] [Link] All/Active/Target/Ratio: 177 | 151 | 1.272 | 11.9%
+[2025-09-10 17:37:56] [INFORMATION] [285] [Mirror] All/Ready/Target/Ratio: 73 | 61 | 72 | 0,847
+[2025-09-10 17:37:56] [INFORMATION] [285] [Link] All/Active/Target/Ratio: 177 | 152 | 1.272 | 11.9%
+[2025-09-10 17:37:56] [INFORMATION] [286] [Mirror] All/Ready/Target/Ratio: 73 | 62 | 72 | 0,861
+[2025-09-10 17:37:56] [INFORMATION] [286] [Link] All/Active/Target/Ratio: 177 | 155 | 1.272 | 12.2%
+[2025-09-10 17:37:56] [INFORMATION] [287] [Mirror] All/Ready/Target/Ratio: 73 | 62 | 72 | 0,861
+[2025-09-10 17:37:56] [INFORMATION] [287] [Link] All/Active/Target/Ratio: 177 | 155 | 1.272 | 12.2%
+[2025-09-10 17:37:57] [INFORMATION] [288] [Mirror] All/Ready/Target/Ratio: 73 | 64 | 72 | 0,889
+[2025-09-10 17:37:57] [INFORMATION] [288] [Link] All/Active/Target/Ratio: 177 | 157 | 1.272 | 12.3%
+[2025-09-10 17:37:57] [INFORMATION] [289] [Mirror] All/Ready/Target/Ratio: 73 | 65 | 72 | 0,903
+[2025-09-10 17:37:57] [INFORMATION] [289] [Link] All/Active/Target/Ratio: 177 | 160 | 1.272 | 12.6%
+[2025-09-10 17:37:57] [INFORMATION] [290] [Mirror] All/Ready/Target/Ratio: 73 | 65 | 72 | 0,903
+[2025-09-10 17:37:57] [INFORMATION] [290] [Link] All/Active/Target/Ratio: 177 | 162 | 1.272 | 12.7%
+[2025-09-10 17:37:57] [INFORMATION] setNumMirrors(71,290)
+[2025-09-10 17:37:58] [INFORMATION] [291] [Mirror] All/Ready/Target/Ratio: 73 | 62 | 71 | 0,873
+[2025-09-10 17:37:58] [INFORMATION] [291] [Link] All/Active/Target/Ratio: 183 | 151 | 1.266 | 11.9%
+[2025-09-10 17:37:58] [INFORMATION] [292] [Mirror] All/Ready/Target/Ratio: 73 | 61 | 71 | 0,859
+[2025-09-10 17:37:58] [INFORMATION] [292] [Link] All/Active/Target/Ratio: 171 | 150 | 1.266 | 11.8%
+[2025-09-10 17:37:58] [INFORMATION] [293] [Mirror] All/Ready/Target/Ratio: 71 | 61 | 71 | 0,859
+[2025-09-10 17:37:58] [INFORMATION] [293] [Link] All/Active/Target/Ratio: 171 | 151 | 1.234 | 12.2%
+[2025-09-10 17:37:58] [INFORMATION] [294] [Mirror] All/Ready/Target/Ratio: 71 | 62 | 71 | 0,873
+[2025-09-10 17:37:58] [INFORMATION] [294] [Link] All/Active/Target/Ratio: 171 | 146 | 1.234 | 11.8%
+[2025-09-10 17:37:59] [INFORMATION] [295] [Mirror] All/Ready/Target/Ratio: 70 | 61 | 71 | 0,859
+[2025-09-10 17:37:59] [INFORMATION] [295] [Link] All/Active/Target/Ratio: 171 | 141 | 1.218 | 11.6%
+[2025-09-10 17:37:59] [INFORMATION] [296] [Mirror] All/Ready/Target/Ratio: 70 | 61 | 71 | 0,859
+[2025-09-10 17:37:59] [INFORMATION] [296] [Link] All/Active/Target/Ratio: 171 | 143 | 1.218 | 11.7%
+[2025-09-10 17:37:59] [INFORMATION] [297] [Mirror] All/Ready/Target/Ratio: 70 | 59 | 71 | 0,831
+[2025-09-10 17:37:59] [INFORMATION] [297] [Link] All/Active/Target/Ratio: 171 | 139 | 1.218 | 11.4%
+[2025-09-10 17:37:59] [INFORMATION] [298] [Mirror] All/Ready/Target/Ratio: 70 | 59 | 71 | 0,831
+[2025-09-10 17:37:59] [INFORMATION] [298] [Link] All/Active/Target/Ratio: 171 | 141 | 1.218 | 11.6%
+[2025-09-10 17:38:00] [INFORMATION] [299] [Mirror] All/Ready/Target/Ratio: 70 | 59 | 71 | 0,831
+[2025-09-10 17:38:00] [INFORMATION] [299] [Link] All/Active/Target/Ratio: 171 | 143 | 1.218 | 11.7%
+[2025-09-10 17:38:00] [INFORMATION] [300] [Mirror] All/Ready/Target/Ratio: 70 | 60 | 71 | 0,845
+[2025-09-10 17:38:00] [INFORMATION] [300] [Link] All/Active/Target/Ratio: 171 | 146 | 1.218 | 12.0%
+[2025-09-10 17:38:00] [INFORMATION] setNumMirrors(50,300)
+[2025-09-10 17:38:00] [INFORMATION] [301] [Mirror] All/Ready/Target/Ratio: 70 | 38 | 50 | 0,76
+[2025-09-10 17:38:00] [INFORMATION] [301] [Link] All/Active/Target/Ratio: 177 | 95 | 853 | 11.1%
+[2025-09-10 17:38:00] [INFORMATION] [302] [Mirror] All/Ready/Target/Ratio: 70 | 38 | 50 | 0,76
+[2025-09-10 17:38:00] [INFORMATION] [302] [Link] All/Active/Target/Ratio: 114 | 95 | 853 | 11.1%
+[2025-09-10 17:38:01] [INFORMATION] [303] [Mirror] All/Ready/Target/Ratio: 62 | 38 | 50 | 0,76
+[2025-09-10 17:38:01] [INFORMATION] [303] [Link] All/Active/Target/Ratio: 114 | 96 | 757 | 12.7%
+[2025-09-10 17:38:01] [INFORMATION] [304] [Mirror] All/Ready/Target/Ratio: 52 | 36 | 50 | 0,72
+[2025-09-10 17:38:01] [INFORMATION] [304] [Link] All/Active/Target/Ratio: 114 | 91 | 637 | 14.3%
+[2025-09-10 17:38:01] [INFORMATION] [305] [Mirror] All/Ready/Target/Ratio: 44 | 36 | 50 | 0,72
+[2025-09-10 17:38:01] [INFORMATION] [305] [Link] All/Active/Target/Ratio: 114 | 94 | 541 | 17.4%
+[2025-09-10 17:38:01] [INFORMATION] [306] [Mirror] All/Ready/Target/Ratio: 44 | 38 | 50 | 0,76
+[2025-09-10 17:38:01] [INFORMATION] [306] [Link] All/Active/Target/Ratio: 114 | 95 | 541 | 17.6%
+[2025-09-10 17:38:02] [INFORMATION] [307] [Mirror] All/Ready/Target/Ratio: 44 | 38 | 50 | 0,76
+[2025-09-10 17:38:02] [INFORMATION] [307] [Link] All/Active/Target/Ratio: 114 | 97 | 541 | 17.9%
+[2025-09-10 17:38:02] [INFORMATION] [308] [Mirror] All/Ready/Target/Ratio: 44 | 37 | 50 | 0,74
+[2025-09-10 17:38:02] [INFORMATION] [308] [Link] All/Active/Target/Ratio: 114 | 92 | 541 | 17.0%
+[2025-09-10 17:38:02] [INFORMATION] [309] [Mirror] All/Ready/Target/Ratio: 44 | 38 | 50 | 0,76
+[2025-09-10 17:38:02] [INFORMATION] [309] [Link] All/Active/Target/Ratio: 114 | 93 | 541 | 17.2%
+[2025-09-10 17:38:02] [INFORMATION] [310] [Mirror] All/Ready/Target/Ratio: 44 | 38 | 50 | 0,76
+[2025-09-10 17:38:02] [INFORMATION] [310] [Link] All/Active/Target/Ratio: 114 | 90 | 541 | 16.6%
+[2025-09-10 17:38:03] [INFORMATION] setNumMirrors(51,310)
+[2025-09-10 17:38:03] [INFORMATION] [311] [Mirror] All/Ready/Target/Ratio: 56 | 33 | 51 | 0,647
+[2025-09-10 17:38:03] [INFORMATION] [311] [Link] All/Active/Target/Ratio: 143 | 73 | 742 | 9.8%
+[2025-09-10 17:38:03] [INFORMATION] [312] [Mirror] All/Ready/Target/Ratio: 56 | 33 | 51 | 0,647
+[2025-09-10 17:38:03] [INFORMATION] [312] [Link] All/Active/Target/Ratio: 119 | 73 | 742 | 9.8%
+[2025-09-10 17:38:03] [INFORMATION] [313] [Mirror] All/Ready/Target/Ratio: 55 | 33 | 51 | 0,647
+[2025-09-10 17:38:03] [INFORMATION] [313] [Link] All/Active/Target/Ratio: 119 | 73 | 730 | 10.0%
+[2025-09-10 17:38:04] [INFORMATION] [314] [Mirror] All/Ready/Target/Ratio: 52 | 33 | 51 | 0,647
+[2025-09-10 17:38:04] [INFORMATION] [314] [Link] All/Active/Target/Ratio: 119 | 74 | 694 | 10.7%
+[2025-09-10 17:38:04] [INFORMATION] [315] [Mirror] All/Ready/Target/Ratio: 51 | 33 | 51 | 0,647
+[2025-09-10 17:38:04] [INFORMATION] [315] [Link] All/Active/Target/Ratio: 119 | 74 | 682 | 10.9%
+[2025-09-10 17:38:04] [INFORMATION] [316] [Mirror] All/Ready/Target/Ratio: 51 | 33 | 51 | 0,647
+[2025-09-10 17:38:04] [INFORMATION] [316] [Link] All/Active/Target/Ratio: 119 | 74 | 682 | 10.9%
+[2025-09-10 17:38:04] [INFORMATION] [317] [Mirror] All/Ready/Target/Ratio: 51 | 33 | 51 | 0,647
+[2025-09-10 17:38:04] [INFORMATION] [317] [Link] All/Active/Target/Ratio: 119 | 79 | 682 | 11.6%
+[2025-09-10 17:38:05] [INFORMATION] [318] [Mirror] All/Ready/Target/Ratio: 51 | 33 | 51 | 0,647
+[2025-09-10 17:38:05] [INFORMATION] [318] [Link] All/Active/Target/Ratio: 119 | 83 | 682 | 12.2%
+[2025-09-10 17:38:05] [INFORMATION] [319] [Mirror] All/Ready/Target/Ratio: 51 | 35 | 51 | 0,686
+[2025-09-10 17:38:05] [INFORMATION] [319] [Link] All/Active/Target/Ratio: 119 | 85 | 682 | 12.5%
+[2025-09-10 17:38:05] [INFORMATION] [320] [Mirror] All/Ready/Target/Ratio: 51 | 35 | 51 | 0,686
+[2025-09-10 17:38:05] [INFORMATION] [320] [Link] All/Active/Target/Ratio: 119 | 89 | 682 | 13.0%
+[2025-09-10 17:38:05] [INFORMATION] setNumMirrors(52,320)
+[2025-09-10 17:38:05] [INFORMATION] [321] [Mirror] All/Ready/Target/Ratio: 52 | 35 | 52 | 0,673
+[2025-09-10 17:38:05] [INFORMATION] [321] [Link] All/Active/Target/Ratio: 120 | 96 | 696 | 13.8%
+[2025-09-10 17:38:06] [INFORMATION] [322] [Mirror] All/Ready/Target/Ratio: 52 | 35 | 52 | 0,673
+[2025-09-10 17:38:06] [INFORMATION] [322] [Link] All/Active/Target/Ratio: 120 | 98 | 696 | 14.1%
+[2025-09-10 17:38:06] [INFORMATION] [323] [Mirror] All/Ready/Target/Ratio: 52 | 36 | 52 | 0,692
+[2025-09-10 17:38:06] [INFORMATION] [323] [Link] All/Active/Target/Ratio: 120 | 100 | 696 | 14.4%
+[2025-09-10 17:38:06] [INFORMATION] [324] [Mirror] All/Ready/Target/Ratio: 52 | 37 | 52 | 0,712
+[2025-09-10 17:38:06] [INFORMATION] [324] [Link] All/Active/Target/Ratio: 120 | 106 | 696 | 15.2%
+[2025-09-10 17:38:06] [INFORMATION] [325] [Mirror] All/Ready/Target/Ratio: 52 | 37 | 52 | 0,712
+[2025-09-10 17:38:06] [INFORMATION] [325] [Link] All/Active/Target/Ratio: 120 | 110 | 696 | 15.8%
+[2025-09-10 17:38:07] [INFORMATION] [326] [Mirror] All/Ready/Target/Ratio: 52 | 37 | 52 | 0,712
+[2025-09-10 17:38:07] [INFORMATION] [326] [Link] All/Active/Target/Ratio: 120 | 109 | 696 | 15.7%
+[2025-09-10 17:38:07] [INFORMATION] [327] [Mirror] All/Ready/Target/Ratio: 52 | 36 | 52 | 0,692
+[2025-09-10 17:38:07] [INFORMATION] [327] [Link] All/Active/Target/Ratio: 120 | 104 | 696 | 14.9%
+[2025-09-10 17:38:07] [INFORMATION] [328] [Mirror] All/Ready/Target/Ratio: 52 | 36 | 52 | 0,692
+[2025-09-10 17:38:07] [INFORMATION] [328] [Link] All/Active/Target/Ratio: 120 | 106 | 696 | 15.2%
+[2025-09-10 17:38:08] [INFORMATION] [329] [Mirror] All/Ready/Target/Ratio: 52 | 36 | 52 | 0,692
+[2025-09-10 17:38:08] [INFORMATION] [329] [Link] All/Active/Target/Ratio: 120 | 106 | 696 | 15.2%
+[2025-09-10 17:38:08] [INFORMATION] [330] [Mirror] All/Ready/Target/Ratio: 52 | 37 | 52 | 0,712
+[2025-09-10 17:38:08] [INFORMATION] [330] [Link] All/Active/Target/Ratio: 120 | 105 | 696 | 15.1%
+[2025-09-10 17:38:08] [INFORMATION] setNumMirrors(54,330)
+[2025-09-10 17:38:08] [INFORMATION] [331] [Mirror] All/Ready/Target/Ratio: 54 | 37 | 54 | 0,685
+[2025-09-10 17:38:08] [INFORMATION] [331] [Link] All/Active/Target/Ratio: 127 | 103 | 724 | 14.2%
+[2025-09-10 17:38:08] [INFORMATION] [332] [Mirror] All/Ready/Target/Ratio: 54 | 39 | 54 | 0,722
+[2025-09-10 17:38:08] [INFORMATION] [332] [Link] All/Active/Target/Ratio: 124 | 102 | 724 | 14.1%
+[2025-09-10 17:38:09] [INFORMATION] [333] [Mirror] All/Ready/Target/Ratio: 54 | 39 | 54 | 0,722
+[2025-09-10 17:38:09] [INFORMATION] [333] [Link] All/Active/Target/Ratio: 124 | 102 | 724 | 14.1%
+[2025-09-10 17:38:09] [INFORMATION] [334] [Mirror] All/Ready/Target/Ratio: 54 | 38 | 54 | 0,704
+[2025-09-10 17:38:09] [INFORMATION] [334] [Link] All/Active/Target/Ratio: 124 | 101 | 724 | 14.0%
+[2025-09-10 17:38:09] [INFORMATION] [335] [Mirror] All/Ready/Target/Ratio: 54 | 39 | 54 | 0,722
+[2025-09-10 17:38:09] [INFORMATION] [335] [Link] All/Active/Target/Ratio: 124 | 102 | 724 | 14.1%
+[2025-09-10 17:38:09] [INFORMATION] [336] [Mirror] All/Ready/Target/Ratio: 54 | 41 | 54 | 0,759
+[2025-09-10 17:38:09] [INFORMATION] [336] [Link] All/Active/Target/Ratio: 124 | 102 | 724 | 14.1%
+[2025-09-10 17:38:10] [INFORMATION] [337] [Mirror] All/Ready/Target/Ratio: 54 | 41 | 54 | 0,759
+[2025-09-10 17:38:10] [INFORMATION] [337] [Link] All/Active/Target/Ratio: 124 | 103 | 724 | 14.2%
+[2025-09-10 17:38:10] [INFORMATION] [338] [Mirror] All/Ready/Target/Ratio: 54 | 42 | 54 | 0,778
+[2025-09-10 17:38:10] [INFORMATION] [338] [Link] All/Active/Target/Ratio: 124 | 106 | 724 | 14.6%
+[2025-09-10 17:38:10] [INFORMATION] [339] [Mirror] All/Ready/Target/Ratio: 54 | 43 | 54 | 0,796
+[2025-09-10 17:38:10] [INFORMATION] [339] [Link] All/Active/Target/Ratio: 124 | 106 | 724 | 14.6%
+[2025-09-10 17:38:10] [INFORMATION] [340] [Mirror] All/Ready/Target/Ratio: 54 | 43 | 54 | 0,796
+[2025-09-10 17:38:10] [INFORMATION] [340] [Link] All/Active/Target/Ratio: 124 | 110 | 724 | 15.2%
+[2025-09-10 17:38:11] [INFORMATION] setNumMirrors(58,340)
+[2025-09-10 17:38:11] [INFORMATION] [341] [Mirror] All/Ready/Target/Ratio: 58 | 43 | 58 | 0,741
+[2025-09-10 17:38:11] [INFORMATION] [341] [Link] All/Active/Target/Ratio: 143 | 106 | 780 | 13.6%
+[2025-09-10 17:38:11] [INFORMATION] [342] [Mirror] All/Ready/Target/Ratio: 58 | 45 | 58 | 0,776
+[2025-09-10 17:38:11] [INFORMATION] [342] [Link] All/Active/Target/Ratio: 134 | 106 | 780 | 13.6%
+[2025-09-10 17:38:11] [INFORMATION] [343] [Mirror] All/Ready/Target/Ratio: 58 | 46 | 58 | 0,793
+[2025-09-10 17:38:11] [INFORMATION] [343] [Link] All/Active/Target/Ratio: 134 | 106 | 780 | 13.6%
+[2025-09-10 17:38:12] [INFORMATION] [344] [Mirror] All/Ready/Target/Ratio: 58 | 46 | 58 | 0,793
+[2025-09-10 17:38:12] [INFORMATION] [344] [Link] All/Active/Target/Ratio: 134 | 106 | 780 | 13.6%
+[2025-09-10 17:38:12] [INFORMATION] [345] [Mirror] All/Ready/Target/Ratio: 58 | 46 | 58 | 0,793
+[2025-09-10 17:38:12] [INFORMATION] [345] [Link] All/Active/Target/Ratio: 134 | 109 | 780 | 14.0%
+[2025-09-10 17:38:12] [INFORMATION] [346] [Mirror] All/Ready/Target/Ratio: 58 | 46 | 58 | 0,793
+[2025-09-10 17:38:12] [INFORMATION] [346] [Link] All/Active/Target/Ratio: 134 | 111 | 780 | 14.2%
+[2025-09-10 17:38:12] [INFORMATION] [347] [Mirror] All/Ready/Target/Ratio: 58 | 46 | 58 | 0,793
+[2025-09-10 17:38:12] [INFORMATION] [347] [Link] All/Active/Target/Ratio: 134 | 109 | 780 | 14.0%
+[2025-09-10 17:38:13] [INFORMATION] [348] [Mirror] All/Ready/Target/Ratio: 58 | 46 | 58 | 0,793
+[2025-09-10 17:38:13] [INFORMATION] [348] [Link] All/Active/Target/Ratio: 134 | 109 | 780 | 14.0%
+[2025-09-10 17:38:13] [INFORMATION] [349] [Mirror] All/Ready/Target/Ratio: 58 | 46 | 58 | 0,793
+[2025-09-10 17:38:13] [INFORMATION] [349] [Link] All/Active/Target/Ratio: 134 | 109 | 780 | 14.0%
+[2025-09-10 17:38:13] [INFORMATION] [350] [Mirror] All/Ready/Target/Ratio: 58 | 44 | 58 | 0,759
+[2025-09-10 17:38:13] [INFORMATION] [350] [Link] All/Active/Target/Ratio: 134 | 104 | 780 | 13.3%
+[2025-09-10 17:38:13] [INFORMATION] setNumMirrors(66,350)
+[2025-09-10 17:38:13] [INFORMATION] [351] [Mirror] All/Ready/Target/Ratio: 70 | 45 | 66 | 0,682
+[2025-09-10 17:38:13] [INFORMATION] [351] [Link] All/Active/Target/Ratio: 182 | 101 | 1.210 | 8.3%
+[2025-09-10 17:38:14] [INFORMATION] [352] [Mirror] All/Ready/Target/Ratio: 70 | 44 | 66 | 0,667
+[2025-09-10 17:38:14] [INFORMATION] [352] [Link] All/Active/Target/Ratio: 164 | 98 | 1.210 | 8.1%
+[2025-09-10 17:38:14] [INFORMATION] [353] [Mirror] All/Ready/Target/Ratio: 69 | 44 | 66 | 0,667
+[2025-09-10 17:38:14] [INFORMATION] [353] [Link] All/Active/Target/Ratio: 164 | 98 | 1.194 | 8.2%
+[2025-09-10 17:38:14] [INFORMATION] [354] [Mirror] All/Ready/Target/Ratio: 69 | 45 | 66 | 0,682
+[2025-09-10 17:38:14] [INFORMATION] [354] [Link] All/Active/Target/Ratio: 163 | 95 | 1.194 | 8.0%
+[2025-09-10 17:38:14] [INFORMATION] [355] [Mirror] All/Ready/Target/Ratio: 66 | 45 | 66 | 0,682
+[2025-09-10 17:38:14] [INFORMATION] [355] [Link] All/Active/Target/Ratio: 163 | 96 | 1.146 | 8.4%
+[2025-09-10 17:38:15] [INFORMATION] [356] [Mirror] All/Ready/Target/Ratio: 66 | 45 | 66 | 0,682
+[2025-09-10 17:38:15] [INFORMATION] [356] [Link] All/Active/Target/Ratio: 163 | 96 | 1.146 | 8.4%
+[2025-09-10 17:38:15] [INFORMATION] [357] [Mirror] All/Ready/Target/Ratio: 66 | 47 | 66 | 0,712
+[2025-09-10 17:38:15] [INFORMATION] [357] [Link] All/Active/Target/Ratio: 163 | 96 | 1.146 | 8.4%
+[2025-09-10 17:38:15] [INFORMATION] [358] [Mirror] All/Ready/Target/Ratio: 66 | 48 | 66 | 0,727
+[2025-09-10 17:38:15] [INFORMATION] [358] [Link] All/Active/Target/Ratio: 163 | 97 | 1.146 | 8.5%
+[2025-09-10 17:38:15] [INFORMATION] [359] [Mirror] All/Ready/Target/Ratio: 66 | 47 | 66 | 0,712
+[2025-09-10 17:38:15] [INFORMATION] [359] [Link] All/Active/Target/Ratio: 163 | 94 | 1.146 | 8.2%
+[2025-09-10 17:38:16] [INFORMATION] [360] [Mirror] All/Ready/Target/Ratio: 66 | 47 | 66 | 0,712
+[2025-09-10 17:38:16] [INFORMATION] [360] [Link] All/Active/Target/Ratio: 163 | 97 | 1.146 | 8.5%
+[2025-09-10 17:38:16] [INFORMATION] setNumMirrors(82,360)
+[2025-09-10 17:38:16] [INFORMATION] [361] [Mirror] All/Ready/Target/Ratio: 82 | 48 | 82 | 0,585
+[2025-09-10 17:38:16] [INFORMATION] [361] [Link] All/Active/Target/Ratio: 196 | 96 | 1.515 | 6.3%
+[2025-09-10 17:38:16] [INFORMATION] [362] [Mirror] All/Ready/Target/Ratio: 82 | 47 | 82 | 0,573
+[2025-09-10 17:38:16] [INFORMATION] [362] [Link] All/Active/Target/Ratio: 187 | 103 | 1.515 | 6.8%
+[2025-09-10 17:38:17] [INFORMATION] [363] [Mirror] All/Ready/Target/Ratio: 82 | 47 | 82 | 0,573
+[2025-09-10 17:38:17] [INFORMATION] [363] [Link] All/Active/Target/Ratio: 187 | 110 | 1.515 | 7.3%
+[2025-09-10 17:38:17] [INFORMATION] [364] [Mirror] All/Ready/Target/Ratio: 82 | 47 | 82 | 0,573
+[2025-09-10 17:38:17] [INFORMATION] [364] [Link] All/Active/Target/Ratio: 187 | 115 | 1.515 | 7.6%
+[2025-09-10 17:38:17] [INFORMATION] [365] [Mirror] All/Ready/Target/Ratio: 82 | 47 | 82 | 0,573
+[2025-09-10 17:38:17] [INFORMATION] [365] [Link] All/Active/Target/Ratio: 187 | 123 | 1.515 | 8.1%
+[2025-09-10 17:38:17] [INFORMATION] [366] [Mirror] All/Ready/Target/Ratio: 82 | 48 | 82 | 0,585
+[2025-09-10 17:38:17] [INFORMATION] [366] [Link] All/Active/Target/Ratio: 187 | 127 | 1.515 | 8.4%
+[2025-09-10 17:38:18] [INFORMATION] [367] [Mirror] All/Ready/Target/Ratio: 82 | 48 | 82 | 0,585
+[2025-09-10 17:38:18] [INFORMATION] [367] [Link] All/Active/Target/Ratio: 187 | 129 | 1.515 | 8.5%
+[2025-09-10 17:38:18] [INFORMATION] [368] [Mirror] All/Ready/Target/Ratio: 82 | 49 | 82 | 0,598
+[2025-09-10 17:38:18] [INFORMATION] [368] [Link] All/Active/Target/Ratio: 187 | 131 | 1.515 | 8.6%
+[2025-09-10 17:38:18] [INFORMATION] [369] [Mirror] All/Ready/Target/Ratio: 82 | 51 | 82 | 0,622
+[2025-09-10 17:38:18] [INFORMATION] [369] [Link] All/Active/Target/Ratio: 187 | 131 | 1.515 | 8.6%
+[2025-09-10 17:38:19] [INFORMATION] [370] [Mirror] All/Ready/Target/Ratio: 82 | 51 | 82 | 0,622
+[2025-09-10 17:38:19] [INFORMATION] [370] [Link] All/Active/Target/Ratio: 187 | 134 | 1.515 | 8.8%
+[2025-09-10 17:38:19] [INFORMATION] setNumMirrors(114,370)
+[2025-09-10 17:38:19] [INFORMATION] [371] [Mirror] All/Ready/Target/Ratio: 114 | 51 | 114 | 0,447
+[2025-09-10 17:38:19] [INFORMATION] [371] [Link] All/Active/Target/Ratio: 270 | 130 | 2.682 | 4.8%
+[2025-09-10 17:38:19] [INFORMATION] [372] [Mirror] All/Ready/Target/Ratio: 114 | 52 | 114 | 0,456
+[2025-09-10 17:38:19] [INFORMATION] [372] [Link] All/Active/Target/Ratio: 258 | 134 | 2.682 | 5.0%
+[2025-09-10 17:38:20] [INFORMATION] [373] [Mirror] All/Ready/Target/Ratio: 114 | 52 | 114 | 0,456
+[2025-09-10 17:38:20] [INFORMATION] [373] [Link] All/Active/Target/Ratio: 258 | 136 | 2.682 | 5.1%
+[2025-09-10 17:38:20] [INFORMATION] [374] [Mirror] All/Ready/Target/Ratio: 114 | 52 | 114 | 0,456
+[2025-09-10 17:38:20] [INFORMATION] [374] [Link] All/Active/Target/Ratio: 258 | 139 | 2.682 | 5.2%
+[2025-09-10 17:38:20] [INFORMATION] [375] [Mirror] All/Ready/Target/Ratio: 114 | 54 | 114 | 0,474
+[2025-09-10 17:38:20] [INFORMATION] [375] [Link] All/Active/Target/Ratio: 258 | 147 | 2.682 | 5.5%
+[2025-09-10 17:38:21] [INFORMATION] [376] [Mirror] All/Ready/Target/Ratio: 114 | 56 | 114 | 0,491
+[2025-09-10 17:38:21] [INFORMATION] [376] [Link] All/Active/Target/Ratio: 258 | 155 | 2.682 | 5.8%
+[2025-09-10 17:38:21] [INFORMATION] [377] [Mirror] All/Ready/Target/Ratio: 114 | 56 | 114 | 0,491
+[2025-09-10 17:38:21] [INFORMATION] [377] [Link] All/Active/Target/Ratio: 258 | 159 | 2.682 | 5.9%
+[2025-09-10 17:38:21] [INFORMATION] [378] [Mirror] All/Ready/Target/Ratio: 114 | 58 | 114 | 0,509
+[2025-09-10 17:38:21] [INFORMATION] [378] [Link] All/Active/Target/Ratio: 258 | 161 | 2.682 | 6.0%
+[2025-09-10 17:38:21] [INFORMATION] [379] [Mirror] All/Ready/Target/Ratio: 114 | 60 | 114 | 0,526
+[2025-09-10 17:38:21] [INFORMATION] [379] [Link] All/Active/Target/Ratio: 258 | 156 | 2.682 | 5.8%
+[2025-09-10 17:38:22] [INFORMATION] [380] [Mirror] All/Ready/Target/Ratio: 114 | 61 | 114 | 0,535
+[2025-09-10 17:38:22] [INFORMATION] [380] [Link] All/Active/Target/Ratio: 258 | 149 | 2.682 | 5.6%
+[2025-09-10 17:38:22] [INFORMATION] setNumMirrors(178,380)
+[2025-09-10 17:38:22] [INFORMATION] [381] [Mirror] All/Ready/Target/Ratio: 178 | 61 | 178 | 0,343
+[2025-09-10 17:38:22] [INFORMATION] [381] [Link] All/Active/Target/Ratio: 414 | 151 | 5.976 | 2.5%
+[2025-09-10 17:38:22] [INFORMATION] [382] [Mirror] All/Ready/Target/Ratio: 178 | 61 | 178 | 0,343
+[2025-09-10 17:38:22] [INFORMATION] [382] [Link] All/Active/Target/Ratio: 402 | 162 | 5.976 | 2.7%
+[2025-09-10 17:38:23] [INFORMATION] [383] [Mirror] All/Ready/Target/Ratio: 178 | 61 | 178 | 0,343
+[2025-09-10 17:38:23] [INFORMATION] [383] [Link] All/Active/Target/Ratio: 402 | 171 | 5.976 | 2.9%
+[2025-09-10 17:38:23] [INFORMATION] [384] [Mirror] All/Ready/Target/Ratio: 178 | 62 | 178 | 0,348
+[2025-09-10 17:38:23] [INFORMATION] [384] [Link] All/Active/Target/Ratio: 402 | 178 | 5.976 | 3.0%
+[2025-09-10 17:38:23] [INFORMATION] [385] [Mirror] All/Ready/Target/Ratio: 178 | 63 | 178 | 0,354
+[2025-09-10 17:38:23] [INFORMATION] [385] [Link] All/Active/Target/Ratio: 402 | 196 | 5.976 | 3.3%
+[2025-09-10 17:38:24] [INFORMATION] [386] [Mirror] All/Ready/Target/Ratio: 178 | 64 | 178 | 0,36
+[2025-09-10 17:38:24] [INFORMATION] [386] [Link] All/Active/Target/Ratio: 402 | 202 | 5.976 | 3.4%
+[2025-09-10 17:38:24] [INFORMATION] [387] [Mirror] All/Ready/Target/Ratio: 178 | 66 | 178 | 0,371
+[2025-09-10 17:38:24] [INFORMATION] [387] [Link] All/Active/Target/Ratio: 402 | 207 | 5.976 | 3.5%
+[2025-09-10 17:38:24] [INFORMATION] [388] [Mirror] All/Ready/Target/Ratio: 178 | 65 | 178 | 0,365
+[2025-09-10 17:38:24] [INFORMATION] [388] [Link] All/Active/Target/Ratio: 402 | 201 | 5.976 | 3.4%
+[2025-09-10 17:38:25] [INFORMATION] [389] [Mirror] All/Ready/Target/Ratio: 178 | 66 | 178 | 0,371
+[2025-09-10 17:38:25] [INFORMATION] [389] [Link] All/Active/Target/Ratio: 402 | 197 | 5.976 | 3.3%
+[2025-09-10 17:38:25] [INFORMATION] [390] [Mirror] All/Ready/Target/Ratio: 178 | 71 | 178 | 0,399
+[2025-09-10 17:38:25] [INFORMATION] [390] [Link] All/Active/Target/Ratio: 402 | 203 | 5.976 | 3.4%
+[2025-09-10 17:38:25] [INFORMATION] setNumMirrors(306,390)
+[2025-09-10 17:38:25] [INFORMATION] [391] [Mirror] All/Ready/Target/Ratio: 306 | 72 | 306 | 0,235
+[2025-09-10 17:38:25] [INFORMATION] [391] [Link] All/Active/Target/Ratio: 705 | 205 | 17.618 | 1.2%
+[2025-09-10 17:38:26] [INFORMATION] [392] [Mirror] All/Ready/Target/Ratio: 306 | 76 | 306 | 0,248
+[2025-09-10 17:38:26] [INFORMATION] [392] [Link] All/Active/Target/Ratio: 699 | 210 | 17.618 | 1.2%
+[2025-09-10 17:38:26] [INFORMATION] [393] [Mirror] All/Ready/Target/Ratio: 306 | 80 | 306 | 0,261
+[2025-09-10 17:38:26] [INFORMATION] [393] [Link] All/Active/Target/Ratio: 699 | 227 | 17.618 | 1.3%
+[2025-09-10 17:38:26] [INFORMATION] [394] [Mirror] All/Ready/Target/Ratio: 306 | 84 | 306 | 0,275
+[2025-09-10 17:38:26] [INFORMATION] [394] [Link] All/Active/Target/Ratio: 699 | 258 | 17.618 | 1.5%
+[2025-09-10 17:38:27] [INFORMATION] [395] [Mirror] All/Ready/Target/Ratio: 306 | 86 | 306 | 0,281
+[2025-09-10 17:38:27] [INFORMATION] [395] [Link] All/Active/Target/Ratio: 699 | 280 | 17.618 | 1.6%
+[2025-09-10 17:38:27] [INFORMATION] [396] [Mirror] All/Ready/Target/Ratio: 306 | 88 | 306 | 0,288
+[2025-09-10 17:38:27] [INFORMATION] [396] [Link] All/Active/Target/Ratio: 699 | 300 | 17.618 | 1.7%
+[2025-09-10 17:38:27] [INFORMATION] [397] [Mirror] All/Ready/Target/Ratio: 306 | 89 | 306 | 0,291
+[2025-09-10 17:38:27] [INFORMATION] [397] [Link] All/Active/Target/Ratio: 699 | 321 | 17.618 | 1.8%
+[2025-09-10 17:38:28] [INFORMATION] [398] [Mirror] All/Ready/Target/Ratio: 306 | 91 | 306 | 0,297
+[2025-09-10 17:38:28] [INFORMATION] [398] [Link] All/Active/Target/Ratio: 699 | 333 | 17.618 | 1.9%
+[2025-09-10 17:38:28] [INFORMATION] [399] [Mirror] All/Ready/Target/Ratio: 306 | 94 | 306 | 0,307
+[2025-09-10 17:38:28] [INFORMATION] [399] [Link] All/Active/Target/Ratio: 699 | 340 | 17.618 | 1.9%
+[2025-09-10 17:38:29] [INFORMATION] [400] [Mirror] All/Ready/Target/Ratio: 306 | 101 | 306 | 0,33
+[2025-09-10 17:38:29] [INFORMATION] [400] [Link] All/Active/Target/Ratio: 699 | 336 | 17.618 | 1.9%
+[2025-09-10 17:38:29] [INFORMATION] [401] [Mirror] All/Ready/Target/Ratio: 306 | 105 | 306 | 0,343
+[2025-09-10 17:38:29] [INFORMATION] [401] [Link] All/Active/Target/Ratio: 699 | 352 | 17.618 | 2.0%
+[2025-09-10 17:38:29] [INFORMATION] [402] [Mirror] All/Ready/Target/Ratio: 306 | 112 | 306 | 0,366
+[2025-09-10 17:38:29] [INFORMATION] [402] [Link] All/Active/Target/Ratio: 699 | 368 | 17.618 | 2.1%
+[2025-09-10 17:38:29] [INFORMATION] [403] [Mirror] All/Ready/Target/Ratio: 306 | 115 | 306 | 0,376
+[2025-09-10 17:38:29] [INFORMATION] [403] [Link] All/Active/Target/Ratio: 699 | 403 | 17.618 | 2.3%
+[2025-09-10 17:38:30] [INFORMATION] [404] [Mirror] All/Ready/Target/Ratio: 306 | 121 | 306 | 0,395
+[2025-09-10 17:38:30] [INFORMATION] [404] [Link] All/Active/Target/Ratio: 699 | 453 | 17.618 | 2.6%
+[2025-09-10 17:38:30] [INFORMATION] [405] [Mirror] All/Ready/Target/Ratio: 306 | 124 | 306 | 0,405
+[2025-09-10 17:38:30] [INFORMATION] [405] [Link] All/Active/Target/Ratio: 699 | 503 | 17.618 | 2.9%
+[2025-09-10 17:38:31] [INFORMATION] [406] [Mirror] All/Ready/Target/Ratio: 306 | 133 | 306 | 0,435
+[2025-09-10 17:38:31] [INFORMATION] [406] [Link] All/Active/Target/Ratio: 699 | 540 | 17.618 | 3.1%
+[2025-09-10 17:38:31] [INFORMATION] [407] [Mirror] All/Ready/Target/Ratio: 306 | 140 | 306 | 0,458
+[2025-09-10 17:38:31] [INFORMATION] [407] [Link] All/Active/Target/Ratio: 699 | 575 | 17.618 | 3.3%
+[2025-09-10 17:38:31] [INFORMATION] [408] [Mirror] All/Ready/Target/Ratio: 306 | 147 | 306 | 0,48
+[2025-09-10 17:38:31] [INFORMATION] [408] [Link] All/Active/Target/Ratio: 699 | 588 | 17.618 | 3.3%
+[2025-09-10 17:38:32] [INFORMATION] [409] [Mirror] All/Ready/Target/Ratio: 306 | 158 | 306 | 0,516
+[2025-09-10 17:38:32] [INFORMATION] [409] [Link] All/Active/Target/Ratio: 699 | 601 | 17.618 | 3.4%
+[2025-09-10 17:38:32] [INFORMATION] [410] [Mirror] All/Ready/Target/Ratio: 306 | 169 | 306 | 0,552
+[2025-09-10 17:38:32] [INFORMATION] [410] [Link] All/Active/Target/Ratio: 699 | 608 | 17.618 | 3.5%
+[2025-09-10 17:38:33] [INFORMATION] [411] [Mirror] All/Ready/Target/Ratio: 306 | 178 | 306 | 0,582
+[2025-09-10 17:38:33] [INFORMATION] [411] [Link] All/Active/Target/Ratio: 699 | 613 | 17.618 | 3.5%
+[2025-09-10 17:38:33] [INFORMATION] [412] [Mirror] All/Ready/Target/Ratio: 306 | 187 | 306 | 0,611
+[2025-09-10 17:38:33] [INFORMATION] [412] [Link] All/Active/Target/Ratio: 699 | 618 | 17.618 | 3.5%
+[2025-09-10 17:38:34] [INFORMATION] [413] [Mirror] All/Ready/Target/Ratio: 306 | 201 | 306 | 0,657
+[2025-09-10 17:38:34] [INFORMATION] [413] [Link] All/Active/Target/Ratio: 699 | 627 | 17.618 | 3.6%
+[2025-09-10 17:38:34] [INFORMATION] [414] [Mirror] All/Ready/Target/Ratio: 306 | 208 | 306 | 0,68
+[2025-09-10 17:38:34] [INFORMATION] [414] [Link] All/Active/Target/Ratio: 699 | 629 | 17.618 | 3.6%
+[2025-09-10 17:38:34] [INFORMATION] [415] [Mirror] All/Ready/Target/Ratio: 306 | 215 | 306 | 0,703
+[2025-09-10 17:38:34] [INFORMATION] [415] [Link] All/Active/Target/Ratio: 699 | 620 | 17.618 | 3.5%
+[2025-09-10 17:38:35] [INFORMATION] [416] [Mirror] All/Ready/Target/Ratio: 306 | 228 | 306 | 0,745
+[2025-09-10 17:38:35] [INFORMATION] [416] [Link] All/Active/Target/Ratio: 699 | 625 | 17.618 | 3.5%
+[2025-09-10 17:38:35] [INFORMATION] [417] [Mirror] All/Ready/Target/Ratio: 306 | 236 | 306 | 0,771
+[2025-09-10 17:38:35] [INFORMATION] [417] [Link] All/Active/Target/Ratio: 699 | 630 | 17.618 | 3.6%
+[2025-09-10 17:38:35] [INFORMATION] [418] [Mirror] All/Ready/Target/Ratio: 306 | 240 | 306 | 0,784
+[2025-09-10 17:38:35] [INFORMATION] [418] [Link] All/Active/Target/Ratio: 699 | 626 | 17.618 | 3.6%
+[2025-09-10 17:38:36] [INFORMATION] [419] [Mirror] All/Ready/Target/Ratio: 306 | 241 | 306 | 0,788
+[2025-09-10 17:38:36] [INFORMATION] [419] [Link] All/Active/Target/Ratio: 699 | 611 | 17.618 | 3.5%
+[2025-09-10 17:38:36] [INFORMATION] [420] [Mirror] All/Ready/Target/Ratio: 306 | 244 | 306 | 0,797
+[2025-09-10 17:38:36] [INFORMATION] [420] [Link] All/Active/Target/Ratio: 699 | 618 | 17.618 | 3.5%
+[2025-09-10 17:38:36] [INFORMATION] [421] [Mirror] All/Ready/Target/Ratio: 306 | 248 | 306 | 0,81
+[2025-09-10 17:38:36] [INFORMATION] [421] [Link] All/Active/Target/Ratio: 699 | 615 | 17.618 | 3.5%
+[2025-09-10 17:38:36] [INFORMATION] [422] [Mirror] All/Ready/Target/Ratio: 306 | 252 | 306 | 0,824
+[2025-09-10 17:38:36] [INFORMATION] [422] [Link] All/Active/Target/Ratio: 699 | 613 | 17.618 | 3.5%
+[2025-09-10 17:38:37] [INFORMATION] [423] [Mirror] All/Ready/Target/Ratio: 306 | 258 | 306 | 0,843
+[2025-09-10 17:38:37] [INFORMATION] [423] [Link] All/Active/Target/Ratio: 699 | 615 | 17.618 | 3.5%
+[2025-09-10 17:38:37] [INFORMATION] [424] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:38:37] [INFORMATION] [424] [Link] All/Active/Target/Ratio: 699 | 611 | 17.618 | 3.5%
+[2025-09-10 17:38:37] [INFORMATION] [425] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:38:37] [INFORMATION] [425] [Link] All/Active/Target/Ratio: 699 | 614 | 17.618 | 3.5%
+[2025-09-10 17:38:38] [INFORMATION] [426] [Mirror] All/Ready/Target/Ratio: 306 | 270 | 306 | 0,882
+[2025-09-10 17:38:38] [INFORMATION] [426] [Link] All/Active/Target/Ratio: 699 | 599 | 17.618 | 3.4%
+[2025-09-10 17:38:38] [INFORMATION] [427] [Mirror] All/Ready/Target/Ratio: 306 | 272 | 306 | 0,889
+[2025-09-10 17:38:38] [INFORMATION] [427] [Link] All/Active/Target/Ratio: 699 | 595 | 17.618 | 3.4%
+[2025-09-10 17:38:38] [INFORMATION] [428] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:38:38] [INFORMATION] [428] [Link] All/Active/Target/Ratio: 699 | 574 | 17.618 | 3.3%
+[2025-09-10 17:38:38] [INFORMATION] [429] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:38:38] [INFORMATION] [429] [Link] All/Active/Target/Ratio: 699 | 576 | 17.618 | 3.3%
+[2025-09-10 17:38:39] [INFORMATION] [430] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:38:39] [INFORMATION] [430] [Link] All/Active/Target/Ratio: 699 | 580 | 17.618 | 3.3%
+[2025-09-10 17:38:39] [INFORMATION] [431] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:38:39] [INFORMATION] [431] [Link] All/Active/Target/Ratio: 699 | 584 | 17.618 | 3.3%
+[2025-09-10 17:38:39] [INFORMATION] [432] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:38:39] [INFORMATION] [432] [Link] All/Active/Target/Ratio: 699 | 580 | 17.618 | 3.3%
+[2025-09-10 17:38:40] [INFORMATION] [433] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:38:40] [INFORMATION] [433] [Link] All/Active/Target/Ratio: 699 | 587 | 17.618 | 3.3%
+[2025-09-10 17:38:40] [INFORMATION] [434] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:38:40] [INFORMATION] [434] [Link] All/Active/Target/Ratio: 699 | 594 | 17.618 | 3.4%
+[2025-09-10 17:38:40] [INFORMATION] [435] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:38:40] [INFORMATION] [435] [Link] All/Active/Target/Ratio: 699 | 597 | 17.618 | 3.4%
+[2025-09-10 17:38:40] [INFORMATION] [436] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:38:40] [INFORMATION] [436] [Link] All/Active/Target/Ratio: 699 | 593 | 17.618 | 3.4%
+[2025-09-10 17:38:41] [INFORMATION] [437] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:38:41] [INFORMATION] [437] [Link] All/Active/Target/Ratio: 699 | 597 | 17.618 | 3.4%
+[2025-09-10 17:38:41] [INFORMATION] [438] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:38:41] [INFORMATION] [438] [Link] All/Active/Target/Ratio: 699 | 602 | 17.618 | 3.4%
+[2025-09-10 17:38:41] [INFORMATION] [439] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:38:41] [INFORMATION] [439] [Link] All/Active/Target/Ratio: 699 | 607 | 17.618 | 3.4%
+[2025-09-10 17:38:42] [INFORMATION] [440] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:38:42] [INFORMATION] [440] [Link] All/Active/Target/Ratio: 699 | 618 | 17.618 | 3.5%
+[2025-09-10 17:38:42] [INFORMATION] [441] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:38:42] [INFORMATION] [441] [Link] All/Active/Target/Ratio: 699 | 623 | 17.618 | 3.5%
+[2025-09-10 17:38:42] [INFORMATION] [442] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:38:42] [INFORMATION] [442] [Link] All/Active/Target/Ratio: 699 | 634 | 17.618 | 3.6%
+[2025-09-10 17:38:43] [INFORMATION] [443] [Mirror] All/Ready/Target/Ratio: 306 | 264 | 306 | 0,863
+[2025-09-10 17:38:43] [INFORMATION] [443] [Link] All/Active/Target/Ratio: 699 | 623 | 17.618 | 3.5%
+[2025-09-10 17:38:43] [INFORMATION] [444] [Mirror] All/Ready/Target/Ratio: 306 | 263 | 306 | 0,859
+[2025-09-10 17:38:43] [INFORMATION] [444] [Link] All/Active/Target/Ratio: 699 | 630 | 17.618 | 3.6%
+[2025-09-10 17:38:43] [INFORMATION] [445] [Mirror] All/Ready/Target/Ratio: 306 | 263 | 306 | 0,859
+[2025-09-10 17:38:43] [INFORMATION] [445] [Link] All/Active/Target/Ratio: 699 | 626 | 17.618 | 3.6%
+[2025-09-10 17:38:44] [INFORMATION] [446] [Mirror] All/Ready/Target/Ratio: 306 | 263 | 306 | 0,859
+[2025-09-10 17:38:44] [INFORMATION] [446] [Link] All/Active/Target/Ratio: 699 | 623 | 17.618 | 3.5%
+[2025-09-10 17:38:44] [INFORMATION] [447] [Mirror] All/Ready/Target/Ratio: 306 | 264 | 306 | 0,863
+[2025-09-10 17:38:44] [INFORMATION] [447] [Link] All/Active/Target/Ratio: 699 | 616 | 17.618 | 3.5%
+[2025-09-10 17:38:45] [INFORMATION] [448] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:38:45] [INFORMATION] [448] [Link] All/Active/Target/Ratio: 699 | 612 | 17.618 | 3.5%
+[2025-09-10 17:38:45] [INFORMATION] [449] [Mirror] All/Ready/Target/Ratio: 306 | 271 | 306 | 0,886
+[2025-09-10 17:38:45] [INFORMATION] [449] [Link] All/Active/Target/Ratio: 699 | 616 | 17.618 | 3.5%
+[2025-09-10 17:38:45] [INFORMATION] [450] [Mirror] All/Ready/Target/Ratio: 306 | 271 | 306 | 0,886
+[2025-09-10 17:38:45] [INFORMATION] [450] [Link] All/Active/Target/Ratio: 699 | 613 | 17.618 | 3.5%
+[2025-09-10 17:38:46] [INFORMATION] [451] [Mirror] All/Ready/Target/Ratio: 306 | 271 | 306 | 0,886
+[2025-09-10 17:38:46] [INFORMATION] [451] [Link] All/Active/Target/Ratio: 699 | 617 | 17.618 | 3.5%
+[2025-09-10 17:38:46] [INFORMATION] [452] [Mirror] All/Ready/Target/Ratio: 306 | 276 | 306 | 0,902
+[2025-09-10 17:38:46] [INFORMATION] [452] [Link] All/Active/Target/Ratio: 699 | 622 | 17.618 | 3.5%
+[2025-09-10 17:38:47] [INFORMATION] [453] [Mirror] All/Ready/Target/Ratio: 306 | 276 | 306 | 0,902
+[2025-09-10 17:38:47] [INFORMATION] [453] [Link] All/Active/Target/Ratio: 699 | 621 | 17.618 | 3.5%
+[2025-09-10 17:38:47] [INFORMATION] [454] [Mirror] All/Ready/Target/Ratio: 306 | 276 | 306 | 0,902
+[2025-09-10 17:38:47] [INFORMATION] [454] [Link] All/Active/Target/Ratio: 699 | 624 | 17.618 | 3.5%
+[2025-09-10 17:38:47] [INFORMATION] [455] [Mirror] All/Ready/Target/Ratio: 306 | 276 | 306 | 0,902
+[2025-09-10 17:38:47] [INFORMATION] [455] [Link] All/Active/Target/Ratio: 699 | 632 | 17.618 | 3.6%
+[2025-09-10 17:38:48] [INFORMATION] [456] [Mirror] All/Ready/Target/Ratio: 306 | 274 | 306 | 0,895
+[2025-09-10 17:38:48] [INFORMATION] [456] [Link] All/Active/Target/Ratio: 699 | 627 | 17.618 | 3.6%
+[2025-09-10 17:38:48] [INFORMATION] [457] [Mirror] All/Ready/Target/Ratio: 306 | 273 | 306 | 0,892
+[2025-09-10 17:38:48] [INFORMATION] [457] [Link] All/Active/Target/Ratio: 699 | 617 | 17.618 | 3.5%
+[2025-09-10 17:38:49] [INFORMATION] [458] [Mirror] All/Ready/Target/Ratio: 306 | 273 | 306 | 0,892
+[2025-09-10 17:38:49] [INFORMATION] [458] [Link] All/Active/Target/Ratio: 699 | 621 | 17.618 | 3.5%
+[2025-09-10 17:38:49] [INFORMATION] [459] [Mirror] All/Ready/Target/Ratio: 306 | 272 | 306 | 0,889
+[2025-09-10 17:38:49] [INFORMATION] [459] [Link] All/Active/Target/Ratio: 699 | 617 | 17.618 | 3.5%
+[2025-09-10 17:38:49] [INFORMATION] [460] [Mirror] All/Ready/Target/Ratio: 306 | 273 | 306 | 0,892
+[2025-09-10 17:38:49] [INFORMATION] [460] [Link] All/Active/Target/Ratio: 699 | 623 | 17.618 | 3.5%
+[2025-09-10 17:38:50] [INFORMATION] [461] [Mirror] All/Ready/Target/Ratio: 306 | 270 | 306 | 0,882
+[2025-09-10 17:38:50] [INFORMATION] [461] [Link] All/Active/Target/Ratio: 699 | 621 | 17.618 | 3.5%
+[2025-09-10 17:38:50] [INFORMATION] [462] [Mirror] All/Ready/Target/Ratio: 306 | 270 | 306 | 0,882
+[2025-09-10 17:38:50] [INFORMATION] [462] [Link] All/Active/Target/Ratio: 699 | 627 | 17.618 | 3.6%
+[2025-09-10 17:38:51] [INFORMATION] [463] [Mirror] All/Ready/Target/Ratio: 306 | 274 | 306 | 0,895
+[2025-09-10 17:38:51] [INFORMATION] [463] [Link] All/Active/Target/Ratio: 699 | 626 | 17.618 | 3.6%
+[2025-09-10 17:38:51] [INFORMATION] [464] [Mirror] All/Ready/Target/Ratio: 306 | 275 | 306 | 0,899
+[2025-09-10 17:38:51] [INFORMATION] [464] [Link] All/Active/Target/Ratio: 699 | 616 | 17.618 | 3.5%
+[2025-09-10 17:38:51] [INFORMATION] [465] [Mirror] All/Ready/Target/Ratio: 306 | 272 | 306 | 0,889
+[2025-09-10 17:38:51] [INFORMATION] [465] [Link] All/Active/Target/Ratio: 699 | 605 | 17.618 | 3.4%
+[2025-09-10 17:38:52] [INFORMATION] [466] [Mirror] All/Ready/Target/Ratio: 306 | 271 | 306 | 0,886
+[2025-09-10 17:38:52] [INFORMATION] [466] [Link] All/Active/Target/Ratio: 699 | 602 | 17.618 | 3.4%
+[2025-09-10 17:38:52] [INFORMATION] [467] [Mirror] All/Ready/Target/Ratio: 306 | 272 | 306 | 0,889
+[2025-09-10 17:38:52] [INFORMATION] [467] [Link] All/Active/Target/Ratio: 699 | 606 | 17.618 | 3.4%
+[2025-09-10 17:38:52] [INFORMATION] [468] [Mirror] All/Ready/Target/Ratio: 306 | 271 | 306 | 0,886
+[2025-09-10 17:38:52] [INFORMATION] [468] [Link] All/Active/Target/Ratio: 699 | 596 | 17.618 | 3.4%
+[2025-09-10 17:38:52] [INFORMATION] [469] [Mirror] All/Ready/Target/Ratio: 306 | 270 | 306 | 0,882
+[2025-09-10 17:38:52] [INFORMATION] [469] [Link] All/Active/Target/Ratio: 699 | 603 | 17.618 | 3.4%
+[2025-09-10 17:38:53] [INFORMATION] [470] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:38:53] [INFORMATION] [470] [Link] All/Active/Target/Ratio: 699 | 605 | 17.618 | 3.4%
+[2025-09-10 17:38:53] [INFORMATION] [471] [Mirror] All/Ready/Target/Ratio: 306 | 270 | 306 | 0,882
+[2025-09-10 17:38:53] [INFORMATION] [471] [Link] All/Active/Target/Ratio: 699 | 611 | 17.618 | 3.5%
+[2025-09-10 17:38:54] [INFORMATION] [472] [Mirror] All/Ready/Target/Ratio: 306 | 271 | 306 | 0,886
+[2025-09-10 17:38:54] [INFORMATION] [472] [Link] All/Active/Target/Ratio: 699 | 619 | 17.618 | 3.5%
+[2025-09-10 17:38:54] [INFORMATION] [473] [Mirror] All/Ready/Target/Ratio: 306 | 272 | 306 | 0,889
+[2025-09-10 17:38:54] [INFORMATION] [473] [Link] All/Active/Target/Ratio: 699 | 628 | 17.618 | 3.6%
+[2025-09-10 17:38:54] [INFORMATION] [474] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:38:54] [INFORMATION] [474] [Link] All/Active/Target/Ratio: 699 | 615 | 17.618 | 3.5%
+[2025-09-10 17:38:55] [INFORMATION] [475] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:38:55] [INFORMATION] [475] [Link] All/Active/Target/Ratio: 699 | 611 | 17.618 | 3.5%
+[2025-09-10 17:38:55] [INFORMATION] [476] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:38:55] [INFORMATION] [476] [Link] All/Active/Target/Ratio: 699 | 616 | 17.618 | 3.5%
+[2025-09-10 17:38:55] [INFORMATION] [477] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:38:55] [INFORMATION] [477] [Link] All/Active/Target/Ratio: 699 | 621 | 17.618 | 3.5%
+[2025-09-10 17:38:56] [INFORMATION] [478] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:38:56] [INFORMATION] [478] [Link] All/Active/Target/Ratio: 699 | 603 | 17.618 | 3.4%
+[2025-09-10 17:38:56] [INFORMATION] [479] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:38:56] [INFORMATION] [479] [Link] All/Active/Target/Ratio: 699 | 601 | 17.618 | 3.4%
+[2025-09-10 17:38:56] [INFORMATION] [480] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:38:56] [INFORMATION] [480] [Link] All/Active/Target/Ratio: 699 | 596 | 17.618 | 3.4%
+[2025-09-10 17:38:57] [INFORMATION] [481] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:38:57] [INFORMATION] [481] [Link] All/Active/Target/Ratio: 699 | 600 | 17.618 | 3.4%
+[2025-09-10 17:38:57] [INFORMATION] [482] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:38:57] [INFORMATION] [482] [Link] All/Active/Target/Ratio: 699 | 605 | 17.618 | 3.4%
+[2025-09-10 17:38:57] [INFORMATION] [483] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:38:57] [INFORMATION] [483] [Link] All/Active/Target/Ratio: 699 | 605 | 17.618 | 3.4%
+[2025-09-10 17:38:58] [INFORMATION] [484] [Mirror] All/Ready/Target/Ratio: 306 | 263 | 306 | 0,859
+[2025-09-10 17:38:58] [INFORMATION] [484] [Link] All/Active/Target/Ratio: 699 | 588 | 17.618 | 3.3%
+[2025-09-10 17:38:58] [INFORMATION] [485] [Mirror] All/Ready/Target/Ratio: 306 | 260 | 306 | 0,85
+[2025-09-10 17:38:58] [INFORMATION] [485] [Link] All/Active/Target/Ratio: 699 | 577 | 17.618 | 3.3%
+[2025-09-10 17:38:59] [INFORMATION] [486] [Mirror] All/Ready/Target/Ratio: 306 | 260 | 306 | 0,85
+[2025-09-10 17:38:59] [INFORMATION] [486] [Link] All/Active/Target/Ratio: 699 | 568 | 17.618 | 3.2%
+[2025-09-10 17:38:59] [INFORMATION] [487] [Mirror] All/Ready/Target/Ratio: 306 | 263 | 306 | 0,859
+[2025-09-10 17:38:59] [INFORMATION] [487] [Link] All/Active/Target/Ratio: 699 | 573 | 17.618 | 3.3%
+[2025-09-10 17:38:59] [INFORMATION] [488] [Mirror] All/Ready/Target/Ratio: 306 | 263 | 306 | 0,859
+[2025-09-10 17:38:59] [INFORMATION] [488] [Link] All/Active/Target/Ratio: 699 | 578 | 17.618 | 3.3%
+[2025-09-10 17:39:00] [INFORMATION] [489] [Mirror] All/Ready/Target/Ratio: 306 | 262 | 306 | 0,856
+[2025-09-10 17:39:00] [INFORMATION] [489] [Link] All/Active/Target/Ratio: 699 | 579 | 17.618 | 3.3%
+[2025-09-10 17:39:00] [INFORMATION] [490] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:00] [INFORMATION] [490] [Link] All/Active/Target/Ratio: 699 | 581 | 17.618 | 3.3%
+[2025-09-10 17:39:01] [INFORMATION] [491] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:01] [INFORMATION] [491] [Link] All/Active/Target/Ratio: 699 | 584 | 17.618 | 3.3%
+[2025-09-10 17:39:01] [INFORMATION] [492] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:01] [INFORMATION] [492] [Link] All/Active/Target/Ratio: 699 | 590 | 17.618 | 3.3%
+[2025-09-10 17:39:01] [INFORMATION] [493] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:01] [INFORMATION] [493] [Link] All/Active/Target/Ratio: 699 | 588 | 17.618 | 3.3%
+[2025-09-10 17:39:02] [INFORMATION] [494] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:02] [INFORMATION] [494] [Link] All/Active/Target/Ratio: 699 | 589 | 17.618 | 3.3%
+[2025-09-10 17:39:02] [INFORMATION] [495] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:02] [INFORMATION] [495] [Link] All/Active/Target/Ratio: 699 | 598 | 17.618 | 3.4%
+[2025-09-10 17:39:02] [INFORMATION] [496] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:02] [INFORMATION] [496] [Link] All/Active/Target/Ratio: 699 | 598 | 17.618 | 3.4%
+[2025-09-10 17:39:02] [INFORMATION] [497] [Mirror] All/Ready/Target/Ratio: 306 | 264 | 306 | 0,863
+[2025-09-10 17:39:02] [INFORMATION] [497] [Link] All/Active/Target/Ratio: 699 | 589 | 17.618 | 3.3%
+[2025-09-10 17:39:03] [INFORMATION] [498] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:03] [INFORMATION] [498] [Link] All/Active/Target/Ratio: 699 | 598 | 17.618 | 3.4%
+[2025-09-10 17:39:03] [INFORMATION] [499] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:03] [INFORMATION] [499] [Link] All/Active/Target/Ratio: 699 | 600 | 17.618 | 3.4%
+[2025-09-10 17:39:03] [INFORMATION] [500] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:03] [INFORMATION] [500] [Link] All/Active/Target/Ratio: 699 | 599 | 17.618 | 3.4%
+[2025-09-10 17:39:04] [INFORMATION] [501] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:04] [INFORMATION] [501] [Link] All/Active/Target/Ratio: 699 | 592 | 17.618 | 3.4%
+[2025-09-10 17:39:04] [INFORMATION] [502] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:04] [INFORMATION] [502] [Link] All/Active/Target/Ratio: 699 | 591 | 17.618 | 3.4%
+[2025-09-10 17:39:05] [INFORMATION] [503] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:05] [INFORMATION] [503] [Link] All/Active/Target/Ratio: 699 | 591 | 17.618 | 3.4%
+[2025-09-10 17:39:05] [INFORMATION] [504] [Mirror] All/Ready/Target/Ratio: 306 | 264 | 306 | 0,863
+[2025-09-10 17:39:05] [INFORMATION] [504] [Link] All/Active/Target/Ratio: 699 | 590 | 17.618 | 3.3%
+[2025-09-10 17:39:06] [INFORMATION] [505] [Mirror] All/Ready/Target/Ratio: 306 | 263 | 306 | 0,859
+[2025-09-10 17:39:06] [INFORMATION] [505] [Link] All/Active/Target/Ratio: 699 | 588 | 17.618 | 3.3%
+[2025-09-10 17:39:06] [INFORMATION] [506] [Mirror] All/Ready/Target/Ratio: 306 | 263 | 306 | 0,859
+[2025-09-10 17:39:06] [INFORMATION] [506] [Link] All/Active/Target/Ratio: 699 | 592 | 17.618 | 3.4%
+[2025-09-10 17:39:07] [INFORMATION] [507] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:07] [INFORMATION] [507] [Link] All/Active/Target/Ratio: 699 | 587 | 17.618 | 3.3%
+[2025-09-10 17:39:07] [INFORMATION] [508] [Mirror] All/Ready/Target/Ratio: 306 | 263 | 306 | 0,859
+[2025-09-10 17:39:07] [INFORMATION] [508] [Link] All/Active/Target/Ratio: 699 | 580 | 17.618 | 3.3%
+[2025-09-10 17:39:08] [INFORMATION] [509] [Mirror] All/Ready/Target/Ratio: 306 | 264 | 306 | 0,863
+[2025-09-10 17:39:08] [INFORMATION] [509] [Link] All/Active/Target/Ratio: 699 | 587 | 17.618 | 3.3%
+[2025-09-10 17:39:08] [INFORMATION] [510] [Mirror] All/Ready/Target/Ratio: 306 | 264 | 306 | 0,863
+[2025-09-10 17:39:08] [INFORMATION] [510] [Link] All/Active/Target/Ratio: 699 | 589 | 17.618 | 3.3%
+[2025-09-10 17:39:08] [INFORMATION] [511] [Mirror] All/Ready/Target/Ratio: 306 | 264 | 306 | 0,863
+[2025-09-10 17:39:08] [INFORMATION] [511] [Link] All/Active/Target/Ratio: 699 | 584 | 17.618 | 3.3%
+[2025-09-10 17:39:09] [INFORMATION] [512] [Mirror] All/Ready/Target/Ratio: 306 | 264 | 306 | 0,863
+[2025-09-10 17:39:09] [INFORMATION] [512] [Link] All/Active/Target/Ratio: 699 | 578 | 17.618 | 3.3%
+[2025-09-10 17:39:09] [INFORMATION] [513] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:09] [INFORMATION] [513] [Link] All/Active/Target/Ratio: 699 | 587 | 17.618 | 3.3%
+[2025-09-10 17:39:10] [INFORMATION] [514] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:10] [INFORMATION] [514] [Link] All/Active/Target/Ratio: 699 | 587 | 17.618 | 3.3%
+[2025-09-10 17:39:10] [INFORMATION] [515] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:10] [INFORMATION] [515] [Link] All/Active/Target/Ratio: 699 | 589 | 17.618 | 3.3%
+[2025-09-10 17:39:11] [INFORMATION] [516] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:11] [INFORMATION] [516] [Link] All/Active/Target/Ratio: 699 | 592 | 17.618 | 3.4%
+[2025-09-10 17:39:11] [INFORMATION] [517] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:11] [INFORMATION] [517] [Link] All/Active/Target/Ratio: 699 | 602 | 17.618 | 3.4%
+[2025-09-10 17:39:11] [INFORMATION] [518] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:11] [INFORMATION] [518] [Link] All/Active/Target/Ratio: 699 | 608 | 17.618 | 3.5%
+[2025-09-10 17:39:12] [INFORMATION] [519] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:12] [INFORMATION] [519] [Link] All/Active/Target/Ratio: 699 | 611 | 17.618 | 3.5%
+[2025-09-10 17:39:12] [INFORMATION] [520] [Mirror] All/Ready/Target/Ratio: 306 | 270 | 306 | 0,882
+[2025-09-10 17:39:12] [INFORMATION] [520] [Link] All/Active/Target/Ratio: 699 | 619 | 17.618 | 3.5%
+[2025-09-10 17:39:12] [INFORMATION] [521] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:12] [INFORMATION] [521] [Link] All/Active/Target/Ratio: 699 | 616 | 17.618 | 3.5%
+[2025-09-10 17:39:13] [INFORMATION] [522] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:13] [INFORMATION] [522] [Link] All/Active/Target/Ratio: 699 | 603 | 17.618 | 3.4%
+[2025-09-10 17:39:13] [INFORMATION] [523] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:13] [INFORMATION] [523] [Link] All/Active/Target/Ratio: 699 | 605 | 17.618 | 3.4%
+[2025-09-10 17:39:13] [INFORMATION] [524] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:13] [INFORMATION] [524] [Link] All/Active/Target/Ratio: 699 | 612 | 17.618 | 3.5%
+[2025-09-10 17:39:13] [INFORMATION] [525] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:13] [INFORMATION] [525] [Link] All/Active/Target/Ratio: 699 | 618 | 17.618 | 3.5%
+[2025-09-10 17:39:14] [INFORMATION] [526] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:14] [INFORMATION] [526] [Link] All/Active/Target/Ratio: 699 | 624 | 17.618 | 3.5%
+[2025-09-10 17:39:14] [INFORMATION] [527] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:14] [INFORMATION] [527] [Link] All/Active/Target/Ratio: 699 | 622 | 17.618 | 3.5%
+[2025-09-10 17:39:14] [INFORMATION] [528] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:14] [INFORMATION] [528] [Link] All/Active/Target/Ratio: 699 | 616 | 17.618 | 3.5%
+[2025-09-10 17:39:14] [INFORMATION] [529] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:14] [INFORMATION] [529] [Link] All/Active/Target/Ratio: 699 | 623 | 17.618 | 3.5%
+[2025-09-10 17:39:15] [INFORMATION] [530] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:15] [INFORMATION] [530] [Link] All/Active/Target/Ratio: 699 | 620 | 17.618 | 3.5%
+[2025-09-10 17:39:15] [INFORMATION] [531] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:15] [INFORMATION] [531] [Link] All/Active/Target/Ratio: 699 | 624 | 17.618 | 3.5%
+[2025-09-10 17:39:15] [INFORMATION] [532] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:15] [INFORMATION] [532] [Link] All/Active/Target/Ratio: 699 | 621 | 17.618 | 3.5%
+[2025-09-10 17:39:16] [INFORMATION] [533] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:16] [INFORMATION] [533] [Link] All/Active/Target/Ratio: 699 | 630 | 17.618 | 3.6%
+[2025-09-10 17:39:16] [INFORMATION] [534] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:16] [INFORMATION] [534] [Link] All/Active/Target/Ratio: 699 | 640 | 17.618 | 3.6%
+[2025-09-10 17:39:16] [INFORMATION] [535] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:16] [INFORMATION] [535] [Link] All/Active/Target/Ratio: 699 | 638 | 17.618 | 3.6%
+[2025-09-10 17:39:16] [INFORMATION] [536] [Mirror] All/Ready/Target/Ratio: 306 | 271 | 306 | 0,886
+[2025-09-10 17:39:16] [INFORMATION] [536] [Link] All/Active/Target/Ratio: 699 | 643 | 17.618 | 3.6%
+[2025-09-10 17:39:17] [INFORMATION] [537] [Mirror] All/Ready/Target/Ratio: 306 | 274 | 306 | 0,895
+[2025-09-10 17:39:17] [INFORMATION] [537] [Link] All/Active/Target/Ratio: 699 | 647 | 17.618 | 3.7%
+[2025-09-10 17:39:17] [INFORMATION] [538] [Mirror] All/Ready/Target/Ratio: 306 | 275 | 306 | 0,899
+[2025-09-10 17:39:17] [INFORMATION] [538] [Link] All/Active/Target/Ratio: 699 | 648 | 17.618 | 3.7%
+[2025-09-10 17:39:17] [INFORMATION] [539] [Mirror] All/Ready/Target/Ratio: 306 | 273 | 306 | 0,892
+[2025-09-10 17:39:17] [INFORMATION] [539] [Link] All/Active/Target/Ratio: 699 | 640 | 17.618 | 3.6%
+[2025-09-10 17:39:17] [INFORMATION] [540] [Mirror] All/Ready/Target/Ratio: 306 | 275 | 306 | 0,899
+[2025-09-10 17:39:17] [INFORMATION] [540] [Link] All/Active/Target/Ratio: 699 | 635 | 17.618 | 3.6%
+[2025-09-10 17:39:18] [INFORMATION] [541] [Mirror] All/Ready/Target/Ratio: 306 | 276 | 306 | 0,902
+[2025-09-10 17:39:18] [INFORMATION] [541] [Link] All/Active/Target/Ratio: 699 | 634 | 17.618 | 3.6%
+[2025-09-10 17:39:18] [INFORMATION] [542] [Mirror] All/Ready/Target/Ratio: 306 | 275 | 306 | 0,899
+[2025-09-10 17:39:18] [INFORMATION] [542] [Link] All/Active/Target/Ratio: 699 | 639 | 17.618 | 3.6%
+[2025-09-10 17:39:18] [INFORMATION] [543] [Mirror] All/Ready/Target/Ratio: 306 | 277 | 306 | 0,905
+[2025-09-10 17:39:18] [INFORMATION] [543] [Link] All/Active/Target/Ratio: 699 | 645 | 17.618 | 3.7%
+[2025-09-10 17:39:19] [INFORMATION] [544] [Mirror] All/Ready/Target/Ratio: 306 | 275 | 306 | 0,899
+[2025-09-10 17:39:19] [INFORMATION] [544] [Link] All/Active/Target/Ratio: 699 | 631 | 17.618 | 3.6%
+[2025-09-10 17:39:19] [INFORMATION] [545] [Mirror] All/Ready/Target/Ratio: 306 | 277 | 306 | 0,905
+[2025-09-10 17:39:19] [INFORMATION] [545] [Link] All/Active/Target/Ratio: 699 | 628 | 17.618 | 3.6%
+[2025-09-10 17:39:19] [INFORMATION] [546] [Mirror] All/Ready/Target/Ratio: 306 | 276 | 306 | 0,902
+[2025-09-10 17:39:19] [INFORMATION] [546] [Link] All/Active/Target/Ratio: 699 | 621 | 17.618 | 3.5%
+[2025-09-10 17:39:19] [INFORMATION] [547] [Mirror] All/Ready/Target/Ratio: 306 | 276 | 306 | 0,902
+[2025-09-10 17:39:19] [INFORMATION] [547] [Link] All/Active/Target/Ratio: 699 | 615 | 17.618 | 3.5%
+[2025-09-10 17:39:20] [INFORMATION] [548] [Mirror] All/Ready/Target/Ratio: 306 | 274 | 306 | 0,895
+[2025-09-10 17:39:20] [INFORMATION] [548] [Link] All/Active/Target/Ratio: 699 | 614 | 17.618 | 3.5%
+[2025-09-10 17:39:20] [INFORMATION] [549] [Mirror] All/Ready/Target/Ratio: 306 | 274 | 306 | 0,895
+[2025-09-10 17:39:20] [INFORMATION] [549] [Link] All/Active/Target/Ratio: 699 | 610 | 17.618 | 3.5%
+[2025-09-10 17:39:20] [INFORMATION] [550] [Mirror] All/Ready/Target/Ratio: 306 | 277 | 306 | 0,905
+[2025-09-10 17:39:20] [INFORMATION] [550] [Link] All/Active/Target/Ratio: 699 | 611 | 17.618 | 3.5%
+[2025-09-10 17:39:21] [INFORMATION] [551] [Mirror] All/Ready/Target/Ratio: 306 | 276 | 306 | 0,902
+[2025-09-10 17:39:21] [INFORMATION] [551] [Link] All/Active/Target/Ratio: 699 | 608 | 17.618 | 3.5%
+[2025-09-10 17:39:21] [INFORMATION] [552] [Mirror] All/Ready/Target/Ratio: 306 | 277 | 306 | 0,905
+[2025-09-10 17:39:21] [INFORMATION] [552] [Link] All/Active/Target/Ratio: 699 | 615 | 17.618 | 3.5%
+[2025-09-10 17:39:21] [INFORMATION] [553] [Mirror] All/Ready/Target/Ratio: 306 | 275 | 306 | 0,899
+[2025-09-10 17:39:21] [INFORMATION] [553] [Link] All/Active/Target/Ratio: 699 | 607 | 17.618 | 3.4%
+[2025-09-10 17:39:21] [INFORMATION] [554] [Mirror] All/Ready/Target/Ratio: 306 | 272 | 306 | 0,889
+[2025-09-10 17:39:21] [INFORMATION] [554] [Link] All/Active/Target/Ratio: 699 | 597 | 17.618 | 3.4%
+[2025-09-10 17:39:22] [INFORMATION] [555] [Mirror] All/Ready/Target/Ratio: 306 | 274 | 306 | 0,895
+[2025-09-10 17:39:22] [INFORMATION] [555] [Link] All/Active/Target/Ratio: 699 | 603 | 17.618 | 3.4%
+[2025-09-10 17:39:22] [INFORMATION] [556] [Mirror] All/Ready/Target/Ratio: 306 | 275 | 306 | 0,899
+[2025-09-10 17:39:22] [INFORMATION] [556] [Link] All/Active/Target/Ratio: 699 | 609 | 17.618 | 3.5%
+[2025-09-10 17:39:22] [INFORMATION] [557] [Mirror] All/Ready/Target/Ratio: 306 | 272 | 306 | 0,889
+[2025-09-10 17:39:22] [INFORMATION] [557] [Link] All/Active/Target/Ratio: 699 | 597 | 17.618 | 3.4%
+[2025-09-10 17:39:22] [INFORMATION] [558] [Mirror] All/Ready/Target/Ratio: 306 | 272 | 306 | 0,889
+[2025-09-10 17:39:22] [INFORMATION] [558] [Link] All/Active/Target/Ratio: 699 | 603 | 17.618 | 3.4%
+[2025-09-10 17:39:23] [INFORMATION] [559] [Mirror] All/Ready/Target/Ratio: 306 | 272 | 306 | 0,889
+[2025-09-10 17:39:23] [INFORMATION] [559] [Link] All/Active/Target/Ratio: 699 | 603 | 17.618 | 3.4%
+[2025-09-10 17:39:23] [INFORMATION] [560] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:23] [INFORMATION] [560] [Link] All/Active/Target/Ratio: 699 | 592 | 17.618 | 3.4%
+[2025-09-10 17:39:23] [INFORMATION] [561] [Mirror] All/Ready/Target/Ratio: 306 | 270 | 306 | 0,882
+[2025-09-10 17:39:23] [INFORMATION] [561] [Link] All/Active/Target/Ratio: 699 | 585 | 17.618 | 3.3%
+[2025-09-10 17:39:24] [INFORMATION] [562] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:24] [INFORMATION] [562] [Link] All/Active/Target/Ratio: 699 | 587 | 17.618 | 3.3%
+[2025-09-10 17:39:24] [INFORMATION] [563] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:24] [INFORMATION] [563] [Link] All/Active/Target/Ratio: 699 | 595 | 17.618 | 3.4%
+[2025-09-10 17:39:24] [INFORMATION] [564] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:24] [INFORMATION] [564] [Link] All/Active/Target/Ratio: 699 | 602 | 17.618 | 3.4%
+[2025-09-10 17:39:24] [INFORMATION] [565] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:24] [INFORMATION] [565] [Link] All/Active/Target/Ratio: 699 | 609 | 17.618 | 3.5%
+[2025-09-10 17:39:25] [INFORMATION] [566] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:25] [INFORMATION] [566] [Link] All/Active/Target/Ratio: 699 | 612 | 17.618 | 3.5%
+[2025-09-10 17:39:25] [INFORMATION] [567] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:25] [INFORMATION] [567] [Link] All/Active/Target/Ratio: 699 | 618 | 17.618 | 3.5%
+[2025-09-10 17:39:25] [INFORMATION] [568] [Mirror] All/Ready/Target/Ratio: 306 | 270 | 306 | 0,882
+[2025-09-10 17:39:25] [INFORMATION] [568] [Link] All/Active/Target/Ratio: 699 | 620 | 17.618 | 3.5%
+[2025-09-10 17:39:26] [INFORMATION] [569] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:26] [INFORMATION] [569] [Link] All/Active/Target/Ratio: 699 | 607 | 17.618 | 3.4%
+[2025-09-10 17:39:26] [INFORMATION] [570] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:26] [INFORMATION] [570] [Link] All/Active/Target/Ratio: 699 | 606 | 17.618 | 3.4%
+[2025-09-10 17:39:26] [INFORMATION] [571] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:26] [INFORMATION] [571] [Link] All/Active/Target/Ratio: 699 | 603 | 17.618 | 3.4%
+[2025-09-10 17:39:26] [INFORMATION] [572] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:26] [INFORMATION] [572] [Link] All/Active/Target/Ratio: 699 | 605 | 17.618 | 3.4%
+[2025-09-10 17:39:27] [INFORMATION] [573] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:27] [INFORMATION] [573] [Link] All/Active/Target/Ratio: 699 | 614 | 17.618 | 3.5%
+[2025-09-10 17:39:27] [INFORMATION] [574] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:27] [INFORMATION] [574] [Link] All/Active/Target/Ratio: 699 | 596 | 17.618 | 3.4%
+[2025-09-10 17:39:27] [INFORMATION] [575] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:27] [INFORMATION] [575] [Link] All/Active/Target/Ratio: 699 | 599 | 17.618 | 3.4%
+[2025-09-10 17:39:27] [INFORMATION] [576] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:27] [INFORMATION] [576] [Link] All/Active/Target/Ratio: 699 | 592 | 17.618 | 3.4%
+[2025-09-10 17:39:28] [INFORMATION] [577] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:28] [INFORMATION] [577] [Link] All/Active/Target/Ratio: 699 | 594 | 17.618 | 3.4%
+[2025-09-10 17:39:28] [INFORMATION] [578] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:28] [INFORMATION] [578] [Link] All/Active/Target/Ratio: 699 | 592 | 17.618 | 3.4%
+[2025-09-10 17:39:28] [INFORMATION] [579] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:28] [INFORMATION] [579] [Link] All/Active/Target/Ratio: 699 | 583 | 17.618 | 3.3%
+[2025-09-10 17:39:29] [INFORMATION] [580] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:29] [INFORMATION] [580] [Link] All/Active/Target/Ratio: 699 | 587 | 17.618 | 3.3%
+[2025-09-10 17:39:29] [INFORMATION] [581] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:29] [INFORMATION] [581] [Link] All/Active/Target/Ratio: 699 | 597 | 17.618 | 3.4%
+[2025-09-10 17:39:29] [INFORMATION] [582] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:29] [INFORMATION] [582] [Link] All/Active/Target/Ratio: 699 | 592 | 17.618 | 3.4%
+[2025-09-10 17:39:29] [INFORMATION] [583] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:29] [INFORMATION] [583] [Link] All/Active/Target/Ratio: 699 | 590 | 17.618 | 3.3%
+[2025-09-10 17:39:30] [INFORMATION] [584] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:30] [INFORMATION] [584] [Link] All/Active/Target/Ratio: 699 | 596 | 17.618 | 3.4%
+[2025-09-10 17:39:30] [INFORMATION] [585] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:30] [INFORMATION] [585] [Link] All/Active/Target/Ratio: 699 | 596 | 17.618 | 3.4%
+[2025-09-10 17:39:30] [INFORMATION] [586] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:30] [INFORMATION] [586] [Link] All/Active/Target/Ratio: 699 | 598 | 17.618 | 3.4%
+[2025-09-10 17:39:31] [INFORMATION] [587] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:31] [INFORMATION] [587] [Link] All/Active/Target/Ratio: 699 | 598 | 17.618 | 3.4%
+[2025-09-10 17:39:31] [INFORMATION] [588] [Mirror] All/Ready/Target/Ratio: 306 | 269 | 306 | 0,879
+[2025-09-10 17:39:31] [INFORMATION] [588] [Link] All/Active/Target/Ratio: 699 | 595 | 17.618 | 3.4%
+[2025-09-10 17:39:31] [INFORMATION] [589] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:31] [INFORMATION] [589] [Link] All/Active/Target/Ratio: 699 | 586 | 17.618 | 3.3%
+[2025-09-10 17:39:32] [INFORMATION] [590] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:32] [INFORMATION] [590] [Link] All/Active/Target/Ratio: 699 | 594 | 17.618 | 3.4%
+[2025-09-10 17:39:32] [INFORMATION] [591] [Mirror] All/Ready/Target/Ratio: 306 | 265 | 306 | 0,866
+[2025-09-10 17:39:32] [INFORMATION] [591] [Link] All/Active/Target/Ratio: 699 | 589 | 17.618 | 3.3%
+[2025-09-10 17:39:32] [INFORMATION] [592] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:32] [INFORMATION] [592] [Link] All/Active/Target/Ratio: 699 | 595 | 17.618 | 3.4%
+[2025-09-10 17:39:33] [INFORMATION] [593] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:33] [INFORMATION] [593] [Link] All/Active/Target/Ratio: 699 | 603 | 17.618 | 3.4%
+[2025-09-10 17:39:33] [INFORMATION] [594] [Mirror] All/Ready/Target/Ratio: 306 | 268 | 306 | 0,876
+[2025-09-10 17:39:33] [INFORMATION] [594] [Link] All/Active/Target/Ratio: 699 | 611 | 17.618 | 3.5%
+[2025-09-10 17:39:33] [INFORMATION] [595] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:33] [INFORMATION] [595] [Link] All/Active/Target/Ratio: 699 | 602 | 17.618 | 3.4%
+[2025-09-10 17:39:33] [INFORMATION] [596] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:33] [INFORMATION] [596] [Link] All/Active/Target/Ratio: 699 | 608 | 17.618 | 3.5%
+[2025-09-10 17:39:34] [INFORMATION] [597] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:34] [INFORMATION] [597] [Link] All/Active/Target/Ratio: 699 | 609 | 17.618 | 3.5%
+[2025-09-10 17:39:34] [INFORMATION] [598] [Mirror] All/Ready/Target/Ratio: 306 | 266 | 306 | 0,869
+[2025-09-10 17:39:34] [INFORMATION] [598] [Link] All/Active/Target/Ratio: 699 | 601 | 17.618 | 3.4%
+[2025-09-10 17:39:34] [INFORMATION] [599] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:34] [INFORMATION] [599] [Link] All/Active/Target/Ratio: 699 | 597 | 17.618 | 3.4%
+[2025-09-10 17:39:35] [INFORMATION] [600] [Mirror] All/Ready/Target/Ratio: 306 | 267 | 306 | 0,873
+[2025-09-10 17:39:35] [INFORMATION] [600] [Link] All/Active/Target/Ratio: 699 | 592 | 17.618 | 3.4%
+[2025-09-10 17:39:35] [INFORMATION] 9325	3	9247
+[2025-09-10 17:39:35] [INFORMATION] 9326	3	9248
+[2025-09-10 17:39:35] [INFORMATION] 9327	3	9249
+[2025-09-10 17:39:35] [INFORMATION] 9331	3	9260
+[2025-09-10 17:39:35] [INFORMATION] 9332	9247	9248
+[2025-09-10 17:39:35] [INFORMATION] 9333	9247	9249
+[2025-09-10 17:39:35] [INFORMATION] 9334	9247	9250
+[2025-09-10 17:39:35] [INFORMATION] 9337	9248	9249
+[2025-09-10 17:39:35] [INFORMATION] 9338	9248	9250
+[2025-09-10 17:39:35] [INFORMATION] 9339	9248	9251
+[2025-09-10 17:39:35] [INFORMATION] 9341	9249	9250
+[2025-09-10 17:39:35] [INFORMATION] 9342	9249	9251
+[2025-09-10 17:39:35] [INFORMATION] 9343	9249	9252
+[2025-09-10 17:39:35] [INFORMATION] 9344	9249	9272
+[2025-09-10 17:39:35] [INFORMATION] 9345	9250	9251
+[2025-09-10 17:39:35] [INFORMATION] 9346	9250	9252
+[2025-09-10 17:39:35] [INFORMATION] 9347	9250	9253
+[2025-09-10 17:39:35] [INFORMATION] 9348	9251	9252
+[2025-09-10 17:39:35] [INFORMATION] 9349	9251	9253
+[2025-09-10 17:39:35] [INFORMATION] 9350	9251	9254
+[2025-09-10 17:39:35] [INFORMATION] 9351	9252	9253
+[2025-09-10 17:39:35] [INFORMATION] 9352	9252	9254
+[2025-09-10 17:39:35] [INFORMATION] 9353	9252	9255
+[2025-09-10 17:39:35] [INFORMATION] 9354	9252	9284
+[2025-09-10 17:39:35] [INFORMATION] 9355	9253	9254
+[2025-09-10 17:39:35] [INFORMATION] 9356	9253	9255
+[2025-09-10 17:39:35] [INFORMATION] 9357	9253	9256
+[2025-09-10 17:39:35] [INFORMATION] 9358	9254	9255
+[2025-09-10 17:39:35] [INFORMATION] 9359	9254	9256
+[2025-09-10 17:39:35] [INFORMATION] 9360	9254	9257
+[2025-09-10 17:39:35] [INFORMATION] 9361	9255	9256
+[2025-09-10 17:39:35] [INFORMATION] 9362	9255	9257
+[2025-09-10 17:39:35] [INFORMATION] 9363	9255	9258
+[2025-09-10 17:39:35] [INFORMATION] 9365	9256	9257
+[2025-09-10 17:39:35] [INFORMATION] 9366	9256	9258
+[2025-09-10 17:39:35] [INFORMATION] 9368	9257	9258
+[2025-09-10 17:39:35] [INFORMATION] 9372	9260	9261
+[2025-09-10 17:39:35] [INFORMATION] 9373	9260	9262
+[2025-09-10 17:39:35] [INFORMATION] 9374	9260	9263
+[2025-09-10 17:39:35] [INFORMATION] 9378	9261	9262
+[2025-09-10 17:39:35] [INFORMATION] 9379	9261	9263
+[2025-09-10 17:39:35] [INFORMATION] 9380	9261	9264
+[2025-09-10 17:39:35] [INFORMATION] 9383	9262	9263
+[2025-09-10 17:39:35] [INFORMATION] 9384	9262	9264
+[2025-09-10 17:39:35] [INFORMATION] 9385	9262	9265
+[2025-09-10 17:39:35] [INFORMATION] 9387	9263	9264
+[2025-09-10 17:39:35] [INFORMATION] 9388	9263	9265
+[2025-09-10 17:39:35] [INFORMATION] 9389	9263	9266
+[2025-09-10 17:39:35] [INFORMATION] 9390	9264	9265
+[2025-09-10 17:39:35] [INFORMATION] 9391	9264	9266
+[2025-09-10 17:39:35] [INFORMATION] 9392	9264	9267
+[2025-09-10 17:39:35] [INFORMATION] 9393	9265	9266
+[2025-09-10 17:39:35] [INFORMATION] 9394	9265	9267
+[2025-09-10 17:39:35] [INFORMATION] 9396	9266	9267
+[2025-09-10 17:39:35] [INFORMATION] 9408	9272	9273
+[2025-09-10 17:39:35] [INFORMATION] 9409	9272	9274
+[2025-09-10 17:39:35] [INFORMATION] 9410	9272	9275
+[2025-09-10 17:39:35] [INFORMATION] 9411	9272	9276
+[2025-09-10 17:39:35] [INFORMATION] 9412	9273	9277
+[2025-09-10 17:39:35] [INFORMATION] 9413	9273	9278
+[2025-09-10 17:39:35] [INFORMATION] 9414	9273	9279
+[2025-09-10 17:39:35] [INFORMATION] 9419	9284	9285
+[2025-09-10 17:39:35] [INFORMATION] 9420	9284	9286
+[2025-09-10 17:39:35] [INFORMATION] 9421	9284	9287
+[2025-09-10 17:39:35] [INFORMATION] 9425	9285	9286
+[2025-09-10 17:39:35] [INFORMATION] 9426	9285	9287
+[2025-09-10 17:39:35] [INFORMATION] 9427	9285	9288
+[2025-09-10 17:39:35] [INFORMATION] 9430	9286	9287
+[2025-09-10 17:39:35] [INFORMATION] 9431	9286	9288
+[2025-09-10 17:39:35] [INFORMATION] 9432	9286	9289
+[2025-09-10 17:39:35] [INFORMATION] 9434	9287	9288
+[2025-09-10 17:39:35] [INFORMATION] 9435	9287	9289
+[2025-09-10 17:39:35] [INFORMATION] 9436	9287	9290
+[2025-09-10 17:39:35] [INFORMATION] 9437	9288	9289
+[2025-09-10 17:39:35] [INFORMATION] 9438	9288	9290
+[2025-09-10 17:39:35] [INFORMATION] 9439	9288	9291
+[2025-09-10 17:39:35] [INFORMATION] 9440	9289	9290
+[2025-09-10 17:39:35] [INFORMATION] 9441	9289	9291
+[2025-09-10 17:39:35] [INFORMATION] 9442	9289	9292
+[2025-09-10 17:39:35] [INFORMATION] 9443	9290	9291
+[2025-09-10 17:39:35] [INFORMATION] 9444	9290	9292
+[2025-09-10 17:39:35] [INFORMATION] 9446	9291	9292
+[2025-09-10 17:39:35] [INFORMATION] 9625	9267	9260
+[2025-09-10 17:39:35] [INFORMATION] 9708	9256	9662
+[2025-09-10 17:39:35] [INFORMATION] 9709	9257	9662
+[2025-09-10 17:39:35] [INFORMATION] 9711	9258	9662
+[2025-09-10 17:39:35] [INFORMATION] 9808	9266	9260
+[2025-09-10 17:39:35] [INFORMATION] 9809	9267	9261
+[2025-09-10 17:39:35] [INFORMATION] 9817	9292	9284
+[2025-09-10 17:39:35] [INFORMATION] 9844	9255	9828
+[2025-09-10 17:39:35] [INFORMATION] 9845	9257	9826
+[2025-09-10 17:39:35] [INFORMATION] 9846	9258	9826
+[2025-09-10 17:39:35] [INFORMATION] 9847	9258	9827
+[2025-09-10 17:39:35] [INFORMATION] 9856	9662	9826
+[2025-09-10 17:39:35] [INFORMATION] 9857	9662	9827
+[2025-09-10 17:39:35] [INFORMATION] 9858	9826	9827
+[2025-09-10 17:39:35] [INFORMATION] 9859	9828	9829
+[2025-09-10 17:39:35] [INFORMATION] 9860	9828	9830
+[2025-09-10 17:39:35] [INFORMATION] 9861	9828	9831
+[2025-09-10 17:39:35] [INFORMATION] 9862	9828	9832
+[2025-09-10 17:39:35] [INFORMATION] 9863	9829	9833
+[2025-09-10 17:39:35] [INFORMATION] 9864	9829	9834
+[2025-09-10 17:39:35] [INFORMATION] 9865	9829	9835
+[2025-09-10 17:39:35] [INFORMATION] 9866	9829	9836
+[2025-09-10 17:39:35] [INFORMATION] 9867	9830	9837
+[2025-09-10 17:39:35] [INFORMATION] 9869	9273	9868
+[2025-09-10 17:39:35] [INFORMATION] 9872	9870	9284
+[2025-09-10 17:39:35] [INFORMATION] 9873	9870	9285
+[2025-09-10 17:39:35] [INFORMATION] 9875	9290	9870
+[2025-09-10 17:39:35] [INFORMATION] 9876	9291	9870
+[2025-09-10 17:39:35] [INFORMATION] 9877	9292	9870
+[2025-09-10 17:39:35] [INFORMATION] 9898	9662	9879
+[2025-09-10 17:39:35] [INFORMATION] 9899	9826	9879
+[2025-09-10 17:39:35] [INFORMATION] 9900	9827	9879
+[2025-09-10 17:39:35] [INFORMATION] 9920	9258	9904
+[2025-09-10 17:39:35] [INFORMATION] 9927	9826	9902
+[2025-09-10 17:39:35] [INFORMATION] 9928	9827	9902
+[2025-09-10 17:39:35] [INFORMATION] 9929	9827	9903
+[2025-09-10 17:39:35] [INFORMATION] 9930	9879	9902
+[2025-09-10 17:39:35] [INFORMATION] 9931	9879	9903
+[2025-09-10 17:39:35] [INFORMATION] 9932	9902	9903
+[2025-09-10 17:39:35] [INFORMATION] 9933	9904	9905
+[2025-09-10 17:39:35] [INFORMATION] 9934	9904	9906
+[2025-09-10 17:39:35] [INFORMATION] 9935	9904	9907
+[2025-09-10 17:39:35] [INFORMATION] 9938	9913	9904
+[2025-09-10 17:39:35] [INFORMATION] 9939	9905	9906
+[2025-09-10 17:39:35] [INFORMATION] 9940	9905	9907
+[2025-09-10 17:39:35] [INFORMATION] 9941	9905	9908
+[2025-09-10 17:39:35] [INFORMATION] 9944	9906	9907
+[2025-09-10 17:39:35] [INFORMATION] 9945	9906	9908
+[2025-09-10 17:39:35] [INFORMATION] 9946	9906	9909
+[2025-09-10 17:39:35] [INFORMATION] 9948	9907	9908
+[2025-09-10 17:39:35] [INFORMATION] 9949	9907	9909
+[2025-09-10 17:39:35] [INFORMATION] 9950	9907	9910
+[2025-09-10 17:39:35] [INFORMATION] 9951	9908	9909
+[2025-09-10 17:39:35] [INFORMATION] 9952	9908	9910
+[2025-09-10 17:39:35] [INFORMATION] 9953	9908	9911
+[2025-09-10 17:39:35] [INFORMATION] 9954	9909	9910
+[2025-09-10 17:39:35] [INFORMATION] 9955	9909	9911
+[2025-09-10 17:39:35] [INFORMATION] 9956	9909	9912
+[2025-09-10 17:39:35] [INFORMATION] 9957	9910	9911
+[2025-09-10 17:39:35] [INFORMATION] 9958	9910	9912
+[2025-09-10 17:39:35] [INFORMATION] 9959	9910	9913
+[2025-09-10 17:39:35] [INFORMATION] 9960	9911	9912
+[2025-09-10 17:39:35] [INFORMATION] 9961	9911	9913
+[2025-09-10 17:39:35] [INFORMATION] 9962	9912	9913
+[2025-09-10 17:39:35] [INFORMATION] 9986	9827	9968
+[2025-09-10 17:39:35] [INFORMATION] 9987	9830	9966
+[2025-09-10 17:39:35] [INFORMATION] 9988	9879	9963
+[2025-09-10 17:39:35] [INFORMATION] 9989	9902	9963
+[2025-09-10 17:39:35] [INFORMATION] 9990	9902	9964
+[2025-09-10 17:39:35] [INFORMATION] 9991	9903	9963
+[2025-09-10 17:39:35] [INFORMATION] 9992	9903	9964
+[2025-09-10 17:39:35] [INFORMATION] 9993	9903	9965
+[2025-09-10 17:39:35] [INFORMATION] 9994	9967	9904
+[2025-09-10 17:39:35] [INFORMATION] 9995	9967	9905
+[2025-09-10 17:39:35] [INFORMATION] 9997	9911	9967
+[2025-09-10 17:39:35] [INFORMATION] 9998	9912	9967
+[2025-09-10 17:39:35] [INFORMATION] 9999	9913	9967
+[2025-09-10 17:39:35] [INFORMATION] 10000	9963	9964
+[2025-09-10 17:39:35] [INFORMATION] 10001	9963	9965
+[2025-09-10 17:39:35] [INFORMATION] 10002	9964	9965
+[2025-09-10 17:39:35] [INFORMATION] 10003	9968	9969
+[2025-09-10 17:39:35] [INFORMATION] 10004	9968	9970
+[2025-09-10 17:39:35] [INFORMATION] 10005	9968	9971
+[2025-09-10 17:39:35] [INFORMATION] 10006	9968	9972
+[2025-09-10 17:39:35] [INFORMATION] 10007	9969	9973
+[2025-09-10 17:39:35] [INFORMATION] 10008	9969	9974
+[2025-09-10 17:39:35] [INFORMATION] 10009	9969	9975
+[2025-09-10 17:39:35] [INFORMATION] 10010	9969	9976
+[2025-09-10 17:39:35] [INFORMATION] 10011	9970	9977
+[2025-09-10 17:39:35] [INFORMATION] 10012	9970	9978
+[2025-09-10 17:39:35] [INFORMATION] 10053	10019	9260
+[2025-09-10 17:39:35] [INFORMATION] 10054	10019	9261
+[2025-09-10 17:39:35] [INFORMATION] 10055	10019	9262
+[2025-09-10 17:39:35] [INFORMATION] 10056	9265	10019
+[2025-09-10 17:39:35] [INFORMATION] 10057	9266	10019
+[2025-09-10 17:39:35] [INFORMATION] 10058	9267	10019
+[2025-09-10 17:39:35] [INFORMATION] 10059	9274	10020
+[2025-09-10 17:39:35] [INFORMATION] 10060	10021	9284
+[2025-09-10 17:39:35] [INFORMATION] 10061	10021	9285
+[2025-09-10 17:39:35] [INFORMATION] 10062	10021	9286
+[2025-09-10 17:39:35] [INFORMATION] 10063	9291	10021
+[2025-09-10 17:39:35] [INFORMATION] 10064	9292	10021
+[2025-09-10 17:39:35] [INFORMATION] 10065	9830	10022
+[2025-09-10 17:39:35] [INFORMATION] 10066	9870	10021
+[2025-09-10 17:39:35] [INFORMATION] 10067	9903	10023
+[2025-09-10 17:39:35] [INFORMATION] 10068	9963	10013
+[2025-09-10 17:39:35] [INFORMATION] 10069	9964	10013
+[2025-09-10 17:39:35] [INFORMATION] 10070	9964	10014
+[2025-09-10 17:39:35] [INFORMATION] 10071	9965	10013
+[2025-09-10 17:39:35] [INFORMATION] 10072	9965	10014
+[2025-09-10 17:39:35] [INFORMATION] 10073	9965	10015
+[2025-09-10 17:39:35] [INFORMATION] 10074	9965	10034
+[2025-09-10 17:39:35] [INFORMATION] 10075	10013	10014
+[2025-09-10 17:39:35] [INFORMATION] 10076	10013	10015
+[2025-09-10 17:39:35] [INFORMATION] 10077	10013	10016
+[2025-09-10 17:39:35] [INFORMATION] 10078	10014	10015
+[2025-09-10 17:39:35] [INFORMATION] 10079	10014	10016
+[2025-09-10 17:39:35] [INFORMATION] 10080	10014	10017
+[2025-09-10 17:39:35] [INFORMATION] 10081	10015	10016
+[2025-09-10 17:39:35] [INFORMATION] 10082	10015	10017
+[2025-09-10 17:39:35] [INFORMATION] 10083	10015	10018
+[2025-09-10 17:39:35] [INFORMATION] 10084	10016	10017
+[2025-09-10 17:39:35] [INFORMATION] 10085	10016	10018
+[2025-09-10 17:39:35] [INFORMATION] 10086	10017	10018
+[2025-09-10 17:39:35] [INFORMATION] 10087	10023	10024
+[2025-09-10 17:39:35] [INFORMATION] 10088	10023	10025
+[2025-09-10 17:39:35] [INFORMATION] 10089	10023	10026
+[2025-09-10 17:39:35] [INFORMATION] 10091	10032	10023
+[2025-09-10 17:39:35] [INFORMATION] 10092	10033	10023
+[2025-09-10 17:39:35] [INFORMATION] 10093	10024	10025
+[2025-09-10 17:39:35] [INFORMATION] 10094	10024	10026
+[2025-09-10 17:39:35] [INFORMATION] 10095	10024	10027
+[2025-09-10 17:39:35] [INFORMATION] 10097	10033	10024
+[2025-09-10 17:39:35] [INFORMATION] 10098	10025	10026
+[2025-09-10 17:39:35] [INFORMATION] 10099	10025	10027
+[2025-09-10 17:39:35] [INFORMATION] 10100	10025	10028
+[2025-09-10 17:39:35] [INFORMATION] 10102	10026	10027
+[2025-09-10 17:39:35] [INFORMATION] 10103	10026	10028
+[2025-09-10 17:39:35] [INFORMATION] 10104	10026	10029
+[2025-09-10 17:39:35] [INFORMATION] 10105	10027	10028
+[2025-09-10 17:39:35] [INFORMATION] 10106	10027	10029
+[2025-09-10 17:39:35] [INFORMATION] 10107	10027	10030
+[2025-09-10 17:39:35] [INFORMATION] 10108	10028	10029
+[2025-09-10 17:39:35] [INFORMATION] 10109	10028	10030
+[2025-09-10 17:39:35] [INFORMATION] 10110	10028	10031
+[2025-09-10 17:39:35] [INFORMATION] 10111	10029	10030
+[2025-09-10 17:39:35] [INFORMATION] 10112	10029	10031
+[2025-09-10 17:39:35] [INFORMATION] 10113	10029	10032
+[2025-09-10 17:39:35] [INFORMATION] 10114	10030	10031
+[2025-09-10 17:39:35] [INFORMATION] 10115	10030	10032
+[2025-09-10 17:39:35] [INFORMATION] 10116	10030	10033
+[2025-09-10 17:39:35] [INFORMATION] 10117	10031	10032
+[2025-09-10 17:39:35] [INFORMATION] 10118	10031	10033
+[2025-09-10 17:39:35] [INFORMATION] 10119	10032	10033
+[2025-09-10 17:39:35] [INFORMATION] 10120	10034	10035
+[2025-09-10 17:39:35] [INFORMATION] 10121	10034	10036
+[2025-09-10 17:39:35] [INFORMATION] 10122	10034	10037
+[2025-09-10 17:39:35] [INFORMATION] 10123	10034	10038
+[2025-09-10 17:39:35] [INFORMATION] 10124	10035	10039
+[2025-09-10 17:39:35] [INFORMATION] 10125	10035	10040
+[2025-09-10 17:39:35] [INFORMATION] 10126	10035	10041
+[2025-09-10 17:39:35] [INFORMATION] 10127	10035	10042
+[2025-09-10 17:39:35] [INFORMATION] 10128	10036	10043
+[2025-09-10 17:39:35] [INFORMATION] 10129	10036	10044
+[2025-09-10 17:39:35] [INFORMATION] 10204	10143	9904
+[2025-09-10 17:39:35] [INFORMATION] 10205	10143	9905
+[2025-09-10 17:39:35] [INFORMATION] 10206	10143	9906
+[2025-09-10 17:39:35] [INFORMATION] 10207	9912	10143
+[2025-09-10 17:39:35] [INFORMATION] 10208	9913	10143
+[2025-09-10 17:39:35] [INFORMATION] 10209	9967	10143
+[2025-09-10 17:39:35] [INFORMATION] 10210	9970	10144
+[2025-09-10 17:39:35] [INFORMATION] 10211	10015	10147
+[2025-09-10 17:39:35] [INFORMATION] 10212	10016	10130
+[2025-09-10 17:39:35] [INFORMATION] 10213	10017	10130
+[2025-09-10 17:39:35] [INFORMATION] 10214	10017	10131
+[2025-09-10 17:39:35] [INFORMATION] 10215	10018	10130
+[2025-09-10 17:39:35] [INFORMATION] 10216	10018	10131
+[2025-09-10 17:39:35] [INFORMATION] 10217	10018	10132
+[2025-09-10 17:39:35] [INFORMATION] 10218	10018	10159
+[2025-09-10 17:39:35] [INFORMATION] 10219	10145	10023
+[2025-09-10 17:39:35] [INFORMATION] 10220	10145	10024
+[2025-09-10 17:39:35] [INFORMATION] 10221	10145	10025
+[2025-09-10 17:39:35] [INFORMATION] 10222	10031	10145
+[2025-09-10 17:39:35] [INFORMATION] 10223	10032	10145
+[2025-09-10 17:39:35] [INFORMATION] 10224	10033	10145
+[2025-09-10 17:39:35] [INFORMATION] 10225	10036	10146
+[2025-09-10 17:39:35] [INFORMATION] 10226	10130	10131
+[2025-09-10 17:39:35] [INFORMATION] 10227	10130	10132
+[2025-09-10 17:39:35] [INFORMATION] 10228	10130	10133
+[2025-09-10 17:39:35] [INFORMATION] 10229	10131	10132
+[2025-09-10 17:39:35] [INFORMATION] 10230	10131	10133
+[2025-09-10 17:39:35] [INFORMATION] 10231	10131	10134
+[2025-09-10 17:39:35] [INFORMATION] 10232	10132	10133
+[2025-09-10 17:39:35] [INFORMATION] 10233	10132	10134
+[2025-09-10 17:39:35] [INFORMATION] 10234	10132	10135
+[2025-09-10 17:39:35] [INFORMATION] 10235	10132	10171
+[2025-09-10 17:39:35] [INFORMATION] 10236	10133	10134
+[2025-09-10 17:39:35] [INFORMATION] 10237	10133	10135
+[2025-09-10 17:39:35] [INFORMATION] 10238	10133	10136
+[2025-09-10 17:39:35] [INFORMATION] 10239	10134	10135
+[2025-09-10 17:39:35] [INFORMATION] 10240	10134	10136
+[2025-09-10 17:39:35] [INFORMATION] 10241	10134	10137
+[2025-09-10 17:39:35] [INFORMATION] 10242	10135	10136
+[2025-09-10 17:39:35] [INFORMATION] 10243	10135	10137
+[2025-09-10 17:39:35] [INFORMATION] 10244	10135	10138
+[2025-09-10 17:39:35] [INFORMATION] 10245	10135	10183
+[2025-09-10 17:39:35] [INFORMATION] 10246	10136	10137
+[2025-09-10 17:39:35] [INFORMATION] 10247	10136	10138
+[2025-09-10 17:39:35] [INFORMATION] 10248	10136	10139
+[2025-09-10 17:39:35] [INFORMATION] 10249	10137	10138
+[2025-09-10 17:39:35] [INFORMATION] 10250	10137	10139
+[2025-09-10 17:39:35] [INFORMATION] 10251	10137	10140
+[2025-09-10 17:39:35] [INFORMATION] 10252	10138	10139
+[2025-09-10 17:39:35] [INFORMATION] 10253	10138	10140
+[2025-09-10 17:39:35] [INFORMATION] 10254	10138	10141
+[2025-09-10 17:39:35] [INFORMATION] 10255	10139	10140
+[2025-09-10 17:39:35] [INFORMATION] 10256	10139	10141
+[2025-09-10 17:39:35] [INFORMATION] 10257	10139	10142
+[2025-09-10 17:39:35] [INFORMATION] 10258	10140	10141
+[2025-09-10 17:39:35] [INFORMATION] 10259	10140	10142
+[2025-09-10 17:39:35] [INFORMATION] 10260	10141	10142
+[2025-09-10 17:39:35] [INFORMATION] 10261	10147	10148
+[2025-09-10 17:39:35] [INFORMATION] 10262	10147	10149
+[2025-09-10 17:39:35] [INFORMATION] 10263	10147	10150
+[2025-09-10 17:39:35] [INFORMATION] 10264	10156	10147
+[2025-09-10 17:39:35] [INFORMATION] 10265	10157	10147
+[2025-09-10 17:39:35] [INFORMATION] 10266	10158	10147
+[2025-09-10 17:39:35] [INFORMATION] 10267	10148	10149
+[2025-09-10 17:39:35] [INFORMATION] 10268	10148	10150
+[2025-09-10 17:39:35] [INFORMATION] 10269	10148	10151
+[2025-09-10 17:39:35] [INFORMATION] 10270	10157	10148
+[2025-09-10 17:39:35] [INFORMATION] 10271	10158	10148
+[2025-09-10 17:39:35] [INFORMATION] 10272	10149	10150
+[2025-09-10 17:39:35] [INFORMATION] 10273	10149	10151
+[2025-09-10 17:39:35] [INFORMATION] 10274	10149	10152
+[2025-09-10 17:39:35] [INFORMATION] 10275	10158	10149
+[2025-09-10 17:39:35] [INFORMATION] 10276	10150	10151
+[2025-09-10 17:39:35] [INFORMATION] 10277	10150	10152
+[2025-09-10 17:39:35] [INFORMATION] 10278	10150	10153
+[2025-09-10 17:39:35] [INFORMATION] 10279	10151	10152
+[2025-09-10 17:39:35] [INFORMATION] 10280	10151	10153
+[2025-09-10 17:39:35] [INFORMATION] 10281	10151	10154
+[2025-09-10 17:39:35] [INFORMATION] 10282	10152	10153
+[2025-09-10 17:39:35] [INFORMATION] 10283	10152	10154
+[2025-09-10 17:39:35] [INFORMATION] 10284	10152	10155
+[2025-09-10 17:39:35] [INFORMATION] 10285	10153	10154
+[2025-09-10 17:39:35] [INFORMATION] 10286	10153	10155
+[2025-09-10 17:39:35] [INFORMATION] 10287	10153	10156
+[2025-09-10 17:39:35] [INFORMATION] 10288	10154	10155
+[2025-09-10 17:39:35] [INFORMATION] 10289	10154	10156
+[2025-09-10 17:39:35] [INFORMATION] 10290	10154	10157
+[2025-09-10 17:39:35] [INFORMATION] 10291	10155	10156
+[2025-09-10 17:39:35] [INFORMATION] 10292	10155	10157
+[2025-09-10 17:39:35] [INFORMATION] 10293	10155	10158
+[2025-09-10 17:39:35] [INFORMATION] 10294	10156	10157
+[2025-09-10 17:39:35] [INFORMATION] 10295	10156	10158
+[2025-09-10 17:39:35] [INFORMATION] 10296	10157	10158
+[2025-09-10 17:39:35] [INFORMATION] 10297	10159	10160
+[2025-09-10 17:39:35] [INFORMATION] 10298	10159	10161
+[2025-09-10 17:39:35] [INFORMATION] 10299	10159	10162
+[2025-09-10 17:39:35] [INFORMATION] 10300	10159	10163
+[2025-09-10 17:39:35] [INFORMATION] 10301	10160	10164
+[2025-09-10 17:39:35] [INFORMATION] 10302	10160	10165
+[2025-09-10 17:39:35] [INFORMATION] 10303	10160	10166
+[2025-09-10 17:39:35] [INFORMATION] 10304	10160	10167
+[2025-09-10 17:39:35] [INFORMATION] 10305	10161	10168
+[2025-09-10 17:39:35] [INFORMATION] 10306	10161	10169
+[2025-09-10 17:39:35] [INFORMATION] 10307	10161	10170
+[2025-09-10 17:39:35] [INFORMATION] 10308	10171	10172
+[2025-09-10 17:39:35] [INFORMATION] 10309	10171	10173
+[2025-09-10 17:39:35] [INFORMATION] 10310	10171	10174
+[2025-09-10 17:39:35] [INFORMATION] 10311	10180	10171
+[2025-09-10 17:39:35] [INFORMATION] 10312	10181	10171
+[2025-09-10 17:39:35] [INFORMATION] 10313	10182	10171
+[2025-09-10 17:39:35] [INFORMATION] 10314	10172	10173
+[2025-09-10 17:39:35] [INFORMATION] 10315	10172	10174
+[2025-09-10 17:39:35] [INFORMATION] 10316	10172	10175
+[2025-09-10 17:39:35] [INFORMATION] 10317	10181	10172
+[2025-09-10 17:39:35] [INFORMATION] 10318	10182	10172
+[2025-09-10 17:39:35] [INFORMATION] 10319	10173	10174
+[2025-09-10 17:39:35] [INFORMATION] 10320	10173	10175
+[2025-09-10 17:39:35] [INFORMATION] 10321	10173	10176
+[2025-09-10 17:39:35] [INFORMATION] 10322	10182	10173
+[2025-09-10 17:39:35] [INFORMATION] 10323	10174	10175
+[2025-09-10 17:39:35] [INFORMATION] 10324	10174	10176
+[2025-09-10 17:39:35] [INFORMATION] 10325	10174	10177
+[2025-09-10 17:39:35] [INFORMATION] 10326	10175	10176
+[2025-09-10 17:39:35] [INFORMATION] 10327	10175	10177
+[2025-09-10 17:39:35] [INFORMATION] 10328	10175	10178
+[2025-09-10 17:39:35] [INFORMATION] 10329	10176	10177
+[2025-09-10 17:39:35] [INFORMATION] 10330	10176	10178
+[2025-09-10 17:39:35] [INFORMATION] 10331	10176	10179
+[2025-09-10 17:39:35] [INFORMATION] 10332	10177	10178
+[2025-09-10 17:39:35] [INFORMATION] 10333	10177	10179
+[2025-09-10 17:39:35] [INFORMATION] 10334	10177	10180
+[2025-09-10 17:39:35] [INFORMATION] 10335	10178	10179
+[2025-09-10 17:39:35] [INFORMATION] 10336	10178	10180
+[2025-09-10 17:39:35] [INFORMATION] 10337	10178	10181
+[2025-09-10 17:39:35] [INFORMATION] 10338	10179	10180
+[2025-09-10 17:39:35] [INFORMATION] 10339	10179	10181
+[2025-09-10 17:39:35] [INFORMATION] 10340	10179	10182
+[2025-09-10 17:39:35] [INFORMATION] 10341	10180	10181
+[2025-09-10 17:39:35] [INFORMATION] 10342	10180	10182
+[2025-09-10 17:39:35] [INFORMATION] 10343	10181	10182
+[2025-09-10 17:39:35] [INFORMATION] 10344	10183	10184
+[2025-09-10 17:39:35] [INFORMATION] 10345	10183	10185
+[2025-09-10 17:39:35] [INFORMATION] 10346	10183	10186
+[2025-09-10 17:39:35] [INFORMATION] 10347	10183	10187
+[2025-09-10 17:39:35] [INFORMATION] 10348	10184	10188
+[2025-09-10 17:39:35] [INFORMATION] 10349	10184	10189
+[2025-09-10 17:39:35] [INFORMATION] 10350	10184	10190
+[2025-09-10 17:39:35] [INFORMATION] 10351	10184	10191
+[2025-09-10 17:39:35] [INFORMATION] 10352	10185	10192
+[2025-09-10 17:39:35] [INFORMATION] 10353	10185	10193
+[2025-09-10 17:39:35] [INFORMATION] 10491	10377	3
+[2025-09-10 17:39:35] [INFORMATION] 10492	10378	3
+[2025-09-10 17:39:35] [INFORMATION] 10493	10379	3
+[2025-09-10 17:39:35] [INFORMATION] 10494	10378	9247
+[2025-09-10 17:39:35] [INFORMATION] 10495	10379	9247
+[2025-09-10 17:39:35] [INFORMATION] 10496	10379	9248
+[2025-09-10 17:39:35] [INFORMATION] 10497	10138	10381
+[2025-09-10 17:39:35] [INFORMATION] 10498	10140	10354
+[2025-09-10 17:39:35] [INFORMATION] 10499	10141	10354
+[2025-09-10 17:39:35] [INFORMATION] 10500	10141	10355
+[2025-09-10 17:39:35] [INFORMATION] 10501	10141	10393
+[2025-09-10 17:39:35] [INFORMATION] 10502	10142	10354
+[2025-09-10 17:39:35] [INFORMATION] 10503	10142	10355
+[2025-09-10 17:39:35] [INFORMATION] 10504	10142	10356
+[2025-09-10 17:39:35] [INFORMATION] 10505	10185	10380
+[2025-09-10 17:39:35] [INFORMATION] 10506	10354	10355
+[2025-09-10 17:39:35] [INFORMATION] 10507	10354	10356
+[2025-09-10 17:39:35] [INFORMATION] 10508	10354	10357
+[2025-09-10 17:39:35] [INFORMATION] 10509	10355	10356
+[2025-09-10 17:39:35] [INFORMATION] 10510	10355	10357
+[2025-09-10 17:39:35] [INFORMATION] 10511	10355	10358
+[2025-09-10 17:39:35] [INFORMATION] 10512	10355	10405
+[2025-09-10 17:39:35] [INFORMATION] 10513	10356	10357
+[2025-09-10 17:39:35] [INFORMATION] 10514	10356	10358
+[2025-09-10 17:39:35] [INFORMATION] 10515	10356	10359
+[2025-09-10 17:39:35] [INFORMATION] 10516	10357	10358
+[2025-09-10 17:39:35] [INFORMATION] 10517	10357	10359
+[2025-09-10 17:39:35] [INFORMATION] 10518	10357	10360
+[2025-09-10 17:39:35] [INFORMATION] 10519	10358	10359
+[2025-09-10 17:39:35] [INFORMATION] 10520	10358	10360
+[2025-09-10 17:39:35] [INFORMATION] 10521	10358	10361
+[2025-09-10 17:39:35] [INFORMATION] 10522	10358	10416
+[2025-09-10 17:39:35] [INFORMATION] 10523	10359	10360
+[2025-09-10 17:39:35] [INFORMATION] 10524	10359	10361
+[2025-09-10 17:39:35] [INFORMATION] 10525	10359	10362
+[2025-09-10 17:39:35] [INFORMATION] 10526	10360	10361
+[2025-09-10 17:39:35] [INFORMATION] 10527	10360	10362
+[2025-09-10 17:39:35] [INFORMATION] 10528	10360	10363
+[2025-09-10 17:39:35] [INFORMATION] 10529	10361	10362
+[2025-09-10 17:39:35] [INFORMATION] 10530	10361	10363
+[2025-09-10 17:39:35] [INFORMATION] 10531	10361	10364
+[2025-09-10 17:39:35] [INFORMATION] 10532	10361	10427
+[2025-09-10 17:39:35] [INFORMATION] 10533	10362	10363
+[2025-09-10 17:39:35] [INFORMATION] 10534	10362	10364
+[2025-09-10 17:39:35] [INFORMATION] 10535	10362	10365
+[2025-09-10 17:39:35] [INFORMATION] 10536	10363	10364
+[2025-09-10 17:39:35] [INFORMATION] 10537	10363	10365
+[2025-09-10 17:39:35] [INFORMATION] 10538	10363	10366
+[2025-09-10 17:39:35] [INFORMATION] 10539	10364	10365
+[2025-09-10 17:39:35] [INFORMATION] 10540	10364	10366
+[2025-09-10 17:39:35] [INFORMATION] 10541	10364	10367
+[2025-09-10 17:39:35] [INFORMATION] 10542	10364	10438
+[2025-09-10 17:39:35] [INFORMATION] 10543	10365	10366
+[2025-09-10 17:39:35] [INFORMATION] 10544	10365	10367
+[2025-09-10 17:39:35] [INFORMATION] 10545	10365	10368
+[2025-09-10 17:39:35] [INFORMATION] 10546	10366	10367
+[2025-09-10 17:39:35] [INFORMATION] 10547	10366	10368
+[2025-09-10 17:39:35] [INFORMATION] 10548	10366	10369
+[2025-09-10 17:39:35] [INFORMATION] 10549	10367	10368
+[2025-09-10 17:39:35] [INFORMATION] 10550	10367	10369
+[2025-09-10 17:39:35] [INFORMATION] 10551	10367	10370
+[2025-09-10 17:39:35] [INFORMATION] 10552	10367	10449
+[2025-09-10 17:39:35] [INFORMATION] 10553	10368	10369
+[2025-09-10 17:39:35] [INFORMATION] 10554	10368	10370
+[2025-09-10 17:39:35] [INFORMATION] 10555	10368	10371
+[2025-09-10 17:39:35] [INFORMATION] 10556	10369	10370
+[2025-09-10 17:39:35] [INFORMATION] 10557	10369	10371
+[2025-09-10 17:39:35] [INFORMATION] 10558	10369	10372
+[2025-09-10 17:39:35] [INFORMATION] 10559	10370	10371
+[2025-09-10 17:39:35] [INFORMATION] 10560	10370	10372
+[2025-09-10 17:39:35] [INFORMATION] 10561	10370	10373
+[2025-09-10 17:39:35] [INFORMATION] 10562	10370	10460
+[2025-09-10 17:39:35] [INFORMATION] 10563	10371	10372
+[2025-09-10 17:39:35] [INFORMATION] 10564	10371	10373
+[2025-09-10 17:39:35] [INFORMATION] 10565	10371	10374
+[2025-09-10 17:39:35] [INFORMATION] 10566	10372	10373
+[2025-09-10 17:39:35] [INFORMATION] 10567	10372	10374
+[2025-09-10 17:39:35] [INFORMATION] 10568	10372	10375
+[2025-09-10 17:39:35] [INFORMATION] 10569	10373	10374
+[2025-09-10 17:39:35] [INFORMATION] 10570	10373	10375
+[2025-09-10 17:39:35] [INFORMATION] 10571	10373	10376
+[2025-09-10 17:39:35] [INFORMATION] 10572	10373	10471
+[2025-09-10 17:39:35] [INFORMATION] 10573	10374	10375
+[2025-09-10 17:39:35] [INFORMATION] 10574	10374	10376
+[2025-09-10 17:39:35] [INFORMATION] 10575	10374	10377
+[2025-09-10 17:39:35] [INFORMATION] 10576	10375	10376
+[2025-09-10 17:39:35] [INFORMATION] 10577	10375	10377
+[2025-09-10 17:39:35] [INFORMATION] 10578	10375	10378
+[2025-09-10 17:39:35] [INFORMATION] 10579	10376	10377
+[2025-09-10 17:39:35] [INFORMATION] 10580	10376	10378
+[2025-09-10 17:39:35] [INFORMATION] 10581	10376	10379
+[2025-09-10 17:39:35] [INFORMATION] 10582	10377	10378
+[2025-09-10 17:39:35] [INFORMATION] 10583	10377	10379
+[2025-09-10 17:39:35] [INFORMATION] 10584	10378	10379
+[2025-09-10 17:39:35] [INFORMATION] 10585	10381	10382
+[2025-09-10 17:39:35] [INFORMATION] 10586	10381	10383
+[2025-09-10 17:39:35] [INFORMATION] 10587	10381	10384
+[2025-09-10 17:39:35] [INFORMATION] 10588	10390	10381
+[2025-09-10 17:39:35] [INFORMATION] 10589	10391	10381
+[2025-09-10 17:39:35] [INFORMATION] 10590	10392	10381
+[2025-09-10 17:39:35] [INFORMATION] 10591	10382	10383
+[2025-09-10 17:39:35] [INFORMATION] 10592	10382	10384
+[2025-09-10 17:39:35] [INFORMATION] 10593	10382	10385
+[2025-09-10 17:39:35] [INFORMATION] 10594	10391	10382
+[2025-09-10 17:39:35] [INFORMATION] 10595	10392	10382
+[2025-09-10 17:39:35] [INFORMATION] 10596	10383	10384
+[2025-09-10 17:39:35] [INFORMATION] 10597	10383	10385
+[2025-09-10 17:39:35] [INFORMATION] 10598	10383	10386
+[2025-09-10 17:39:35] [INFORMATION] 10599	10392	10383
+[2025-09-10 17:39:35] [INFORMATION] 10600	10384	10385
+[2025-09-10 17:39:35] [INFORMATION] 10601	10384	10386
+[2025-09-10 17:39:35] [INFORMATION] 10602	10384	10387
+[2025-09-10 17:39:35] [INFORMATION] 10603	10385	10386
+[2025-09-10 17:39:35] [INFORMATION] 10604	10385	10387
+[2025-09-10 17:39:35] [INFORMATION] 10605	10385	10388
+[2025-09-10 17:39:35] [INFORMATION] 10606	10386	10387
+[2025-09-10 17:39:35] [INFORMATION] 10607	10386	10388
+[2025-09-10 17:39:35] [INFORMATION] 10608	10386	10389
+[2025-09-10 17:39:35] [INFORMATION] 10609	10387	10388
+[2025-09-10 17:39:35] [INFORMATION] 10610	10387	10389
+[2025-09-10 17:39:35] [INFORMATION] 10611	10387	10390
+[2025-09-10 17:39:35] [INFORMATION] 10612	10388	10389
+[2025-09-10 17:39:35] [INFORMATION] 10613	10388	10390
+[2025-09-10 17:39:35] [INFORMATION] 10614	10388	10391
+[2025-09-10 17:39:35] [INFORMATION] 10615	10389	10390
+[2025-09-10 17:39:35] [INFORMATION] 10616	10389	10391
+[2025-09-10 17:39:35] [INFORMATION] 10617	10389	10392
+[2025-09-10 17:39:35] [INFORMATION] 10618	10390	10391
+[2025-09-10 17:39:35] [INFORMATION] 10619	10390	10392
+[2025-09-10 17:39:35] [INFORMATION] 10620	10391	10392
+[2025-09-10 17:39:35] [INFORMATION] 10621	10393	10394
+[2025-09-10 17:39:35] [INFORMATION] 10622	10393	10395
+[2025-09-10 17:39:35] [INFORMATION] 10623	10393	10396
+[2025-09-10 17:39:35] [INFORMATION] 10624	10393	10397
+[2025-09-10 17:39:35] [INFORMATION] 10625	10394	10398
+[2025-09-10 17:39:35] [INFORMATION] 10626	10394	10399
+[2025-09-10 17:39:35] [INFORMATION] 10627	10394	10400
+[2025-09-10 17:39:35] [INFORMATION] 10628	10394	10401
+[2025-09-10 17:39:35] [INFORMATION] 10629	10395	10402
+[2025-09-10 17:39:35] [INFORMATION] 10630	10395	10403
+[2025-09-10 17:39:35] [INFORMATION] 10631	10395	10404
+[2025-09-10 17:39:35] [INFORMATION] 10632	10405	10406
+[2025-09-10 17:39:35] [INFORMATION] 10633	10405	10407
+[2025-09-10 17:39:35] [INFORMATION] 10634	10405	10408
+[2025-09-10 17:39:35] [INFORMATION] 10635	10413	10405
+[2025-09-10 17:39:35] [INFORMATION] 10636	10414	10405
+[2025-09-10 17:39:35] [INFORMATION] 10637	10415	10405
+[2025-09-10 17:39:35] [INFORMATION] 10638	10406	10407
+[2025-09-10 17:39:35] [INFORMATION] 10639	10406	10408
+[2025-09-10 17:39:35] [INFORMATION] 10640	10406	10409
+[2025-09-10 17:39:35] [INFORMATION] 10641	10414	10406
+[2025-09-10 17:39:35] [INFORMATION] 10642	10415	10406
+[2025-09-10 17:39:35] [INFORMATION] 10643	10407	10408
+[2025-09-10 17:39:35] [INFORMATION] 10644	10407	10409
+[2025-09-10 17:39:35] [INFORMATION] 10645	10407	10410
+[2025-09-10 17:39:35] [INFORMATION] 10646	10415	10407
+[2025-09-10 17:39:35] [INFORMATION] 10647	10408	10409
+[2025-09-10 17:39:35] [INFORMATION] 10648	10408	10410
+[2025-09-10 17:39:35] [INFORMATION] 10649	10408	10411
+[2025-09-10 17:39:35] [INFORMATION] 10650	10409	10410
+[2025-09-10 17:39:35] [INFORMATION] 10651	10409	10411
+[2025-09-10 17:39:35] [INFORMATION] 10652	10409	10412
+[2025-09-10 17:39:35] [INFORMATION] 10653	10410	10411
+[2025-09-10 17:39:35] [INFORMATION] 10654	10410	10412
+[2025-09-10 17:39:35] [INFORMATION] 10655	10410	10413
+[2025-09-10 17:39:35] [INFORMATION] 10656	10411	10412
+[2025-09-10 17:39:35] [INFORMATION] 10657	10411	10413
+[2025-09-10 17:39:35] [INFORMATION] 10658	10411	10414
+[2025-09-10 17:39:35] [INFORMATION] 10659	10412	10413
+[2025-09-10 17:39:35] [INFORMATION] 10660	10412	10414
+[2025-09-10 17:39:35] [INFORMATION] 10661	10412	10415
+[2025-09-10 17:39:35] [INFORMATION] 10662	10413	10414
+[2025-09-10 17:39:35] [INFORMATION] 10663	10413	10415
+[2025-09-10 17:39:35] [INFORMATION] 10664	10414	10415
+[2025-09-10 17:39:35] [INFORMATION] 10665	10416	10417
+[2025-09-10 17:39:35] [INFORMATION] 10666	10416	10418
+[2025-09-10 17:39:35] [INFORMATION] 10667	10416	10419
+[2025-09-10 17:39:35] [INFORMATION] 10668	10416	10420
+[2025-09-10 17:39:35] [INFORMATION] 10669	10417	10421
+[2025-09-10 17:39:35] [INFORMATION] 10670	10417	10422
+[2025-09-10 17:39:35] [INFORMATION] 10671	10417	10423
+[2025-09-10 17:39:35] [INFORMATION] 10672	10417	10424
+[2025-09-10 17:39:35] [INFORMATION] 10673	10418	10425
+[2025-09-10 17:39:35] [INFORMATION] 10674	10418	10426
+[2025-09-10 17:39:35] [INFORMATION] 10675	10427	10428
+[2025-09-10 17:39:35] [INFORMATION] 10676	10427	10429
+[2025-09-10 17:39:35] [INFORMATION] 10677	10427	10430
+[2025-09-10 17:39:35] [INFORMATION] 10678	10435	10427
+[2025-09-10 17:39:35] [INFORMATION] 10679	10436	10427
+[2025-09-10 17:39:35] [INFORMATION] 10680	10437	10427
+[2025-09-10 17:39:35] [INFORMATION] 10681	10428	10429
+[2025-09-10 17:39:35] [INFORMATION] 10682	10428	10430
+[2025-09-10 17:39:35] [INFORMATION] 10683	10428	10431
+[2025-09-10 17:39:35] [INFORMATION] 10684	10436	10428
+[2025-09-10 17:39:35] [INFORMATION] 10685	10437	10428
+[2025-09-10 17:39:35] [INFORMATION] 10686	10429	10430
+[2025-09-10 17:39:35] [INFORMATION] 10687	10429	10431
+[2025-09-10 17:39:35] [INFORMATION] 10688	10429	10432
+[2025-09-10 17:39:35] [INFORMATION] 10689	10437	10429
+[2025-09-10 17:39:35] [INFORMATION] 10690	10430	10431
+[2025-09-10 17:39:35] [INFORMATION] 10691	10430	10432
+[2025-09-10 17:39:35] [INFORMATION] 10692	10430	10433
+[2025-09-10 17:39:35] [INFORMATION] 10693	10431	10432
+[2025-09-10 17:39:35] [INFORMATION] 10694	10431	10433
+[2025-09-10 17:39:35] [INFORMATION] 10695	10431	10434
+[2025-09-10 17:39:35] [INFORMATION] 10696	10432	10433
+[2025-09-10 17:39:35] [INFORMATION] 10697	10432	10434
+[2025-09-10 17:39:35] [INFORMATION] 10698	10432	10435
+[2025-09-10 17:39:35] [INFORMATION] 10699	10433	10434
+[2025-09-10 17:39:35] [INFORMATION] 10700	10433	10435
+[2025-09-10 17:39:35] [INFORMATION] 10701	10433	10436
+[2025-09-10 17:39:35] [INFORMATION] 10702	10434	10435
+[2025-09-10 17:39:35] [INFORMATION] 10703	10434	10436
+[2025-09-10 17:39:35] [INFORMATION] 10704	10434	10437
+[2025-09-10 17:39:35] [INFORMATION] 10705	10435	10436
+[2025-09-10 17:39:35] [INFORMATION] 10706	10435	10437
+[2025-09-10 17:39:35] [INFORMATION] 10707	10436	10437
+[2025-09-10 17:39:35] [INFORMATION] 10708	10438	10439
+[2025-09-10 17:39:35] [INFORMATION] 10709	10438	10440
+[2025-09-10 17:39:35] [INFORMATION] 10710	10438	10441
+[2025-09-10 17:39:35] [INFORMATION] 10711	10438	10442
+[2025-09-10 17:39:35] [INFORMATION] 10712	10439	10443
+[2025-09-10 17:39:35] [INFORMATION] 10713	10439	10444
+[2025-09-10 17:39:35] [INFORMATION] 10714	10439	10445
+[2025-09-10 17:39:35] [INFORMATION] 10715	10439	10446
+[2025-09-10 17:39:35] [INFORMATION] 10716	10440	10447
+[2025-09-10 17:39:35] [INFORMATION] 10717	10440	10448
+[2025-09-10 17:39:35] [INFORMATION] 10718	10449	10450
+[2025-09-10 17:39:35] [INFORMATION] 10719	10449	10451
+[2025-09-10 17:39:35] [INFORMATION] 10720	10449	10452
+[2025-09-10 17:39:35] [INFORMATION] 10721	10457	10449
+[2025-09-10 17:39:35] [INFORMATION] 10722	10458	10449
+[2025-09-10 17:39:35] [INFORMATION] 10723	10459	10449
+[2025-09-10 17:39:35] [INFORMATION] 10724	10450	10451
+[2025-09-10 17:39:35] [INFORMATION] 10725	10450	10452
+[2025-09-10 17:39:35] [INFORMATION] 10726	10450	10453
+[2025-09-10 17:39:35] [INFORMATION] 10727	10458	10450
+[2025-09-10 17:39:35] [INFORMATION] 10728	10459	10450
+[2025-09-10 17:39:35] [INFORMATION] 10729	10451	10452
+[2025-09-10 17:39:35] [INFORMATION] 10730	10451	10453
+[2025-09-10 17:39:35] [INFORMATION] 10731	10451	10454
+[2025-09-10 17:39:35] [INFORMATION] 10732	10459	10451
+[2025-09-10 17:39:35] [INFORMATION] 10733	10452	10453
+[2025-09-10 17:39:35] [INFORMATION] 10734	10452	10454
+[2025-09-10 17:39:35] [INFORMATION] 10735	10452	10455
+[2025-09-10 17:39:35] [INFORMATION] 10736	10453	10454
+[2025-09-10 17:39:35] [INFORMATION] 10737	10453	10455
+[2025-09-10 17:39:35] [INFORMATION] 10738	10453	10456
+[2025-09-10 17:39:35] [INFORMATION] 10739	10454	10455
+[2025-09-10 17:39:35] [INFORMATION] 10740	10454	10456
+[2025-09-10 17:39:35] [INFORMATION] 10741	10454	10457
+[2025-09-10 17:39:35] [INFORMATION] 10742	10455	10456
+[2025-09-10 17:39:35] [INFORMATION] 10743	10455	10457
+[2025-09-10 17:39:35] [INFORMATION] 10744	10455	10458
+[2025-09-10 17:39:35] [INFORMATION] 10745	10456	10457
+[2025-09-10 17:39:35] [INFORMATION] 10746	10456	10458
+[2025-09-10 17:39:35] [INFORMATION] 10747	10456	10459
+[2025-09-10 17:39:35] [INFORMATION] 10748	10457	10458
+[2025-09-10 17:39:35] [INFORMATION] 10749	10457	10459
+[2025-09-10 17:39:35] [INFORMATION] 10750	10458	10459
+[2025-09-10 17:39:35] [INFORMATION] 10751	10460	10461
+[2025-09-10 17:39:35] [INFORMATION] 10752	10460	10462
+[2025-09-10 17:39:35] [INFORMATION] 10753	10460	10463
+[2025-09-10 17:39:35] [INFORMATION] 10754	10460	10464
+[2025-09-10 17:39:35] [INFORMATION] 10755	10461	10465
+[2025-09-10 17:39:35] [INFORMATION] 10756	10461	10466
+[2025-09-10 17:39:35] [INFORMATION] 10757	10461	10467
+[2025-09-10 17:39:35] [INFORMATION] 10758	10461	10468
+[2025-09-10 17:39:35] [INFORMATION] 10759	10462	10469
+[2025-09-10 17:39:35] [INFORMATION] 10760	10462	10470
+[2025-09-10 17:39:35] [INFORMATION] 10761	10471	10472
+[2025-09-10 17:39:35] [INFORMATION] 10762	10471	10473
+[2025-09-10 17:39:35] [INFORMATION] 10763	10471	10474
+[2025-09-10 17:39:35] [INFORMATION] 10764	10479	10471
+[2025-09-10 17:39:35] [INFORMATION] 10765	10480	10471
+[2025-09-10 17:39:35] [INFORMATION] 10766	10481	10471
+[2025-09-10 17:39:35] [INFORMATION] 10767	10472	10473
+[2025-09-10 17:39:35] [INFORMATION] 10768	10472	10474
+[2025-09-10 17:39:35] [INFORMATION] 10769	10472	10475
+[2025-09-10 17:39:35] [INFORMATION] 10770	10480	10472
+[2025-09-10 17:39:35] [INFORMATION] 10771	10481	10472
+[2025-09-10 17:39:35] [INFORMATION] 10772	10473	10474
+[2025-09-10 17:39:35] [INFORMATION] 10773	10473	10475
+[2025-09-10 17:39:35] [INFORMATION] 10774	10473	10476
+[2025-09-10 17:39:35] [INFORMATION] 10775	10481	10473
+[2025-09-10 17:39:35] [INFORMATION] 10776	10474	10475
+[2025-09-10 17:39:35] [INFORMATION] 10777	10474	10476
+[2025-09-10 17:39:35] [INFORMATION] 10778	10474	10477
+[2025-09-10 17:39:35] [INFORMATION] 10779	10475	10476
+[2025-09-10 17:39:35] [INFORMATION] 10780	10475	10477
+[2025-09-10 17:39:35] [INFORMATION] 10781	10475	10478
+[2025-09-10 17:39:35] [INFORMATION] 10782	10476	10477
+[2025-09-10 17:39:35] [INFORMATION] 10783	10476	10478
+[2025-09-10 17:39:35] [INFORMATION] 10784	10476	10479
+[2025-09-10 17:39:35] [INFORMATION] 10785	10477	10478
+[2025-09-10 17:39:35] [INFORMATION] 10786	10477	10479
+[2025-09-10 17:39:35] [INFORMATION] 10787	10477	10480
+[2025-09-10 17:39:35] [INFORMATION] 10788	10478	10479
+[2025-09-10 17:39:35] [INFORMATION] 10789	10478	10480
+[2025-09-10 17:39:35] [INFORMATION] 10790	10478	10481
+[2025-09-10 17:39:35] [INFORMATION] 10791	10479	10480
+[2025-09-10 17:39:35] [INFORMATION] 10792	10479	10481
+[2025-09-10 17:39:35] [INFORMATION] 10793	10480	10481
